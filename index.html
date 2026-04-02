@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FWI Map Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: #f0f6fc;
+    }
+    p.subtitle {
+      color: #8b949e;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+    }
+    .card img {
+      width: 100%;
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      object-position: top;
+      background: #21262d;
+    }
+    .card-body {
+      padding: 0.9rem 1rem;
+    }
+    .card-body h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f0f6fc;
+      text-transform: capitalize;
+    }
+    .card-body span {
+      font-size: 0.78rem;
+      color: #8b949e;
+    }
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #484f58;
+    }
+  </style>
+</head>
+<body>
+  <h1>FWI Map Dashboard</h1>
+  <p class="subtitle">Fire Weather Index — UI screens</p>
+  <div class="grid">
+    <a class="card" href="map_dashboard/code.html">
+      <img src="map_dashboard/screen.png" alt="Map Dashboard" />
+      <div class="card-body"><h2>Map Dashboard</h2><span>Main view</span></div>
+    </a>
+    <a class="card" href="authentication/code.html">
+      <img src="authentication/screen.png" alt="Authentication" />
+      <div class="card-body"><h2>Authentication</h2><span>Login / sign-in</span></div>
+    </a>
+    <a class="card" href="station_detail/code.html">
+      <img src="station_detail/screen.png" alt="Station Detail" />
+      <div class="card-body"><h2>Station Detail</h2><span>Individual station data</span></div>
+    </a>
+    <a class="card" href="regional_summary/code.html">
+      <img src="regional_summary/screen.png" alt="Regional Summary" />
+      <div class="card-body"><h2>Regional Summary</h2><span>Region-level overview</span></div>
+    </a>
+    <a class="card" href="forecast_trends/code.html">
+      <img src="forecast_trends/screen.png" alt="Forecast & Trends" />
+      <div class="card-body"><h2>Forecast &amp; Trends</h2><span>Predictive data</span></div>
+    </a>
+    <a class="card" href="data_alerts/code.html">
+      <img src="data_alerts/screen.png" alt="Data Alerts" />
+      <div class="card-body"><h2>Data Alerts</h2><span>Alert management</span></div>
+    </a>
+    <a class="card" href="science_guide/code.html">
+      <img src="science_guide/screen.png" alt="Science Guide" />
+      <div class="card-body"><h2>Science Guide</h2><span>Reference documentation</span></div>
+    </a>
+    <a class="card" href="system_settings/code.html">
+      <img src="system_settings/screen.png" alt="System Settings" />
+      <div class="card-body"><h2>System Settings</h2><span>Configuration</span></div>
+    </a>
+  </div>
+  <footer>FWI Map Dashboard &mdash; exported from Google Stitch</footer>
+</body>
+</html>

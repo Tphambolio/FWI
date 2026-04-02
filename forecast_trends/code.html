@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Alberta FWI - Forecast &amp; Trends</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-container": "#008abb",
+              "on-secondary-fixed": "#002109",
+              "background": "#0b1326",
+              "inverse-surface": "#dae2fd",
+              "on-tertiary-container": "#ce3ae5",
+              "on-tertiary": "#580065",
+              "on-secondary-fixed-variant": "#005321",
+              "on-primary": "#00354a",
+              "on-background": "#dae2fd",
+              "on-surface-variant": "#c6c6cd",
+              "surface-variant": "#2d3449",
+              "secondary-fixed-dim": "#4ae176",
+              "primary-fixed-dim": "#7bd0ff",
+              "primary-fixed": "#c4e7ff",
+              "tertiary": "#fbabff",
+              "on-tertiary-fixed-variant": "#7c008e",
+              "on-surface": "#dae2fd",
+              "secondary": "#4ae176",
+              "tertiary-fixed-dim": "#fbabff",
+              "outline": "#909097",
+              "outline-variant": "#45464d",
+              "inverse-primary": "#00668a",
+              "error": "#ffb4ab",
+              "surface-dim": "#0b1326",
+              "secondary-container": "#00b954",
+              "on-primary-fixed": "#001e2c",
+              "surface-container-highest": "#2d3449",
+              "surface": "#0b1326",
+              "on-primary-fixed-variant": "#004c69",
+              "on-tertiary-fixed": "#36003e",
+              "secondary-fixed": "#6bff8f",
+              "primary": "#7bd0ff",
+              "tertiary-fixed": "#ffd6fd",
+              "on-error": "#690005",
+              "error-container": "#93000a",
+              "surface-container-high": "#222a3d",
+              "on-secondary-container": "#004119",
+              "on-secondary": "#003915",
+              "surface-container-lowest": "#060e20",
+              "on-error-container": "#ffdad6",
+              "surface-container-low": "#131b2e",
+              "surface-tint": "#7bd0ff",
+              "primary-container": "#001a27",
+              "surface-bright": "#31394d",
+              "tertiary-container": "#2f0037",
+              "inverse-on-surface": "#283044",
+              "surface-container": "#171f33"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(45, 52, 73, 0.6);
+        backdrop-filter: blur(20px);
+      }
+      .gradient-primary {
+        background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-[60] bg-[#0b1326]/90 backdrop-blur-2xl shadow-[0_20px_40px_rgba(6,14,32,0.4)] flex justify-between items-center px-6 h-16 bg-gradient-to-b from-[#16203a] to-[#0b1326]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#7bd0ff]" data-icon="radar">radar</span>
+<h1 class="text-lg font-black text-[#7bd0ff] tracking-[0.2em] font-['Space_Grotesk'] uppercase">PRECISION OBSERVER</h1>
+</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="#">Map</a>
+<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="#">Stations</a>
+<a class="text-[#7bd0ff] font-['Space_Grotesk'] font-bold tracking-tighter uppercase transition-all duration-300" href="#">Risk</a>
+<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="#">Science</a>
+</div>
+<button class="active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[#7bd0ff]" data-icon="account_circle">account_circle</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
+<!-- Hero Section: Critical Window -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+<div class="lg:col-span-8 bg-surface-container-high rounded-lg p-8 relative overflow-hidden flex flex-col justify-between">
+<!-- Data Visualization Background Concept -->
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<img class="w-full h-full object-cover" data-alt="high-resolution topographic contour map of Alberta mountains and plains with subtle neon data overlay and scientific grid lines" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbfK8HzoMEO8Ki0vT3_ILkp4HZSEacas4UYBuk2hsTa1S5CNpoHk-UyXu2_4oeuoVQ_-9Fe5YVaGw-ZRw1Sif3UNYj0XTllXAwqELWUInjUOv8WBUEA7QPpGWVK4xtybjE14SRjq7Zxb5LPFqUto8puSaiDRn0nojWs3kb15dLCeaBnxbAZRxcscbTmy7WMakIG9JxKFxUiL9Xk2SfG9W958S4e0L1LRacVuM1guEqTOD9qbi0tikt5VVDxkO1cJS5kTI_xoskf_0"/>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-tertiary" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+<span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">Critical Temporal Window</span>
+</div>
+<h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">T + 24h <span class="text-primary">FORECAST</span></h2>
+<p class="text-on-surface-variant max-w-xl body-md mb-8">Atmospheric instability in the Athabasca region indicates a 24% increase in FWI values. Accelerated suppression protocols recommended for High-Risk zones.</p>
+</div>
+<div class="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="bg-surface-container-lowest p-4 rounded border-b-2 border-primary">
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Peak Temp</span>
+<span class="block font-headline text-3xl font-bold text-white">31.4°C</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b-2 border-tertiary">
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Min Humidity</span>
+<span class="block font-headline text-3xl font-bold text-white">14.2%</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b-2 border-secondary">
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Wind Velocity</span>
+<span class="block font-headline text-3xl font-bold text-white">22 km/h</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-4 bg-surface-container-low rounded-lg p-6 border-l border-primary/20 flex flex-col">
+<h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">Risk Vector Trend</h3>
+<div class="flex-grow flex items-end gap-1 px-2 h-48">
+<!-- Custom Bar Chart Mockup -->
+<div class="w-full bg-surface-container h-[20%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+<div class="w-full bg-surface-container h-[25%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+<div class="w-full bg-surface-container h-[45%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+<div class="w-full bg-primary h-[85%] rounded-t-sm"></div>
+<div class="w-full bg-surface-container h-[60%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+<div class="w-full bg-surface-container h-[40%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+<div class="w-full bg-surface-container h-[30%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
+</div>
+<div class="flex justify-between text-[10px] text-outline font-label mt-4 px-2">
+<span>-12H</span>
+<span>CURRENT (T)</span>
+<span>+12H</span>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant">
+<button class="w-full gradient-primary text-on-primary-fixed font-headline font-bold py-3 rounded-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                        GENERATE REPORT
+                    </button>
+</div>
+</div>
+</section>
+<!-- Forecast Bento Grid -->
+<section>
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline text-2xl font-bold tracking-tight text-white">Extended Projections</h3>
+<div class="flex gap-2">
+<button class="bg-surface-container-highest px-4 py-1 rounded-full text-xs font-bold text-primary border border-primary/20">Metric</button>
+<button class="bg-surface-container-low px-4 py-1 rounded-full text-xs font-bold text-outline">Imperial</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- 24H Forecast -->
+<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(123,208,255,0.15)]">
+<div class="h-48 relative">
+<img class="w-full h-full object-cover" data-alt="thermal heat map of Alberta showing clusters of orange and red danger zones against a dark blue background" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm2IaLXsf-mnGakp91-sOpTZHEzaTo7M8UNYwzTfC4D-NRuLUpfsBfk4EdjiMQWih74hbMZAW0zuSpbUnilprlLaWjj3VMd93cSoq2Jp3aHhHZYLnraDS0bf7idBrbauuW1ppeiWwOUWx30lKHbmq7g85fNCJr_eWUtB8I4E2mEDRnQljJg9CxBc4rsc8IAbh1fYIh-CvRQ03q4-26tW0KCpYh4qllyE1soeUGz_5M6W9xHQkK_9_qVG0pv7LqwKgOcYN7q2VbcIc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute top-4 left-4 bg-primary text-on-primary-fixed text-[10px] font-bold px-2 py-0.5 rounded">T + 24H</div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline font-bold text-white uppercase tracking-wider">Short Term</h4>
+<span class="text-secondary font-bold font-headline">STABLE</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-outline">Max FWI</span>
+<span class="text-white">24.2</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary w-[40%] h-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 48H Forecast -->
+<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(251,171,255,0.15)]">
+<div class="h-48 relative">
+<img class="w-full h-full object-cover" data-alt="meteorological visualization map showing swirling air pressure lines and intensifying purple hotspots over central Alberta" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-c3nsZIRo5hMPkGPmsFIVoiEB9u9Pb4TfC7YW9bfsWxT-kxONTKpsbZHYk4m8NIVbkACjpa2GXAGy3TBz033DVSIh_LDarftkInXzhqAqCk-zPF-OQNczZ0OTmd21uR1Fut7w87RW2IeHHpOqmGFO4LNH8ry0bqWEyhV_FYcGqLHyiRRTh1O8wvFAUGz8F0C3yfdl1LU8pAvU7lQWvZNdRAu-vxYoW6Tf_YippiAr3h4Mn9RCNr9sHMV8KbNmnUPsNjJNb7b1_Pk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute top-4 left-4 bg-tertiary text-on-tertiary text-[10px] font-bold px-2 py-0.5 rounded">T + 48H</div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline font-bold text-white uppercase tracking-wider">Mid Term</h4>
+<span class="text-tertiary font-bold font-headline">ESCALATING</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-outline">Max FWI</span>
+<span class="text-white">38.9</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary w-[70%] h-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 72H Forecast -->
+<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(255,180,171,0.15)]">
+<div class="h-48 relative">
+<img class="w-full h-full object-cover" data-alt="abstract satellite data overlay showing lightning strike probability and dense atmospheric moisture layers over rocky mountain range" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUud6NvYiiTsOcqukOPu0xq6Z6UzfEBBOpFLXh8XdmW0R8GqPtHYucFC8GDdhB-f2M-sLEhbyX6Tn4t2oiBjeFD-_U7Ypg4frx_umgYRnooCmptgSolwReDToQPrKfvnVGJDtKoDSoY0Aoo2n2pTjGfdwT8TTNq0jLNy_vzvCGuPZdTecOlDrV6_A4YvlHvx4tS8wftzGar3UYDtb6goaLiuIkMMv1klfJvSlyGP5IyI3SeD1why72u7TQ_jTggE0un8HSyyl6zUk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute top-4 left-4 bg-outline text-white text-[10px] font-bold px-2 py-0.5 rounded">T + 72H</div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-center mb-4">
+<h4 class="font-headline font-bold text-white uppercase tracking-wider">Long Term</h4>
+<span class="text-outline font-bold font-headline">UNCERTAIN</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-outline">Max FWI</span>
+<span class="text-white">--.-</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-outline w-[15%] h-full opacity-50"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Provincial Trends Analysis -->
+<section class="bg-surface-container-low rounded-lg p-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div>
+<h3 class="font-headline text-2xl font-bold text-white mb-2">Regional Trend Matrix</h3>
+<p class="text-on-surface-variant text-sm">Comparative analysis of temperature and relative humidity across key observing stations.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-xs font-label text-outline uppercase tracking-widest">Temperature</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+<span class="text-xs font-label text-outline uppercase tracking-widest">Humidity</span>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/30">
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Station Identifier</th>
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Current</th>
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">24H Delta</th>
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">FWI Index</th>
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Trend Visualization</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="group hover:bg-surface-container transition-colors">
+<td class="py-5">
+<span class="block text-white font-bold font-headline">CALGARY-STAMPEDE</span>
+<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 51.0447 N | LON: 114.0719 W</span>
+</td>
+<td class="py-5 font-headline font-bold text-white">28.4°C</td>
+<td class="py-5 text-tertiary font-bold">+4.2°C</td>
+<td class="py-5">
+<span class="bg-secondary-container/20 text-secondary px-3 py-1 rounded-full text-[10px] font-bold border border-secondary/20">LOW RISK</span>
+</td>
+<td class="py-5">
+<div class="h-6 w-32 flex items-center">
+<svg class="w-full h-full stroke-primary fill-none stroke-2" viewbox="0 0 100 20">
+<path d="M0 15 Q 25 12, 50 18 T 100 5"></path>
+</svg>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-surface-container transition-colors">
+<td class="py-5">
+<span class="block text-white font-bold font-headline">EDMONTON-NORTH</span>
+<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 53.5461 N | LON: 113.4938 W</span>
+</td>
+<td class="py-5 font-headline font-bold text-white">30.1°C</td>
+<td class="py-5 text-tertiary font-bold">+2.8°C</td>
+<td class="py-5">
+<span class="bg-tertiary-container text-tertiary px-3 py-1 rounded-full text-[10px] font-bold">EXTREME</span>
+</td>
+<td class="py-5">
+<div class="h-6 w-32 flex items-center">
+<svg class="w-full h-full stroke-tertiary fill-none stroke-2" viewbox="0 0 100 20">
+<path d="M0 18 Q 25 5, 50 10 T 100 2"></path>
+</svg>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-surface-container transition-colors">
+<td class="py-5">
+<span class="block text-white font-bold font-headline">FORT MCMURRAY</span>
+<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 56.7264 N | LON: 111.3803 W</span>
+</td>
+<td class="py-5 font-headline font-bold text-white">33.5°C</td>
+<td class="py-5 text-tertiary font-bold">+1.2°C</td>
+<td class="py-5">
+<span class="bg-tertiary-container text-tertiary px-3 py-1 rounded-full text-[10px] font-bold">EXTREME</span>
+</td>
+<td class="py-5">
+<div class="h-6 w-32 flex items-center">
+<svg class="w-full h-full stroke-tertiary fill-none stroke-2" viewbox="0 0 100 20">
+<path d="M0 10 Q 25 15, 50 5 T 100 0"></path>
+</svg>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/10 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] md:hidden">
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="map">map</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="sensors">sensors</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Stations</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-lg px-5 py-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Risk</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Science</span>
+</a>
+</nav>
+</body></html>

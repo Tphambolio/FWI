@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Alberta FWI - Scientific Reference Guide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed": "#36003e",
+              "on-primary-container": "#008abb",
+              "tertiary-container": "#2f0037",
+              "on-primary-fixed": "#001e2c",
+              "secondary-fixed": "#6bff8f",
+              "on-primary": "#00354a",
+              "on-secondary-fixed": "#002109",
+              "surface-tint": "#7bd0ff",
+              "on-tertiary-container": "#ce3ae5",
+              "on-surface": "#dae2fd",
+              "inverse-primary": "#00668a",
+              "secondary-fixed-dim": "#4ae176",
+              "error": "#ffb4ab",
+              "surface-bright": "#31394d",
+              "on-error-container": "#ffdad6",
+              "surface": "#0b1326",
+              "on-background": "#dae2fd",
+              "primary-fixed-dim": "#7bd0ff",
+              "primary-fixed": "#c4e7ff",
+              "inverse-on-surface": "#283044",
+              "outline-variant": "#45464d",
+              "on-secondary-container": "#004119",
+              "on-tertiary-fixed-variant": "#7c008e",
+              "tertiary-fixed": "#ffd6fd",
+              "primary-container": "#001a27",
+              "on-secondary-fixed-variant": "#005321",
+              "on-secondary": "#003915",
+              "on-surface-variant": "#c6c6cd",
+              "on-error": "#690005",
+              "tertiary-fixed-dim": "#fbabff",
+              "outline": "#909097",
+              "surface-container-high": "#222a3d",
+              "secondary-container": "#00b954",
+              "surface-container-lowest": "#060e20",
+              "surface-container-low": "#131b2e",
+              "surface-dim": "#0b1326",
+              "secondary": "#4ae176",
+              "background": "#0b1326",
+              "error-container": "#93000a",
+              "on-primary-fixed-variant": "#004c69",
+              "primary": "#7bd0ff",
+              "inverse-surface": "#dae2fd",
+              "on-tertiary": "#580065",
+              "surface-container-highest": "#2d3449",
+              "surface-variant": "#2d3449",
+              "tertiary": "#fbabff",
+              "surface-container": "#171f33"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        background-color: #0b1326;
+        color: #dae2fd;
+        font-family: 'Inter', sans-serif;
+      }
+      .glass-card {
+        background: rgba(45, 52, 73, 0.6);
+        backdrop-filter: blur(20px);
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: #0b1326;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #45464d;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface selection:bg-primary selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
+<h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">Science &amp; FWI Guide</h1>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">calendar_today</span>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto min-h-screen">
+<!-- Hero Section -->
+<section class="mb-20">
+<div class="flex flex-col md:flex-row gap-12 items-end justify-between border-b border-outline-variant/20 pb-12">
+<div class="max-w-2xl">
+<span class="font-headline text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4 block">Analytical Framework</span>
+<h2 class="font-headline text-5xl md:text-7xl font-bold text-on-surface leading-none mb-6">The Synthetic Horizon</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed font-body">The Alberta Fire Weather Index (FWI) system is a scientifically-derived methodology used to predict fire behavior based on meteorological telemetry. It consists of six components that represent fuel moisture and fire potential.</p>
+</div>
+<div class="text-right hidden md:block">
+<div class="font-headline text-4xl text-primary font-light">53.93° N</div>
+<div class="font-label text-on-surface-variant/60 uppercase tracking-widest text-[10px]">Reference Coordinates</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid: The Components -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-20">
+<!-- FFMC: Fine Fuel Moisture Code -->
+<div class="md:col-span-8 glass-card rounded-lg p-8 relative overflow-hidden group border border-primary/5">
+<div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-9xl">grass</span>
+</div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary font-label text-[10px] tracking-widest mb-4">MOISTURE CODE</span>
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-2">FFMC</h3>
+<p class="text-on-surface-variant font-body mb-8 max-w-lg leading-relaxed">Fine Fuel Moisture Code. Numerical rating of the moisture content of litter and other cured fine fuels. A critical indicator of ease of ignition and flammability.</p>
+<div class="grid grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-4 rounded border-b border-primary">
+<span class="material-symbols-outlined text-primary mb-2">device_thermostat</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Temperature</div>
+<div class="text-sm font-bold text-on-surface">DRYING RATE</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b border-primary">
+<span class="material-symbols-outlined text-primary mb-2">air</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Wind</div>
+<div class="text-sm font-bold text-on-surface">RAPID EXCHANGE</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b border-secondary">
+<span class="material-symbols-outlined text-secondary mb-2">rainy</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Rain</div>
+<div class="text-sm font-bold text-on-surface">RECOVERY</div>
+</div>
+</div>
+</div>
+</div>
+<!-- DMC: Duff Moisture Code -->
+<div class="md:col-span-4 bg-surface-container-high rounded-lg p-8 flex flex-col justify-between">
+<div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">DMC</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed mb-6">Moisture content of loosely compacted organic layers of moderate depth. Responds to temperature and rain.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-1 bg-primary w-24"></div>
+<span class="text-xs font-label tracking-widest text-on-surface-variant">LITTER LAYER</span>
+</div>
+</div>
+<!-- DC: Drought Code -->
+<div class="md:col-span-4 bg-surface-container-low rounded-lg p-8 border border-outline-variant/10">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">DC</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed">Drought Code. Represents the moisture content of deep, compact organic layers. Indicators of seasonal drought and smoldering potential.</p>
+</div>
+<!-- ISI: Initial Spread Index -->
+<div class="md:col-span-8 glass-card rounded-lg p-8 flex flex-col md:flex-row gap-8 items-center border border-primary/10">
+<div class="w-full md:w-1/3 aspect-square rounded-full border-[12px] border-surface-container-lowest flex items-center justify-center relative">
+<div class="absolute inset-0 rounded-full border-t-[12px] border-primary rotate-45"></div>
+<div class="text-center">
+<div class="font-headline text-4xl font-bold text-primary">ISI</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase tracking-widest">Rate of Spread</div>
+</div>
+</div>
+<div class="w-full md:w-2/3">
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-4">Initial Spread Index</h3>
+<p class="text-on-surface-variant font-body mb-6">Calculated from FFMC and Wind Speed. It represents the potential rate of fire spread without the influence of fuel quantity.</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-xs font-label">
+<span class="text-on-surface-variant">FFMC IMPACT</span>
+<span class="text-primary">HIGH</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-1 rounded-full">
+<div class="bg-primary h-full w-[85%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- BUI: Buildup Index -->
+<div class="md:col-span-6 bg-surface-container-highest rounded-lg p-8 relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-2">BUI</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed mb-6">Total fuel available for combustion. A combination of DMC and DC values.</p>
+<div class="flex gap-4">
+<div class="px-4 py-2 bg-surface-container-lowest rounded text-on-surface text-xs font-bold">DMC</div>
+<span class="text-primary self-center">+</span>
+<div class="px-4 py-2 bg-surface-container-lowest rounded text-on-surface text-xs font-bold">DC</div>
+</div>
+</div>
+</div>
+<!-- FWI: Fire Weather Index -->
+<div class="md:col-span-6 bg-gradient-to-br from-tertiary-container to-surface-container-highest rounded-lg p-8 border border-tertiary/20">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline text-3xl font-bold text-tertiary mb-1">FWI</h3>
+<div class="text-[10px] font-label text-tertiary/60 uppercase tracking-widest">Primary Metric</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-4xl">warning</span>
+</div>
+<p class="text-on-surface font-body mb-6">The final numerical rating of fire intensity. It combines the Initial Spread Index (ISI) and the Buildup Index (BUI).</p>
+<div class="p-4 bg-surface-container-lowest/50 rounded-lg flex items-center gap-4">
+<span class="material-symbols-outlined text-tertiary">science</span>
+<span class="text-xs font-label text-on-surface-variant">General indicator of fire control difficulty.</span>
+</div>
+</div>
+</div>
+<!-- Technical Integration Visualizer -->
+<section class="mb-20">
+<h4 class="font-headline text-xl font-bold text-on-surface mb-8 border-l-4 border-primary pl-4 uppercase tracking-widest">Atmospheric Dependencies</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">thermostat</span>
+<div class="font-headline font-bold text-on-surface">Temperature</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Primary Drying Agent</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">humidity_low</span>
+<div class="font-headline font-bold text-on-surface">Rel. Humidity</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Fuel Equilibrium</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">air</span>
+<div class="font-headline font-bold text-on-surface">Wind Speed</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Oxygen &amp; Transport</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">rainy</span>
+<div class="font-headline font-bold text-on-surface">Precipitation</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Moisture Recharge</div>
+</div>
+</div>
+</section>
+<!-- Informational Footer Decoration -->
+<div class="relative h-[400px] w-full rounded-xl overflow-hidden mb-20">
+<img alt="abstract fire weather background" class="w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" data-alt="dramatic aerial view of a dense coniferous forest with morning mist and soft atmospheric light, cinematic composition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbXHbBIY-fNz6zvxg1G79XbboX2bRy5KUa3d23Wbbw53wNj2DkM_t1Ps8Ke22yZLaQ1Wk1_kldaPfP2xfiZXO-Rr-8EpZmBQ3LCf3m5cbMa078xeRgc_P0eAbp_mLNv08otZ-3H33Q6GqTTnVVLg6OLBnQMZsWRhlxMMcjZTHJJzJOOVn-sfoEJj28JUPGnXOWgvIAgC2_ou8GsiRXgRReyr-AgVWF61p7kUN4KCZIKpbKuQ8G1AOVrJspPdryKBJMIYGtalNBdhk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
+<div class="absolute bottom-12 left-12">
+<div class="font-headline text-6xl font-bold text-primary/20 leading-none">ALBERTA<br/>STANDARDS</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<button class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">map</span>
+<span class="font-label text-[10px] font-medium uppercase tracking-wider">Map</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">sensors</span>
+<span class="font-label text-[10px] font-medium uppercase tracking-wider">Stations</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">warning</span>
+<span class="font-label text-[10px] font-medium uppercase tracking-wider">Risk</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">menu_book</span>
+<span class="font-label text-[10px] font-medium uppercase tracking-wider">Science</span>
+</button>
+</nav>
+</body></html>

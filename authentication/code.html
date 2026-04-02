@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | Precision Observer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#171f33",
+              "on-error": "#690005",
+              "primary-fixed": "#c4e7ff",
+              "secondary": "#4ae176",
+              "inverse-on-surface": "#283044",
+              "surface": "#0b1326",
+              "on-secondary-fixed": "#002109",
+              "tertiary-fixed-dim": "#fbabff",
+              "tertiary-fixed": "#ffd6fd",
+              "tertiary": "#fbabff",
+              "surface-variant": "#2d3449",
+              "surface-dim": "#0b1326",
+              "on-tertiary-fixed": "#36003e",
+              "surface-tint": "#7bd0ff",
+              "on-primary": "#00354a",
+              "on-tertiary": "#580065",
+              "on-primary-fixed": "#001e2c",
+              "inverse-surface": "#dae2fd",
+              "primary": "#7bd0ff",
+              "on-surface": "#dae2fd",
+              "surface-container-lowest": "#060e20",
+              "background": "#0b1326",
+              "on-secondary-fixed-variant": "#005321",
+              "on-primary-fixed-variant": "#004c69",
+              "secondary-fixed-dim": "#4ae176",
+              "on-error-container": "#ffdad6",
+              "inverse-primary": "#00668a",
+              "tertiary-container": "#2f0037",
+              "on-tertiary-container": "#ce3ae5",
+              "on-background": "#dae2fd",
+              "error-container": "#93000a",
+              "error": "#ffb4ab",
+              "surface-bright": "#31394d",
+              "primary-fixed-dim": "#7bd0ff",
+              "primary-container": "#001a27",
+              "on-secondary": "#003915",
+              "secondary-container": "#00b954",
+              "on-secondary-container": "#004119",
+              "surface-container-high": "#222a3d",
+              "outline-variant": "#45464d",
+              "outline": "#909097",
+              "on-tertiary-fixed-variant": "#7c008e",
+              "secondary-fixed": "#6bff8f",
+              "surface-container-low": "#131b2e",
+              "on-surface-variant": "#c6c6cd",
+              "surface-container-highest": "#2d3449",
+              "on-primary-container": "#008abb"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.topo-bg {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCddURHrePkOY0wsdE81HWZwK9r-RzmOlLEBx3R8gAoOXpixCA9qb6XQMseyUvKmgopQsHkddqfjowBr3XsDgqJ6uMccM5Uvc77csklNbtryKppEtKibxXjG1ap47LUOomCYGBAtBTseeDBUNbinQ_3rG3U-dq6MLV40zhFwxPP_uVJ8xUMyyCjvuH4TsZg5uObWE4QNfYNB7cN2A89Aw8YxWxTMIEBx64kHpX4pORyHCLTKcPpr2tzVh0bd1ZWy8v9bj0dCx_40q8);
+    background-blend-mode: overlay
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body overflow-hidden">
+<!-- Background Layer -->
+<div class="fixed inset-0 z-0">
+<!-- Abstract Topo/Isobar Pattern Simulation -->
+<div class="absolute inset-0 opacity-20 topo-bg"></div>
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(123,208,255,0.05),_transparent_70%)]"></div>
+<img class="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-screen grayscale" data-alt="Abstract topographic map with intricate contour lines and dark slate textures under subtle cyan lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlKynNNNP47jh9S0bUD6hceYBZyBrJUVOflyZ98tXZHtfI5SM5rO47xUSHhBA5YBC3ufFqtH8hqhlqk1x_IEKpVuApVdsgPPWEFJGX7jS4mZvcrp9R1z-5CnrNwYESiQIZUP-4HgKztLB4pq_xjsx11peED12yurERLfIwEx6LAKMAn2787Y7WlBeZI9kKQAd_GTNcKIegYr1vD-IUDkWbUIL81w3NdxWZIZtCYWoVS9uz3auoqYn8BMXrTOx1NdibSWywoNjvPEo"/>
+<!-- Synthetic Horizon Glows -->
+<div class="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-tertiary/10 blur-[120px] rounded-full"></div>
+</div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex min-h-screen items-center justify-center p-6">
+<div class="w-full max-w-md">
+<!-- Branding Header -->
+<div class="text-center mb-12">
+<div class="inline-flex items-center justify-center p-3 rounded-xl bg-surface-container-highest mb-6 shadow-2xl">
+<span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<h1 class="font-headline text-3xl font-bold tracking-tight bg-gradient-to-br from-primary to-on-primary-container bg-clip-text text-transparent">
+                    Precision Observer
+                </h1>
+<p class="font-label text-on-surface-variant text-[10px] uppercase tracking-[0.3em] mt-2">
+                    Alberta Fire Weather Index System
+                </p>
+</div>
+<!-- Login Container (Glassmorphism) -->
+<div class="bg-surface-variant/60 backdrop-blur-xl rounded-xl p-8 shadow-2xl border-none ring-1 ring-white/5">
+<form class="space-y-6">
+<!-- Station ID Field -->
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold text-primary/80 uppercase tracking-wider ml-1">
+                            Station ID
+                        </label>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">sensors</span>
+</span>
+<input class="w-full bg-surface-container-highest border-none border-b-2 border-transparent focus:border-primary focus:ring-0 text-on-surface placeholder:text-on-surface-variant/30 font-headline tracking-widest pl-10 py-4 transition-all" placeholder="ALB-7742-FWI" type="text"/>
+</div>
+</div>
+<!-- Security Key Field -->
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold text-primary/80 uppercase tracking-wider ml-1">
+                            Security Key
+                        </label>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">encrypted</span>
+</span>
+<input class="w-full bg-surface-container-highest border-none border-b-2 border-transparent focus:border-primary focus:ring-0 text-on-surface placeholder:text-on-surface-variant/30 font-headline tracking-widest pl-10 py-4 transition-all" placeholder="••••••••••••" type="password"/>
+</div>
+</div>
+<!-- Actions -->
+<div class="pt-4 space-y-4">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-on-primary-container text-on-primary font-headline font-bold rounded-sm hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(123,208,255,0.3)]" type="submit">
+                            INITIALIZE SYSTEM ACCESS
+                        </button>
+<div class="flex items-center gap-4 py-2">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">or</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<button class="w-full flex items-center justify-center gap-3 py-3 bg-surface-container-low hover:bg-surface-container-high text-tertiary font-label text-xs font-medium border-none transition-colors group" type="button">
+<span class="material-symbols-outlined text-lg group-active:scale-90 transition-transform">fingerprint</span>
+                            BIO-METRIC UNLOCK
+                        </button>
+</div>
+</form>
+</div>
+<!-- Footer / Status Info -->
+<div class="mt-12 flex flex-col items-center gap-6">
+<!-- Network Status Indicator -->
+<div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+<span class="font-label text-[10px] font-bold text-secondary tracking-widest uppercase">
+                        Network Status: Secure
+                    </span>
+</div>
+<!-- Technical Meta -->
+<div class="grid grid-cols-3 gap-8 w-full">
+<div class="text-center">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-tighter">Latency</p>
+<p class="font-headline text-sm font-medium text-primary">12ms</p>
+</div>
+<div class="text-center border-x border-outline-variant/20">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-tighter">Encryption</p>
+<p class="font-headline text-sm font-medium text-primary">AES-256</p>
+</div>
+<div class="text-center">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-tighter">Version</p>
+<p class="font-headline text-sm font-medium text-primary">v4.2.0-p</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Aesthetic Decorative Corner Elements -->
+<div class="fixed top-8 left-8 z-20 pointer-events-none">
+<div class="font-headline text-[10px] text-primary/40 leading-none tracking-widest">
+            LAT: 53.5461° N<br/>
+            LONG: 113.4938° W
+        </div>
+</div>
+<div class="fixed bottom-8 right-8 z-20 pointer-events-none">
+<div class="w-32 h-1 bg-surface-container-highest relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary to-transparent w-1/2"></div>
+</div>
+<div class="font-headline text-[10px] text-primary/40 text-right mt-1 tracking-widest uppercase">
+            System Telemetry
+        </div>
+</div>
+</body></html>

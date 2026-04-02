@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PRECISION OBSERVER | Alberta FWI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-container": "#008abb",
+                        "on-secondary-fixed": "#002109",
+                        "background": "#0b1326",
+                        "inverse-surface": "#dae2fd",
+                        "on-tertiary-container": "#ce3ae5",
+                        "on-tertiary": "#580065",
+                        "on-secondary-fixed-variant": "#005321",
+                        "on-primary": "#00354a",
+                        "on-background": "#dae2fd",
+                        "on-surface-variant": "#c6c6cd",
+                        "surface-variant": "#2d3449",
+                        "secondary-fixed-dim": "#4ae176",
+                        "primary-fixed-dim": "#7bd0ff",
+                        "primary-fixed": "#c4e7ff",
+                        "tertiary": "#fbabff",
+                        "on-tertiary-fixed-variant": "#7c008e",
+                        "on-surface": "#dae2fd",
+                        "secondary": "#4ae176",
+                        "tertiary-fixed-dim": "#fbabff",
+                        "outline": "#909097",
+                        "outline-variant": "#45464d",
+                        "inverse-primary": "#00668a",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#0b1326",
+                        "secondary-container": "#00b954",
+                        "on-primary-fixed": "#001e2c",
+                        "surface-container-highest": "#2d3449",
+                        "surface": "#0b1326",
+                        "on-primary-fixed-variant": "#004c69",
+                        "on-tertiary-fixed": "#36003e",
+                        "secondary-fixed": "#6bff8f",
+                        "primary": "#7bd0ff",
+                        "tertiary-fixed": "#ffd6fd",
+                        "on-error": "#690005",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#222a3d",
+                        "on-secondary-container": "#004119",
+                        "on-secondary": "#003915",
+                        "surface-container-lowest": "#060e20",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#131b2e",
+                        "surface-tint": "#7bd0ff",
+                        "primary-container": "#001a27",
+                        "surface-bright": "#31394d",
+                        "tertiary-container": "#2f0037",
+                        "inverse-on-surface": "#283044",
+                        "surface-container": "#171f33"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .glass-panel {
+            background: rgba(45, 52, 73, 0.6);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body selection:bg-primary/30 antialiased overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-[100] bg-[#0b1326]/90 backdrop-blur-2xl bg-gradient-to-b from-[#16203a] to-[#0b1326] shadow-[0_20px_40px_rgba(6,14,32,0.4)] px-6 h-16 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#7bd0ff]" data-icon="radar">radar</span>
+<h1 class="text-lg font-black text-[#7bd0ff] tracking-[0.2em] font-['Space_Grotesk'] uppercase">PRECISION OBSERVER</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-8">
+<a class="font-['Space_Grotesk'] font-bold tracking-tighter uppercase text-slate-400 hover:text-[#7bd0ff] transition-all duration-300" href="#">Map</a>
+<a class="font-['Space_Grotesk'] font-bold tracking-tighter uppercase text-[#7bd0ff] transition-all duration-300" href="#">Stations</a>
+<a class="font-['Space_Grotesk'] font-bold tracking-tighter uppercase text-slate-400 hover:text-[#7bd0ff] transition-all duration-300" href="#">Risk</a>
+<a class="font-['Space_Grotesk'] font-bold tracking-tighter uppercase text-slate-400 hover:text-[#7bd0ff] transition-all duration-300" href="#">Science</a>
+</div>
+<button class="active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[#7bd0ff]" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-28 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen">
+<!-- System Health Dashboard (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+<div class="md:col-span-2 bg-surface-container-high p-6 flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[120px]" data-icon="hub">hub</span>
+</div>
+<div>
+<p class="font-label text-label-md text-primary tracking-widest uppercase mb-1">Network Capacity</p>
+<h2 class="font-headline text-[3.5rem] font-bold leading-none text-on-surface">98.4<span class="text-xl text-primary-fixed-dim">%</span></h2>
+</div>
+<div class="mt-4 flex items-center gap-2">
+<div class="h-1 flex-1 bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary w-[98.4%]"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Optimal</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 flex flex-col justify-between">
+<div>
+<p class="font-label text-label-md text-secondary tracking-widest uppercase mb-1">Active Nodes</p>
+<h2 class="font-headline text-[3.5rem] font-bold leading-none text-on-surface">142</h2>
+</div>
+<div class="flex items-center gap-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+<span>ALL RTUs RESPONDING</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 flex flex-col justify-between">
+<div>
+<p class="font-label text-label-md text-tertiary tracking-widest uppercase mb-1">System Latency</p>
+<h2 class="font-headline text-[3.5rem] font-bold leading-none text-on-surface">12<span class="text-xl text-tertiary">ms</span></h2>
+</div>
+<div class="flex items-center gap-2 text-tertiary text-xs font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="bolt">bolt</span>
+<span>ULTRA-LOW OVERHEAD</span>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Stations List (Left / Main) -->
+<div class="lg:col-span-8">
+<div class="flex justify-between items-end mb-6">
+<h3 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Remote Telemetry Units</h3>
+<div class="flex gap-4">
+<div class="bg-surface-container-lowest flex items-center px-4 py-2 border-b-2 border-primary/50">
+<span class="material-symbols-outlined text-slate-400 mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs font-bold tracking-widest placeholder:text-slate-600" placeholder="FILTER STATIONS..." type="text"/>
+</div>
+</div>
+</div>
+<div class="space-y-1">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+<div class="col-span-4">Station ID / Location</div>
+<div class="col-span-3">Status</div>
+<div class="col-span-3">FWI Metric</div>
+<div class="col-span-2 text-right">Uptime</div>
+</div>
+<!-- Station Row: High Level -->
+<div class="grid grid-cols-12 gap-4 items-center px-4 py-5 bg-surface-container-low hover:bg-surface-container transition-colors group">
+<div class="col-span-4 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(74,225,118,0.6)]"></div>
+<div>
+<p class="font-headline font-bold text-on-surface group-hover:text-primary transition-colors">HL-7702</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">High Level - Zone A</p>
+</div>
+</div>
+<div class="col-span-3">
+<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">LIVE</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-baseline gap-1">
+<span class="font-headline font-bold text-tertiary">42.8</span>
+<span class="text-[10px] text-slate-500">EXTREME</span>
+</div>
+</div>
+<div class="col-span-2 text-right">
+<span class="font-['Space_Grotesk'] text-on-surface text-sm">99.9%</span>
+</div>
+</div>
+<!-- Station Row: Grande Prairie -->
+<div class="grid grid-cols-12 gap-4 items-center px-4 py-5 bg-surface-container transition-colors group">
+<div class="col-span-4 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(123,208,255,0.6)]"></div>
+<div>
+<p class="font-headline font-bold text-on-surface group-hover:text-primary transition-colors">GP-9910</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Grande Prairie Central</p>
+</div>
+</div>
+<div class="col-span-3">
+<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">SYNCING</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-baseline gap-1">
+<span class="font-headline font-bold text-secondary">18.4</span>
+<span class="text-[10px] text-slate-500">MODERATE</span>
+</div>
+</div>
+<div class="col-span-2 text-right">
+<span class="font-['Space_Grotesk'] text-on-surface text-sm">94.2%</span>
+</div>
+</div>
+<!-- Additional Mock Rows -->
+<div class="grid grid-cols-12 gap-4 items-center px-4 py-5 bg-surface-container-low hover:bg-surface-container transition-colors group">
+<div class="col-span-4 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<p class="font-headline font-bold text-on-surface">FM-4401</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Fort McMurray North</p>
+</div>
+</div>
+<div class="col-span-3">
+<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">LIVE</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-baseline gap-1">
+<span class="font-headline font-bold text-tertiary">38.2</span>
+<span class="text-[10px] text-slate-500">HIGH</span>
+</div>
+</div>
+<div class="col-span-2 text-right">
+<span class="font-['Space_Grotesk'] text-on-surface text-sm">99.1%</span>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-4 items-center px-4 py-5 bg-surface-container transition-colors group">
+<div class="col-span-4 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<p class="font-headline font-bold text-on-surface">SL-1205</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-tighter">Slave Lake Basin</p>
+</div>
+</div>
+<div class="col-span-3">
+<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">LIVE</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-baseline gap-1">
+<span class="font-headline font-bold text-on-primary-container">6.2</span>
+<span class="text-[10px] text-slate-500">LOW</span>
+</div>
+</div>
+<div class="col-span-2 text-right">
+<span class="font-['Space_Grotesk'] text-on-surface text-sm">100%</span>
+</div>
+</div>
+<div class="mt-6 flex justify-center">
+<button class="bg-surface-container-highest px-6 py-2 text-[10px] font-bold tracking-widest text-primary hover:bg-primary hover:text-on-primary transition-all">LOAD 138 MORE STATIONS</button>
+</div>
+</div>
+</div>
+<!-- Alerts Sidebar (Right) -->
+<div class="lg:col-span-4 space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="font-headline text-xl font-bold tracking-tight text-on-surface">Recent Alerts</h3>
+<span class="bg-tertiary-container text-tertiary text-[10px] px-2 py-0.5 font-black uppercase rounded-full">8 Critical</span>
+</div>
+<div class="space-y-4">
+<!-- Extreme Risk Alert 1 -->
+<div class="glass-panel p-5 border-l-4 border-tertiary shadow-xl relative group">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg" data-icon="warning">warning</span>
+<span class="text-[10px] font-bold text-tertiary uppercase tracking-[0.2em]">Extreme Risk</span>
+</div>
+<span class="text-[10px] font-medium text-slate-500">14:02 MST</span>
+</div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-2">HL-7702 (High Level)</h4>
+<p class="text-sm text-slate-400 leading-relaxed mb-4">Relative humidity dropped below 15% with sustained winds at 45km/h. Immediate observation required.</p>
+<button class="w-full py-2 bg-gradient-to-r from-tertiary to-on-tertiary-container text-on-tertiary font-bold text-xs uppercase tracking-widest group-active:scale-95 transition-transform">Initiate Protocol</button>
+</div>
+<!-- Extreme Risk Alert 2 -->
+<div class="glass-panel p-5 border-l-4 border-tertiary shadow-xl relative overflow-hidden">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg" data-icon="warning">warning</span>
+<span class="text-[10px] font-bold text-tertiary uppercase tracking-[0.2em]">Extreme Risk</span>
+</div>
+<span class="text-[10px] font-medium text-slate-500">12:48 MST</span>
+</div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-2">GP-9910 (Grande Prairie)</h4>
+<p class="text-sm text-slate-400 leading-relaxed mb-4">Sensors detecting rapid temperature spikes (+4°C in 20 min). Risk of local ignition significantly elevated.</p>
+<button class="w-full py-2 bg-surface-container-highest text-tertiary font-bold text-xs uppercase tracking-widest hover:bg-tertiary hover:text-on-tertiary transition-all">View Analytics</button>
+</div>
+<!-- Map Context Card -->
+<div class="bg-surface-container-highest rounded-xl overflow-hidden aspect-square relative">
+<img alt="Topographic heat map of Alberta showing orange and purple risk gradients" class="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-700" data-alt="Topographic heat map of Alberta showing extreme fire risk zones in vibrant purple and neon pink gradients over deep charcoal terrain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMbX42GfoTxllO22RA6Gqi5OCzNTIOz3DAnqMj4NE-dgxolzKur7vH2pylGzvS3R75L46g0F5h0WuYFys9xzuzuUixb2NYZQdnA_RKPtNwlVE2FnHJb1QMwRbDxgKC5gVJTCQXu6chYzTMUveDc5nIfQKX2Ba2YGh9CgJVjzpaRyl5o6gMcvpd2fqO-Yj-zoT5hUHtHgPL2GYYDhgSuZ6hV01LHF12W3YTUM1JI1IikJm0ecoJAjmZJFGk06lFt_RYovCTl-N-8WE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<p class="font-label text-[10px] text-primary font-black uppercase tracking-widest mb-1">Live Feed</p>
+<p class="font-headline text-lg font-bold">Risk Distribution</p>
+</div>
+<div class="absolute top-4 right-4 flex flex-col gap-2">
+<div class="w-8 h-8 rounded bg-background/80 backdrop-blur-md flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</div>
+<div class="w-8 h-8 rounded bg-background/80 backdrop-blur-md flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="remove">remove</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/10 flex justify-around items-center px-4 pb-safe pt-2 h-20">
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="map">map</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Map</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-lg px-5 py-2">
+<span class="material-symbols-outlined mb-1" data-icon="sensors">sensors</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Stations</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="warning">warning</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Risk</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 px-5 py-2 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Science</span>
+</button>
+</nav>
+<!-- Contextual FAB (Station Deploy - suppressed on alert heavy screens but used here for utility) -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-gradient-to-br from-primary to-on-primary-container rounded shadow-[0_20px_40px_rgba(123,208,255,0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-on-primary" data-icon="add_location">add_location</span>
+</button>
+</body></html>

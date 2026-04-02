@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Alberta FWI - Fire Weather Index</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#36003e",
+                        "on-primary-container": "#008abb",
+                        "tertiary-container": "#2f0037",
+                        "on-primary-fixed": "#001e2c",
+                        "secondary-fixed": "#6bff8f",
+                        "on-primary": "#00354a",
+                        "on-secondary-fixed": "#002109",
+                        "surface-tint": "#7bd0ff",
+                        "on-tertiary-container": "#ce3ae5",
+                        "on-surface": "#dae2fd",
+                        "inverse-primary": "#00668a",
+                        "secondary-fixed-dim": "#4ae176",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#31394d",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#0b1326",
+                        "on-background": "#dae2fd",
+                        "primary-fixed-dim": "#7bd0ff",
+                        "primary-fixed": "#c4e7ff",
+                        "inverse-on-surface": "#283044",
+                        "outline-variant": "#45464d",
+                        "on-secondary-container": "#004119",
+                        "on-tertiary-fixed-variant": "#7c008e",
+                        "tertiary-fixed": "#ffd6fd",
+                        "primary-container": "#001a27",
+                        "on-secondary-fixed-variant": "#005321",
+                        "on-secondary": "#003915",
+                        "on-surface-variant": "#c6c6cd",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#fbabff",
+                        "outline": "#909097",
+                        "surface-container-high": "#222a3d",
+                        "secondary-container": "#00b954",
+                        "surface-container-lowest": "#060e20",
+                        "surface-container-low": "#131b2e",
+                        "surface-dim": "#0b1326",
+                        "secondary": "#4ae176",
+                        "background": "#0b1326",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004c69",
+                        "primary": "#7bd0ff",
+                        "inverse-surface": "#dae2fd",
+                        "on-tertiary": "#580065",
+                        "surface-container-highest": "#2d3449",
+                        "surface-variant": "#2d3449",
+                        "tertiary": "#fbabff",
+                        "surface-container": "#171f33"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(45, 52, 73, 0.6);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-[60] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#7bd0ff] cursor-pointer active:opacity-70 transition-opacity" data-icon="menu">menu</span>
+<h1 class="text-[#7bd0ff] font-headline text-xl font-bold uppercase tracking-widest">Alberta FWI</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex flex-col items-end">
+<span class="font-label text-[10px] uppercase tracking-tighter text-slate-400">Current Observation</span>
+<span class="font-headline font-bold text-sm text-[#7bd0ff]">OCTOBER 24, 2023</span>
+</div>
+<span class="material-symbols-outlined text-[#7bd0ff] cursor-pointer active:opacity-70 transition-opacity" data-icon="calendar_today">calendar_today</span>
+</div>
+</header>
+<!-- Main Content (Canvas) -->
+<main class="relative min-h-screen pt-[72px] pb-[96px] overflow-hidden">
+<!-- Map Canvas (Background) -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover grayscale-[0.2] brightness-[0.4] contrast-[1.2]" data-alt="topographical satellite map of Alberta Canada with colored overlays showing forest regions and elevation gradients" data-location="Alberta" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGaBr8JWVStvpI34bjvpCXUEZuttQgUjp0qhDE5TTROI8sR9qOWD2xXNwDNWs-WbDcbrgovZEzoaWuElDr1RQuZcaNa6CZnff3e_-p3OJpI1Ju_iVpz1VS6BmjprQ5vvVSadhlbU0ph7BqB_452hqy24qg9JYIqn4EwIFRwnecL76dfET4l-o9G02IZDoAJIW8TVCJ9TKXAJTYpYiz9kzAL2IDBRsiOV20oRg_79Whut9dPHxZElacIUkru4eKnn8SoKkuzFS9vlA"/>
+<!-- Risk Heatmap Simulation Overlay -->
+<div class="absolute inset-0 opacity-40 mix-blend-screen bg-gradient-to-tr from-secondary/20 via-surface/0 to-tertiary/40"></div>
+</div>
+<!-- Global Status Bar (Top Floating) -->
+<div class="relative z-10 px-6 pt-4">
+<div class="max-w-7xl mx-auto flex justify-between items-start">
+<div class="glass-panel p-4 rounded-xl border-l-2 border-tertiary shadow-2xl">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></div>
+<span class="font-label text-xs uppercase tracking-widest text-tertiary-fixed-dim">Provincial Alert Level</span>
+</div>
+<div class="mt-1 font-headline text-2xl font-bold text-on-surface">EXTREME RISK</div>
+<div class="font-label text-[10px] text-slate-400 mt-1 uppercase">Central &amp; Northern Boreal Regions</div>
+</div>
+<!-- Right Side Controls -->
+<div class="flex flex-col gap-3 items-end">
+<button class="glass-panel p-3 rounded-lg text-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+</button>
+<button class="glass-panel p-3 rounded-lg text-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bento Grid Data Panels -->
+<div class="absolute bottom-[110px] left-0 w-full px-6 z-20">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4">
+<!-- Risk Indicator (Currently Selected) -->
+<div class="md:col-span-4 glass-panel p-6 rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-label text-[10px] uppercase tracking-widest text-primary">Active Selection</h2>
+<p class="font-headline text-xl font-bold">Fort McMurray Sector</p>
+</div>
+<span class="material-symbols-outlined text-tertiary" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="mt-6 flex items-baseline gap-2">
+<span class="font-headline text-5xl font-bold text-tertiary">84</span>
+<span class="font-label text-sm text-slate-400">FWI INDEX</span>
+</div>
+</div>
+<div class="mt-8 space-y-3">
+<div class="flex justify-between text-xs font-label uppercase">
+<span class="text-slate-400">Duff Moisture Code</span>
+<span class="text-on-surface">112.4</span>
+</div>
+<div class="h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[88%]"></div>
+</div>
+<div class="flex justify-between text-xs font-label uppercase">
+<span class="text-slate-400">Fine Fuel Moisture</span>
+<span class="text-on-surface">91.2</span>
+</div>
+<div class="h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[91%]"></div>
+</div>
+</div>
+</div>
+<!-- Live Sensors Cluster -->
+<div class="md:col-span-5 grid grid-cols-2 gap-4">
+<div class="glass-panel p-4 rounded-xl flex flex-col justify-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="air">air</span>
+<span class="font-label text-[10px] uppercase text-slate-400">Wind Velocity</span>
+<span class="font-headline text-2xl font-bold">24 km/h</span>
+<span class="font-label text-[10px] text-secondary mt-1">NNE Vector</span>
+</div>
+<div class="glass-panel p-4 rounded-xl flex flex-col justify-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="thermostat">thermostat</span>
+<span class="font-label text-[10px] uppercase text-slate-400">Ambient Temp</span>
+<span class="font-headline text-2xl font-bold">29.4°C</span>
+<span class="font-label text-[10px] text-tertiary mt-1">+4.2° Deviation</span>
+</div>
+<div class="col-span-2 glass-panel p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-primary/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="visibility">visibility</span>
+</div>
+<div>
+<span class="font-label text-[10px] uppercase text-slate-400">Visibility Score</span>
+<p class="font-body text-sm font-medium">Optimal Detection Range</p>
+</div>
+</div>
+<span class="font-headline text-xl font-bold">14.2 km</span>
+</div>
+</div>
+<!-- Quick Actions / Timeline Scrubber -->
+<div class="md:col-span-3 flex flex-col gap-4">
+<div class="flex-1 glass-panel p-4 rounded-xl flex flex-col">
+<span class="font-label text-[10px] uppercase tracking-widest text-slate-400 mb-4">Risk Projections</span>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium">T + 24h</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container text-tertiary text-[10px] font-bold">EXTREME</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium">T + 48h</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container text-tertiary text-[10px] font-bold">EXTREME</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium">T + 72h</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary text-[10px] font-bold">MODERATE</span>
+</div>
+</div>
+</div>
+<button class="bg-gradient-to-r from-primary to-on-primary-container text-on-primary-fixed font-headline font-bold py-3 rounded-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined" data-icon="ios_share">ios_share</span>
+                        GENERATE REPORT
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 shadow-[0_-10px_30px_rgba(6,14,32,0.6)] flex justify-around items-center px-4 pb-6 pt-3">
+<!-- Active Tab: Map -->
+<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="map" data-weight="fill" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider mt-1">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider mt-1">Stations</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider mt-1">Risk</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider mt-1">Science</span>
+</a>
+</nav>
+<!-- Map Floating Controls (Right) -->
+<div class="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
+<div class="glass-panel p-2 rounded-lg flex flex-col gap-4">
+<div class="flex flex-col items-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<div class="w-0.5 h-8 bg-gradient-to-b from-tertiary via-secondary to-primary rounded-full"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+</div>
+<span class="font-label text-[10px] [writing-mode:vertical-lr] rotate-180 uppercase tracking-widest text-slate-400">Risk Scale</span>
+</div>
+</div>
+</body></html>
