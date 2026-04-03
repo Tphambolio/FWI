@@ -96,7 +96,7 @@
 <header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">menu</span>
-<h1 class="font-['Space_Grotesk'] text-xl font-bold tracking-tight text-[#7bd0ff]">Station: Slave Lake</h1>
+<h1 class="font-['Space_Grotesk'] text-xl font-bold tracking-tight text-[#7bd0ff]">Station: <span data-fwi="station">Edmonton Area</span></h1>
 </div>
 <div class="flex items-center gap-2">
 <span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">calendar_today</span>
@@ -123,7 +123,7 @@
 <div class="lg:col-span-4 flex flex-col gap-4">
 <div class="surface-container-high p-6 rounded-lg flex-1 border-b-2 border-primary">
 <div class="text-[10px] font-label uppercase tracking-widest text-primary mb-1">Temperature</div>
-<div class="font-headline text-5xl font-bold tracking-tighter">24.2<span class="text-2xl font-light text-on-surface-variant">°C</span></div>
+<div class="font-headline text-5xl font-bold tracking-tighter" data-fwi="temp">24.2°C</div>
 <div class="mt-4 flex items-center gap-2 text-secondary">
 <span class="material-symbols-outlined text-sm">trending_up</span>
 <span class="text-xs font-label">+1.4° from last hour</span>
@@ -132,16 +132,16 @@
 <div class="grid grid-cols-2 gap-4">
 <div class="surface-container p-4 rounded-lg">
 <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">RH</div>
-<div class="font-headline text-2xl font-bold">32%</div>
+<div class="font-headline text-2xl font-bold" data-fwi="rh">32%</div>
 </div>
 <div class="surface-container p-4 rounded-lg">
 <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Wind Speed</div>
-<div class="font-headline text-2xl font-bold">18 <span class="text-xs font-light">km/h</span></div>
+<div class="font-headline text-2xl font-bold" data-fwi="wind">18 km/h</div>
 </div>
 </div>
 <div class="surface-container p-6 rounded-lg border-b-2 border-outline-variant/15">
 <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Precipitation (24h)</div>
-<div class="font-headline text-2xl font-bold">0.0 <span class="text-xs font-light">mm</span></div>
+<div class="font-headline text-2xl font-bold" data-fwi="rain">0.0 mm</div>
 </div>
 </div>
 </div>
@@ -161,11 +161,11 @@
 <h3 class="font-headline font-bold text-lg leading-tight">FFMC</h3>
 <p class="text-[10px] text-on-surface-variant font-label uppercase">Fine Fuel Moisture Code</p>
 </div>
-<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold">EXTREME</span>
+<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="ffmc">EXTREME</span>
 </div>
-<div class="font-headline text-4xl font-bold mb-4">91.4</div>
+<div class="font-headline text-4xl font-bold mb-4" data-fwi="ffmc">91.4</div>
 <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary" style="width: 91.4%"></div>
+<div class="h-full bg-tertiary" style="width: 91.4%" data-fwi-bar="ffmc"></div>
 </div>
 <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Indicates ease of ignition and flammability of fine surface fuels.</p>
 </div>
@@ -176,11 +176,11 @@
 <h3 class="font-headline font-bold text-lg leading-tight">DMC</h3>
 <p class="text-[10px] text-on-surface-variant font-label uppercase">Duff Moisture Code</p>
 </div>
-<span class="px-2 py-1 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-bold">MODERATE</span>
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-bold" data-fwi-rating="dmc">MODERATE</span>
 </div>
-<div class="font-headline text-4xl font-bold mb-4">42.8</div>
+<div class="font-headline text-4xl font-bold mb-4" data-fwi="dmc">42.8</div>
 <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-secondary" style="width: 42.8%"></div>
+<div class="h-full bg-secondary" style="width: 42.8%" data-fwi-bar="dmc"></div>
 </div>
 <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Average moisture content of loosely compacted organic layers.</p>
 </div>
@@ -191,11 +191,11 @@
 <h3 class="font-headline font-bold text-lg leading-tight">DC</h3>
 <p class="text-[10px] text-on-surface-variant font-label uppercase">Drought Code</p>
 </div>
-<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold">HIGH</span>
+<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="dc">HIGH</span>
 </div>
-<div class="font-headline text-4xl font-bold mb-4">315.0</div>
+<div class="font-headline text-4xl font-bold mb-4" data-fwi="dc">315.0</div>
 <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary-fixed-dim" style="width: 65%"></div>
+<div class="h-full bg-tertiary-fixed-dim" style="width: 65%" data-fwi-bar="dc"></div>
 </div>
 <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Represents deep, compact organic layers and seasonal drought.</p>
 </div>
@@ -206,11 +206,11 @@
 <h3 class="font-headline font-bold text-lg leading-tight">ISI</h3>
 <p class="text-[10px] text-on-surface-variant font-label uppercase">Initial Spread Index</p>
 </div>
-<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold">EXTREME</span>
+<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="isi">EXTREME</span>
 </div>
-<div class="font-headline text-4xl font-bold mb-4">15.2</div>
+<div class="font-headline text-4xl font-bold mb-4" data-fwi="isi">15.2</div>
 <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary" style="width: 82%"></div>
+<div class="h-full bg-tertiary" style="width: 82%" data-fwi-bar="isi"></div>
 </div>
 </div>
 <!-- BUI -->
@@ -220,11 +220,11 @@
 <h3 class="font-headline font-bold text-lg leading-tight">BUI</h3>
 <p class="text-[10px] text-on-surface-variant font-label uppercase">Build-up Index</p>
 </div>
-<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold">HIGH</span>
+<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="bui">HIGH</span>
 </div>
-<div class="font-headline text-4xl font-bold mb-4">64.1</div>
+<div class="font-headline text-4xl font-bold mb-4" data-fwi="bui">64.1</div>
 <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary-fixed-dim" style="width: 64.1%"></div>
+<div class="h-full bg-tertiary-fixed-dim" style="width: 64.1%" data-fwi-bar="bui"></div>
 </div>
 </div>
 <!-- Final FWI Score (Highlight) -->
@@ -236,8 +236,8 @@
 </div>
 <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">warning</span>
 </div>
-<div class="font-headline text-6xl font-black mb-4">32.4</div>
-<div class="text-sm font-bold uppercase tracking-widest">Extreme Risk Level</div>
+<div class="font-headline text-6xl font-black mb-4" data-fwi="fwi">32.4</div>
+<div class="text-sm font-bold uppercase tracking-widest" data-fwi="danger-label">Extreme Risk Level</div>
 <p class="mt-4 text-xs opacity-90 font-medium">Conditions represent peak potential for high-intensity wildfire behavior and rapid spread.</p>
 </div>
 </div>
@@ -308,4 +308,6 @@
 <span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span>
 </a>
 </nav>
+<script src="../fwi.js"></script>
+<script>FWI.initFWI(53.5344, -113.4903, 'Edmonton Area');</script>
 </body></html>
