@@ -258,4 +258,197 @@ function buildStationPicker() {
   initFWI(lat, lng, name);
 }
 
-window.FWI = { initFWI, buildStationPicker, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };
+// ─── Regional Summary ────────────────────────────────────────────────────────
+
+const REGIONS = [
+  { name: 'Fort McMurray',  sector: 'Northeast Boreal',  lat: 56.650, lng: -111.217 },
+  { name: 'Peace River',    sector: 'Northwest Sector',  lat: 56.233, lng: -117.283 },
+  { name: 'Slave Lake',     sector: 'Lesser Slave Zone', lat: 55.283, lng: -114.767 },
+  { name: 'Athabasca',      sector: 'Central-North',     lat: 54.717, lng: -113.283 },
+  { name: 'Edmonton',       sector: 'Central Alberta',   lat: 53.534, lng: -113.490 },
+  { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
+];
+
+const DANGER_COLORS = {
+  'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
+  'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
+  'High':      { bar: 'bg-tertiary-fixed-dim', badge: 'bg-[#fbabff]/10 text-tertiary',                    dot: 'bg-tertiary-fixed-dim shadow-[0_0_8px_#fbabff]' },
+  'Very High': { bar: 'bg-tertiary',           badge: 'bg-tertiary-container text-tertiary-fixed-dim',    dot: 'bg-tertiary-fixed-dim shadow-[0_0_8px_#fbabff]' },
+  'Extreme':   { bar: 'bg-tertiary',           badge: 'bg-tertiary-container text-tertiary',              dot: 'bg-tertiary shadow-[0_0_8px_#fbabff]' },
+};
+
+function regionCard(name, sector, r) {
+  const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
+  return `
+<div class="group relative overflow-hidden bg-surface-container hover:bg-surface-container-high transition-all duration-300 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+  <div class="flex items-center gap-6">
+    <div class="w-1.5 h-16 ${c.bar} rounded-full"></div>
+    <div>
+      <h3 class="font-headline text-2xl font-bold text-on-surface">${name}</h3>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="material-symbols-outlined text-[14px] text-on-surface-variant">location_on</span>
+        <span class="font-label text-xs text-on-surface-variant uppercase tracking-widest">${sector}</span>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-4 md:gap-12">
+    <div class="grid grid-cols-2 gap-x-8 gap-y-1">
+      <div>
+        <span class="font-label text-[10px] text-on-surface-variant uppercase block">Temp</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.temp.toFixed(1)}°C</span>
+      </div>
+      <div>
+        <span class="font-label text-[10px] text-on-surface-variant uppercase block">Wind</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.wind.toFixed(0)} km/h</span>
+      </div>
+      <div>
+        <span class="font-label text-[10px] text-on-surface-variant uppercase block">FWI</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${r.fwi.toFixed(1)}</span>
+      </div>
+      <div>
+        <span class="font-label text-[10px] text-on-surface-variant uppercase block">RH</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.rh.toFixed(0)}%</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 ${c.badge} px-4 py-2 rounded-full">
+      <span class="w-2 h-2 rounded-full ${c.dot}"></span>
+      <span class="font-label text-xs font-bold tracking-widest uppercase">${r.danger} Risk</span>
+    </div>
+  </div>
+</div>`;
+}
+
+async function buildRegionalSummary() {
+  const list = document.getElementById('fwi-region-list');
+  if (!list) return;
+  try {
+    const results = await Promise.all(REGIONS.map(async reg => {
+      const w = await fetchWeather(reg.lat, reg.lng);
+      return { ...reg, result: calculateFWI(w) };
+    }));
+
+    list.innerHTML = results.map(r => regionCard(r.name, r.sector, r.result)).join('');
+
+    // Update header stats
+    const extremeCount = results.filter(r => r.result.danger === 'Extreme').length;
+    const avgRH = results.reduce((s, r) => s + r.result.weather.rh, 0) / results.length;
+    const el1 = document.getElementById('fwi-extreme-count');
+    const el2 = document.getElementById('fwi-avg-rh');
+    if (el1) el1.textContent = `${extremeCount} Extreme`;
+    if (el2) el2.textContent = `${avgRH.toFixed(0)}%`;
+  } catch (e) {
+    list.innerHTML = '<p class="text-red-400 text-sm">Failed to load regional data.</p>';
+    console.warn('[FWI Regional]', e);
+  }
+}
+
+// ─── Forecast & Trends ───────────────────────────────────────────────────────
+
+/** Fetch 7-day hourly forecast from Open-Meteo, return noon obs for each day. */
+async function fetchForecast(lat, lng) {
+  const url = `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lat}&longitude=${lng}` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
+    `&timezone=auto&forecast_days=7`;
+  const res = await fetch(url);
+  const d = await res.json();
+  const h = d.hourly;
+  const days = [];
+  // Pick hour index 12 (noon) for each of 7 days
+  for (let day = 0; day < 7; day++) {
+    const i = day * 24 + 12;
+    const date = new Date(h.time[i]);
+    days.push({
+      temp:  h.temperature_2m[i],
+      rh:    h.relative_humidity_2m[i],
+      wind:  h.wind_speed_10m[i],
+      rain:  h.precipitation[i],
+      month: date.getMonth() + 1,
+      label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
+    });
+  }
+  return days;
+}
+
+/** Chain Van Wagner through multiple days, returning FWI result per day. */
+function calcMultiDay(days) {
+  let prev = { ...STARTUP };
+  return days.map(w => {
+    const r = calculateFWI(w, prev);
+    prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
+    return { ...r, label: w.label };
+  });
+}
+
+function trendLabel(fwi, prevFwi) {
+  const delta = fwi - prevFwi;
+  if (delta > 5)  return 'ESCALATING';
+  if (delta < -5) return 'IMPROVING';
+  return 'STABLE';
+}
+
+async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
+  try {
+    const days = await fetchForecast(lat, lng);
+    const results = calcMultiDay(days);
+    const maxFWI = Math.max(...results.map(r => r.fwi), 1);
+
+    // T+24h (day index 1), T+48h (2), T+72h (3)
+    const setCard = (valId, barId, labelId, r, prev) => {
+      const v = document.getElementById(valId);
+      const b = document.getElementById(barId);
+      const l = document.getElementById(labelId);
+      if (v) v.textContent = r.fwi.toFixed(1);
+      if (b) b.style.width = Math.min(100, (r.fwi / 50) * 100).toFixed(1) + '%';
+      if (l) l.textContent = trendLabel(r.fwi, prev.fwi);
+    };
+    setCard('fwi-f24-val', 'fwi-f24-bar', 'fwi-f24-label', results[1], results[0]);
+    setCard('fwi-f48-val', 'fwi-f48-bar', 'fwi-f48-label', results[2], results[1]);
+    setCard('fwi-f72-val', 'fwi-f72-bar', 'fwi-f72-label', results[3], results[2]);
+
+    // Bar chart — all 7 days
+    const barContainer = document.getElementById('fwi-trend-bars');
+    if (barContainer) {
+      barContainer.innerHTML = results.map((r, i) => {
+        const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
+        const isCurrent = i === 0;
+        const bg = isCurrent ? 'bg-primary' : 'bg-surface-container hover:bg-primary/50';
+        return `<div class="w-full ${bg} rounded-t-sm transition-colors relative group" style="height:${h}%">
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[9px] text-primary opacity-0 group-hover:opacity-100 whitespace-nowrap">${r.fwi.toFixed(1)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Trend table — top 5 stations sampled from REGIONS
+    const tbody = document.getElementById('fwi-trend-tbody');
+    if (tbody) {
+      const tableStations = REGIONS.slice(0, 5);
+      const tableResults = await Promise.all(tableStations.map(async reg => {
+        const w = await fetchWeather(reg.lat, reg.lng);
+        return { name: reg.name.toUpperCase(), result: calculateFWI(w) };
+      }));
+      tbody.innerHTML = tableResults.map(({ name, result: r }) => `
+<tr class="hover:bg-surface-container transition-colors">
+  <td class="py-5 pl-6">
+    <span class="block text-white font-bold font-headline">${name}</span>
+    <span class="text-outline text-xs">${r.weather.lat ? '' : ''}</span>
+  </td>
+  <td class="py-5 font-headline font-bold text-white">${r.weather.temp.toFixed(1)}°C</td>
+  <td class="py-5 font-bold ${r.weather.rh < 30 ? 'text-tertiary' : 'text-secondary'}">RH ${r.weather.rh.toFixed(0)}%</td>
+  <td class="py-5">
+    <span class="px-3 py-1 rounded-full text-[10px] font-bold ${r.danger === 'Extreme' ? 'bg-tertiary-container text-tertiary' : r.danger === 'High' || r.danger === 'Very High' ? 'bg-[#fbabff]/10 text-tertiary' : 'bg-secondary-container/20 text-secondary border border-secondary/20'}">${r.danger.toUpperCase()}</span>
+  </td>
+  <td class="py-5 pr-6">
+    <div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+      <div class="h-full bg-primary" style="width:${Math.min(100, r.fwi * 2).toFixed(1)}%"></div>
+    </div>
+    <span class="text-xs text-outline mt-1 block">${r.fwi.toFixed(1)}</span>
+  </td>
+</tr>`).join('');
+    }
+  } catch (e) {
+    console.warn('[FWI Forecast]', e);
+  }
+}
+
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };

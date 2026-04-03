@@ -140,16 +140,7 @@
 </div>
 <div class="lg:col-span-4 bg-surface-container-low rounded-lg p-6 border-l border-primary/20 flex flex-col">
 <h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">Risk Vector Trend</h3>
-<div class="flex-grow flex items-end gap-1 px-2 h-48">
-<!-- Custom Bar Chart Mockup -->
-<div class="w-full bg-surface-container h-[20%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-<div class="w-full bg-surface-container h-[25%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-<div class="w-full bg-surface-container h-[45%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-<div class="w-full bg-primary h-[85%] rounded-t-sm"></div>
-<div class="w-full bg-surface-container h-[60%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-<div class="w-full bg-surface-container h-[40%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-<div class="w-full bg-surface-container h-[30%] rounded-t-sm hover:bg-primary/50 transition-colors"></div>
-</div>
+<div class="flex-grow flex items-end gap-1 px-2 h-48" id="fwi-trend-bars"></div>
 <div class="flex justify-between text-[10px] text-outline font-label mt-4 px-2">
 <span>-12H</span>
 <span>CURRENT (T)</span>
@@ -183,15 +174,15 @@
 <div class="p-6">
 <div class="flex justify-between items-center mb-4">
 <h4 class="font-headline font-bold text-white uppercase tracking-wider">Short Term</h4>
-<span class="text-secondary font-bold font-headline">STABLE</span>
+<span class="font-bold font-headline" id="fwi-f24-label">STABLE</span>
 </div>
 <div class="space-y-3">
 <div class="flex justify-between text-sm">
 <span class="text-outline">Max FWI</span>
-<span class="text-white">24.2</span>
+<span class="text-white" id="fwi-f24-val">24.2</span>
 </div>
 <div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-primary w-[40%] h-full"></div>
+<div class="bg-primary h-full" id="fwi-f24-bar" style="width:40%"></div>
 </div>
 </div>
 </div>
@@ -206,15 +197,15 @@
 <div class="p-6">
 <div class="flex justify-between items-center mb-4">
 <h4 class="font-headline font-bold text-white uppercase tracking-wider">Mid Term</h4>
-<span class="text-tertiary font-bold font-headline">ESCALATING</span>
+<span class="text-tertiary font-bold font-headline" id="fwi-f48-label">ESCALATING</span>
 </div>
 <div class="space-y-3">
 <div class="flex justify-between text-sm">
 <span class="text-outline">Max FWI</span>
-<span class="text-white">38.9</span>
+<span class="text-white" id="fwi-f48-val">38.9</span>
 </div>
 <div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-tertiary w-[70%] h-full"></div>
+<div class="bg-tertiary h-full" id="fwi-f48-bar" style="width:70%"></div>
 </div>
 </div>
 </div>
@@ -229,15 +220,15 @@
 <div class="p-6">
 <div class="flex justify-between items-center mb-4">
 <h4 class="font-headline font-bold text-white uppercase tracking-wider">Long Term</h4>
-<span class="text-outline font-bold font-headline">UNCERTAIN</span>
+<span class="text-outline font-bold font-headline" id="fwi-f72-label">UNCERTAIN</span>
 </div>
 <div class="space-y-3">
 <div class="flex justify-between text-sm">
 <span class="text-outline">Max FWI</span>
-<span class="text-white">--.-</span>
+<span class="text-white" id="fwi-f72-val">--.-</span>
 </div>
 <div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-outline w-[15%] h-full opacity-50"></div>
+<div class="bg-outline h-full opacity-50" id="fwi-f72-bar" style="width:15%"></div>
 </div>
 </div>
 </div>
@@ -273,62 +264,7 @@
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Trend Visualization</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-outline-variant/10">
-<tr class="group hover:bg-surface-container transition-colors">
-<td class="py-5">
-<span class="block text-white font-bold font-headline">CALGARY-STAMPEDE</span>
-<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 51.0447 N | LON: 114.0719 W</span>
-</td>
-<td class="py-5 font-headline font-bold text-white">28.4°C</td>
-<td class="py-5 text-tertiary font-bold">+4.2°C</td>
-<td class="py-5">
-<span class="bg-secondary-container/20 text-secondary px-3 py-1 rounded-full text-[10px] font-bold border border-secondary/20">LOW RISK</span>
-</td>
-<td class="py-5">
-<div class="h-6 w-32 flex items-center">
-<svg class="w-full h-full stroke-primary fill-none stroke-2" viewbox="0 0 100 20">
-<path d="M0 15 Q 25 12, 50 18 T 100 5"></path>
-</svg>
-</div>
-</td>
-</tr>
-<tr class="group hover:bg-surface-container transition-colors">
-<td class="py-5">
-<span class="block text-white font-bold font-headline">EDMONTON-NORTH</span>
-<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 53.5461 N | LON: 113.4938 W</span>
-</td>
-<td class="py-5 font-headline font-bold text-white">30.1°C</td>
-<td class="py-5 text-tertiary font-bold">+2.8°C</td>
-<td class="py-5">
-<span class="bg-tertiary-container text-tertiary px-3 py-1 rounded-full text-[10px] font-bold">EXTREME</span>
-</td>
-<td class="py-5">
-<div class="h-6 w-32 flex items-center">
-<svg class="w-full h-full stroke-tertiary fill-none stroke-2" viewbox="0 0 100 20">
-<path d="M0 18 Q 25 5, 50 10 T 100 2"></path>
-</svg>
-</div>
-</td>
-</tr>
-<tr class="group hover:bg-surface-container transition-colors">
-<td class="py-5">
-<span class="block text-white font-bold font-headline">FORT MCMURRAY</span>
-<span class="text-[10px] text-outline font-label tracking-tighter">LAT: 56.7264 N | LON: 111.3803 W</span>
-</td>
-<td class="py-5 font-headline font-bold text-white">33.5°C</td>
-<td class="py-5 text-tertiary font-bold">+1.2°C</td>
-<td class="py-5">
-<span class="bg-tertiary-container text-tertiary px-3 py-1 rounded-full text-[10px] font-bold">EXTREME</span>
-</td>
-<td class="py-5">
-<div class="h-6 w-32 flex items-center">
-<svg class="w-full h-full stroke-tertiary fill-none stroke-2" viewbox="0 0 100 20">
-<path d="M0 10 Q 25 15, 50 5 T 100 0"></path>
-</svg>
-</div>
-</td>
-</tr>
-</tbody>
+<tbody id="fwi-trend-tbody" class="divide-y divide-outline-variant/10"><tr><td colspan="5" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr></tbody>
 </table>
 </div>
 </section>
@@ -352,4 +288,6 @@
 <span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-widest">Science</span>
 </a>
 </nav>
+<script src="../fwi.js"></script>
+<script>FWI.buildForecastTrends(53.5344, -113.4903);</script>
 </body></html>
