@@ -332,24 +332,37 @@ function regionCard(name, sector, r) {
 async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
   if (!list) return;
-  try {
-    const results = await Promise.all(REGIONS.map(async reg => {
+
+  // Load sequentially to avoid rate-limiting; update DOM as each arrives
+  list.innerHTML = REGIONS.map(r =>
+    `<div id="fwi-region-${r.name.replace(/\s+/g,'-')}" class="bg-surface-container rounded-xl p-6 flex items-center gap-4 text-slate-500 text-sm">
+      <span class="material-symbols-outlined animate-pulse text-primary">sync</span> Loading ${r.name}…
+    </div>`
+  ).join('');
+
+  const loaded = [];
+  for (const reg of REGIONS) {
+    const id = `fwi-region-${reg.name.replace(/\s+/g,'-')}`;
+    const el = document.getElementById(id);
+    try {
       const w = await fetchWeather(reg.lat, reg.lng);
-      return { ...reg, result: calculateFWI(w) };
-    }));
+      const result = calculateFWI(w);
+      loaded.push({ ...reg, result });
+      if (el) el.outerHTML = regionCard(reg.name, reg.sector, result);
+    } catch (e) {
+      console.warn(`[FWI] ${reg.name}:`, e);
+      if (el) el.innerHTML = `<span class="text-slate-600 text-xs">${reg.name} — unavailable</span>`;
+    }
+  }
 
-    list.innerHTML = results.map(r => regionCard(r.name, r.sector, r.result)).join('');
-
-    // Update header stats
-    const extremeCount = results.filter(r => r.result.danger === 'Extreme').length;
-    const avgRH = results.reduce((s, r) => s + r.result.weather.rh, 0) / results.length;
+  // Update header stats from whatever loaded
+  if (loaded.length) {
+    const extremeCount = loaded.filter(r => r.result.danger === 'Extreme').length;
+    const avgRH = loaded.reduce((s, r) => s + r.result.weather.rh, 0) / loaded.length;
     const el1 = document.getElementById('fwi-extreme-count');
     const el2 = document.getElementById('fwi-avg-rh');
     if (el1) el1.textContent = `${extremeCount} Extreme`;
     if (el2) el2.textContent = `${avgRH.toFixed(0)}%`;
-  } catch (e) {
-    list.innerHTML = '<p class="text-red-400 text-sm">Failed to load regional data.</p>';
-    console.warn('[FWI Regional]', e);
   }
 }
 
