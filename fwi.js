@@ -246,16 +246,27 @@ function buildStationPicker() {
     sel.appendChild(opt);
   });
 
-  sel.addEventListener('change', () => {
+  function loadStation() {
     const [lat, lng] = sel.value.split(',').map(Number);
     const name = sel.options[sel.selectedIndex].textContent;
+    // Update map iframe
+    const frame = document.getElementById('fwi-map-frame');
+    if (frame) {
+      const pad = 0.5;
+      frame.src = `https://www.openstreetmap.org/export/embed.html` +
+        `?bbox=${(lng-pad).toFixed(4)},${(lat-pad).toFixed(4)},${(lng+pad).toFixed(4)},${(lat+pad).toFixed(4)}` +
+        `&layer=mapnik&marker=${lat.toFixed(4)},${lng.toFixed(4)}`;
+    }
+    // Update coords overlay
+    const coords = document.getElementById('fwi-map-coords');
+    if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
+    const stLabel = document.getElementById('fwi-map-station');
+    if (stLabel) stLabel.textContent = name;
     initFWI(lat, lng, name);
-  });
+  }
 
-  // Trigger initial load with selected station
-  const [lat, lng] = sel.value.split(',').map(Number);
-  const name = sel.options[sel.selectedIndex].textContent;
-  initFWI(lat, lng, name);
+  sel.addEventListener('change', loadStation);
+  loadStation();
 }
 
 // ─── Regional Summary ────────────────────────────────────────────────────────
