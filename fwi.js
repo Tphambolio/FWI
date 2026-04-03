@@ -185,4 +185,77 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
   }
 }
 
-window.FWI = { initFWI, calculateFWI, fetchWeather, dangerRating };
+// Alberta CWFIS fire weather stations (name, lat, lng)
+const ALBERTA_STATIONS = [
+  // Northern
+  { name: 'High Level',        lat: 58.517, lng: -117.133 },
+  { name: 'Fort Chipewyan',    lat: 58.767, lng: -111.117 },
+  { name: 'Peace River',       lat: 56.233, lng: -117.283 },
+  { name: 'Grande Prairie',    lat: 55.167, lng: -118.883 },
+  { name: 'Valleyview',        lat: 55.083, lng: -117.283 },
+  { name: 'High Prairie',      lat: 55.433, lng: -116.483 },
+  { name: 'Wabasca',           lat: 55.967, lng: -113.833 },
+  { name: 'Slave Lake',        lat: 55.283, lng: -114.767 },
+  { name: 'Fort McMurray',     lat: 56.650, lng: -111.217 },
+  { name: 'Fort Vermilion',    lat: 58.383, lng: -116.017 },
+  { name: 'Manning',           lat: 56.917, lng: -117.617 },
+  // Central-North
+  { name: 'Lac La Biche',      lat: 54.767, lng: -111.967 },
+  { name: 'Athabasca',         lat: 54.717, lng: -113.283 },
+  { name: 'Bonnyville',        lat: 54.267, lng: -110.733 },
+  { name: 'Cold Lake',         lat: 54.417, lng: -110.283 },
+  { name: 'Fox Creek',         lat: 54.400, lng: -116.800 },
+  { name: 'Whitecourt',        lat: 54.150, lng: -115.683 },
+  { name: 'Edson',             lat: 53.583, lng: -116.433 },
+  { name: 'Hinton',            lat: 53.400, lng: -117.567 },
+  { name: 'Jasper',            lat: 52.867, lng: -118.083 },
+  { name: 'Grande Cache',      lat: 53.883, lng: -119.000 },
+  // Central
+  { name: 'Edmonton',          lat: 53.534, lng: -113.490 },
+  { name: 'Drayton Valley',    lat: 53.217, lng: -114.983 },
+  { name: 'Rocky Mtn House',   lat: 52.367, lng: -114.917 },
+  { name: 'Vegreville',        lat: 53.500, lng: -112.050 },
+  { name: 'Camrose',           lat: 53.017, lng: -112.833 },
+  { name: 'Lloydminster',      lat: 53.283, lng: -110.000 },
+  { name: 'Wetaskiwin',        lat: 52.967, lng: -113.367 },
+  { name: 'Stettler',          lat: 52.317, lng: -112.717 },
+  // South
+  { name: 'Red Deer',          lat: 52.267, lng: -113.800 },
+  { name: 'Drumheller',        lat: 51.467, lng: -112.717 },
+  { name: 'Calgary',           lat: 51.050, lng: -114.067 },
+  { name: 'Banff',             lat: 51.183, lng: -115.567 },
+  { name: 'Claresholm',        lat: 50.017, lng: -113.583 },
+  { name: 'Brooks',            lat: 50.567, lng: -111.900 },
+  { name: 'Medicine Hat',      lat: 50.033, lng: -110.683 },
+  { name: 'Pincher Creek',     lat: 49.483, lng: -113.950 },
+  { name: 'Lethbridge',        lat: 49.700, lng: -112.833 },
+  { name: 'Cardston',          lat: 49.200, lng: -113.300 },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+/** Populate a <select id="fwi-station-picker"> and wire change events. */
+function buildStationPicker() {
+  const sel = document.getElementById('fwi-station-picker');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+  ALBERTA_STATIONS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = `${s.lat},${s.lng}`;
+    opt.textContent = s.name;
+    if (s.name === 'Slave Lake') opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  sel.addEventListener('change', () => {
+    const [lat, lng] = sel.value.split(',').map(Number);
+    const name = sel.options[sel.selectedIndex].textContent;
+    initFWI(lat, lng, name);
+  });
+
+  // Trigger initial load with selected station
+  const [lat, lng] = sel.value.split(',').map(Number);
+  const name = sel.options[sel.selectedIndex].textContent;
+  initFWI(lat, lng, name);
+}
+
+window.FWI = { initFWI, buildStationPicker, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };

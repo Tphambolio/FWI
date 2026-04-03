@@ -96,9 +96,15 @@
 <header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">menu</span>
-<h1 class="font-['Space_Grotesk'] text-xl font-bold tracking-tight text-[#7bd0ff]">Station: <span data-fwi="station">Edmonton Area</span></h1>
+<div class="flex flex-col">
+<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Station</label>
+<select id="fwi-station-picker" class="font-['Space_Grotesk'] text-base font-bold tracking-tight text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer">
+<option value="">Loading stations…</option>
+</select>
+</div>
 </div>
 <div class="flex items-center gap-2">
+<span class="font-label text-[10px] text-slate-500" data-fwi="updated">—</span>
 <span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">calendar_today</span>
 </div>
 </header>
@@ -309,5 +315,5 @@
 </a>
 </nav>
 <script src="../fwi.js"></script>
-<script>FWI.initFWI(53.5344, -113.4903, 'Edmonton Area');</script>
+<script>FWI.buildStationPicker();</script>
 </body></html>
