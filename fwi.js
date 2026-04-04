@@ -529,6 +529,10 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
     setCard('fwi-f48-val', 'fwi-f48-bar', 'fwi-f48-label', results[2], results[1]);
     setCard('fwi-f72-val', 'fwi-f72-bar', 'fwi-f72-label', results[3], results[2]);
 
+    // Forecast summary paragraph
+    const sumEl = document.getElementById('fwi-forecast-summary');
+    if (sumEl) sumEl.textContent = forecastSummaryText(days, results);
+
     // Hero stat boxes — peak temp, min RH, max wind across forecast window
     const peakTemp = Math.max(...days.map(d => d.temp ?? -99));
     const minRH    = Math.min(...days.map(d => d.rh   ?? 999));
@@ -594,6 +598,19 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
   }
 }
 
+// ─── Forecast Summary Text ───────────────────────────────────────────────────
+
+function forecastSummaryText(days, results) {
+  const peakDay  = results.reduce((a, b) => b.fwi > a.fwi ? b : a);
+  const trend    = results[results.length - 1].fwi > results[0].fwi ? 'increasing' : 'decreasing';
+  const maxDanger = peakDay.danger;
+  const peakTemp  = Math.max(...days.map(d => d.temp ?? -99)).toFixed(1);
+  const minRH     = Math.min(...days.map(d => d.rh  ?? 999)).toFixed(0);
+  return `7-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
+    `Forecast trend is ${trend}. Peak temperature ${peakTemp}°C, minimum relative humidity ${minRH}%. ` +
+    `Values derived from Open-Meteo NWP forecast using Van Wagner CFFDRS equations.`;
+}
+
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 async function exportRegionalDataset() {
@@ -630,4 +647,39 @@ async function exportRegionalDataset() {
   if (btn) btn.textContent = 'EXPORT FULL DATASET';
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, exportRegionalDataset, ALBERTA_STATIONS };
+async function exportForecastReport() {
+  const btn = document.getElementById('fwi-report-btn');
+  if (btn) btn.textContent = 'FETCHING…';
+
+  try {
+    const days    = await fetchForecast(53.5344, -113.4903);
+    const results = calcMultiDay(days);
+    const timestamp = new Date().toISOString();
+
+    const rows = [['Timestamp', 'Day', 'Date', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
+    results.forEach((r, i) => {
+      const d = days[i];
+      rows.push([
+        timestamp, `D+${i+1}`, r.label,
+        d.temp, d.rh, d.wind, d.rain,
+        r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
+        r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
+      ]);
+    });
+
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `fwi-forecast-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.warn('[FWI Report]', e);
+  }
+
+  if (btn) btn.textContent = 'GENERATE REPORT';
+}
+
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS };

@@ -51,7 +51,7 @@
 <span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">Critical Temporal Window</span>
 </div>
 <h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">T + 24h <span class="text-primary">FORECAST</span></h2>
-<p class="text-on-surface-variant max-w-xl body-md mb-8">Atmospheric instability in the Athabasca region indicates a 24% increase in FWI values. Accelerated suppression protocols recommended for High-Risk zones.</p>
+<p class="text-on-surface-variant max-w-xl body-md mb-8" id="fwi-forecast-summary">Loading forecast summary…</p>
 </div>
 <div class="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
 <div class="bg-surface-container-lowest p-4 rounded border-b-2 border-primary">
@@ -77,7 +77,7 @@
 <span>D+7</span>
 </div>
 <div class="mt-6 pt-6 border-t border-outline-variant">
-<button class="w-full gradient-primary text-on-primary-fixed font-headline font-bold py-3 rounded-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<button id="fwi-report-btn" class="w-full gradient-primary text-on-primary-fixed font-headline font-bold py-3 rounded-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
 <span class="material-symbols-outlined text-sm" data-icon="download">download</span>
                         GENERATE REPORT
                     </button>
@@ -88,10 +88,6 @@
 <section>
 <div class="flex items-center justify-between mb-8">
 <h3 class="font-headline text-2xl font-bold tracking-tight text-white">Extended Projections</h3>
-<div class="flex gap-2">
-<button class="bg-surface-container-highest px-4 py-1 rounded-full text-xs font-bold text-primary border border-primary/20">Metric</button>
-<button class="bg-surface-container-low px-4 py-1 rounded-full text-xs font-bold text-outline">Imperial</button>
-</div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 <!-- 24H Forecast -->
@@ -207,5 +203,8 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
 <script src="../fwi.js"></script>
-<script>FWI.buildForecastTrends(53.5344, -113.4903);</script>
+<script>
+FWI.buildForecastTrends(53.5344, -113.4903);
+document.getElementById('fwi-report-btn').addEventListener('click', FWI.exportForecastReport);
+</script>
 </body></html>
