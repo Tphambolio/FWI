@@ -238,6 +238,94 @@ function refreshFBP() {
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
 const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
 
+// ─── Haversine distance ───────────────────────────────────────────────────────
+function _haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// ─── CWFIS WFS fetch ──────────────────────────────────────────────────────────
+/**
+ * Fetch live fire weather from CWFIS WFS (NRCan/MSC physical sensors).
+ * Returns observed weather + pre-computed FWI codes when in-season (Apr–Oct).
+ * Returns null on failure — caller falls back to Open-Meteo.
+ *
+ * Layer: public:firewx_stns_current (GeoServer WFS 2.0.0)
+ * Reference: CWFIS, Natural Resources Canada
+ */
+async function fetchCWFIS(lat, lng) {
+  const bbox = 2.0; // ±2 degrees ≈ 220 km
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=50` +
+    `&CQL_FILTER=lat+BETWEEN+${lat - bbox}+AND+${lat + bbox}` +
+    `+AND+lon+BETWEEN+${lng - bbox}+AND+${lng + bbox}`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.features?.length) return null;
+
+    // Find nearest station with valid weather observations
+    let nearest = null, minDist = Infinity;
+    for (const feat of data.features) {
+      const p = feat.properties;
+      if (p.temp == null || p.rh == null || p.ws == null) continue;
+      const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+      if (d < minDist) { minDist = d; nearest = p; }
+    }
+    if (!nearest) return null;
+
+    const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
+    const stationName = (nearest.name || '').trim().replace(/\s+/g, ' ');
+
+    return {
+      temp:  nearest.temp,
+      rh:    nearest.rh,
+      wind:  nearest.ws,
+      rain:  nearest.precip ?? 0,
+      month: new Date().getMonth() + 1,
+      // FWI codes from CWFIS daily carry-over chain (null off-season)
+      ffmc: hasFWI ? nearest.ffmc : null,
+      dmc:  hasFWI ? nearest.dmc  : null,
+      dc:   hasFWI ? nearest.dc   : null,
+      isi:  hasFWI ? nearest.isi  : null,
+      bui:  hasFWI ? nearest.bui  : null,
+      fwi:  hasFWI ? nearest.fwi  : null,
+      fwiFromCWFIS: hasFWI,
+      source: hasFWI
+        ? `CWFIS · ${stationName}`
+        : `CWFIS · ${stationName} · FWI calc`,
+      stationName,
+      distKm: Math.round(minDist),
+    };
+  } catch (e) {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+/**
+ * Fetch weather — CWFIS physical sensor primary, Open-Meteo NWP fallback.
+ */
+async function fetchWeatherPrimary(lat, lng) {
+  try {
+    const cwfis = await fetchCWFIS(lat, lng);
+    if (cwfis) return cwfis;
+  } catch (e) { /* fall through */ }
+  const w = await fetchWeather(lat, lng);
+  return { ...w, source: 'Open-Meteo NWP', fwiFromCWFIS: false };
+}
+
 /** Fetch current weather from Open-Meteo (no API key, CORS-enabled). */
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
@@ -254,11 +342,26 @@ async function fetchWeather(lat, lng) {
     wind:  c.wind_speed_10m,
     rain:  c.precipitation,
     month: new Date().getMonth() + 1,
+    source: 'Open-Meteo NWP',
+    fwiFromCWFIS: false,
   };
 }
 
-/** Run all six FWI equations from weather + optional previous-day state. */
+/**
+ * Run FWI equations from weather + optional previous-day state.
+ * When CWFIS provides pre-computed FWI codes (in-season), those are used
+ * directly — they incorporate the proper daily carry-over chain from NRCan.
+ * Van Wagner equations are used only when CWFIS codes are unavailable.
+ */
 function calculateFWI(w, prev = STARTUP) {
+  if (w.fwiFromCWFIS && w.ffmc != null) {
+    // Use CWFIS operational chain values as-is (FFMC/DMC/DC from actual carry-over)
+    const isi = w.isi ?? _isi(w.ffmc, w.wind ?? 0);
+    const bui = w.bui ?? _bui(w.dmc ?? 0, w.dc ?? 0);
+    const fwi = w.fwi ?? _fwi(isi, bui);
+    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRating(fwi), weather: w };
+  }
+  // Van Wagner equations — spring startup constants when no carry-over available
   const ffmc = _ffmc(w.temp, w.rh, w.wind, w.rain, prev.ffmc);
   const dmc  = _dmc(w.temp, w.rh, w.rain, w.month, prev.dmc);
   const dc   = _dc(w.temp, w.rain, w.month, prev.dc);
@@ -311,8 +414,9 @@ function wireDOM(r) {
   pct('bui',  r.bui,  200);   // 0-200 typical
   pct('fwi',  r.fwi,  50);    // 0-50 typical
 
-  // Timestamp
-  set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  // Timestamp + data source
+  const src = r.weather.source || 'Open-Meteo NWP';
+  set('updated', `Live · ${new Date().toLocaleTimeString()} · ${src}`);
 
   // Cache for FBP re-runs on fuel picker change
   _lastWeather = r.weather;
@@ -334,7 +438,7 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
 
   try {
-    const weather = await fetchWeather(lat, lng);
+    const weather = await fetchWeatherPrimary(lat, lng);
     const result  = calculateFWI(weather);
     wireDOM(result);
     console.log('[FWI]', result);
@@ -510,7 +614,7 @@ async function buildRegionalSummary() {
     const id = `fwi-region-${reg.name.replace(/\s+/g,'-')}`;
     const el = document.getElementById(id);
     try {
-      const w = await fetchWeather(reg.lat, reg.lng);
+      const w = await fetchWeatherPrimary(reg.lat, reg.lng);
       const result = calculateFWI(w);
       loaded.push({ ...reg, result });
       _regionalCache.push({ ...reg, result });
@@ -704,7 +808,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
       let tableHTML = '';
       for (const reg of tableStations) {
         try {
-          const w = await fetchWeather(reg.lat, reg.lng);
+          const w = await fetchWeatherPrimary(reg.lat, reg.lng);
           const r = calculateFWI(w);
           const name = reg.name.toUpperCase();
           tableHTML += `
@@ -748,7 +852,7 @@ function forecastSummaryText(days, results) {
   const minRH     = Math.min(...days.map(d => d.rh  ?? 999)).toFixed(0);
   return `7-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
     `Forecast trend is ${trend}. Peak temperature ${peakTemp}°C, minimum relative humidity ${minRH}%. ` +
-    `Values derived from Open-Meteo NWP forecast using Van Wagner CFFDRS equations.`;
+    `Forecast values derived from Open-Meteo NWP using Van Wagner CFFDRS equations.`;
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────
@@ -857,7 +961,7 @@ async function buildStationMap(containerId) {
   // Fetch weather for each station and update its marker
   for (const s of ALBERTA_STATIONS) {
     try {
-      const w = await fetchWeather(s.lat, s.lng);
+      const w = await fetchWeatherPrimary(s.lat, s.lng);
       const r = calculateFWI(w);
       const color = MARKER_COLORS[r.danger] || '#7bd0ff';
       const radius = r.danger === 'Extreme' ? 10 : r.danger === 'Very High' ? 9 : 7;
@@ -870,9 +974,15 @@ async function buildStationMap(containerId) {
         radius,
       });
 
+      // Source label — CWFIS shows sensor name + distance, Open-Meteo notes NWP
+      const srcLabel = w.source || 'Open-Meteo NWP';
+      const fwiMethod = w.fwiFromCWFIS ? 'CWFIS carry-over chain' : 'Van Wagner calc';
+      const distNote = w.distKm != null ? ` · ${w.distKm} km` : '';
+
       markers[s.name].setPopupContent(
         `<div style="font-family:'Space Grotesk',sans-serif;min-width:180px">` +
-        `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:6px">${s.name}</div>` +
+        `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:2px">${s.name}</div>` +
+        `<div style="font-size:9px;color:#8899cc;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">${srcLabel}${distNote}</div>` +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">` +
         `<div><span style="color:#8899cc">FWI</span><br><strong style="color:#dae2fd;font-size:16px">${r.fwi.toFixed(1)}</strong></div>` +
         `<div><span style="color:#8899cc">Danger</span><br><strong style="color:${color}">${r.danger.toUpperCase()}</strong></div>` +
@@ -881,7 +991,7 @@ async function buildStationMap(containerId) {
         `<div><span style="color:#8899cc">Wind</span><br><span style="color:#dae2fd">${fmt(w.wind, 0)} km/h</span></div>` +
         `<div><span style="color:#8899cc">Rain</span><br><span style="color:#dae2fd">${fmt(w.rain)} mm</span></div>` +
         `</div>` +
-        `<div style="margin-top:8px;font-size:9px;color:#45464d;text-transform:uppercase;letter-spacing:.1em">Open-Meteo NWP · CFFDRS Van Wagner</div>` +
+        `<div style="margin-top:8px;font-size:9px;color:#45464d;text-transform:uppercase;letter-spacing:.1em">${fwiMethod}</div>` +
         `</div>`
       );
     } catch (e) {
@@ -890,4 +1000,4 @@ async function buildStationMap(containerId) {
   }
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };

@@ -287,18 +287,39 @@
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — Open-Meteo</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">open-meteo.com · Free · No API Key · CORS-Enabled · Client-Side Only</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — CWFIS Primary / Open-Meteo Fallback</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">NRCan CWFIS WFS primary · Open-Meteo NWP fallback · Client-Side Only · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All weather data is fetched live in the browser at each page load. No server, no caching, no stored observations. Open-Meteo aggregates global NWP model output (ECMWF IFS, DWD ICON, NCEP GFS) into a unified API. Model runs update every 1–6 hours depending on source. The three endpoint configurations used by this dashboard:</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser at each page load — no server, no caching. Current conditions use a two-tier priority: CWFIS WFS (NRCan physical sensors) first, Open-Meteo NWP as fallback if no station is found within ±2° (~220 km). Forecasts always use Open-Meteo (CWFIS does not provide forecasts). Source is shown in the station timestamp on every screen.</p>
 
 <div class="space-y-4">
-<!-- Current conditions -->
+<!-- CWFIS WFS primary -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
-<span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions</span>
-<span class="text-[10px] text-on-surface-variant font-label">Station Detail · Regional Summary · On every station load</span>
+<span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions — Primary</span>
+<span class="text-[10px] text-on-surface-variant font-label">CWFIS WFS · NRCan/MSC physical sensors · In-season only</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET cwfis.cfs.nrcan.gc.ca/geoserver/public/ows
+  ?service=WFS&amp;version=2.0.0&amp;request=GetFeature
+  &amp;typeName=public:firewx_stns_current
+  &amp;outputFormat=application/json&amp;count=50
+  &amp;CQL_FILTER=lat BETWEEN {lat-2} AND {lat+2}
+    AND lon BETWEEN {lng-2} AND {lng+2}</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">temp / rh / ws</span><span class="text-on-surface-variant">Sensor observations</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">ffmc / dmc / dc</span><span class="text-on-surface-variant">FWI codes from CWFIS chain</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">isi / bui / fwi</span><span class="text-on-surface-variant">Derived indices from chain</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">lat / lon / name</span><span class="text-on-surface-variant">Station coords + label</span></div>
+</div>
+<p class="text-xs text-on-surface-variant mt-3">Nearest station is selected by Haversine great-circle distance. When CWFIS provides FWI codes (fire season, approx. Apr–Oct), they are used directly — incorporating NRCan's daily carry-over chain. Off-season, FWI codes are null and Van Wagner equations are applied to the observed weather.</p>
+</div>
+
+<!-- Open-Meteo fallback / current -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions — Fallback</span>
+<span class="text-[10px] text-on-surface-variant font-label">Open-Meteo NWP · Used when no CWFIS station found within range</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
@@ -349,7 +370,7 @@
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Canadian Wildland Fire Information System · Natural Resources Canada</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station names and coordinates match the NRCan CWFIS fire weather station network. Coordinates are hard-coded in <code class="text-primary text-xs">fwi.js → ALBERTA_STATIONS[]</code>. Weather is pulled from Open-Meteo at each station's lat/lng — the API interpolates to the nearest model grid point, typically 5–15 km from the physical sensor. Stations span all Alberta forest management zones from High Level (58.52°N) to Cardston (49.20°N).</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station names and coordinates match the NRCan CWFIS fire weather station network. Coordinates are hard-coded in <code class="text-primary text-xs">fwi.js → ALBERTA_STATIONS[]</code>. For current conditions, each coordinate queries the CWFIS WFS layer for the nearest physical sensor within ±2° — the actual sensor name and distance are shown in the station UI. Forecasts use Open-Meteo NWP interpolated to the coordinate. Stations span all Alberta forest management zones from High Level (58.52°N) to Cardston (49.20°N).</p>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 <div class="bg-surface-container-lowest p-4 rounded-lg">
 <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Northern</div>
@@ -416,11 +437,13 @@
 </div>
 </div>
 <ul class="space-y-3 text-sm text-on-surface-variant">
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No daily carry-over chain:</strong> FWI is computed from a single observation against spring startup constants. A proper operational chain requires yesterday's FFMC, DMC, and DC as inputs. Mid-season DC is systematically underestimated by this approach.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">NWP grid ≠ physical station:</strong> Open-Meteo interpolates model output at the station coordinate; it is not reading from the physical NRCan sensor. Micro-climate effects (valley inversions, terrain channelling, lake influence) are absent from model output.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Carry-over chain — in-season:</strong> When CWFIS provides FWI codes (approx. Apr–Oct), NRCan's daily carry-over chain is used as-is — FFMC, DMC, and DC reflect accumulated drying from previous days. This is operationally accurate.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No carry-over — off-season:</strong> Outside fire season, CWFIS FWI codes are null. Van Wagner equations run against spring startup constants (FFMC 85, DMC 6, DC 300). Mid-season DC is systematically underestimated if the chain was not seeded from a prior day's values.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">CWFIS physical sensor (primary):</strong> In-season, weather and FWI codes come from the nearest certified NRCan/MSC fire weather station — not NWP interpolation. Nearest station name and distance are shown in the UI. Micro-climate effects within the sensor footprint still apply.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">NWP fallback (off-season / no station):</strong> When CWFIS has no station within ±2° or fails to respond, Open-Meteo NWP is used. NWP interpolates model output at the coordinate; valley inversions, terrain channelling, and lake influence are absent.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No wind direction or slope aspect:</strong> FBP outputs assume head-fire conditions at observed wind speed on flat terrain. Actual ROS and HFI are direction-dependent and terrain-modified.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Fuel type is user-selected:</strong> No automated fuel classification. C2 default is representative of the boreal zone; grassland and mountain stations may require O1a/O1b or C7 respectively.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Situational awareness only:</strong> Suppression resource decisions require ground-truth observations from certified CWFIS stations and interpretation by a qualified Fire Behaviour Analyst (FBA).</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Situational awareness only:</strong> Suppression resource decisions require certified CWFIS station observations and interpretation by a qualified Fire Behaviour Analyst (FBA).</span></li>
 </ul>
 </div>
 </section>
