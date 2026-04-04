@@ -279,34 +279,89 @@
 <div class="flex items-baseline justify-between mb-8">
 <h3 class="font-headline text-2xl font-bold tracking-tight">Data Sources &amp; Methodology</h3>
 <div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
-<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">How This Works</span>
+<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Full Provenance</span>
 </div>
 
-<!-- Weather data -->
+<!-- API Endpoints -->
 <div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Data — Open-Meteo NWP</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Real-time · No API Key · CORS-Enabled</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — Open-Meteo</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">open-meteo.com · Free · No API Key · CORS-Enabled · Client-Side Only</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All weather observations are fetched client-side from <strong class="text-on-surface">Open-Meteo</strong> (open-meteo.com), a free, open-source numerical weather prediction service. Current conditions use the latest model analysis; 7-day forecasts use the ECMWF IFS ensemble. Data is retrieved directly in the browser — no proxy server, no API key, no data storage.</p>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All weather data is fetched live in the browser at each page load. No server, no caching, no stored observations. Open-Meteo aggregates global NWP model output (ECMWF IFS, DWD ICON, NCEP GFS) into a unified API. Model runs update every 1–6 hours depending on source. The three endpoint configurations used by this dashboard:</p>
+
+<div class="space-y-4">
+<!-- Current conditions -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions</span>
+<span class="text-[10px] text-on-surface-variant font-label">Station Detail · Regional Summary · On every station load</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
+  ?latitude={lat}&amp;longitude={lng}
+  &amp;current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
+  &amp;timezone=auto</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">temperature_2m</span><span class="text-on-surface-variant">°C at 2m AGL</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">relative_humidity_2m</span><span class="text-on-surface-variant">% at 2m AGL</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">wind_speed_10m</span><span class="text-on-surface-variant">km/h at 10m AGL</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">precipitation</span><span class="text-on-surface-variant">mm, last hour</span></div>
+</div>
+</div>
+
+<!-- 7-day forecast -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">7-Day Forecast</span>
+<span class="text-[10px] text-on-surface-variant font-label">Forecast &amp; Trends · Loaded once per page visit</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
+  ?latitude={lat}&amp;longitude={lng}
+  &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
+  &amp;timezone=auto&amp;forecast_days=7</code>
+<p class="text-xs text-on-surface-variant mt-3">Returns 168 hourly values (7 days × 24 h). FWI is calculated using the <strong class="text-on-surface">noon observation</strong> for each day (index <code class="text-primary">day × 24 + 12</code>), consistent with the standard CFFDRS 13:00 LST observation window defined in Van Wagner (1987). The seven daily observations are then chained through the Van Wagner equations in sequence.</p>
+</div>
+
+<!-- 24-hour trend -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-tertiary/10 text-tertiary font-label text-[10px] font-bold rounded uppercase tracking-wider">24-Hour Trend</span>
+<span class="text-[10px] text-on-surface-variant font-label">Station Detail chart · Loaded on each station change</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
+  ?latitude={lat}&amp;longitude={lng}
+  &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
+  &amp;timezone=auto&amp;past_hours=23&amp;forecast_hours=0</code>
+<p class="text-xs text-on-surface-variant mt-3">Returns the previous 23 completed hours. FWI is chained hour-by-hour from spring startup defaults. Bars are coloured by danger class; solid = past, translucent = current hour.</p>
+</div>
+</div>
+</div>
+
+<!-- Station network -->
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">sensors</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Network — 39 Alberta CWFIS Locations</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Canadian Wildland Fire Information System · Natural Resources Canada</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station names and coordinates match the NRCan CWFIS fire weather station network. Coordinates are hard-coded in <code class="text-primary text-xs">fwi.js → ALBERTA_STATIONS[]</code>. Weather is pulled from Open-Meteo at each station's lat/lng — the API interpolates to the nearest model grid point, typically 5–15 km from the physical sensor. Stations span all Alberta forest management zones from High Level (58.52°N) to Cardston (49.20°N).</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 <div class="bg-surface-container-lowest p-4 rounded-lg">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Current Conditions</div>
-<div class="text-sm font-bold text-on-surface mb-1">NWP Analysis</div>
-<p class="text-xs text-on-surface-variant">Temperature, relative humidity, wind speed, and 24-hour precipitation at each station coordinate. Updated hourly.</p>
+<div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Northern</div>
+<p class="text-on-surface-variant text-xs">High Level, Fort Chipewyan, Peace River, Grande Prairie, Fort McMurray, Fort Vermilion, Manning, Wabasca, Slave Lake, High Prairie, Valleyview</p>
 </div>
 <div class="bg-surface-container-lowest p-4 rounded-lg">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">7-Day Forecast</div>
-<div class="text-sm font-bold text-on-surface mb-1">Noon Observation Model</div>
-<p class="text-xs text-on-surface-variant">Hourly forecast sliced at 12:00 local time each day — standard CFFDRS observation window per Van Wagner (1987).</p>
+<div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Central</div>
+<p class="text-on-surface-variant text-xs">Athabasca, Lac La Biche, Bonnyville, Cold Lake, Fox Creek, Whitecourt, Edson, Hinton, Jasper, Grande Cache, Edmonton, Drayton Valley, Rocky Mtn House, Vegreville, Camrose, Lloydminster, Wetaskiwin, Stettler</p>
 </div>
 <div class="bg-surface-container-lowest p-4 rounded-lg">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">24-Hour Trend</div>
-<div class="text-sm font-bold text-on-surface mb-1">Past Hours API</div>
-<p class="text-xs text-on-surface-variant">Previous 23 hours of hourly data fetched via Open-Meteo <code class="text-primary text-[10px]">past_hours</code> parameter. FWI chained hour-by-hour.</p>
+<div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Southern</div>
+<p class="text-on-surface-variant text-xs">Red Deer, Drumheller, Calgary, Banff, Claresholm, Brooks, Medicine Hat, Pincher Creek, Lethbridge, Cardston</p>
 </div>
 </div>
 </div>
@@ -316,69 +371,56 @@
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">calculate</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Calculation Pipeline</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Client-Side · Van Wagner CFFDRS · ST-X-3</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Calculation Pipeline — Client-Side JavaScript</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">fwi.js · No server · Equations run in browser</p>
 </div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-<div>
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">FWI System</div>
-<p class="text-sm text-on-surface-variant leading-relaxed">Van Wagner &amp; Pickett (1985) equations implemented in JavaScript. Runs entirely in the browser — weather data flows directly into the six FWI sub-index equations with no server-side processing.</p>
-<p class="text-sm text-on-surface-variant leading-relaxed mt-2">Spring startup defaults: <span class="text-on-surface font-bold">FFMC = 85, DMC = 6, DC = 300</span>. DC=300 reflects carry-over drought typical of Alberta's AG/RM fuel zones at season open — Van Wagner's dc=15 assumes fully saturated soils and is not operationally appropriate for Alberta.</p>
+<div class="space-y-5">
+<div class="border-l-2 border-primary pl-5">
+<div class="text-[10px] font-label uppercase tracking-widest text-primary mb-1">FWI System — Van Wagner &amp; Pickett (1985)</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Weather inputs (T, RH, W, r) → FFMC → DMC → DC → ISI → BUI → FWI. All six equations implemented verbatim from the Forestry Canada publication. No simplifications or approximations. Day-length adjustment factors (DMC_LL, DC_LL) applied by calendar month, indices 1–12.</p>
+<p class="text-sm text-on-surface-variant mt-2">Spring startup: <span class="font-bold text-on-surface">FFMC = 85, DMC = 6, DC = 300</span>. DC = 300 replaces Van Wagner's dc = 15, which assumes fully saturated soils at season open. DC = 300 corresponds to High danger on the drought code scale and is operationally consistent with Alberta's AG/RM fuel zone carry-over drought levels, as confirmed by provincial fire behaviour analysts.</p>
 </div>
-<div>
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">FBP System</div>
-<p class="text-sm text-on-surface-variant leading-relaxed">ST-X-3 (Forestry Canada 1992) equations implemented in JavaScript. Takes FWI sub-indices + user-selected fuel type as input. Fuel type defaults to <span class="text-on-surface font-bold">C2 (Boreal Spruce)</span>, the dominant fuel type across Alberta's boreal zone.</p>
-<p class="text-sm text-on-surface-variant leading-relaxed mt-2">Parameters for all 14 fuel types verified against the wildfire simulator reference implementation. Crown fire CFB uses Van Wagner (1977) with foliar moisture content assumed at 100% (mid-season standard).</p>
+<div class="border-l-2 border-secondary pl-5">
+<div class="text-[10px] font-label uppercase tracking-widest text-secondary mb-1">FBP System — Forestry Canada ST-X-3 (1992)</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Inputs: FFMC, DMC, DC, wind speed, user-selected fuel type. Outputs: ISI, BUI, surface ROS, BUI effect (BE), slope-adjusted ROS, surface fire intensity (SFI), crown fraction burned (CFB), total fuel consumption (TFC), head fire intensity (HFI), flame length.</p>
+<p class="text-sm text-on-surface-variant mt-2">Crown fire assessment uses Van Wagner (1977): Critical Surface Intensity (CSI) is computed from crown base height (CBH) and foliar moisture content (FMC = 100%). CFB = 1 − e<sup>−0.23(ROS − RSO)</sup>. Flame length from Byram (1959): L = 0.0775 × HFI<sup>0.46</sup>. Fuel type parameters (a, b, c, q, BUI₀, CBH, CFL, SFC) from ST-X-3 Tables 4–6.</p>
+<p class="text-sm text-on-surface-variant mt-2">Default fuel type: <span class="font-bold text-on-surface">C2 — Boreal Spruce</span>, the dominant fuel type across Alberta's boreal zone. User-selectable from 14 fuel types in station detail header.</p>
 </div>
 </div>
 </div>
 
-<!-- Station network -->
-<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
-<div class="flex items-start gap-4 mb-6">
-<span class="material-symbols-outlined text-primary text-2xl mt-0.5">location_on</span>
-<div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Network</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">39 Alberta CWFIS Stations</p>
+<!-- References -->
+<div class="bg-surface-container rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-5">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">menu_book</span>
+<h4 class="font-headline text-lg font-bold text-on-surface">Primary References</h4>
 </div>
-</div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station coordinates correspond to the Canadian Wildland Fire Information System (CWFIS) fire weather station network operated by Natural Resources Canada. Stations span High Level (58.5°N) to Cardston (49.2°N), covering all Alberta forest zones. Weather is fetched at each station's geographic coordinate from Open-Meteo's nearest grid point — typically within 5–10 km of the physical station.</p>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-<div class="bg-surface-container-lowest p-3 rounded-lg">
-<div class="font-headline text-xl font-bold text-primary">39</div>
-<div class="text-[10px] font-label text-on-surface-variant uppercase">Stations</div>
-</div>
-<div class="bg-surface-container-lowest p-3 rounded-lg">
-<div class="font-headline text-xl font-bold text-primary">9.3°</div>
-<div class="text-[10px] font-label text-on-surface-variant uppercase">Lat Range</div>
-</div>
-<div class="bg-surface-container-lowest p-3 rounded-lg">
-<div class="font-headline text-xl font-bold text-primary">~1h</div>
-<div class="text-[10px] font-label text-on-surface-variant uppercase">Data Refresh</div>
-</div>
-<div class="bg-surface-container-lowest p-3 rounded-lg">
-<div class="font-headline text-xl font-bold text-primary">0</div>
-<div class="text-[10px] font-label text-on-surface-variant uppercase">Server Deps</div>
-</div>
-</div>
+<ul class="space-y-3 text-xs text-on-surface-variant leading-relaxed font-mono">
+<li class="flex gap-3"><span class="text-primary shrink-0">[1]</span><span>Van Wagner, C.E. &amp; Pickett, T.L. (1985). <em>Equations and FORTRAN program for the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 33. Canadian Forestry Service, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[2]</span><span>Van Wagner, C.E. (1987). <em>Development and structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35. Canadian Forestry Service, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[3]</span><span>Forestry Canada Fire Danger Group (1992). <em>Development and structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3. Forestry Canada, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> ECMWF IFS, DWD ICON, NCEP GFS ensemble. Updated hourly.</span></li>
+</ul>
 </div>
 
 <!-- Limitations -->
-<div class="bg-surface-container rounded-2xl p-8 border border-outline-variant/10">
+<div class="bg-surface-container rounded-2xl p-8 border border-yellow-400/20">
 <div class="flex items-start gap-4 mb-4">
-<span class="material-symbols-outlined text-yellow-400 text-2xl mt-0.5">info</span>
+<span class="material-symbols-outlined text-yellow-400 text-2xl mt-0.5">warning</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Known Limitations</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Operational Context Required</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Operational Limitations</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Read Before Use in Operations</p>
 </div>
 </div>
 <ul class="space-y-3 text-sm text-on-surface-variant">
-<li class="flex gap-3"><span class="text-yellow-400 mt-0.5">▸</span><span><strong class="text-on-surface">No carry-over from yesterday:</strong> FWI is calculated from a single weather observation using spring startup defaults, not a running daily chain from actual prior observations. This underestimates drought codes mid-season.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 mt-0.5">▸</span><span><strong class="text-on-surface">NWP ≠ station observation:</strong> Open-Meteo model output is interpolated at station coordinates, not a physical sensor reading. Localized effects (terrain channelling, inversions) are not captured.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 mt-0.5">▸</span><span><strong class="text-on-surface">No wind direction:</strong> FBP ROS calculated for head fire at observed wind speed. Actual fire spread direction requires azimuth and slope aspect — not available in this dashboard.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 mt-0.5">▸</span><span><strong class="text-on-surface">Fuel type is user-selected:</strong> The dashboard cannot determine fuel type from satellite or LiDAR data at runtime. C2 default is appropriate for boreal stations but may not reflect actual conditions at grassland or mountain stations.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 mt-0.5">▸</span><span><strong class="text-on-surface">For awareness, not dispatch:</strong> This tool is designed for situational awareness and training. Operational suppression decisions must be based on ground-truth observations from certified fire weather stations and qualified fire behaviour analysts.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No daily carry-over chain:</strong> FWI is computed from a single observation against spring startup constants. A proper operational chain requires yesterday's FFMC, DMC, and DC as inputs. Mid-season DC is systematically underestimated by this approach.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">NWP grid ≠ physical station:</strong> Open-Meteo interpolates model output at the station coordinate; it is not reading from the physical NRCan sensor. Micro-climate effects (valley inversions, terrain channelling, lake influence) are absent from model output.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No wind direction or slope aspect:</strong> FBP outputs assume head-fire conditions at observed wind speed on flat terrain. Actual ROS and HFI are direction-dependent and terrain-modified.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Fuel type is user-selected:</strong> No automated fuel classification. C2 default is representative of the boreal zone; grassland and mountain stations may require O1a/O1b or C7 respectively.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Situational awareness only:</strong> Suppression resource decisions require ground-truth observations from certified CWFIS stations and interpretation by a qualified Fire Behaviour Analyst (FBA).</span></li>
 </ul>
 </div>
 </section>
