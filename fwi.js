@@ -88,6 +88,9 @@ function dangerRating(fwi) {
   return 'Extreme';
 }
 
+/** Null-safe number formatter — returns '—' if value is null/undefined. */
+const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
+
 /** Fetch current weather from Open-Meteo (no API key, CORS-enabled). */
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
@@ -129,10 +132,10 @@ function wireDOM(r) {
     });
 
   // Weather
-  set('temp',  r.weather.temp.toFixed(1) + '°C');
-  set('rh',    r.weather.rh.toFixed(0) + '%');
-  set('wind',  r.weather.wind.toFixed(1) + ' km/h');
-  set('rain',  r.weather.rain.toFixed(1) + ' mm');
+  set('temp',  fmt(r.weather.temp) + '°C');
+  set('rh',    fmt(r.weather.rh, 0) + '%');
+  set('wind',  fmt(r.weather.wind) + ' km/h');
+  set('rain',  fmt(r.weather.rain) + ' mm');
 
   // FWI components
   set('ffmc',  r.ffmc.toFixed(1));
@@ -263,6 +266,7 @@ function buildStationPicker() {
     const stLabel = document.getElementById('fwi-map-station');
     if (stLabel) stLabel.textContent = name;
     initFWI(lat, lng, name);
+    buildHourlyChart(lat, lng);
   }
 
   sel.addEventListener('change', loadStation);
@@ -306,19 +310,19 @@ function regionCard(name, sector, r) {
     <div class="grid grid-cols-2 gap-x-8 gap-y-1">
       <div>
         <span class="font-label text-[10px] text-on-surface-variant uppercase block">Temp</span>
-        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.temp.toFixed(1)}°C</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${fmt(r.weather.temp)}°C</span>
       </div>
       <div>
         <span class="font-label text-[10px] text-on-surface-variant uppercase block">Wind</span>
-        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.wind.toFixed(0)} km/h</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${fmt(r.weather.wind, 0)} km/h</span>
       </div>
       <div>
         <span class="font-label text-[10px] text-on-surface-variant uppercase block">FWI</span>
-        <span class="font-headline text-lg text-on-surface font-medium">${r.fwi.toFixed(1)}</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${fmt(r.fwi)}</span>
       </div>
       <div>
         <span class="font-label text-[10px] text-on-surface-variant uppercase block">RH</span>
-        <span class="font-headline text-lg text-on-surface font-medium">${r.weather.rh.toFixed(0)}%</span>
+        <span class="font-headline text-lg text-on-surface font-medium">${fmt(r.weather.rh, 0)}%</span>
       </div>
     </div>
     <div class="flex items-center gap-3 ${c.badge} px-4 py-2 rounded-full">
@@ -375,18 +379,20 @@ async function fetchForecast(lat, lng) {
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
     `&timezone=auto&forecast_days=7`;
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
   // Pick hour index 12 (noon) for each of 7 days
   for (let day = 0; day < 7; day++) {
     const i = day * 24 + 12;
+    if (i >= (h.time?.length ?? 0)) continue;
     const date = new Date(h.time[i]);
     days.push({
-      temp:  h.temperature_2m[i],
-      rh:    h.relative_humidity_2m[i],
-      wind:  h.wind_speed_10m[i],
-      rain:  h.precipitation[i],
+      temp:  h.temperature_2m[i]       ?? 15,
+      rh:    h.relative_humidity_2m[i]  ?? 40,
+      wind:  h.wind_speed_10m[i]        ?? 10,
+      rain:  h.precipitation[i]         ?? 0,
       month: date.getMonth() + 1,
       label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
     });
@@ -394,11 +400,81 @@ async function fetchForecast(lat, lng) {
   return days;
 }
 
+/**
+ * Fetch the past 23 hours of hourly data for the 24-hour trend chart.
+ * Uses Open-Meteo's past_hours extension.
+ */
+async function fetchHourly(lat, lng) {
+  const url = `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lat}&longitude=${lng}` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
+    `&timezone=auto&past_hours=23&forecast_hours=0`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Open-Meteo hourly ${res.status}`);
+  const d = await res.json();
+  const h = d.hourly;
+  return (h.time || []).map((t, i) => ({
+    time:  new Date(t),
+    temp:  h.temperature_2m[i]       ?? 15,
+    rh:    h.relative_humidity_2m[i]  ?? 40,
+    wind:  h.wind_speed_10m[i]        ?? 10,
+    rain:  h.precipitation[i]         ?? 0,
+    month: new Date(t).getMonth() + 1,
+  }));
+}
+
+/**
+ * Render the 24-hour FWI trend chart into <div id="fwi-chart-bars">.
+ * Chains Van Wagner hour-by-hour from STARTUP defaults.
+ */
+async function buildHourlyChart(lat, lng) {
+  const container = document.getElementById('fwi-chart-bars');
+  if (!container) return;
+
+  let hours;
+  try {
+    hours = await fetchHourly(lat, lng);
+  } catch (e) {
+    console.warn('[FWI Chart]', e);
+    return;
+  }
+  if (!hours.length) return;
+
+  let prev = { ...STARTUP };
+  const results = hours.map(w => {
+    const r = calculateFWI(w, prev);
+    prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
+    return { fwi: r.fwi, danger: r.danger, time: w.time };
+  });
+
+  const maxFWI = Math.max(...results.map(r => r.fwi), 1);
+  const now = new Date();
+
+  container.innerHTML = results.map(r => {
+    const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
+    const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
+    const isPast = r.time <= now;
+    const bg = isPast ? c.bar : c.bar + '/30';
+    const timeLabel = r.time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `<div class="flex-1 ${bg} rounded-t-sm transition-colors cursor-help group relative" style="height:${h}%">` +
+      `<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-surface-container-highest px-2 py-1 rounded text-[10px] whitespace-nowrap z-10">${timeLabel} — ${fmt(r.fwi)}</div>` +
+      `</div>`;
+  }).join('');
+}
+
 /** Chain Van Wagner through multiple days, returning FWI result per day. */
 function calcMultiDay(days) {
   let prev = { ...STARTUP };
+  // Guard against null values propagating through chain
   return days.map(w => {
-    const r = calculateFWI(w, prev);
+    const safe = {
+      temp:  w.temp  ?? 15,
+      rh:    w.rh    ?? 40,
+      wind:  w.wind  ?? 10,
+      rain:  w.rain  ?? 0,
+      month: w.month ?? (new Date().getMonth() + 1),
+    };
+    const r = calculateFWI(safe, prev);
     prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
     return { ...r, label: w.label };
   });
@@ -443,22 +519,23 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
       }).join('');
     }
 
-    // Trend table — top 5 stations sampled from REGIONS
+    // Trend table — top 5 stations, loaded sequentially to avoid rate-limiting
     const tbody = document.getElementById('fwi-trend-tbody');
     if (tbody) {
       const tableStations = REGIONS.slice(0, 5);
-      const tableResults = await Promise.all(tableStations.map(async reg => {
-        const w = await fetchWeather(reg.lat, reg.lng);
-        return { name: reg.name.toUpperCase(), result: calculateFWI(w) };
-      }));
-      tbody.innerHTML = tableResults.map(({ name, result: r }) => `
+      let tableHTML = '';
+      for (const reg of tableStations) {
+        try {
+          const w = await fetchWeather(reg.lat, reg.lng);
+          const r = calculateFWI(w);
+          const name = reg.name.toUpperCase();
+          tableHTML += `
 <tr class="hover:bg-surface-container transition-colors">
   <td class="py-5 pl-6">
     <span class="block text-white font-bold font-headline">${name}</span>
-    <span class="text-outline text-xs">${r.weather.lat ? '' : ''}</span>
   </td>
-  <td class="py-5 font-headline font-bold text-white">${r.weather.temp.toFixed(1)}°C</td>
-  <td class="py-5 font-bold ${r.weather.rh < 30 ? 'text-tertiary' : 'text-secondary'}">RH ${r.weather.rh.toFixed(0)}%</td>
+  <td class="py-5 font-headline font-bold text-white">${fmt(r.weather.temp)}°C</td>
+  <td class="py-5 font-bold ${r.weather.rh < 30 ? 'text-tertiary' : 'text-secondary'}">RH ${fmt(r.weather.rh, 0)}%</td>
   <td class="py-5">
     <span class="px-3 py-1 rounded-full text-[10px] font-bold ${r.danger === 'Extreme' ? 'bg-tertiary-container text-tertiary' : r.danger === 'High' || r.danger === 'Very High' ? 'bg-[#fbabff]/10 text-tertiary' : 'bg-secondary-container/20 text-secondary border border-secondary/20'}">${r.danger.toUpperCase()}</span>
   </td>
@@ -466,13 +543,21 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
     <div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
       <div class="h-full bg-primary" style="width:${Math.min(100, r.fwi * 2).toFixed(1)}%"></div>
     </div>
-    <span class="text-xs text-outline mt-1 block">${r.fwi.toFixed(1)}</span>
+    <span class="text-xs text-outline mt-1 block">${fmt(r.fwi)}</span>
   </td>
-</tr>`).join('');
+</tr>`;
+        } catch (e) {
+          console.warn(`[FWI Trend Table] ${reg.name}:`, e);
+          tableHTML += `<tr><td colspan="5" class="py-3 pl-6 text-slate-600 text-xs">${reg.name} — unavailable</td></tr>`;
+        }
+      }
+      tbody.innerHTML = tableHTML;
     }
   } catch (e) {
     console.warn('[FWI Forecast]', e);
+    const tbody = document.getElementById('fwi-trend-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-500 py-6">Forecast unavailable — check connection</td></tr>`;
   }
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };

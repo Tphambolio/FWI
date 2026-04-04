@@ -4,74 +4,10 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Alberta FWI - Forecast &amp; Trends</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "on-primary-container": "#008abb",
-              "on-secondary-fixed": "#002109",
-              "background": "#0b1326",
-              "inverse-surface": "#dae2fd",
-              "on-tertiary-container": "#ce3ae5",
-              "on-tertiary": "#580065",
-              "on-secondary-fixed-variant": "#005321",
-              "on-primary": "#00354a",
-              "on-background": "#dae2fd",
-              "on-surface-variant": "#c6c6cd",
-              "surface-variant": "#2d3449",
-              "secondary-fixed-dim": "#4ae176",
-              "primary-fixed-dim": "#7bd0ff",
-              "primary-fixed": "#c4e7ff",
-              "tertiary": "#fbabff",
-              "on-tertiary-fixed-variant": "#7c008e",
-              "on-surface": "#dae2fd",
-              "secondary": "#4ae176",
-              "tertiary-fixed-dim": "#fbabff",
-              "outline": "#909097",
-              "outline-variant": "#45464d",
-              "inverse-primary": "#00668a",
-              "error": "#ffb4ab",
-              "surface-dim": "#0b1326",
-              "secondary-container": "#00b954",
-              "on-primary-fixed": "#001e2c",
-              "surface-container-highest": "#2d3449",
-              "surface": "#0b1326",
-              "on-primary-fixed-variant": "#004c69",
-              "on-tertiary-fixed": "#36003e",
-              "secondary-fixed": "#6bff8f",
-              "primary": "#7bd0ff",
-              "tertiary-fixed": "#ffd6fd",
-              "on-error": "#690005",
-              "error-container": "#93000a",
-              "surface-container-high": "#222a3d",
-              "on-secondary-container": "#004119",
-              "on-secondary": "#003915",
-              "surface-container-lowest": "#060e20",
-              "on-error-container": "#ffdad6",
-              "surface-container-low": "#131b2e",
-              "surface-tint": "#7bd0ff",
-              "primary-container": "#001a27",
-              "surface-bright": "#31394d",
-              "tertiary-container": "#2f0037",
-              "inverse-on-surface": "#283044",
-              "surface-container": "#171f33"
-            },
-            fontFamily: {
-              "headline": ["Space Grotesk"],
-              "body": ["Inter"],
-              "label": ["Inter"]
-            },
-            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
-          },
-        },
-      }
-    </script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../fwi-theme.js"></script>
 <style>
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -96,12 +32,6 @@
 <div class="flex items-center gap-3">
 <span class="material-symbols-outlined text-[#7bd0ff]" data-icon="radar">radar</span>
 <h1 class="text-lg font-black text-[#7bd0ff] tracking-[0.2em] font-['Space_Grotesk'] uppercase">PRECISION OBSERVER</h1>
-</div>
-<div class="hidden md:flex gap-8 items-center">
-<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="../regional_summary/code.html">Map</a>
-<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="../station_detail/code.html">Stations</a>
-<a class="text-[#7bd0ff] font-['Space_Grotesk'] font-bold tracking-tighter uppercase transition-all duration-300" href="../forecast_trends/code.html">Risk</a>
-<a class="text-slate-400 font-['Space_Grotesk'] font-bold tracking-tighter uppercase hover:text-[#7bd0ff] transition-all duration-300" href="../science_guide/code.html">Science</a>
 </div>
 <button class="active:scale-95 transition-transform">
 <span class="material-symbols-outlined text-[#7bd0ff]" data-icon="account_circle">account_circle</span>
