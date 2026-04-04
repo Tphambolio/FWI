@@ -594,4 +594,40 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
   }
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, ALBERTA_STATIONS };
+// ─── Export ──────────────────────────────────────────────────────────────────
+
+async function exportRegionalDataset() {
+  const btn = document.getElementById('fwi-export-btn');
+  if (btn) btn.textContent = 'FETCHING…';
+
+  const timestamp = new Date().toISOString();
+  const rows = [['Timestamp', 'Station', 'Sector', 'Lat', 'Lng', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
+
+  for (const reg of REGIONS) {
+    try {
+      const w = await fetchWeather(reg.lat, reg.lng);
+      const r = calculateFWI(w);
+      rows.push([
+        timestamp, reg.name, reg.sector, reg.lat, reg.lng,
+        r.weather.temp, r.weather.rh, r.weather.wind, r.weather.rain,
+        r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
+        r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
+      ]);
+    } catch (e) {
+      rows.push([timestamp, reg.name, reg.sector, reg.lat, reg.lng, ...Array(10).fill('N/A')]);
+    }
+  }
+
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fwi-alberta-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  if (btn) btn.textContent = 'EXPORT FULL DATASET';
+}
+
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, exportRegionalDataset, ALBERTA_STATIONS };
