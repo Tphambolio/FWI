@@ -92,6 +92,15 @@ function dangerRating(fwi) {
   return 'Extreme';
 }
 
+// Hero card gradient per danger level
+const DANGER_GRADIENTS = {
+  'Low':       'linear-gradient(135deg, #4ae176 0%, #1a8a3e 100%)',
+  'Moderate':  'linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)',
+  'High':      'linear-gradient(135deg, #fbabff 0%, #9b3dbd 100%)',
+  'Very High': 'linear-gradient(135deg, #ff8c42 0%, #c45000 100%)',
+  'Extreme':   'linear-gradient(135deg, #ff4d4d 0%, #b01010 100%)',
+};
+
 // Per-component thresholds (CFFDRS operational scale)
 const COMPONENT_THRESHOLDS = {
   ffmc: [77, 84, 88, 91],   // Low / Mod / High / Very High / Extreme
@@ -409,6 +418,10 @@ function wireDOM(r) {
   // Danger labels
   set('danger',       r.danger.toUpperCase() + ' RISK');
   set('danger-label', r.danger + ' Risk Level');
+
+  // Hero card colour
+  const scoreCard = document.getElementById('fwi-score-card');
+  if (scoreCard) scoreCard.style.background = DANGER_GRADIENTS[r.danger] || DANGER_GRADIENTS['Moderate'];
 
   // Rating badges — per-component thresholds
   document.querySelectorAll('[data-fwi-rating]').forEach(el => {

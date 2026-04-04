@@ -71,7 +71,7 @@
 <!-- ── HERO: FWI Score + Weather ─────────────────────────────────────── -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
   <!-- FWI Score Card -->
-  <div class="surface-container-highest p-6 rounded-xl synthetic-gradient text-on-primary-fixed">
+  <div id="fwi-score-card" class="surface-container-highest p-6 rounded-xl synthetic-gradient text-on-primary-fixed">
     <div class="flex justify-between items-start mb-4">
       <div>
         <h3 class="font-headline font-extrabold text-2xl leading-tight">FWI SCORE</h3>
@@ -208,7 +208,7 @@
 <span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span>
 </a>
 </nav>
-<script src="../fwi.js?v=8"></script>
+<script src="../fwi.js?v=9"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
