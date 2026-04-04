@@ -238,6 +238,13 @@ function refreshFBP() {
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
 const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
 
+/** Convert degrees to 16-point compass direction. */
+function compassDir(deg) {
+  if (deg == null) return '—';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(+deg / 22.5) % 16];
+}
+
 // ─── Haversine distance ───────────────────────────────────────────────────────
 function _haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -293,6 +300,7 @@ async function fetchCWFIS(lat, lng) {
       temp:  nearest.temp,
       rh:    nearest.rh,
       wind:  nearest.ws,
+      wdir:  nearest.wdir ?? null,
       rain:  nearest.precip ?? 0,
       month: new Date().getMonth() + 1,
       // FWI codes from CWFIS daily carry-over chain (null off-season)
@@ -331,7 +339,7 @@ async function fetchWeatherPrimary(lat, lng) {
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
+    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
     `&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
@@ -341,6 +349,7 @@ async function fetchWeather(lat, lng) {
     temp:  c.temperature_2m,
     rh:    c.relative_humidity_2m,
     wind:  c.wind_speed_10m,
+    wdir:  c.wind_direction_10m ?? null,
     rain:  c.precipitation,
     month: new Date().getMonth() + 1,
     source: 'Open-Meteo NWP',
@@ -385,7 +394,8 @@ function wireDOM(r) {
   // Weather
   set('temp',  fmt(r.weather.temp) + '°C');
   set('rh',    fmt(r.weather.rh, 0) + '%');
-  set('wind',  fmt(r.weather.wind) + ' km/h');
+  set('wind',  fmt(r.weather.wind, 0) + ' km/h');
+  set('wdir',  r.weather.wdir != null ? `${compassDir(r.weather.wdir)} (${Math.round(r.weather.wdir)}°)` : '—');
   set('rain',  fmt(r.weather.rain) + ' mm');
 
   // FWI components
@@ -1002,7 +1012,7 @@ async function buildStationMap(containerId) {
         `<div><span style="color:#8899cc">Danger</span><br><strong style="color:${color}">${r.danger.toUpperCase()}</strong></div>` +
         `<div><span style="color:#8899cc">Temp</span><br><span style="color:#dae2fd">${fmt(w.temp)}°C</span></div>` +
         `<div><span style="color:#8899cc">RH</span><br><span style="color:#dae2fd">${fmt(w.rh, 0)}%</span></div>` +
-        `<div><span style="color:#8899cc">Wind</span><br><span style="color:#dae2fd">${fmt(w.wind, 0)} km/h</span></div>` +
+        `<div><span style="color:#8899cc">Wind</span><br><span style="color:#dae2fd">${fmt(w.wind, 0)} km/h ${w.wdir != null ? compassDir(w.wdir) : ''}</span></div>` +
         `<div><span style="color:#8899cc">Rain</span><br><span style="color:#dae2fd">${fmt(w.rain)} mm</span></div>` +
         `</div>` +
         `<div style="margin-top:8px;font-size:9px;color:#45464d;text-transform:uppercase;letter-spacing:.1em">${fwiMethod}</div>` +
