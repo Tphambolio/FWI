@@ -812,17 +812,24 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
     if (elMR) elMR.textContent = fmt(minRH, 0) + '%';
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
-    // Bar chart — all 7 days
+    // Bar chart — all 7 days, coloured by danger rating
     const barContainer = document.getElementById('fwi-trend-bars');
     if (barContainer) {
-      barContainer.innerHTML = results.map((r, i) => {
+      barContainer.innerHTML = results.map(r => {
         const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
-        const isCurrent = i === 0;
-        const bg = isCurrent ? 'bg-primary' : 'bg-surface-container hover:bg-primary/50';
-        return `<div class="w-full ${bg} rounded-t-sm transition-colors relative group" style="height:${h}%">
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[9px] text-primary opacity-0 group-hover:opacity-100 whitespace-nowrap">${r.fwi.toFixed(1)}</div>
-        </div>`;
+        const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
+        return `<div class="w-full ${c.bar} rounded-t-sm transition-colors relative group cursor-help" style="height:${h}%">` +
+          `<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[9px] text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">${r.label} — ${r.fwi.toFixed(1)} (${r.danger})</div>` +
+          `</div>`;
       }).join('');
+    }
+
+    // X-axis labels — 7 actual day labels from data
+    const timesEl = document.getElementById('fwi-trend-times');
+    if (timesEl) {
+      timesEl.innerHTML = results.map(r =>
+        `<span class="truncate">${r.label.split(',')[0]}</span>`
+      ).join('');
     }
 
     // Trend table — top 5 stations, loaded sequentially to avoid rate-limiting
