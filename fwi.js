@@ -307,6 +307,11 @@ const REGIONS = [
   { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
 ];
 
+// Cache populated by buildRegionalSummary — used by exportRegionalDataset
+let _regionalCache = [];
+// Cache populated by buildForecastTrends — used by exportForecastReport
+let _forecastCache = { days: [], results: [] };
+
 const DANGER_COLORS = {
   'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
   'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
@@ -375,6 +380,7 @@ async function buildRegionalSummary() {
       const w = await fetchWeather(reg.lat, reg.lng);
       const result = calculateFWI(w);
       loaded.push({ ...reg, result });
+      _regionalCache.push({ ...reg, result });
       if (el) el.outerHTML = regionCard(reg.name, reg.sector, result);
     } catch (e) {
       console.warn(`[FWI] ${reg.name}:`, e);
@@ -514,6 +520,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
   try {
     const days = await fetchForecast(lat, lng);
     const results = calcMultiDay(days);
+    _forecastCache = { days, results };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
     // T+24h (day index 1), T+48h (2), T+72h (3)
@@ -613,77 +620,49 @@ function forecastSummaryText(days, results) {
 
 // ─── Export ──────────────────────────────────────────────────────────────────
 
-async function exportRegionalDataset() {
-  const btn = document.getElementById('fwi-export-btn');
-  if (btn) btn.textContent = 'FETCHING…';
-
+function exportRegionalDataset() {
+  if (!_regionalCache.length) { alert('Data still loading — try again in a moment.'); return; }
   const timestamp = new Date().toISOString();
   const rows = [['Timestamp', 'Station', 'Sector', 'Lat', 'Lng', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
-
-  for (const reg of REGIONS) {
-    try {
-      const w = await fetchWeather(reg.lat, reg.lng);
-      const r = calculateFWI(w);
-      rows.push([
-        timestamp, reg.name, reg.sector, reg.lat, reg.lng,
-        r.weather.temp, r.weather.rh, r.weather.wind, r.weather.rain,
-        r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
-        r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
-      ]);
-    } catch (e) {
-      rows.push([timestamp, reg.name, reg.sector, reg.lat, reg.lng, ...Array(10).fill('N/A')]);
-    }
+  for (const { name, sector, lat, lng, result: r } of _regionalCache) {
+    rows.push([
+      timestamp, name, sector, lat, lng,
+      r.weather.temp, r.weather.rh, r.weather.wind, r.weather.rain,
+      r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
+      r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
+    ]);
   }
+  _triggerCSVDownload(rows, `fwi-alberta-${new Date().toISOString().slice(0,10)}.csv`);
+}
 
-  const csv = rows.map(r => r.join(',')).join('\n');
+function exportForecastReport() {
+  const { days, results } = _forecastCache;
+  if (!results.length) { alert('Forecast still loading — try again in a moment.'); return; }
+  const timestamp = new Date().toISOString();
+  const rows = [['Timestamp', 'Day', 'Date', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
+  results.forEach((r, i) => {
+    const d = days[i];
+    rows.push([
+      timestamp, `D+${i+1}`, r.label,
+      d.temp, d.rh, d.wind, d.rain,
+      r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
+      r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
+    ]);
+  });
+  _triggerCSVDownload(rows, `fwi-forecast-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+function _triggerCSVDownload(rows, filename) {
+  const csv  = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
   a.href = url;
-  a.download = `fwi-alberta-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-
-  if (btn) btn.textContent = 'EXPORT FULL DATASET';
-}
-
-async function exportForecastReport() {
-  const btn = document.getElementById('fwi-report-btn');
-  if (btn) btn.textContent = 'FETCHING…';
-
-  try {
-    const days    = await fetchForecast(53.5344, -113.4903);
-    const results = calcMultiDay(days);
-    const timestamp = new Date().toISOString();
-
-    const rows = [['Timestamp', 'Day', 'Date', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
-    results.forEach((r, i) => {
-      const d = days[i];
-      rows.push([
-        timestamp, `D+${i+1}`, r.label,
-        d.temp, d.rh, d.wind, d.rain,
-        r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
-        r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
-      ]);
-    });
-
-    const csv  = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `fwi-forecast-${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.warn('[FWI Report]', e);
-  }
-
-  if (btn) btn.textContent = 'GENERATE REPORT';
 }
 
 window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS };
