@@ -506,6 +506,17 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
     setCard('fwi-f48-val', 'fwi-f48-bar', 'fwi-f48-label', results[2], results[1]);
     setCard('fwi-f72-val', 'fwi-f72-bar', 'fwi-f72-label', results[3], results[2]);
 
+    // Hero stat boxes — peak temp, min RH, max wind across forecast window
+    const peakTemp = Math.max(...days.map(d => d.temp ?? -99));
+    const minRH    = Math.min(...days.map(d => d.rh   ?? 999));
+    const maxWind  = Math.max(...days.map(d => d.wind  ?? 0));
+    const elPT = document.getElementById('fwi-peak-temp');
+    const elMR = document.getElementById('fwi-min-rh');
+    const elMW = document.getElementById('fwi-max-wind');
+    if (elPT) elPT.textContent = fmt(peakTemp) + '°C';
+    if (elMR) elMR.textContent = fmt(minRH, 0) + '%';
+    if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
+
     // Bar chart — all 7 days
     const barContainer = document.getElementById('fwi-trend-bars');
     if (barContainer) {
