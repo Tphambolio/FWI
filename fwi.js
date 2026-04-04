@@ -13,7 +13,10 @@ const DMC_LL = [0,6.5,7.5,9.0,12.8,13.9,13.9,12.4,10.9,9.4,8.0,7.0,6.0];
 const DC_LL  = [0,-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5.0,2.4,0.4,-1.6,-1.6];
 
 // Spring startup defaults (Van Wagner 1987)
-const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 15.0 };
+// Spring startup defaults (Van Wagner 1987).
+// DC=300 reflects carry-over drought typical for Alberta's AG/RM fuel zones
+// (High–VeryHigh at season open); Van Wagner's dc=15 assumes fully saturated soils.
+const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
 
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
