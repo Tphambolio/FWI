@@ -27,7 +27,7 @@
     }
   </style>
   </head>
-<body class="bg-surface text-on-surface font-body min-h-screen pb-24">
+<body class="bg-surface text-on-surface font-body min-h-screen pb-24 overflow-x-hidden">
 <!-- TopAppBar -->
 <header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
 <div class="flex items-center gap-4">
@@ -38,7 +38,7 @@
 <option value="">Loading stations…</option>
 </select>
 </div>
-<div class="flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
+<div class="hidden md:flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
 <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
 <select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded">
   <option value="C2" selected>C2 — Boreal Spruce</option>
@@ -67,6 +67,30 @@
 </div>
 </header>
 <main class="max-w-7xl mx-auto px-6 py-8">
+
+<!-- ── Mobile Fuel Picker ──────────────────────────────────────────────── -->
+<div class="md:hidden flex items-center gap-3 mb-6 surface-container-low p-3 rounded-xl">
+  <span class="material-symbols-outlined text-[#7bd0ff] text-sm">forest</span>
+  <div class="flex flex-col flex-1">
+    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
+    <select id="fwi-fuel-picker-mobile" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full">
+      <option value="C2" selected>C2 — Boreal Spruce</option>
+      <option value="C1">C1 — Spruce-Lichen Woodland</option>
+      <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+      <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
+      <option value="C5">C5 — Red and White Pine</option>
+      <option value="C6">C6 — Conifer Plantation</option>
+      <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
+      <option value="D1">D1 — Leafless Aspen</option>
+      <option value="D2">D2 — Green Aspen</option>
+      <option value="O1a">O1a — Matted Grass</option>
+      <option value="O1b">O1b — Standing Grass</option>
+      <option value="S1">S1 — Jack Pine Slash</option>
+      <option value="S2">S2 — Spruce/Balsam Slash</option>
+      <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
+    </select>
+  </div>
+</div>
 
 <!-- ── HERO: FWI Score + Weather ─────────────────────────────────────── -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -212,5 +236,11 @@
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
+  // Mobile fuel picker — sync value to desktop picker then re-run FBP
+  const _mfp = document.getElementById('fwi-fuel-picker-mobile');
+  if (_mfp) _mfp.addEventListener('change', () => {
+    document.getElementById('fwi-fuel-picker').value = _mfp.value;
+    FWI.refreshFBP();
+  });
 </script>
 </body></html>
