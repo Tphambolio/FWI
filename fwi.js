@@ -641,7 +641,9 @@ async function exportRegionalDataset() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `fwi-alberta-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
   if (btn) btn.textContent = 'EXPORT FULL DATASET';
@@ -673,7 +675,9 @@ async function exportForecastReport() {
     const a    = document.createElement('a');
     a.href = url;
     a.download = `fwi-forecast-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch (e) {
     console.warn('[FWI Report]', e);
