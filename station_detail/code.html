@@ -38,6 +38,25 @@
 <option value="">Loading stations…</option>
 </select>
 </div>
+<div class="flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
+<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
+<select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded">
+  <option value="C2" selected>C2 — Boreal Spruce</option>
+  <option value="C1">C1 — Spruce-Lichen Woodland</option>
+  <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+  <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
+  <option value="C5">C5 — Red and White Pine</option>
+  <option value="C6">C6 — Conifer Plantation</option>
+  <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
+  <option value="D1">D1 — Leafless Aspen</option>
+  <option value="D2">D2 — Green Aspen</option>
+  <option value="O1a">O1a — Matted Grass</option>
+  <option value="O1b">O1b — Standing Grass</option>
+  <option value="S1">S1 — Jack Pine Slash</option>
+  <option value="S2">S2 — Spruce/Balsam Slash</option>
+  <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
+</select>
+</div>
 </div>
 <div class="flex items-center gap-2">
 <span class="font-label text-[10px] text-slate-500" data-fwi="updated">—</span>
@@ -184,6 +203,49 @@
 </div>
 </div>
 </section>
+<!-- FBP Fire Behaviour Section -->
+<section class="mt-12">
+<div class="flex items-baseline justify-between mb-8">
+<h2 class="font-headline text-3xl font-bold tracking-tight">Fire Behaviour Prediction</h2>
+<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
+<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">FBP System ST-X-3</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+<!-- Head ROS -->
+<div class="surface-container-high p-5 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
+<p class="font-headline text-2xl font-bold" id="fwi-fbp-ros">—</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Rate of spread</p>
+</div>
+<!-- HFI -->
+<div class="surface-container-high p-5 rounded-lg col-span-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Head Fire Intensity</p>
+<span id="fwi-fbp-hfi-rating" class="px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container text-secondary">—</span>
+</div>
+<p class="font-headline text-2xl font-bold" id="fwi-fbp-hfi">—</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Escape threshold: 4,000 kW/m</p>
+</div>
+<!-- Flame Length -->
+<div class="surface-container-high p-5 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
+<p class="font-headline text-2xl font-bold" id="fwi-fbp-flame">—</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Byram (1959)</p>
+</div>
+<!-- Fire Type -->
+<div class="surface-container-high p-5 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
+<p class="font-headline text-xl font-bold" id="fwi-fbp-type">—</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Van Wagner (1977)</p>
+</div>
+<!-- CFB -->
+<div class="surface-container-high p-5 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Fraction Burned</p>
+<p class="font-headline text-2xl font-bold" id="fwi-fbp-cfb">—</p>
+<p class="text-[10px] text-on-surface-variant mt-1">% crown consumed</p>
+</div>
+</div>
+</section>
 <!-- Historical Timeline Section -->
 <section class="mt-16">
 <div class="surface-container-low p-8 rounded-lg">
@@ -223,5 +285,8 @@
 </a>
 </nav>
 <script src="../fwi.js"></script>
-<script>FWI.buildStationPicker();</script>
+<script>
+  FWI.buildStationPicker();
+  document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
+</script>
 </body></html>

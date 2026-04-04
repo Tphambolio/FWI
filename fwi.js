@@ -109,6 +109,132 @@ function componentRating(key, val) {
   return RATING_LABELS[4];
 }
 
+// ─── FBP System (ST-X-3, Forestry Canada 1992) ───────────────────────────────
+// Parameters ported from wildfire-simulator-v3/engine/src/firesim/fbp/constants.py
+
+const FUEL_TYPES = {
+  C1:  { name:'Spruce-Lichen Woodland',       a:90,  b:0.0649, c:4.5, q:0.90, bui0:72,  cbh:2,  cfl:0.75, sfc:0.75 },
+  C2:  { name:'Boreal Spruce',                a:110, b:0.0282, c:1.5, q:0.70, bui0:64,  cbh:3,  cfl:0.80, sfc:0.80 },
+  C3:  { name:'Mature Jack/Lodgepole Pine',   a:110, b:0.0444, c:3.0, q:0.75, bui0:62,  cbh:8,  cfl:1.15, sfc:1.15 },
+  C4:  { name:'Immature Jack/Lodgepole Pine', a:110, b:0.0293, c:1.5, q:0.75, bui0:66,  cbh:4,  cfl:1.20, sfc:1.20 },
+  C5:  { name:'Red and White Pine',           a:30,  b:0.0697, c:4.0, q:0.80, bui0:56,  cbh:18, cfl:1.20, sfc:1.20 },
+  C6:  { name:'Conifer Plantation',           a:30,  b:0.0800, c:3.0, q:0.80, bui0:62,  cbh:7,  cfl:1.80, sfc:1.80 },
+  C7:  { name:'Ponderosa Pine/Douglas-fir',   a:45,  b:0.0305, c:2.0, q:0.85, bui0:106, cbh:10, cfl:0.50, sfc:0.50 },
+  D1:  { name:'Leafless Aspen',               a:30,  b:0.0232, c:1.6, q:0.90, bui0:32,  cbh:0,  cfl:0.00, sfc:0.35 },
+  D2:  { name:'Green Aspen',                  a:6,   b:0.0232, c:1.6, q:0.90, bui0:32,  cbh:0,  cfl:0.00, sfc:0.35 },
+  O1a: { name:'Matted Grass',                 a:190, b:0.0310, c:1.4, q:1.00, bui0:1,   cbh:0,  cfl:0.00, sfc:0.35 },
+  O1b: { name:'Standing Grass',               a:250, b:0.0350, c:1.7, q:1.00, bui0:1,   cbh:0,  cfl:0.00, sfc:0.35 },
+  S1:  { name:'Jack/Lodgepole Pine Slash',    a:75,  b:0.0297, c:1.3, q:0.75, bui0:38,  cbh:0,  cfl:0.00, sfc:4.50 },
+  S2:  { name:'White Spruce/Balsam Slash',    a:40,  b:0.0438, c:1.7, q:0.75, bui0:63,  cbh:0,  cfl:0.00, sfc:4.50 },
+  S3:  { name:'Cedar/Hemlock/DF Slash',       a:55,  b:0.0829, c:3.2, q:0.75, bui0:31,  cbh:0,  cfl:0.00, sfc:4.50 },
+};
+
+/**
+ * Calculate FBP fire behaviour from FWI codes + wind speed.
+ * Equations: ST-X-3 (Forestry Canada 1992), Van Wagner 1977 (crown fire).
+ *
+ * @param {string} fuelCode  FBP fuel type code (e.g. 'C2')
+ * @param {number} ffmc      Fine Fuel Moisture Code
+ * @param {number} dmc       Duff Moisture Code
+ * @param {number} dc        Drought Code
+ * @param {number} windSpeed 10-m open wind speed (km/h)
+ * @param {number} slope     Percent slope (default 0)
+ * @returns {{ isi, bui, ros, hfi, cfb, tfc, flameLength, fireType } | null}
+ */
+function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
+  const ft = FUEL_TYPES[fuelCode];
+  if (!ft) return null;
+
+  // ISI — identical to Van Wagner formula used in FWI system
+  const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
+  const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
+  const isi = 0.208 * ff * Math.exp(0.05039 * windSpeed);
+
+  // BUI — same formula as _bui()
+  let bui;
+  if (dmc <= 0.4 * dc) {
+    bui = 0.8 * dmc * dc / (dmc + 0.4 * dc);
+  } else {
+    bui = dmc - (1.0 - 0.8 * dc / (dmc + 0.4 * dc)) * (0.92 + Math.pow(0.0114 * dmc, 1.7));
+  }
+  bui = Math.max(0, bui);
+
+  // BUI effect: BE = exp(50 × ln(q) × (1/BUI − 1/BUI₀))
+  let be = 1.0;
+  if (bui > 0 && ft.q < 1.0) {
+    be = Math.exp(50.0 * Math.log(ft.q) * (1.0 / bui - 1.0 / ft.bui0));
+  }
+
+  // Surface ROS (m/min): RSI = a × (1 − e^{−b·ISI})^c × BE
+  let ros = ft.a * Math.pow(1.0 - Math.exp(-ft.b * isi), ft.c) * be;
+
+  // Slope factor — Butler (2007), capped at 2×
+  if (slope > 0) {
+    const sf = Math.min(Math.exp(3.533 * Math.pow(slope / 100.0, 1.2)), 2.0);
+    ros *= sf;
+  }
+
+  // Surface fire intensity (kW/m): SFI = H × SFC × ROS / 60
+  const H   = 18000; // kJ/kg, low heat of combustion
+  const sfi = H * ft.sfc * ros / 60.0;
+
+  // Crown fraction burned — Van Wagner (1977)
+  // CSI (critical surface intensity) = 0.001 × CBH^1.5 × (460 + 25.9 × FMC)^1.5
+  const fmc = 100; // foliar moisture content (%), typical mid-season
+  const csi = ft.cbh > 0 ? 0.001 * Math.pow(ft.cbh, 1.5) * Math.pow(460 + 25.9 * fmc, 1.5) : Infinity;
+  const rso = ft.sfc > 0 ? csi / (H * ft.sfc) : Infinity;
+  const cfb = (ft.cbh > 0 && ros > rso) ? Math.max(0, 1.0 - Math.exp(-0.23 * (ros - rso))) : 0.0;
+
+  // Total fuel consumption and head fire intensity
+  const cfc = cfb * ft.cfl;
+  const tfc = ft.sfc + cfc;
+  const hfi = H * tfc * ros / 60.0;
+
+  // Flame length — Byram (1959): L = 0.0775 × I^0.46
+  const flameLength = hfi > 0 ? 0.0775 * Math.pow(hfi, 0.46) : 0.0;
+
+  // Fire type classification
+  let fireType = 'Surface';
+  if      (cfb > 0.9)             fireType = 'Active Crown';
+  else if (cfb > 0.1)             fireType = 'Passive Crown';
+  else if (ft.cbh > 0 && sfi > csi) fireType = 'Torching';
+
+  return { isi, bui, ros, hfi, cfb, tfc, flameLength, fireType };
+}
+
+/** Render FBP results into the station_detail FBP section. */
+function wireFBP(weather, fwi) {
+  const fuelCode = document.getElementById('fwi-fuel-picker')?.value || 'C2';
+  const result = calculateFBP(fuelCode, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0);
+  if (!result) return;
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('fwi-fbp-ros',   result.ros.toFixed(1) + ' m/min');
+  set('fwi-fbp-hfi',   Math.round(result.hfi).toLocaleString() + ' kW/m');
+  set('fwi-fbp-flame', result.flameLength.toFixed(1) + ' m');
+  set('fwi-fbp-type',  result.fireType);
+  set('fwi-fbp-cfb',   (result.cfb * 100).toFixed(0) + '%');
+
+  const badge = document.getElementById('fwi-fbp-hfi-rating');
+  if (badge) {
+    let rating, cls;
+    if      (result.hfi < 500)  { rating = 'Low';       cls = 'text-secondary'; }
+    else if (result.hfi < 2000) { rating = 'High';      cls = 'text-yellow-400'; }
+    else if (result.hfi < 4000) { rating = 'Very High'; cls = 'text-orange-400'; }
+    else                        { rating = 'Extreme';   cls = 'text-tertiary'; }
+    badge.textContent = rating;
+    badge.className = `px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container ${cls}`;
+  }
+}
+
+/** Re-run FBP with cached last weather/FWI when fuel picker changes. */
+let _lastWeather = null;
+let _lastFWI     = null;
+
+function refreshFBP() {
+  if (_lastWeather && _lastFWI) wireFBP(_lastWeather, _lastFWI);
+}
+
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
 const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
 
@@ -187,6 +313,13 @@ function wireDOM(r) {
 
   // Timestamp
   set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+
+  // Cache for FBP re-runs on fuel picker change
+  _lastWeather = r.weather;
+  _lastFWI     = r;
+
+  // FBP fire behaviour (station_detail only — silently no-ops on other pages)
+  wireFBP(r.weather, r);
 }
 
 /**
@@ -665,4 +798,4 @@ function _triggerCSVDownload(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };
