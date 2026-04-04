@@ -798,4 +798,96 @@ function _triggerCSVDownload(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };
+// ─── Live Station Map (Leaflet) ───────────────────────────────────────────────
+
+const MARKER_COLORS = {
+  'Low':       '#4ae176',
+  'Moderate':  '#7bd0ff',
+  'High':      '#fbabff',
+  'Very High': '#ff8c42',
+  'Extreme':   '#ff4d4d',
+};
+
+/**
+ * Build a Leaflet map into the element with the given id.
+ * Places a grey marker for all 39 CWFIS stations immediately, then fetches
+ * weather for each sequentially, updating marker colour and popup as data arrives.
+ *
+ * @param {string} containerId  id of the <div> to render into
+ */
+async function buildStationMap(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof L === 'undefined') return;
+
+  // Initialise map centered on Alberta
+  const map = L.map(containerId, {
+    center: [54.5, -114.5],
+    zoom: 5,
+    zoomControl: true,
+    attributionControl: true,
+  });
+
+  // CartoDB Dark Matter tiles — matches dashboard theme
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Place all markers in loading state immediately
+  const markers = {};
+  for (const s of ALBERTA_STATIONS) {
+    const marker = L.circleMarker([s.lat, s.lng], {
+      radius: 7,
+      fillColor: '#45464d',
+      color: 'rgba(255,255,255,0.15)',
+      weight: 1,
+      fillOpacity: 0.85,
+    }).addTo(map);
+    marker.bindPopup(
+      `<div style="font-family:'Space Grotesk',sans-serif;min-width:160px">` +
+      `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:4px">${s.name}</div>` +
+      `<div style="font-size:10px;color:#8899cc;text-transform:uppercase;letter-spacing:.1em">Loading…</div>` +
+      `</div>`,
+      { maxWidth: 220 }
+    );
+    markers[s.name] = marker;
+  }
+
+  // Fetch weather for each station and update its marker
+  for (const s of ALBERTA_STATIONS) {
+    try {
+      const w = await fetchWeather(s.lat, s.lng);
+      const r = calculateFWI(w);
+      const color = MARKER_COLORS[r.danger] || '#7bd0ff';
+      const radius = r.danger === 'Extreme' ? 10 : r.danger === 'Very High' ? 9 : 7;
+
+      markers[s.name].setStyle({
+        fillColor: color,
+        color: color,
+        weight: 1.5,
+        fillOpacity: 0.9,
+        radius,
+      });
+
+      markers[s.name].setPopupContent(
+        `<div style="font-family:'Space Grotesk',sans-serif;min-width:180px">` +
+        `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:6px">${s.name}</div>` +
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">` +
+        `<div><span style="color:#8899cc">FWI</span><br><strong style="color:#dae2fd;font-size:16px">${r.fwi.toFixed(1)}</strong></div>` +
+        `<div><span style="color:#8899cc">Danger</span><br><strong style="color:${color}">${r.danger.toUpperCase()}</strong></div>` +
+        `<div><span style="color:#8899cc">Temp</span><br><span style="color:#dae2fd">${fmt(w.temp)}°C</span></div>` +
+        `<div><span style="color:#8899cc">RH</span><br><span style="color:#dae2fd">${fmt(w.rh, 0)}%</span></div>` +
+        `<div><span style="color:#8899cc">Wind</span><br><span style="color:#dae2fd">${fmt(w.wind, 0)} km/h</span></div>` +
+        `<div><span style="color:#8899cc">Rain</span><br><span style="color:#dae2fd">${fmt(w.rain)} mm</span></div>` +
+        `</div>` +
+        `<div style="margin-top:8px;font-size:9px;color:#45464d;text-transform:uppercase;letter-spacing:.1em">Open-Meteo NWP · CFFDRS Van Wagner</div>` +
+        `</div>`
+      );
+    } catch (e) {
+      console.warn(`[FWI Map] ${s.name}:`, e);
+    }
+  }
+}
+
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };

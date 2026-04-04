@@ -5,6 +5,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPeE=" crossorigin=""></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="../fwi-theme.js"></script>
 <style>
@@ -51,7 +53,7 @@
 <span class="font-label text-primary tracking-[0.2em] uppercase text-xs mb-2 block">System Telemetry</span>
 <h2 class="font-headline text-4xl font-bold tracking-tighter text-on-surface mb-4">Alberta Fire Weather Index</h2>
 <p class="text-on-surface-variant leading-relaxed max-w-md">
-                        Real-time meteorological risk assessment across all northern and mountain jurisdictions. Data synchronized from 142 remote telemetry units.
+                        Real-time fire weather index across 39 Alberta CWFIS station coordinates. Weather via Open-Meteo NWP — calculated live in-browser using Van Wagner CFFDRS equations.
                     </p>
 </div>
 <div class="flex gap-4 md:justify-end">
@@ -70,28 +72,47 @@
 <div id="fwi-region-list" class="space-y-4">
 <p class="text-slate-500 text-sm">Loading regional data…</p>
 </div>
-<!-- Analytical Map Inset -->
+<!-- Live Station Map -->
 <section class="mt-16">
-<div class="glass-panel rounded-2xl p-8 border border-outline-variant/10">
-<div class="flex flex-col md:flex-row gap-8 items-center">
-<div class="w-full md:w-1/3">
-<h4 class="font-headline text-xl font-bold text-on-surface mb-2">Regional Distribution</h4>
-<p class="text-on-surface-variant text-sm mb-6">Thermal anomalies detected in high-density timber zones.</p>
-<button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-3 rounded-sm w-full active:opacity-70 transition-opacity">
-                            Export Full Dataset
-                        </button>
-</div>
-<div class="w-full md:w-2/3 h-64 bg-surface-container-lowest rounded-xl overflow-hidden relative group">
-<img alt="topographic map of alberta" class="w-full h-full object-cover opacity-40 mix-blend-luminosity transition-transform duration-700 group-hover:scale-110" data-alt="topographic dark satellite imagery of mountain ranges with neon blue data overlays and glowing thermal spots" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzAeuFuWJWjHr1JGXOjJ-EhgAqd0F7125GEHyRTz7ba3djqihaCjF23NsumgjbxJlBMHUCeM2ZNLof5v514oHGTs7Gu_T46rWawemwTxrZcaFIJOLVWfGddKgmlPbOpcNSCgSAOB4zDW4SYRglfsz_TANTQ7oK3_Gfn1YvD-7dFqjrFSR_6Yd0MRiMknQrCfO8Cff2ceAsHvL97Q2adAu1h7U9KIcYFUad6yJeNwUxe8ll_9yu0MKfcvHofkqIVCgSUedoGL8erNU"/>
-<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60"></div>
-<div class="absolute top-4 right-4 flex gap-2">
-<span class="glass-panel px-3 py-1 rounded-full text-[10px] font-label text-primary border border-primary/20">Satellite V4.2</span>
-<span class="glass-panel px-3 py-1 rounded-full text-[10px] font-label text-secondary border border-secondary/20">Live Sync</span>
+<div class="flex items-baseline justify-between mb-6">
+<h4 class="font-headline text-xl font-bold text-on-surface">Station Network — Live FWI</h4>
+<div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1.5 text-[10px] font-label text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span>Loading</span>
+<span class="flex items-center gap-1.5 text-[10px] font-label text-secondary"><span class="w-2.5 h-2.5 rounded-full bg-[#4ae176] inline-block"></span>Low</span>
+<span class="flex items-center gap-1.5 text-[10px] font-label text-primary"><span class="w-2.5 h-2.5 rounded-full bg-[#7bd0ff] inline-block"></span>Mod</span>
+<span class="flex items-center gap-1.5 text-[10px] font-label" style="color:#fbabff"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#fbabff"></span>High+</span>
+<span class="flex items-center gap-1.5 text-[10px] font-label text-tertiary"><span class="w-2.5 h-2.5 rounded-full bg-[#ff4d4d] inline-block"></span>Extreme</span>
 </div>
 </div>
+<div class="rounded-2xl overflow-hidden border border-outline-variant/10" style="height:480px">
+<div id="fwi-station-map" style="height:100%;width:100%;"></div>
 </div>
+<div class="flex justify-between items-center mt-4">
+<p class="text-[10px] text-on-surface-variant font-label">39 CWFIS stations · Open-Meteo NWP · Click marker for details</p>
+<button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity">
+  Export Full Dataset
+</button>
 </div>
 </section>
+<style>
+  /* Leaflet dark theme overrides */
+  #fwi-station-map .leaflet-container { background: #0b1326; }
+  #fwi-station-map .leaflet-popup-content-wrapper {
+    background: #1e2740; border: 1px solid rgba(123,208,255,0.15);
+    border-radius: 12px; color: #dae2fd; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #fwi-station-map .leaflet-popup-tip { background: #1e2740; }
+  #fwi-station-map .leaflet-popup-close-button { color: #7bd0ff !important; }
+  #fwi-station-map .leaflet-control-zoom a {
+    background: #1e2740; color: #7bd0ff; border-color: rgba(123,208,255,0.2);
+  }
+  #fwi-station-map .leaflet-control-zoom a:hover { background: #2d3449; }
+  #fwi-station-map .leaflet-control-attribution {
+    background: rgba(11,19,38,0.8); color: #45464d; font-size: 9px;
+  }
+  #fwi-station-map .leaflet-control-attribution a { color: #7bd0ff; }
+</style>
 </main>
 <!-- BottomNavBar -->
 <nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
@@ -102,7 +123,8 @@
 </nav>
 <script src="../fwi.js"></script>
 <script>
-FWI.buildRegionalSummary();
-document.getElementById('fwi-export-btn').addEventListener('click', FWI.exportRegionalDataset);
+  FWI.buildRegionalSummary();
+  FWI.buildStationMap('fwi-station-map');
+  document.getElementById('fwi-export-btn').addEventListener('click', FWI.exportRegionalDataset);
 </script>
 </body></html>
