@@ -532,14 +532,13 @@ function buildStationPicker() {
     const opt = document.createElement('option');
     opt.value = `${s.lat},${s.lng}`;
     opt.textContent = s.name;
-    if (s.name === 'Slave Lake') opt.selected = true;
     sel.appendChild(opt);
   });
 
-  function loadStation() {
+  function loadStation(save = true) {
     const [lat, lng] = sel.value.split(',').map(Number);
     const name = sel.options[sel.selectedIndex].textContent;
-    // Update map iframe
+    if (save) localStorage.setItem('fwi-station', sel.value);
     const frame = document.getElementById('fwi-map-frame');
     if (frame) {
       const pad = 0.5;
@@ -547,7 +546,6 @@ function buildStationPicker() {
         `?bbox=${(lng-pad).toFixed(4)},${(lat-pad).toFixed(4)},${(lng+pad).toFixed(4)},${(lat+pad).toFixed(4)}` +
         `&layer=mapnik&marker=${lat.toFixed(4)},${lng.toFixed(4)}`;
     }
-    // Update coords overlay
     const coords = document.getElementById('fwi-map-coords');
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
     const stLabel = document.getElementById('fwi-map-station');
@@ -556,8 +554,49 @@ function buildStationPicker() {
     buildHourlyChart(lat, lng);
   }
 
-  sel.addEventListener('change', loadStation);
-  loadStation();
+  function selectByValue(val) {
+    if (val && Array.from(sel.options).find(o => o.value === val)) {
+      sel.value = val;
+      return true;
+    }
+    return false;
+  }
+
+  function selectNearest(userLat, userLng) {
+    let nearest = null, minDist = Infinity;
+    ALBERTA_STATIONS.forEach(s => {
+      const d = _haversineKm(userLat, userLng, s.lat, s.lng);
+      if (d < minDist) { minDist = d; nearest = s; }
+    });
+    if (nearest) {
+      const val = `${nearest.lat},${nearest.lng}`;
+      sel.value = val;
+      localStorage.setItem('fwi-station', val);
+      loadStation(false);
+    }
+  }
+
+  sel.addEventListener('change', () => loadStation(true));
+
+  const saved = localStorage.getItem('fwi-station');
+  if (selectByValue(saved)) {
+    // Returning user — load saved station immediately, no geo prompt
+    loadStation(false);
+  } else if (navigator.geolocation) {
+    // First visit — show Edmonton as placeholder, then auto-detect
+    const edm = Array.from(sel.options).find(o => o.textContent === 'Edmonton') || sel.options[0];
+    if (edm) sel.value = edm.value;
+    loadStation(false);
+    navigator.geolocation.getCurrentPosition(
+      pos => selectNearest(pos.coords.latitude, pos.coords.longitude),
+      ()  => loadStation(true),  // denied — save current default
+      { timeout: 8000, maximumAge: 300000 }
+    );
+  } else {
+    const edm = Array.from(sel.options).find(o => o.textContent === 'Edmonton') || sel.options[0];
+    if (edm) sel.value = edm.value;
+    loadStation(true);
+  }
 }
 
 // ─── Regional Summary ────────────────────────────────────────────────────────
