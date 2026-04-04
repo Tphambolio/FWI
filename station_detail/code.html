@@ -59,7 +59,10 @@
 </div>
 </div>
 <div class="flex items-center gap-2">
-<span class="font-label text-[10px] text-slate-500" data-fwi="updated">—</span>
+<div class="flex flex-col items-end">
+  <span class="font-label text-[10px] text-slate-500" data-fwi="updated">—</span>
+  <span class="font-label text-[9px] text-slate-600 max-w-[130px] truncate text-right" data-fwi="source-station">—</span>
+</div>
 <span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">calendar_today</span>
 </div>
 </header>
@@ -284,7 +287,7 @@
 <span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span>
 </a>
 </nav>
-<script src="../fwi.js?v=4"></script>
+<script src="../fwi.js?v=5"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);

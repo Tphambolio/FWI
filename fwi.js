@@ -286,7 +286,8 @@ async function fetchCWFIS(lat, lng) {
     if (!nearest) return null;
 
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
-    const stationName = (nearest.name || '').trim().replace(/\s+/g, ' ');
+    // CWFIS WFS encodes spaces as '+' in station name strings
+    const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
 
     return {
       temp:  nearest.temp,
@@ -414,9 +415,12 @@ function wireDOM(r) {
   pct('bui',  r.bui,  200);   // 0-200 typical
   pct('fwi',  r.fwi,  50);    // 0-50 typical
 
-  // Timestamp + data source
-  const src = r.weather.source || 'Open-Meteo NWP';
-  set('updated', `Live · ${new Date().toLocaleTimeString()} · ${src}`);
+  // Timestamp (line 1) + source label (line 2, station_detail only)
+  set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  const srcLabel = r.weather.stationName
+    ? `CWFIS · ${r.weather.stationName}`
+    : (r.weather.source || 'Open-Meteo NWP');
+  set('source-station', srcLabel);
 
   // Cache for FBP re-runs on fuel picker change
   _lastWeather = r.weather;
