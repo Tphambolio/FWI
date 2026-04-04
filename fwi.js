@@ -83,12 +83,30 @@ function _fwi(isi, bui) {
   return b<=1 ? b : Math.exp(2.72*(0.434*Math.log(b))**0.647);
 }
 
+// FWI danger thresholds (Van Wagner 1987 / CFFDRS)
 function dangerRating(fwi) {
   if (fwi < 5)  return 'Low';
   if (fwi < 10) return 'Moderate';
   if (fwi < 20) return 'High';
   if (fwi < 30) return 'Very High';
   return 'Extreme';
+}
+
+// Per-component thresholds (CFFDRS operational scale)
+const COMPONENT_THRESHOLDS = {
+  ffmc: [77, 84, 88, 91],   // Low / Mod / High / Very High / Extreme
+  dmc:  [21, 27, 40, 60],
+  dc:   [80, 190, 300, 500],
+  isi:  [2,  5,  10,  20],
+  bui:  [31, 40,  60,  90],
+};
+const RATING_LABELS = ['Low', 'Moderate', 'High', 'Very High', 'Extreme'];
+
+function componentRating(key, val) {
+  const t = COMPONENT_THRESHOLDS[key];
+  if (!t) return dangerRating(val);
+  for (let i = 0; i < t.length; i++) if (val < t[i]) return RATING_LABELS[i];
+  return RATING_LABELS[4];
 }
 
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
@@ -152,9 +170,11 @@ function wireDOM(r) {
   set('danger',       r.danger.toUpperCase() + ' RISK');
   set('danger-label', r.danger + ' Risk Level');
 
-  // Rating badges (all get the same danger string)
+  // Rating badges — per-component thresholds
   document.querySelectorAll('[data-fwi-rating]').forEach(el => {
-    el.textContent = r.danger.toUpperCase();
+    const key = el.dataset.fwiRating;
+    const val = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc, isi: r.isi, bui: r.bui, fwi: r.fwi }[key];
+    el.textContent = (val != null ? componentRating(key, val) : r.danger).toUpperCase();
   });
 
   // Progress bars — typical operating ranges
