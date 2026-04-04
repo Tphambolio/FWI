@@ -67,201 +67,127 @@
 </div>
 </header>
 <main class="max-w-7xl mx-auto px-6 py-8">
-<!-- Hero Visualization Area -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
-<!-- Live Map Preview (Left Asymmetry) -->
-<div class="lg:col-span-8 h-[400px] rounded-lg overflow-hidden relative surface-container-low group">
-<iframe id="fwi-map-frame" class="w-full h-full border-0" src="https://www.openstreetmap.org/export/embed.html?bbox=-115.267,54.783,-114.267,55.783&layer=mapnik&marker=55.283,-114.767" allowfullscreen></iframe>
-<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent pointer-events-none"></div>
-<!-- Floating Map Overlay -->
-<div class="absolute bottom-6 left-6 glass-panel p-4 rounded-lg pointer-events-none">
-<div class="flex items-center gap-2 mb-2">
-<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-<span class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Live Telemetry Active</span>
+
+<!-- ── HERO: FWI Score + Weather ─────────────────────────────────────── -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+  <!-- FWI Score Card -->
+  <div class="surface-container-highest p-6 rounded-xl synthetic-gradient text-on-primary-fixed">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h3 class="font-headline font-extrabold text-2xl leading-tight">FWI SCORE</h3>
+        <p class="text-[10px] opacity-80 font-label uppercase font-bold">Fire Weather Index</p>
+      </div>
+      <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+    </div>
+    <div class="font-headline text-7xl font-black mb-3" data-fwi="fwi">—</div>
+    <div class="text-base font-bold uppercase tracking-widest mb-4" data-fwi="danger-label">Loading…</div>
+    <!-- Compact weather inline -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-1 border-t border-black/10 pt-4 mt-2">
+      <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Temp</span><span class="font-bold text-sm" data-fwi="temp">—</span></div>
+      <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">RH</span><span class="font-bold text-sm" data-fwi="rh">—</span></div>
+      <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Wind</span><span class="font-bold text-sm" data-fwi="wind">—</span></div>
+      <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Dir</span><span class="font-bold text-sm" data-fwi="wdir">—</span></div>
+      <div class="flex items-baseline gap-1.5 col-span-2"><span class="text-[9px] opacity-70 uppercase tracking-widest">Rain</span><span class="font-bold text-sm" data-fwi="rain">—</span></div>
+    </div>
+  </div>
+  <!-- FBP Hero: HFI + key outputs -->
+  <div class="flex flex-col gap-4">
+    <div class="surface-container-high p-5 rounded-xl flex-1">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Head Fire Intensity</p>
+          <p class="text-[9px] text-on-surface-variant/60 mt-0.5">Escape threshold: 4,000 kW/m</p>
+        </div>
+        <span id="fwi-fbp-hfi-rating" class="px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container text-secondary">—</span>
+      </div>
+      <p class="font-headline text-4xl font-black mt-2" id="fwi-fbp-hfi">—</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="surface-container-high p-4 rounded-xl">
+        <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
+        <p class="font-headline text-2xl font-bold" id="fwi-fbp-ros">—</p>
+      </div>
+      <div class="surface-container-high p-4 rounded-xl">
+        <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
+        <p class="font-headline text-2xl font-bold" id="fwi-fbp-flame">—</p>
+      </div>
+      <div class="surface-container-high p-4 rounded-xl">
+        <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
+        <p class="font-headline text-lg font-bold leading-tight" id="fwi-fbp-type">—</p>
+      </div>
+      <div class="surface-container-high p-4 rounded-xl">
+        <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Frac.</p>
+        <p class="font-headline text-2xl font-bold" id="fwi-fbp-cfb">—</p>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="font-headline text-lg font-bold tracking-tight" id="fwi-map-coords">55.2833° N, 114.7667° W</div>
-<div class="text-sm text-on-surface-variant font-label" id="fwi-map-station">Slave Lake</div>
-</div>
-</div>
-<!-- Real-time Metrics (Right Balance) -->
-<div class="lg:col-span-4 flex flex-col gap-4">
-<div class="surface-container-high p-6 rounded-lg flex-1 border-b-2 border-primary">
-<div class="text-[10px] font-label uppercase tracking-widest text-primary mb-1">Temperature</div>
-<div class="font-headline text-5xl font-bold tracking-tighter" data-fwi="temp">24.2°C</div>
-<div class="mt-4 flex items-center gap-2 text-secondary">
-<span class="material-symbols-outlined text-sm">trending_up</span>
-<span class="text-xs font-label">+1.4° from last hour</span>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div class="surface-container p-4 rounded-lg">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">RH</div>
-<div class="font-headline text-2xl font-bold" data-fwi="rh">32%</div>
-</div>
-<div class="surface-container p-4 rounded-lg">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Wind</div>
-<div class="font-headline text-2xl font-bold" data-fwi="wind">18 km/h</div>
-<div class="text-[10px] text-on-surface-variant mt-0.5" data-fwi="wdir">—</div>
-</div>
-</div>
-<div class="surface-container p-6 rounded-lg border-b-2 border-outline-variant/15">
-<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Precipitation (24h)</div>
-<div class="font-headline text-2xl font-bold" data-fwi="rain">0.0 mm</div>
-</div>
-</div>
-</div>
-<!-- FWI Calculation Suite -->
-<section>
-<div class="flex items-baseline justify-between mb-8">
-<h2 class="font-headline text-3xl font-bold tracking-tight">FWI System Components</h2>
-<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
-<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Algorithm V.3.2</span>
-</div>
-<!-- Bento Grid for FWI Components -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-<!-- FFMC -->
-<div class="surface-container-high p-6 rounded-lg relative overflow-hidden">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-bold text-lg leading-tight">FFMC</h3>
-<p class="text-[10px] text-on-surface-variant font-label uppercase">Fine Fuel Moisture Code</p>
-</div>
-<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="ffmc">EXTREME</span>
-</div>
-<div class="font-headline text-4xl font-bold mb-4" data-fwi="ffmc">91.4</div>
-<div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary" style="width: 91.4%" data-fwi-bar="ffmc"></div>
-</div>
-<p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Indicates ease of ignition and flammability of fine surface fuels.</p>
-</div>
-<!-- DMC -->
-<div class="surface-container-high p-6 rounded-lg">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-bold text-lg leading-tight">DMC</h3>
-<p class="text-[10px] text-on-surface-variant font-label uppercase">Duff Moisture Code</p>
-</div>
-<span class="px-2 py-1 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-bold" data-fwi-rating="dmc">MODERATE</span>
-</div>
-<div class="font-headline text-4xl font-bold mb-4" data-fwi="dmc">42.8</div>
-<div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-secondary" style="width: 42.8%" data-fwi-bar="dmc"></div>
-</div>
-<p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Average moisture content of loosely compacted organic layers.</p>
-</div>
-<!-- DC -->
-<div class="surface-container-high p-6 rounded-lg">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-bold text-lg leading-tight">DC</h3>
-<p class="text-[10px] text-on-surface-variant font-label uppercase">Drought Code</p>
-</div>
-<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="dc">HIGH</span>
-</div>
-<div class="font-headline text-4xl font-bold mb-4" data-fwi="dc">315.0</div>
-<div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary-fixed-dim" style="width: 65%" data-fwi-bar="dc"></div>
-</div>
-<p class="mt-4 text-xs text-on-surface-variant leading-relaxed">Represents deep, compact organic layers and seasonal drought.</p>
-</div>
-<!-- ISI -->
-<div class="surface-container-high p-6 rounded-lg">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-bold text-lg leading-tight">ISI</h3>
-<p class="text-[10px] text-on-surface-variant font-label uppercase">Initial Spread Index</p>
-</div>
-<span class="px-2 py-1 bg-tertiary-container text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="isi">EXTREME</span>
-</div>
-<div class="font-headline text-4xl font-bold mb-4" data-fwi="isi">15.2</div>
-<div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary" style="width: 82%" data-fwi-bar="isi"></div>
-</div>
-</div>
-<!-- BUI -->
-<div class="surface-container-high p-6 rounded-lg">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-bold text-lg leading-tight">BUI</h3>
-<p class="text-[10px] text-on-surface-variant font-label uppercase">Build-up Index</p>
-</div>
-<span class="px-2 py-1 bg-[#fbabff]/10 text-tertiary rounded-full text-[10px] font-bold" data-fwi-rating="bui">HIGH</span>
-</div>
-<div class="font-headline text-4xl font-bold mb-4" data-fwi="bui">64.1</div>
-<div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
-<div class="h-full bg-tertiary-fixed-dim" style="width: 64.1%" data-fwi-bar="bui"></div>
-</div>
-</div>
-<!-- Final FWI Score (Highlight) -->
-<div class="surface-container-highest p-6 rounded-lg synthetic-gradient text-on-primary-fixed">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline font-extrabold text-2xl leading-tight">FWI SCORE</h3>
-<p class="text-[10px] opacity-80 font-label uppercase font-bold">Fire Weather Index</p>
-</div>
-<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">warning</span>
-</div>
-<div class="font-headline text-6xl font-black mb-4" data-fwi="fwi">32.4</div>
-<div class="text-sm font-bold uppercase tracking-widest" data-fwi="danger-label">Extreme Risk Level</div>
-<p class="mt-4 text-xs opacity-90 font-medium">Conditions represent peak potential for high-intensity wildfire behavior and rapid spread.</p>
-</div>
-</div>
-</section>
-<!-- FBP Fire Behaviour Section -->
-<section class="mt-12">
-<div class="flex items-baseline justify-between mb-8">
-<h2 class="font-headline text-3xl font-bold tracking-tight">Fire Behaviour Prediction</h2>
-<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
-<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">FBP System ST-X-3</span>
+
+<!-- ── FWI Components ─────────────────────────────────────────────────── -->
+<section class="mb-10">
+<div class="flex items-baseline justify-between mb-6">
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">FWI Components</h2>
+<div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Van Wagner CFFDRS</span>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-<!-- Head ROS -->
-<div class="surface-container-high p-5 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
-<p class="font-headline text-2xl font-bold" id="fwi-fbp-ros">—</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Rate of spread</p>
+<div class="surface-container-high p-4 rounded-lg">
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">FFMC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Fine Fuel Moisture</p></div><span class="px-1.5 py-0.5 bg-tertiary-container text-tertiary rounded text-[9px] font-bold" data-fwi-rating="ffmc">—</span></div>
+  <div class="font-headline text-3xl font-bold mb-2" data-fwi="ffmc">—</div>
+  <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary" data-fwi-bar="ffmc"></div></div>
 </div>
-<!-- HFI -->
-<div class="surface-container-high p-5 rounded-lg col-span-1">
-<div class="flex justify-between items-start mb-1">
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Head Fire Intensity</p>
-<span id="fwi-fbp-hfi-rating" class="px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container text-secondary">—</span>
+<div class="surface-container-high p-4 rounded-lg">
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DMC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Duff Moisture</p></div><span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[9px] font-bold" data-fwi-rating="dmc">—</span></div>
+  <div class="font-headline text-3xl font-bold mb-2" data-fwi="dmc">—</div>
+  <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-secondary" data-fwi-bar="dmc"></div></div>
 </div>
-<p class="font-headline text-2xl font-bold" id="fwi-fbp-hfi">—</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Escape threshold: 4,000 kW/m</p>
+<div class="surface-container-high p-4 rounded-lg">
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Drought Code</p></div><span class="px-1.5 py-0.5 bg-[#fbabff]/10 text-tertiary rounded text-[9px] font-bold" data-fwi-rating="dc">—</span></div>
+  <div class="font-headline text-3xl font-bold mb-2" data-fwi="dc">—</div>
+  <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary-fixed-dim" data-fwi-bar="dc"></div></div>
 </div>
-<!-- Flame Length -->
-<div class="surface-container-high p-5 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
-<p class="font-headline text-2xl font-bold" id="fwi-fbp-flame">—</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Byram (1959)</p>
+<div class="surface-container-high p-4 rounded-lg">
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">ISI</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Initial Spread</p></div><span class="px-1.5 py-0.5 bg-tertiary-container text-tertiary rounded text-[9px] font-bold" data-fwi-rating="isi">—</span></div>
+  <div class="font-headline text-3xl font-bold mb-2" data-fwi="isi">—</div>
+  <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary" data-fwi-bar="isi"></div></div>
 </div>
-<!-- Fire Type -->
-<div class="surface-container-high p-5 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
-<p class="font-headline text-xl font-bold" id="fwi-fbp-type">—</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Van Wagner (1977)</p>
-</div>
-<!-- CFB -->
-<div class="surface-container-high p-5 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Fraction Burned</p>
-<p class="font-headline text-2xl font-bold" id="fwi-fbp-cfb">—</p>
-<p class="text-[10px] text-on-surface-variant mt-1">% crown consumed</p>
+<div class="surface-container-high p-4 rounded-lg">
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">BUI</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Build-up Index</p></div><span class="px-1.5 py-0.5 bg-[#fbabff]/10 text-tertiary rounded text-[9px] font-bold" data-fwi-rating="bui">—</span></div>
+  <div class="font-headline text-3xl font-bold mb-2" data-fwi="bui">—</div>
+  <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary-fixed-dim" data-fwi-bar="bui"></div></div>
 </div>
 </div>
 </section>
-<!-- Historical Timeline Section -->
-<section class="mt-16">
-<div class="surface-container-low p-8 rounded-lg">
-<h3 class="font-headline text-lg font-bold mb-6">24-Hour Trend: Fire Weather Index</h3>
-<div id="fwi-chart-bars" class="h-48 w-full flex items-end justify-between gap-1">
+
+<!-- ── 24-Hour Trend ──────────────────────────────────────────────────── -->
+<section class="mb-10">
+<div class="surface-container-low p-6 rounded-xl">
+<h3 class="font-headline text-base font-bold mb-4">24-Hour FWI Trend</h3>
+<div id="fwi-chart-bars" class="h-40 w-full flex items-end justify-between gap-1">
   <div class="w-full flex items-center justify-center text-slate-600 text-xs gap-2">
     <span class="material-symbols-outlined animate-pulse text-primary text-sm">sync</span> Loading hourly data…
   </div>
 </div>
-<div id="fwi-chart-times" class="flex justify-between mt-4 text-[10px] font-label uppercase tracking-widest text-on-surface-variant"></div>
+<div id="fwi-chart-times" class="flex justify-between mt-3 text-[10px] font-label uppercase tracking-widest text-on-surface-variant"></div>
 </div>
 </section>
+
+<!-- ── Station Map ────────────────────────────────────────────────────── -->
+<section class="mb-10">
+<div class="h-[320px] rounded-xl overflow-hidden relative surface-container-low">
+<iframe id="fwi-map-frame" class="w-full h-full border-0" src="https://www.openstreetmap.org/export/embed.html?bbox=-115.267,54.783,-114.267,55.783&layer=mapnik&marker=55.283,-114.767" allowfullscreen></iframe>
+<div class="absolute inset-0 bg-gradient-to-t from-surface/60 via-transparent to-transparent pointer-events-none"></div>
+<div class="absolute bottom-4 left-4 glass-panel p-3 rounded-lg pointer-events-none">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Live Telemetry</span>
+  </div>
+  <div class="font-headline text-sm font-bold" id="fwi-map-coords">55.2833° N, 114.7667° W</div>
+  <div class="text-[10px] text-on-surface-variant font-label" id="fwi-map-station">Slave Lake</div>
+</div>
+</div>
+</section>
+
 </main>
 <!-- BottomNavBar -->
 <nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
@@ -282,7 +208,7 @@
 <span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span>
 </a>
 </nav>
-<script src="../fwi.js?v=7"></script>
+<script src="../fwi.js?v=8"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
