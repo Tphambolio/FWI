@@ -730,6 +730,16 @@ async function buildHourlyChart(lat, lng) {
       `<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-surface-container-highest px-2 py-1 rounded text-[10px] whitespace-nowrap z-10">${timeLabel} — ${fmt(r.fwi)}</div>` +
       `</div>`;
   }).join('');
+
+  // Render x-axis labels from actual data timestamps (5 evenly spaced)
+  const timesEl = document.getElementById('fwi-chart-times');
+  if (timesEl && results.length) {
+    const n = results.length - 1;
+    const indices = [0, Math.round(n * 0.25), Math.round(n * 0.5), Math.round(n * 0.75), n];
+    timesEl.innerHTML = indices.map(i =>
+      `<span>${results[i].time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`
+    ).join('');
+  }
 }
 
 /** Chain Van Wagner through multiple days, returning FWI result per day. */

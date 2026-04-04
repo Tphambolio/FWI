@@ -258,13 +258,7 @@
     <span class="material-symbols-outlined animate-pulse text-primary text-sm">sync</span> Loading hourly data…
   </div>
 </div>
-<div class="flex justify-between mt-4 text-[10px] font-label uppercase tracking-widest text-on-surface-variant">
-<span>00:00</span>
-<span>06:00</span>
-<span>12:00</span>
-<span>18:00</span>
-<span>23:59</span>
-</div>
+<div id="fwi-chart-times" class="flex justify-between mt-4 text-[10px] font-label uppercase tracking-widest text-on-surface-variant"></div>
 </div>
 </section>
 </main>
@@ -287,7 +281,7 @@
 <span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span>
 </a>
 </nav>
-<script src="../fwi.js?v=5"></script>
+<script src="../fwi.js?v=6"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
