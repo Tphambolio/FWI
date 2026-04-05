@@ -144,10 +144,12 @@
 
 <!-- ── FWI Components ─────────────────────────────────────────────────── -->
 <section class="mb-10">
-<div class="flex items-baseline justify-between mb-6">
+<div class="flex items-center justify-between mb-6">
 <h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">FWI Components</h2>
 <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
-<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Van Wagner CFFDRS</span>
+<button id="fwi-compare-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span class="material-symbols-outlined text-[13px]">compare_arrows</span>Compare
+</button>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 <div class="surface-container-high p-4 rounded-lg">
@@ -176,6 +178,40 @@
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="bui">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary-fixed-dim" data-fwi-bar="bui"></div></div>
 </div>
+</div>
+
+<!-- Compare panel — Van Wagner cold-start vs primary source, hidden by default -->
+<div id="fwi-compare-panel" class="hidden mt-4 rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-4">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Van Wagner cold-start — our equations, regional startup DC</span>
+    <span class="text-[9px] font-label text-outline italic" id="fwi-compare-note">—</span>
+  </div>
+  <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+    <div class="text-center p-2 rounded bg-surface-container">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">FFMC</p>
+      <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-ffmc">—</p>
+    </div>
+    <div class="text-center p-2 rounded bg-surface-container">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">DMC</p>
+      <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-dmc">—</p>
+    </div>
+    <div class="text-center p-2 rounded bg-surface-container">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">DC</p>
+      <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-dc">—</p>
+    </div>
+    <div class="text-center p-2 rounded bg-surface-container">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">ISI</p>
+      <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-isi">—</p>
+    </div>
+    <div class="text-center p-2 rounded bg-surface-container">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">BUI</p>
+      <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-bui">—</p>
+    </div>
+    <div class="text-center p-2 rounded bg-surface-container border border-primary/20">
+      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">FWI</p>
+      <p class="font-headline text-lg font-bold text-primary" id="fwi-cmp-fwi">—</p>
+    </div>
+  </div>
 </div>
 </section>
 
@@ -226,10 +262,17 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=17"></script>
+<script src="../fwi.js?v=18"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
+  document.getElementById('fwi-compare-btn').addEventListener('click', () => {
+    const panel = document.getElementById('fwi-compare-panel');
+    const btn   = document.getElementById('fwi-compare-btn');
+    const open  = panel.classList.toggle('hidden');
+    btn.classList.toggle('border-primary/50', !open);
+    btn.classList.toggle('text-primary', !open);
+  });
   // Mobile fuel picker — sync value to desktop picker then re-run FBP
   const _mfp = document.getElementById('fwi-fuel-picker-mobile');
   if (_mfp) _mfp.addEventListener('change', () => {

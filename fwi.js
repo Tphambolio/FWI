@@ -322,6 +322,7 @@ function wireFBP(weather, fwi) {
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
 let _lastWeather = null;
 let _lastFWI     = null;
+let _lastVWCalc  = null; // Van Wagner cold-start result for compare panel
 
 function refreshFBP() {
   if (_lastWeather && _lastFWI) wireFBP(_lastWeather, _lastFWI);
@@ -622,6 +623,20 @@ function wireDOM(r, lat, lng) {
   // Cache for FBP re-runs on fuel picker change
   _lastWeather = r.weather;
   _lastFWI     = r;
+
+  // Always compute Van Wagner cold-start for compare panel (even when CWFIS is primary)
+  const _startupDC = getStartupDC(
+    document.querySelector('#fwi-station-picker option:checked')?.textContent?.trim() || ''
+  );
+  _lastVWCalc = calculateFWI({ ...r.weather, fwiFromCWFIS: false }, { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: _startupDC });
+  const cmpSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  cmpSet('fwi-cmp-ffmc', _lastVWCalc.ffmc.toFixed(1));
+  cmpSet('fwi-cmp-dmc',  _lastVWCalc.dmc.toFixed(1));
+  cmpSet('fwi-cmp-dc',   _lastVWCalc.dc.toFixed(1));
+  cmpSet('fwi-cmp-isi',  _lastVWCalc.isi.toFixed(1));
+  cmpSet('fwi-cmp-bui',  _lastVWCalc.bui.toFixed(1));
+  cmpSet('fwi-cmp-fwi',  _lastVWCalc.fwi.toFixed(1));
+  cmpSet('fwi-compare-note', `startup DC ${_startupDC} · ${r.weather.fwiFromCWFIS ? 'CWFIS chain is primary above' : 'same source as above'}`);
 
   // FBP fire behaviour (station_detail only — silently no-ops on other pages)
   wireFBP(r.weather, r);
