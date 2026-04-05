@@ -528,6 +528,18 @@ function wireDOM(r, lat, lng) {
     : (r.weather.source || 'Open-Meteo NWP');
   set('source-station', srcLabel);
 
+  // DC source indicator
+  const dcBadge = document.getElementById('fwi-dc-source');
+  if (dcBadge) {
+    if (r.weather.fwiFromCWFIS) {
+      dcBadge.textContent = 'CWFIS carry-over';
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
+    } else {
+      dcBadge.textContent = 'Regional estimate';
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
+    }
+  }
+
   // Cache for FBP re-runs on fuel picker change
   _lastWeather = r.weather;
   _lastFWI     = r;
