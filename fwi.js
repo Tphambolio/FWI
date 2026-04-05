@@ -984,9 +984,10 @@ async function fetchForecastNAEFS(code) {
         rain:  p.median_pcp  ?? 0,
         month: dt.getMonth() + 1,
         label,
+        _ts: dt.getTime(),  // preserve original timestamp for reliable sort
       };
     })
-    .sort((a, b) => new Date(a.label) - new Date(b.label));
+    .sort((a, b) => a._ts - b._ts);
 }
 
 /** Fetch 7-day hourly forecast from Open-Meteo, return noon obs for each day. */
@@ -1089,9 +1090,13 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
   }
 }
 
-/** Chain Van Wagner through multiple days, returning FWI result per day. */
-function calcMultiDay(days, startupDC = 300) {
-  let prev = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: startupDC };
+/** Chain Van Wagner through multiple days, returning FWI result per day.
+ *  startState: { ffmc, dmc, dc } — defaults to STARTUP if not provided (e.g. no obs yet).
+ *  Pass _lastFWI when available so the chain continues from today's actual values. */
+function calcMultiDay(days, startupDC = 300, startState = null) {
+  let prev = startState
+    ? { ffmc: startState.ffmc, dmc: startState.dmc, dc: startState.dc }
+    : { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: startupDC };
   // Guard against null values propagating through chain
   return days.map(w => {
     const safe = {
@@ -1133,7 +1138,9 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       days = await fetchForecast(lat, lng);
       forecastSource = 'Open-Meteo NWP';
     }
-    const results = calcMultiDay(days, getStartupDC(stationName));
+    // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
+    const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+    const results = calcMultiDay(days, getStartupDC(stationName), chainStart);
     _forecastCache = { days, results };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
@@ -1546,7 +1553,8 @@ async function printStationBriefing() {
       } else {
         days = await fetchForecast(_stationLat, _stationLng);
       }
-      const results = calcMultiDay(days, getStartupDC(_stationName));
+      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const results = calcMultiDay(days, getStartupDC(_stationName), chainStart);
       _forecastCache = { days, results };
     } catch (e) {
       console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
