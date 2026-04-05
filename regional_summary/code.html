@@ -68,13 +68,9 @@
 </div>
 </div>
 </section>
-<!-- Risk List -->
-<div id="fwi-region-list" class="space-y-4">
-<p class="text-slate-500 text-sm">Loading regional data…</p>
-</div>
-<!-- Live Station Map -->
-<section class="mt-16">
-<div class="flex items-baseline justify-between mb-6">
+<!-- Live Station Map — top of content -->
+<section class="mb-10">
+<div class="flex items-baseline justify-between mb-4">
 <h4 class="font-headline text-xl font-bold text-on-surface">Station Network — Live FWI</h4>
 <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
 <div class="flex items-center gap-3">
@@ -85,7 +81,7 @@
 <span class="flex items-center gap-1.5 text-[10px] font-label text-tertiary"><span class="w-2.5 h-2.5 rounded-full bg-[#ff4d4d] inline-block"></span>Extreme</span>
 </div>
 </div>
-<div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:480px">
+<div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:400px">
 <div id="fwi-station-map" style="height:100%;width:100%;"></div>
 <!-- P3: Layer toggle buttons — positioned over map -->
 <div class="absolute top-3 right-3 z-[500] flex gap-2">
@@ -104,6 +100,10 @@
 </button>
 </div>
 </section>
+<!-- Risk List -->
+<div id="fwi-region-list" class="space-y-4">
+<p class="text-slate-500 text-sm">Loading regional data…</p>
+</div>
 <style>
   /* Leaflet dark theme overrides */
   #fwi-station-map .leaflet-container { background: #0b1326; }
