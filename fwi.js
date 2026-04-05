@@ -1836,9 +1836,9 @@ async function buildStationMap(containerId) {
   fetchActiveFires().then(fires => {
     fires.forEach(f => {
       const ha = f.hectares || 1;
-      const r  = Math.max(5, Math.min(22, Math.sqrt(ha) * 0.4));
+      const r  = Math.max(3, Math.min(10, Math.sqrt(ha) * 0.25));
       L.circleMarker([f.lat, f.lon], {
-        radius: r, fillColor: '#ff3333', color: '#ff8888', weight: 1.5, fillOpacity: 0.65,
+        radius: r, fillColor: '#ff3333', color: '#ff8888', weight: 1, fillOpacity: 0.5,
       }).bindPopup(
         `<div style="font-family:'Space Grotesk',sans-serif;min-width:160px">` +
         `<div style="font-size:12px;font-weight:700;color:#ff8888;margin-bottom:4px">${f.firename || 'Active Fire'}</div>` +
