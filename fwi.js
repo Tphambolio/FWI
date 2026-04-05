@@ -406,6 +406,7 @@ async function fetchCWFIS(lat, lng) {
       bui:  hasFWI ? nearest.bui  : null,
       fwi:  hasFWI ? nearest.fwi  : null,
       fwiFromCWFIS: hasFWI,
+      repDate: nearest.rep_date || null,
       source: hasFWI
         ? `CWFIS · ${stationName}`
         : `CWFIS · ${stationName} · FWI calc`,
@@ -614,10 +615,21 @@ function wireDOM(r, lat, lng) {
   const dcBadge = document.getElementById('fwi-dc-source');
   if (dcBadge) {
     if (r.weather.fwiFromCWFIS) {
+      // Store the CWFIS rep_date so we can show it when falling back later
+      if (r.weather.repDate) localStorage.setItem('fwi-cwfis-last-valid', r.weather.repDate);
       dcBadge.textContent = 'CWFIS carry-over';
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else {
-      dcBadge.textContent = 'Regional estimate';
+      // Show when CWFIS was last valid so users know it will return after noon obs are processed
+      const lastValid = localStorage.getItem('fwi-cwfis-last-valid');
+      let lastStr = '';
+      if (lastValid) {
+        const d = new Date(lastValid);
+        lastStr = ` · CWFIS last: ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Edmonton' })} MDT`;
+      } else {
+        lastStr = ' · CWFIS available ~14:00 MDT';
+      }
+      dcBadge.textContent = 'Regional estimate' + lastStr;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
     }
   }
