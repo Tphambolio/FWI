@@ -625,8 +625,9 @@ function wireDOM(r, lat, lng) {
   _lastFWI     = r;
 
   // Always compute Van Wagner cold-start for compare panel (even when CWFIS is primary)
+  const _sel = document.getElementById('fwi-station-picker');
   const _startupDC = getStartupDC(
-    document.querySelector('#fwi-station-picker option:checked')?.textContent?.trim() || ''
+    _sel ? (_sel.options[_sel.selectedIndex]?.textContent?.trim() || '') : ''
   );
   _lastVWCalc = calculateFWI({ ...r.weather, fwiFromCWFIS: false }, { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: _startupDC });
   const cmpSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
