@@ -288,10 +288,10 @@
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
 <div>
 <h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — Three-Tier Hierarchy</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">CWFIS WFS · MSC SWOB Realtime · Open-Meteo NWP · Client-Side Only · No API Key</p>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">CWFIS WFS · MSC SWOB Realtime · ECMWF IFS 0.25° · Client-Side Only · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser — no server, no caching. Current conditions use a three-tier priority. <strong class="text-on-surface">Tier 1 — CWFIS</strong> (NRCan <code>firewx_stns_current</code> WFS): provincial fire weather stations with pre-computed FWI chain; used when a station is found within ±2° (~220 km). <strong class="text-on-surface">Tier 2 — MSC SWOB Realtime</strong> (<code>api.weather.gc.ca/collections/swob-realtime</code>): real sensor observations from Environment Canada's automated weather station network; used when CWFIS has no coverage. Targets noon LST (19:00 UTC) when available. <strong class="text-on-surface">Tier 3 — Open-Meteo NWP</strong>: numerical weather model output, noon LST targeted; last resort only. Forecasts use CWFIS NAEFS ensemble (14–16 days) as primary, falling back to Open-Meteo NWP (7 days) when no NAEFS station is within 150 km.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser — no server, no caching. Current conditions use a three-tier priority. <strong class="text-on-surface">Tier 1 — CWFIS</strong> (NRCan <code>firewx_stns_current</code> WFS): provincial fire weather stations with pre-computed FWI chain; used when a station is found within ±2° (~220 km). <strong class="text-on-surface">Tier 2 — MSC SWOB Realtime</strong> (<code>api.weather.gc.ca/collections/swob-realtime</code>): real sensor observations from Environment Canada's automated weather station network; used when CWFIS has no coverage. Targets noon LST (19:00 UTC) when available. <strong class="text-on-surface">Tier 3 — ECMWF IFS 0.25° via Open-Meteo</strong>: numerical weather model output at exact station coordinates, noon LST targeted; last resort only. Forecasts use CWFIS NAEFS ensemble (14–16 days) as primary, falling back to <strong class="text-on-surface">ECMWF IFS 0.25°</strong> (7 days at exact lat/lng) when no NAEFS station is within 150 km. ECMWF IFS is the same model ECCC uses for verification — the 12Z run (initialized 06:00 MST) is available on Open-Meteo by approximately <strong class="text-on-surface">13:00 MST</strong>, aligning with the 16:00 MST FBAN planning window.</p>
 
 <div class="space-y-4">
 <!-- CWFIS WFS primary -->
@@ -373,17 +373,23 @@
 <p class="text-xs text-on-surface-variant mt-3">Returns up to 16 daily forecast records per station. The nearest NAEFS station within 150 km is selected by Haversine distance. <code class="text-primary">max_temp</code> and <code class="text-primary">min_rh</code> are used (fire weather peak conditions, consistent with CFFDRS 13:00 LST standard). FWI is computed client-side via Van Wagner carry-forward chain from current observed values. Ensemble spread (pct25/pct75) is available in the layer but not yet displayed.</p>
 </div>
 
-<!-- Open-Meteo forecast fallback -->
+<!-- ECMWF IFS forecast fallback -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
 <span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">7-Day Forecast — Fallback</span>
-<span class="text-[10px] text-on-surface-variant font-label">Open-Meteo NWP · Used when no NAEFS station within 150 km</span>
+<span class="text-[10px] text-on-surface-variant font-label">ECMWF IFS 0.25° via Open-Meteo · Point-specific · Used when no NAEFS station within 150 km</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
-  &amp;timezone=auto&amp;forecast_days=7</code>
-<p class="text-xs text-on-surface-variant mt-3">Returns 168 hourly values (7 days × 24 h). FWI calculated from the noon observation each day (index <code class="text-primary">day × 24 + 12</code>), consistent with the CFFDRS 13:00 LST standard. Used for the 16 CWFIS stations not covered by the NAEFS network.</p>
+  &amp;timezone=auto&amp;forecast_days=7&amp;models=ecmwf_ifs025</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
+<div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 14 (14:00)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
+<div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 12Z</span><span class="text-on-surface-variant">12Z available ~13:00 MST</span></div>
+<div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">0.25° (~25 km)</span><span class="text-on-surface-variant">Interpolated to point</span></div>
+</div>
+<p class="text-xs text-on-surface-variant mt-3">Returns 168 hourly values (7 days × 24 h) at the exact station lat/lng. Two hour indices are extracted per day: <code class="text-primary">day × 24 + 12</code> (noon LST) drives the Van Wagner FWI carry-forward chain; <code class="text-primary">day × 24 + 14</code> (14:00 LST) provides peak burn temperature, RH, and wind for FBP fire behaviour prediction. ECMWF IFS is the European Centre for Medium-Range Weather Forecasts global model — the same model ECCC uses for verification and one of the highest-skill global NWP systems for Canadian latitudes. The 12Z run (initialized 06:00 MST) is typically available via Open-Meteo by 13:00 MST, making it current for the 16:00 MST FBAN planning window.</p>
 </div>
 
 <!-- 24-hour trend -->
@@ -397,6 +403,54 @@
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
   &amp;timezone=auto&amp;past_hours=23&amp;forecast_hours=0</code>
 <p class="text-xs text-on-surface-variant mt-3">Returns the previous 23 completed hours. FWI is chained hour-by-hour from spring startup defaults. Bars are coloured by danger class; solid = past, translucent = current hour.</p>
+</div>
+</div>
+</div>
+
+<!-- D+1 Peak Burn — FBAN Operational Product -->
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-tertiary text-2xl mt-0.5" style="font-variation-settings:'FILL' 1">local_fire_department</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">D+1 Peak Burn Prediction — FBAN Operational Product</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Fire Behaviour Analyst · 16:00 MST Planning Window · FBP ST-X-3</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">The operational FBAN workflow requires a specific product: at approximately <strong class="text-on-surface">16:00 MST</strong>, the analyst needs to predict fire behaviour during the next day's <strong class="text-on-surface">peak burn period (~14:00 MST)</strong> so that resources can be committed overnight. This app generates that product automatically on the Forecast page and in the Station Briefing print output.</p>
+<div class="space-y-4">
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<p class="text-xs font-bold text-on-surface uppercase tracking-wider mb-3">Calculation Chain</p>
+<div class="space-y-2 text-xs text-on-surface-variant font-mono">
+<p><span class="text-primary">Step 1</span> — Today's observed FFMC / DMC / DC (from CWFIS or SWOB) → chain starting state</p>
+<p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or ECMWF hour 12) → Van Wagner carry-forward → D+1 FFMC / DMC / DC</p>
+<p><span class="text-primary">Step 3</span> — Tomorrow's 14:00 forecast (NAEFS peak values, or ECMWF hour 14) + D+1 FFMC/DMC/DC → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_14h)</code></p>
+<p><span class="text-primary">Step 4</span> — Outputs: Head ROS (m/min), HFI (kW/m), Flame Length (m), Fire Type, CFB (%)</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+<div class="bg-surface-container-lowest rounded-xl p-4">
+<p class="font-bold text-on-surface mb-2">Why 14:00, not noon?</p>
+<p class="text-on-surface-variant leading-relaxed">Van Wagner's FWI System uses <strong class="text-on-surface">noon LST</strong> as the standard observation time for daily indices (FFMC, DMC, DC). Peak fire behaviour, however, typically occurs in the mid-afternoon when temperature is highest and RH is lowest — approximately <strong class="text-on-surface">13:00–15:00 LST</strong>. The FBP calculation uses the FFMC/DMC/DC from the noon chain (correct for fuel moisture state) but applies the 14:00 wind and weather to predict actual fire behaviour at peak burn.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4">
+<p class="font-bold text-on-surface mb-2">HFI Operational Thresholds</p>
+<div class="space-y-1 text-on-surface-variant">
+<p><span class="text-secondary font-bold">Low</span> — HFI &lt; 500 kW/m · Hand crew direct attack</p>
+<p><span class="text-yellow-400 font-bold">High</span> — 500–2,000 kW/m · Machine support required</p>
+<p><span class="text-orange-400 font-bold">Very High</span> — 2,000–4,000 kW/m · Aerial required</p>
+<p><span class="text-tertiary font-bold">Extreme</span> — ≥ 4,000 kW/m · <strong class="text-on-surface">Alberta escaped fire threshold</strong> · Indirect/monitor only</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4 text-xs text-on-surface-variant">
+<p class="font-bold text-on-surface mb-2">Model Timing (MST)</p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+<div><span class="text-on-surface-variant">ECMWF 12Z init</span><span class="font-bold text-on-surface block">06:00 MST</span></div>
+<div><span class="text-on-surface-variant">ECMWF available</span><span class="font-bold text-on-surface block">~13:00 MST</span></div>
+<div><span class="text-on-surface-variant">NAEFS updated</span><span class="font-bold text-on-surface block">~14:00 MST</span></div>
+<div><span class="text-on-surface-variant">FBAN planning</span><span class="font-bold text-on-surface block">~16:00 MST</span></div>
+</div>
+<p class="mt-3 leading-relaxed">By 16:00 MST both the ECMWF 12Z run and the NAEFS daily update are available, initialized on the same morning atmospheric state. Fuel type is selected manually (default C2 — Boreal Spruce) and persisted across pages via <code class="text-primary">localStorage</code>.</p>
 </div>
 </div>
 </div>
@@ -471,7 +525,7 @@
 <li class="flex gap-3"><span class="text-primary shrink-0">[3]</span><span>Forestry Canada Fire Danger Group (1992). <em>Development and structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3. Forestry Canada, Ottawa.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
-<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> ECMWF IFS, DWD ICON, NCEP GFS ensemble. Updated hourly.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> This app uses the ECMWF IFS 0.25° model (<code class="text-primary text-xs">models=ecmwf_ifs025</code>) for forecast data — the same model ECCC uses for verification. 12Z run available ~13:00 MST; updated hourly.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[7]</span><span>Environment and Climate Change Canada / NOAA (2003–present). North American Ensemble Forecast System (NAEFS). Bi-daily 00Z/12Z ensemble runs; 14-day horizon. Distributed via NRCan CWFIS WFS layer <em>public:firewx_naefs</em>.</span></li>
 </ul>
 </div>
