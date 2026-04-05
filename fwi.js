@@ -885,7 +885,7 @@ function trendLabel(fwi, prevFwi) {
   return 'STABLE';
 }
 
-async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
+async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
   try {
     const days = await fetchForecast(lat, lng);
     const results = calcMultiDay(days);
@@ -907,7 +907,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
 
     // Forecast summary paragraph
     const sumEl = document.getElementById('fwi-forecast-summary');
-    if (sumEl) sumEl.textContent = forecastSummaryText(days, results);
+    if (sumEl) sumEl.textContent = forecastSummaryText(days, results, stationName);
 
     // Hero stat boxes — peak temp, min RH, max wind across forecast window
     const peakTemp = Math.max(...days.map(d => d.temp ?? -99));
@@ -983,13 +983,13 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903) {
 
 // ─── Forecast Summary Text ───────────────────────────────────────────────────
 
-function forecastSummaryText(days, results) {
+function forecastSummaryText(days, results, stationName = 'Edmonton') {
   const peakDay  = results.reduce((a, b) => b.fwi > a.fwi ? b : a);
   const trend    = results[results.length - 1].fwi > results[0].fwi ? 'increasing' : 'decreasing';
   const maxDanger = peakDay.danger;
   const peakTemp  = Math.max(...days.map(d => d.temp ?? -99)).toFixed(1);
   const minRH     = Math.min(...days.map(d => d.rh  ?? 999)).toFixed(0);
-  return `7-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
+  return `${stationName} station — 7-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
     `Forecast trend is ${trend}. Peak temperature ${peakTemp}°C, minimum relative humidity ${minRH}%. ` +
     `Forecast values derived from Open-Meteo NWP using Van Wagner CFFDRS equations.`;
 }

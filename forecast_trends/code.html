@@ -31,7 +31,10 @@
 <header class="fixed top-0 left-0 w-full z-[60] bg-[#0b1326]/90 backdrop-blur-2xl shadow-[0_20px_40px_rgba(6,14,32,0.4)] flex justify-between items-center px-6 h-16 bg-gradient-to-b from-[#16203a] to-[#0b1326]">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
-<h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">Forecast &amp; Risk Trends</h1>
+<div>
+  <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">Forecast &amp; Risk Trends</h1>
+  <p class="text-[10px] text-slate-400 font-label uppercase tracking-widest" id="forecast-station-label">—</p>
+</div>
 </div>
 <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
 </header>
@@ -196,9 +199,16 @@
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=4"></script>
+<script src="../fwi.js?v=5"></script>
 <script>
-FWI.buildForecastTrends(53.5344, -113.4903);
-document.getElementById('fwi-report-btn').addEventListener('click', FWI.exportForecastReport);
+  const _savedStation = localStorage.getItem('fwi-station');
+  const _st = _savedStation && FWI.ALBERTA_STATIONS.find(s => s.name === _savedStation);
+  const _lat = _st ? _st.lat : 53.5344;
+  const _lng = _st ? _st.lng : -113.4903;
+  const _name = _st ? _st.name : 'Edmonton';
+  const _lbl = document.getElementById('forecast-station-label');
+  if (_lbl) _lbl.textContent = _name + ' Station';
+  FWI.buildForecastTrends(_lat, _lng, _name);
+  document.getElementById('fwi-report-btn').addEventListener('click', FWI.exportForecastReport);
 </script>
 </body></html>
