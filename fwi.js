@@ -996,12 +996,13 @@ async function fetchForecastNAEFS(code) {
     .sort((a, b) => a._ts - b._ts);
 }
 
-/** Fetch 7-day hourly forecast from Open-Meteo, return noon obs for each day. */
+/** Fetch 7-day hourly forecast from Open-Meteo using ECMWF IFS 0.25° model.
+ *  ECMWF IFS is the same model ECCC uses for verification — best available global NWP for Canadian latitudes. */
 async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
-    `&timezone=auto&forecast_days=7`;
+    `&timezone=auto&forecast_days=7&models=ecmwf_ifs025`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
   const d = await res.json();
@@ -1160,7 +1161,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       } catch (e) {
         console.warn('[FWI] NAEFS fetch failed, falling back to Open-Meteo:', e);
         days = await fetchForecast(lat, lng);
-        forecastSource = 'Open-Meteo NWP';
+        forecastSource = 'ECMWF IFS 0.25° (Open-Meteo)';
       }
     } else {
       days = await fetchForecast(lat, lng);
