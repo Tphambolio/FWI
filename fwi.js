@@ -423,9 +423,14 @@ async function fetchCWFIS(lat, lng) {
  */
 async function fetchSWOB(lat, lng) {
   const bbox = 1.5; // ±1.5° ≈ 150 km
+  // Without a datetime filter the endpoint returns stale archived records.
+  // Request a 3-hour window ending now to ensure fresh observations only.
+  const now  = new Date();
+  const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const fmt  = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
   const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
     `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
-    `&limit=50&f=json`;
+    `&datetime=${fmt(past)}/${fmt(now)}&limit=50&f=json`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const d = await res.json();
