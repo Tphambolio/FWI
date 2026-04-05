@@ -427,24 +427,40 @@ async function fetchWeatherPrimary(lat, lng) {
   return { ...w, source: 'Open-Meteo NWP', fwiFromCWFIS: false };
 }
 
-/** Fetch current weather from Open-Meteo (no API key, CORS-enabled). */
+/**
+ * Fetch weather from Open-Meteo targeting the noon LST observation.
+ * CFFDRS specifies noon Local Standard Time (UTC−7 year-round for Alberta)
+ * for daily FWI calculations. We request today's hourly array and select
+ * the 19:00 UTC hour (= noon LST). If noon hasn't occurred yet today,
+ * we use the most recent available hour as best-available.
+ */
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=auto`;
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
+    `&forecast_days=1&timezone=UTC`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const d = await res.json();
-  const c = d.current;
+  const times = d.hourly.time; // ISO strings, UTC
+
+  // Noon LST = 19:00 UTC (Alberta is UTC−7 standard time year-round for CFFDRS)
+  const noonUTC = 19;
+  const nowUTC  = new Date().getUTCHours();
+  // Use noon if it has passed; otherwise use the most recent available hour
+  const targetHour = nowUTC >= noonUTC ? noonUTC : nowUTC;
+  const idx = times.findIndex(t => new Date(t).getUTCHours() === targetHour);
+  const i = idx >= 0 ? idx : times.length - 1;
+
+  const sourceNote = targetHour === noonUTC ? 'Open-Meteo NWP (noon LST)' : 'Open-Meteo NWP (pre-noon — best available)';
   return {
-    temp:  c.temperature_2m,
-    rh:    c.relative_humidity_2m,
-    wind:  c.wind_speed_10m,
-    wdir:  c.wind_direction_10m ?? null,
-    rain:  c.precipitation,
+    temp:  d.hourly.temperature_2m[i],
+    rh:    d.hourly.relative_humidity_2m[i],
+    wind:  d.hourly.wind_speed_10m[i],
+    wdir:  d.hourly.wind_direction_10m[i] ?? null,
+    rain:  d.hourly.precipitation[i],
     month: new Date().getMonth() + 1,
-    source: 'Open-Meteo NWP',
+    source: sourceNote,
     fwiFromCWFIS: false,
   };
 }

@@ -321,15 +321,17 @@
 <span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions — Fallback</span>
 <span class="text-[10px] text-on-surface-variant font-label">Open-Meteo NWP · Used when no CWFIS station found within range</span>
 </div>
+<p class="text-xs text-on-surface-variant mb-3 leading-relaxed">CFFDRS specifies <strong class="text-on-surface">noon Local Standard Time (LST)</strong> as the standard daily observation time — equivalent to <strong class="text-on-surface">19:00 UTC year-round</strong> for Alberta (UTC−7, standard time used regardless of DST). This app targets the 19:00 UTC hourly value from Open-Meteo. If noon LST has not yet occurred today, the most recent available hour is used as best-available and labelled accordingly. Once CWFIS stations are active for the fire season, this fallback is not used for covered stations and the noon LST constraint is moot — CWFIS provides operationally correct daily values directly.</p>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
-  &amp;current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
-  &amp;timezone=auto</code>
+  &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation
+  &amp;forecast_days=1&amp;timezone=UTC
+  → select index where UTC hour = 19 (noon LST)</code>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">temperature_2m</span><span class="text-on-surface-variant">°C at 2m AGL</span></div>
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">relative_humidity_2m</span><span class="text-on-surface-variant">% at 2m AGL</span></div>
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">wind_speed_10m</span><span class="text-on-surface-variant">km/h at 10m AGL</span></div>
-<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">precipitation</span><span class="text-on-surface-variant">mm, last hour</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">precipitation</span><span class="text-on-surface-variant">mm accumulated</span></div>
 </div>
 </div>
 
