@@ -299,6 +299,7 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
 /** Render FBP results into the station_detail FBP section. */
 function wireFBP(weather, fwi) {
   const fuelCode = document.getElementById('fwi-fuel-picker')?.value || 'C2';
+  localStorage.setItem('fwi-fuel-type', fuelCode); // persist for forecast page
   const result = calculateFBP(fuelCode, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0);
   if (!result) return;
 
@@ -977,14 +978,19 @@ async function fetchForecastNAEFS(code) {
       const p = f.properties;
       const dt = new Date(p.date_time);
       const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      // NAEFS max_temp / min_rh / median_ws already represent peak afternoon conditions
+      const peakTemp = p.max_temp ?? 15;
+      const peakRh   = p.min_rh   ?? 40;
+      const peakWind = p.median_ws ?? 10;
       return {
-        temp:  p.max_temp    ?? 15,
-        rh:    p.min_rh      ?? 40,
-        wind:  p.median_ws   ?? 10,
+        temp:  peakTemp,
+        rh:    peakRh,
+        wind:  peakWind,
         rain:  p.median_pcp  ?? 0,
         month: dt.getMonth() + 1,
         label,
         _ts: dt.getTime(),  // preserve original timestamp for reliable sort
+        peak: { temp: peakTemp, rh: peakRh, wind: peakWind },
       };
     })
     .sort((a, b) => a._ts - b._ts);
@@ -1001,18 +1007,24 @@ async function fetchForecast(lat, lng) {
   const d = await res.json();
   const h = d.hourly;
   const days = [];
-  // Pick hour index 12 (noon) for each of 7 days
+  // Pick hour index 12 (noon) for FWI chain (CFFDRS standard) and hour 14 for peak burn FBP
   for (let day = 0; day < 7; day++) {
-    const i = day * 24 + 12;
-    if (i >= (h.time?.length ?? 0)) continue;
-    const date = new Date(h.time[i]);
+    const i12 = day * 24 + 12;
+    const i14 = day * 24 + 14;
+    if (i12 >= (h.time?.length ?? 0)) continue;
+    const date = new Date(h.time[i12]);
     days.push({
-      temp:  h.temperature_2m[i]       ?? 15,
-      rh:    h.relative_humidity_2m[i]  ?? 40,
-      wind:  h.wind_speed_10m[i]        ?? 10,
-      rain:  h.precipitation[i]         ?? 0,
+      temp:  h.temperature_2m[i12]       ?? 15,
+      rh:    h.relative_humidity_2m[i12]  ?? 40,
+      wind:  h.wind_speed_10m[i12]        ?? 10,
+      rain:  h.precipitation[i12]         ?? 0,
       month: date.getMonth() + 1,
       label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
+      peak: {
+        temp: h.temperature_2m[i14]       ?? h.temperature_2m[i12]       ?? 15,
+        rh:   h.relative_humidity_2m[i14]  ?? h.relative_humidity_2m[i12]  ?? 40,
+        wind: h.wind_speed_10m[i14]        ?? h.wind_speed_10m[i12]        ?? 10,
+      },
     });
   }
   return days;
@@ -1112,6 +1124,22 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
   });
 }
 
+/** Read persisted fuel type (set by station_detail fuel picker), default C2. */
+function _savedFuelCode() {
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type')) || 'C2';
+}
+
+/** Chain Van Wagner + FBP per day. FBP uses each day's peak (14:00) conditions.
+ *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
+function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2') {
+  const results = calcMultiDay(days, startupDC, startState);
+  return results.map((r, i) => {
+    const pw = days[i]?.peak || days[i]; // peak = 14:00; fallback to noon
+    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10);
+    return { ...r, fbp, peakWeather: pw };
+  });
+}
+
 function trendLabel(fwi, prevFwi) {
   const delta = fwi - prevFwi;
   if (delta > 5)  return 'ESCALATING';
@@ -1140,8 +1168,9 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     }
     // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
     const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
-    const results = calcMultiDay(days, getStartupDC(stationName), chainStart);
-    _forecastCache = { days, results };
+    const fuelCode = _savedFuelCode();
+    const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode);
+    _forecastCache = { days, results, fuelCode };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
     // Peak danger window — 3-day block centred on the highest FWI day
@@ -1205,6 +1234,36 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elMR) elMR.textContent = fmt(minRH, 0) + '%';
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
+    // D+1 Peak Burn section — tomorrow at ~14:00 MDT
+    if (results.length > 0) {
+      const d1 = results[0]; // first forecast day = tomorrow
+      const d1fbp = d1.fbp;
+      const d1pw  = d1.peakWeather || d1;
+      const d1c   = DANGER_COLORS[d1.danger] || DANGER_COLORS['Moderate'];
+      const setD1 = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setD1('fwi-d1-label', d1.label || 'D+1');
+      setD1('fwi-d1-temp',  fmt(d1pw.temp) + '°C');
+      setD1('fwi-d1-rh',    fmt(d1pw.rh, 0) + '%');
+      setD1('fwi-d1-wind',  fmt(d1pw.wind, 0) + ' km/h');
+      setD1('fwi-d1-fwi',   d1.fwi.toFixed(1));
+      const d1RatingEl = document.getElementById('fwi-d1-rating');
+      if (d1RatingEl) { d1RatingEl.textContent = d1.danger; d1RatingEl.className = `ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${d1c.badge}`; }
+      if (d1fbp) {
+        const hfiColour = d1fbp.hfi >= 4000 ? 'text-tertiary' : d1fbp.hfi >= 2000 ? 'text-orange-400' : d1fbp.hfi >= 500 ? 'text-yellow-400' : 'text-secondary';
+        setD1('fwi-d1-ros',   d1fbp.ros.toFixed(1));
+        const d1HfiEl = document.getElementById('fwi-d1-hfi');
+        if (d1HfiEl) { d1HfiEl.textContent = Math.round(d1fbp.hfi).toLocaleString(); d1HfiEl.className = `font-headline text-2xl font-bold ${hfiColour}`; }
+        setD1('fwi-d1-flame', d1fbp.flameLength.toFixed(1) + ' m');
+        setD1('fwi-d1-type',  d1fbp.fireType);
+        setD1('fwi-d1-cfb',   (d1fbp.cfb * 100).toFixed(0) + '%');
+      }
+      const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
+      setD1('fwi-d1-fuel', `${fuelCode} — ${fuelName}`);
+      // Escape warning
+      const d1WarnEl = document.getElementById('fwi-d1-escape-warn');
+      if (d1WarnEl) d1WarnEl.style.display = (d1fbp && d1fbp.hfi >= 4000) ? 'block' : 'none';
+    }
+
     // Bar chart — all 7 days, coloured by danger rating
     const barContainer = document.getElementById('fwi-trend-bars');
     if (barContainer) {
@@ -1227,6 +1286,27 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       timesEl.innerHTML = results.map((r, i) =>
         `<span class="${showSet.has(i) ? 'truncate' : 'invisible'}">${r.label.split(',')[0]}</span>`
       ).join('');
+    }
+
+    // Forecast FBP table — all forecast days with fire behaviour columns
+    const fbpTbody = document.getElementById('fwi-forecast-fbp-tbody');
+    if (fbpTbody && results.length > 0) {
+      fbpTbody.innerHTML = results.map((r, i) => {
+        const pw  = days[i]?.peak || days[i];
+        const fbp = r.fbp;
+        const dc  = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
+        const hfiColour = !fbp ? '' : fbp.hfi >= 4000 ? 'color:#ff4d4d' : fbp.hfi >= 2000 ? 'color:#fb923c' : fbp.hfi >= 500 ? 'color:#facc15' : 'color:#4ae176';
+        const isD1 = i === 0;
+        return `<tr class="hover:bg-surface-container transition-colors ${isD1 ? 'bg-surface-container/50' : ''}">
+  <td class="py-3 pl-4 font-headline font-bold text-white text-sm">${r.label}${isD1 ? ' <span class="text-[9px] font-label text-primary ml-1">D+1</span>' : ''}</td>
+  <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.temp ?? days[i]?.temp)}°C</td>
+  <td class="py-3 text-sm ${(pw?.rh ?? days[i]?.rh) < 30 ? 'text-tertiary font-bold' : 'text-on-surface-variant'}">${fmt(pw?.rh ?? days[i]?.rh, 0)}%</td>
+  <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${dc.badge}">${r.fwi.toFixed(1)}</span></td>
+  <td class="py-3 text-sm text-on-surface-variant">${fbp ? fbp.ros.toFixed(1) : '—'}</td>
+  <td class="py-3 text-sm font-bold" style="${hfiColour}">${fbp ? Math.round(fbp.hfi).toLocaleString() : '—'}</td>
+  <td class="py-3 text-sm text-on-surface-variant">${fbp ? fbp.fireType : '—'}</td>
+</tr>`;
+      }).join('');
     }
 
     // Trend table — top 5 stations, loaded sequentially to avoid rate-limiting
@@ -1599,27 +1679,55 @@ async function printStationBriefing() {
   let forecastRows = '';
   if (fResults.length > 0) {
     forecastRows = fResults.map((fr, i) => {
-      const fd = fDays[i] || {};
+      const fd  = fDays[i] || {};
+      const fpw = fd.peak || fd; // peak (14:00) conditions for FBP
       const fdc = PRINT_BG[fr.danger] || PRINT_BG['Moderate'];
-      const barWidth = Math.min(100, (fr.fwi / 50) * 100).toFixed(0);
-      return `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9f9f9'}">
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:600">${fr.label || `D+${i+1}`}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fd.temp != null ? (+fd.temp).toFixed(1) + '°C' : '—'}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fd.rh != null ? Math.round(fd.rh) + '%' : '—'}</td>
+      const ffbp = fr.fbp;
+      const hfiTxt = !ffbp ? '—' : ffbp.hfi >= 4000 ? `<strong style="color:#c0392b">${Math.round(ffbp.hfi).toLocaleString()}</strong>` : ffbp.hfi >= 2000 ? `<strong style="color:#d35400">${Math.round(ffbp.hfi).toLocaleString()}</strong>` : Math.round(ffbp.hfi).toLocaleString();
+      const isD1 = i === 0;
+      return `<tr style="background:${isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9'}">
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.rh != null ? Math.round(fpw.rh) + '%' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${fr.fwi.toFixed(1)}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:${barWidth}%;background:${fdc.text};border-radius:4px"></div>
-            </div>
-            <span style="background:${fdc.bg};color:${fdc.text};padding:1px 6px;border-radius:10px;font-size:8pt;font-weight:700;white-space:nowrap">${fr.danger}</span>
-          </div>
-        </td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center"><span style="background:${fdc.bg};color:${fdc.text};padding:1px 6px;border-radius:10px;font-size:7.5pt;font-weight:700">${fr.danger}</span></td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${ffbp ? ffbp.ros.toFixed(1) : '—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiTxt}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt">${ffbp ? ffbp.fireType : '—'}</td>
       </tr>`;
     }).join('\n');
   } else {
-    forecastRows = '<tr><td colspan="5" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
+    forecastRows = '<tr><td colspan="8" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
   }
+
+  // D+1 peak burn block for the print briefing
+  const d1r  = fResults[0];
+  const d1d  = fDays[0];
+  const d1pw = d1d?.peak || d1d || {};
+  const d1fbp = d1r?.fbp;
+  const tomorrowDate = d1r?.label || 'D+1';
+  const d1HfiRating = !d1fbp ? '—' : d1fbp.hfi >= 4000 ? 'EXTREME' : d1fbp.hfi >= 2000 ? 'VERY HIGH' : d1fbp.hfi >= 500 ? 'HIGH' : 'LOW';
+  const d1HfiColor  = !d1fbp ? '#333' : d1fbp.hfi >= 4000 ? '#c0392b' : d1fbp.hfi >= 2000 ? '#d35400' : d1fbp.hfi >= 500 ? '#856404' : '#155724';
+  const d1EscapeNote = d1fbp && d1fbp.hfi >= 4000
+    ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
+  const d1Section = d1r ? `
+<div class="section">
+  <div class="section-title" style="background:#1a3a5c">Next Operational Period — D+1 Peak Burn (~14:00 MDT · ${tomorrowDate})</div>
+  <div class="section-body">
+    <div class="grid-2" style="margin-bottom:6px">
+      <p class="kv"><span class="label">Predicted Weather (Peak)</span><br><span class="val" style="font-size:10pt">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
+      <p class="kv"><span class="label">Predicted FWI</span><br><span class="val" style="font-size:10pt">${d1r.fwi.toFixed(1)} — <span style="color:${d1HfiColor}">${d1r.danger}</span></span></p>
+    </div>
+    <div class="grid-2">
+      <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
+      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'} <span style="font-size:9pt;font-weight:400">[${d1HfiRating}]</span></span></p>
+      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
+      <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
+    </div>
+    ${d1EscapeNote}
+    <p style="font-size:7.5pt;color:#888;margin-top:6px">Fuel: ${fuelCode} — ${fuelName} · FBP ST-X-3 · Source: ${srcLabel}</p>
+  </div>
+</div>` : '';
 
   // Escaped fire note
   const escapedNote = fbp && fbp.hfi >= 4000
@@ -1722,8 +1830,10 @@ async function printStationBriefing() {
   </div>
 </div>
 
+${d1Section}
+
 <div class="section">
-  <div class="section-title">7-Day Outlook</div>
+  <div class="section-title">Forecast Outlook — Fire Behaviour by Day (Peak ~14:00 MDT)</div>
   <div class="section-body" style="padding:0">
     <table>
       <thead>
@@ -1733,6 +1843,9 @@ async function printStationBriefing() {
           <th>RH</th>
           <th>FWI</th>
           <th>Rating</th>
+          <th>ROS m/min</th>
+          <th>HFI kW/m</th>
+          <th>Fire Type</th>
         </tr>
       </thead>
       <tbody>
@@ -1991,4 +2104,4 @@ async function fetchHotspots() {
   return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };

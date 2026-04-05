@@ -116,6 +116,69 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </div>
 </div>
 </section>
+<!-- D+1 Peak Burn Prediction — FBAN operational product -->
+<section class="bg-surface-container rounded-lg p-6 border border-[#7bd0ff]/20">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings:'FILL' 1">local_fire_department</span>
+<h3 class="font-headline text-xl font-bold text-white">Tomorrow — Peak Burn Prediction</h3>
+<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~14:00 MDT · <span id="fwi-d1-label">D+1</span></span>
+</div>
+<div class="flex flex-wrap gap-4 text-sm text-on-surface-variant mb-4">
+<span>Temp: <b id="fwi-d1-temp" class="text-white">—</b></span>
+<span>RH: <b id="fwi-d1-rh" class="text-white">—</b></span>
+<span>Wind: <b id="fwi-d1-wind" class="text-white">—</b></span>
+<span class="ml-auto flex items-center gap-2">FWI <b id="fwi-d1-fwi" class="text-white">—</b>
+<span id="fwi-d1-rating" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-outline">—</span>
+</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+<div class="bg-surface-container-high p-4 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Head ROS</p>
+<p class="font-headline text-2xl font-bold text-white" id="fwi-d1-ros">—</p>
+<p class="text-[10px] text-outline">m/min</p>
+</div>
+<div class="bg-surface-container-high p-4 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Head Fire Intensity</p>
+<p class="font-headline text-2xl font-bold text-white" id="fwi-d1-hfi">—</p>
+<p class="text-[10px] text-outline">kW/m · escape ≥ 4,000</p>
+</div>
+<div class="bg-surface-container-high p-4 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Flame Length</p>
+<p class="font-headline text-2xl font-bold text-white" id="fwi-d1-flame">—</p>
+<p class="text-[10px] text-outline">Byram 1959</p>
+</div>
+<div class="bg-surface-container-high p-4 rounded-lg">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Fire Type / CFB</p>
+<p class="font-headline text-lg font-bold text-white" id="fwi-d1-type">—</p>
+<p class="text-[10px] text-outline">CFB: <span id="fwi-d1-cfb">—</span></p>
+</div>
+</div>
+<p id="fwi-d1-escape-warn" class="hidden mt-4 p-3 bg-tertiary-container/30 border border-tertiary/50 rounded text-tertiary text-sm font-bold">⚠ HFI ≥ 4,000 kW/m — potential for escaped fire during peak burn period tomorrow</p>
+<p class="text-[10px] text-outline/50 mt-3">Fuel: <span id="fwi-d1-fuel">C2 — Boreal Spruce</span> · FBP ST-X-3</p>
+</section>
+<!-- Forecast Days — Fire Behaviour Outlook table -->
+<section class="bg-surface-container-low rounded-lg p-6">
+<h3 class="font-headline text-xl font-bold text-white mb-4">Fire Behaviour Outlook — All Forecast Days</h3>
+<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~14:00 MDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 14. FBP chains forward from today's observed FFMC/DMC/DC.</p>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="border-b border-outline-variant/30">
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Day</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Temp</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">RH</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">FWI</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">ROS m/min</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">HFI kW/m</th>
+<th class="py-3 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Fire Type</th>
+</tr>
+</thead>
+<tbody id="fwi-forecast-fbp-tbody" class="divide-y divide-outline-variant/10">
+<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr>
+</tbody>
+</table>
+</div>
+</section>
 <!-- Provincial Trends Analysis -->
 <section class="bg-surface-container-low rounded-lg p-8">
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -157,7 +220,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=24"></script>
+<script src="../fwi.js?v=25"></script>
 <script>
   const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];
