@@ -230,6 +230,7 @@ function calcFMC(lat, doy) {
 }
 
 let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
+let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
 function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
   const ft = FUEL_TYPES[fuelCode];
@@ -473,7 +474,7 @@ function calculateFWI(w, prev = STARTUP) {
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */
-function wireDOM(r) {
+function wireDOM(r, lat, lng) {
   const set = (key, val) =>
     document.querySelectorAll(`[data-fwi="${key}"]`).forEach(el => el.textContent = val);
 
@@ -547,15 +548,18 @@ function wireDOM(r) {
  */
 async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area') {
   _stationLat = lat; // P5: update for seasonal FMC calculation
+  const gen = ++_initGeneration; // this call's generation token
   document.querySelectorAll('[data-fwi="station"]').forEach(el => el.textContent = station);
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
 
   try {
     const weather = await fetchWeatherPrimary(lat, lng);
+    if (gen !== _initGeneration) return; // a newer initFWI started; discard stale result
     const result  = calculateFWI(weather);
-    wireDOM(result);
+    wireDOM(result, lat, lng);
     console.log('[FWI]', result);
   } catch (err) {
+    if (gen !== _initGeneration) return; // stale failure — don't overwrite newer success
     console.warn('[FWI] Load failed:', err);
     document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Data unavailable');
   }
