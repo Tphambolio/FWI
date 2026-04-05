@@ -291,7 +291,7 @@
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">NRCan CWFIS WFS primary · Open-Meteo NWP fallback · Client-Side Only · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser at each page load — no server, no caching. Current conditions use a two-tier priority: CWFIS WFS (NRCan physical sensors) first, Open-Meteo NWP as fallback if no station is found within ±2° (~220 km). Forecasts always use Open-Meteo (CWFIS does not provide forecasts). Source is shown in the station timestamp on every screen.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser at each page load — no server, no caching. Current conditions use a two-tier priority: CWFIS WFS (NRCan physical sensors) first, Open-Meteo NWP as fallback if no station is found within ±2° (~220 km). Forecasts use CWFIS NAEFS ensemble (Environment Canada, 14–16 days) as primary, falling back to Open-Meteo NWP (7 days) when no NAEFS station is within 150 km. Source is shown on the Forecast page below the bar chart.</p>
 
 <div class="space-y-4">
 <!-- CWFIS WFS primary -->
@@ -333,17 +333,37 @@
 </div>
 </div>
 
-<!-- 7-day forecast -->
+<!-- NAEFS forecast primary -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
-<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">7-Day Forecast</span>
-<span class="text-[10px] text-on-surface-variant font-label">Forecast &amp; Trends · Loaded once per page visit</span>
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">14-Day Forecast — Primary</span>
+<span class="text-[10px] text-on-surface-variant font-label">CWFIS NAEFS WFS · Environment Canada ensemble · 23 Alberta stations</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs
+  ?service=WFS&amp;version=2.0.0&amp;request=GetFeature
+  &amp;typeNames=public:firewx_naefs
+  &amp;outputFormat=application/json
+  &amp;CQL_FILTER=code={station_code}&amp;count=20</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">max_temp</span><span class="text-on-surface-variant">Peak daily temp °C</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">min_rh</span><span class="text-on-surface-variant">Minimum daily RH %</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">median_ws</span><span class="text-on-surface-variant">Median wind speed km/h</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">median_pcp</span><span class="text-on-surface-variant">Median precipitation mm</span></div>
+</div>
+<p class="text-xs text-on-surface-variant mt-3">Returns up to 16 daily forecast records per station. The nearest NAEFS station within 150 km is selected by Haversine distance. <code class="text-primary">max_temp</code> and <code class="text-primary">min_rh</code> are used (fire weather peak conditions, consistent with CFFDRS 13:00 LST standard). FWI is computed client-side via Van Wagner carry-forward chain from current observed values. Ensemble spread (pct25/pct75) is available in the layer but not yet displayed.</p>
+</div>
+
+<!-- Open-Meteo forecast fallback -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">7-Day Forecast — Fallback</span>
+<span class="text-[10px] text-on-surface-variant font-label">Open-Meteo NWP · Used when no NAEFS station within 150 km</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
   &amp;timezone=auto&amp;forecast_days=7</code>
-<p class="text-xs text-on-surface-variant mt-3">Returns 168 hourly values (7 days × 24 h). FWI is calculated using the <strong class="text-on-surface">noon observation</strong> for each day (index <code class="text-primary">day × 24 + 12</code>), consistent with the standard CFFDRS 13:00 LST observation window defined in Van Wagner (1987). The seven daily observations are then chained through the Van Wagner equations in sequence.</p>
+<p class="text-xs text-on-surface-variant mt-3">Returns 168 hourly values (7 days × 24 h). FWI calculated from the noon observation each day (index <code class="text-primary">day × 24 + 12</code>), consistent with the CFFDRS 13:00 LST standard. Used for the 16 CWFIS stations not covered by the NAEFS network.</p>
 </div>
 
 <!-- 24-hour trend -->
@@ -370,7 +390,7 @@
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Canadian Wildland Fire Information System · Natural Resources Canada</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station names and coordinates match the NRCan CWFIS fire weather station network. Coordinates are hard-coded in <code class="text-primary text-xs">fwi.js → ALBERTA_STATIONS[]</code>. For current conditions, each coordinate queries the CWFIS WFS layer for the nearest physical sensor within ±2° — the actual sensor name and distance are shown in the station UI. Forecasts use Open-Meteo NWP interpolated to the coordinate. Stations span all Alberta forest management zones from High Level (58.52°N) to Cardston (49.20°N).</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Station names and coordinates match the NRCan CWFIS fire weather station network. Coordinates are hard-coded in <code class="text-primary text-xs">fwi.js → ALBERTA_STATIONS[]</code>. For current conditions, each coordinate queries the CWFIS WFS layer for the nearest physical sensor within ±2° — the actual sensor name and distance are shown in the station UI. Forecasts use CWFIS NAEFS ensemble (primary, 23 stations) or Open-Meteo NWP (fallback). Stations span all Alberta forest management zones from High Level (58.52°N) to Cardston (49.20°N).</p>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 <div class="bg-surface-container-lowest p-4 rounded-lg">
 <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Northern</div>
@@ -424,6 +444,7 @@
 <li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> ECMWF IFS, DWD ICON, NCEP GFS ensemble. Updated hourly.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[7]</span><span>Environment and Climate Change Canada / NOAA (2003–present). North American Ensemble Forecast System (NAEFS). Bi-daily 00Z/12Z ensemble runs; 14-day horizon. Distributed via NRCan CWFIS WFS layer <em>public:firewx_naefs</em>.</span></li>
 </ul>
 </div>
 

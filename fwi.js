@@ -994,7 +994,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     }
 
     // Days at elevated risk (FWI ≥ 19 = High)
-    const daysAtRisk = results.filter(r => r.fwi >= 19).length;
+    const daysAtRisk = results.filter(r => r.fwi >= 20).length;
     const elDAR = document.getElementById('fwi-days-at-risk');
     const elTD  = document.getElementById('fwi-total-days');
     if (elDAR) elDAR.textContent = daysAtRisk;
