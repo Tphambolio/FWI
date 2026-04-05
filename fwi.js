@@ -230,6 +230,8 @@ function calcFMC(lat, doy) {
 }
 
 let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
+let _stationLng = -113.5; // module-level; set by initFWI
+let _stationName = 'Edmonton'; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
 function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
@@ -654,7 +656,9 @@ function wireDOM(r, lat, lng) {
  * @param {string} station   Station label for [data-fwi="station"] elements
  */
 async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area') {
-  _stationLat = lat; // P5: update for seasonal FMC calculation
+  _stationLat  = lat; // P5: update for seasonal FMC calculation
+  _stationLng  = lng;
+  _stationName = station;
   const gen = ++_initGeneration; // this call's generation token
   document.querySelectorAll('[data-fwi="station"]').forEach(el => el.textContent = station);
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
@@ -815,6 +819,8 @@ const REGIONS = [
 
 // Cache populated by buildRegionalSummary — used by exportRegionalDataset
 let _regionalCache = [];
+// Cache populated by buildStationMap — stores all 39 station FWI results
+let _mapStationCache = [];
 // Cache populated by buildForecastTrends — used by exportForecastReport
 let _forecastCache = { days: [], results: [] };
 
@@ -1306,6 +1312,414 @@ function _triggerCSVDownload(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ─── ICS Print Briefings ─────────────────────────────────────────────────────
+
+/**
+ * Print Provincial Briefing — landscape A4/Letter, ICS-formatted.
+ * Uses _mapStationCache (all 39 stations) if populated, else _regionalCache (5 zones).
+ */
+function printProvincialBriefing() {
+  // Determine data source
+  const useMap = _mapStationCache.length > 0;
+  const useRegional = !useMap && _regionalCache.length > 0;
+  if (!useMap && !useRegional) { alert('Data still loading — try again in a moment.'); return; }
+
+  const now   = new Date();
+  const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
+
+  // Print-safe danger colours
+  const PRINT_COLORS = {
+    'Low':       { bg: '#d4edda', text: '#155724' },
+    'Moderate':  { bg: '#cce5ff', text: '#004085' },
+    'High':      { bg: '#e2d9f3', text: '#4a235a' },
+    'Very High': { bg: '#ffe5cc', text: '#7d3200' },
+    'Extreme':   { bg: '#f8d7da', text: '#721c24' },
+  };
+  const SVG_COLORS = {
+    'Low':       '#2d9e5f',
+    'Moderate':  '#2980b9',
+    'High':      '#8e44ad',
+    'Very High': '#e67e22',
+    'Extreme':   '#c0392b',
+  };
+
+  // Build station rows — sort by FWI descending within each sector grouping
+  let rows;
+  if (useMap) {
+    // Assign sector from ALBERTA_STATIONS lookup
+    const sectorMap = {};
+    ALBERTA_STATIONS.forEach(s => {
+      // Derive sector from lat bands
+      if (s.lat >= 56.5) sectorMap[s.name] = 'Far North';
+      else if (s.lat >= 54.5) sectorMap[s.name] = 'North';
+      else if (s.lat >= 53.0) sectorMap[s.name] = 'Central';
+      else if (s.lat >= 51.5) sectorMap[s.name] = 'Central-South';
+      else sectorMap[s.name] = 'South';
+    });
+    const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+    rows = [..._mapStationCache].sort((a, b) => {
+      const sa = sectorOrder.indexOf(sectorMap[a.name]);
+      const sb = sectorOrder.indexOf(sectorMap[b.name]);
+      if (sa !== sb) return sa - sb;
+      return b.result.fwi - a.result.fwi;
+    }).map(({ name, lat, lng, result: r }) => ({
+      name, lat, lng,
+      temp: r.weather?.temp, rh: r.weather?.rh, wind: r.weather?.wind,
+      dc: r.dc, fwi: r.fwi, danger: r.danger,
+      sector: sectorMap[name] || '—',
+    }));
+  } else {
+    rows = _regionalCache.map(({ name, sector, lat, lng, result: r }) => ({
+      name, lat, lng, sector: sector || '—',
+      temp: r.weather?.temp, rh: r.weather?.rh, wind: r.weather?.wind,
+      dc: r.dc, fwi: r.fwi, danger: r.danger,
+    }));
+    rows.sort((a, b) => b.fwi - a.fwi);
+  }
+
+  // Tally danger counts
+  const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
+  rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
+
+  // Build SVG Alberta map
+  const svgPoints = rows.map(r => {
+    const x = ((r.lng - (-120)) / 10 * 300).toFixed(1);
+    const y = ((60 - r.lat) / 11 * 340).toFixed(1);
+    const fill = SVG_COLORS[r.danger] || '#2980b9';
+    return `<circle cx="${x}" cy="${y}" r="5" fill="${fill}" stroke="white" stroke-width="1" opacity="0.9"><title>${r.name}: FWI ${r.fwi.toFixed(1)} (${r.danger})</title></circle>`;
+  }).join('\n    ');
+
+  const svgLegend = Object.entries(SVG_COLORS).map(([label, color]) =>
+    `<rect x="0" y="0" width="10" height="10" fill="${color}" rx="2"/><text x="14" y="9" font-size="9" fill="#333">${label}</text>`
+  ).map((item, i) => `<g transform="translate(${i * 70}, 0)">${item}</g>`).join('\n');
+
+  // Build table rows HTML
+  const tableRows = rows.map((r, i) => {
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9f9f9';
+    const dc = PRINT_COLORS[r.danger] || PRINT_COLORS['Moderate'];
+    return `<tr style="background:${bg}">
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:600">${r.name}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.sector}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.temp != null ? (+r.temp).toFixed(1) + '°C' : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.rh != null ? Math.round(r.rh) + '%' : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.wind != null ? Math.round(r.wind) + ' km/h' : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.dc != null ? r.dc.toFixed(0) : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;text-align:center;background:${dc.bg};color:${dc.text};font-weight:700;font-size:9pt">${r.danger}</td>
+    </tr>`;
+  }).join('\n');
+
+  const summaryParts = ['Extreme', 'Very High', 'High', 'Moderate', 'Low']
+    .filter(d => tally[d] > 0)
+    .map(d => `${tally[d]} ${d}`).join(' · ');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Alberta FWI — Provincial Briefing</title>
+<style>
+  @media print {
+    @page { size: landscape; margin: 1cm; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
+    .no-print { display: none; }
+  }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 12px; }
+  .header-box { border: 2px solid #333; padding: 10px 14px; margin-bottom: 10px; }
+  .header-title { font-size: 14pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
+  .header-meta { font-size: 9pt; color: #444; margin: 0; }
+  .content-wrap { display: flex; gap: 16px; align-items: flex-start; }
+  .table-wrap { flex: 1 1 auto; overflow: hidden; }
+  .map-wrap { flex: 0 0 310px; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  th { background: #333; color: #fff; padding: 5px 6px; text-align: center; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  th:first-child { text-align: left; }
+  .zone-summary { border: 1px solid #ccc; padding: 7px 10px; margin-top: 10px; font-size: 9pt; background: #f5f5f5; }
+  .sign-block { display: flex; gap: 40px; margin-top: 8px; border-top: 1px solid #ccc; padding-top: 8px; font-size: 9pt; }
+  .sign-line { border-bottom: 1px solid #333; min-width: 160px; display: inline-block; margin-right: 4px; }
+  .legend-row { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; font-size: 8pt; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="header-box">
+  <p class="header-title">Alberta Fire Weather Index — Provincial Briefing</p>
+  <p class="header-meta">
+    Operational Period: ${today} 0600–1800 MDT &nbsp;·&nbsp;
+    Prepared: ${prepared} &nbsp;·&nbsp;
+    Source: CWFIS / MSC SWOB / Open-Meteo NWP &nbsp;·&nbsp;
+    tphambolio.github.io/FWI
+  </p>
+</div>
+<div class="content-wrap">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left">Station</th>
+          <th>Sector</th>
+          <th>Temp</th>
+          <th>RH</th>
+          <th>Wind</th>
+          <th>DC</th>
+          <th>FWI</th>
+          <th>Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+  </div>
+  <div class="map-wrap">
+    <svg viewBox="0 0 300 340" width="300" height="340" style="border:1px solid #bbb;display:block">
+      <rect x="0" y="0" width="300" height="340" fill="#f5f5f0" stroke="#999" stroke-width="1.5"/>
+      <!-- Grid lines at lat 50, 52, 54, 56, 58 -->
+      <line x1="0" y1="${((60-50)/11*340).toFixed(0)}" x2="300" y2="${((60-50)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <line x1="0" y1="${((60-52)/11*340).toFixed(0)}" x2="300" y2="${((60-52)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <line x1="0" y1="${((60-54)/11*340).toFixed(0)}" x2="300" y2="${((60-54)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <line x1="0" y1="${((60-56)/11*340).toFixed(0)}" x2="300" y2="${((60-56)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <line x1="0" y1="${((60-58)/11*340).toFixed(0)}" x2="300" y2="${((60-58)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <!-- Lat labels -->
+      <text x="3" y="${((60-58)/11*340-2).toFixed(0)}" font-size="7" fill="#999">58°N</text>
+      <text x="3" y="${((60-54)/11*340-2).toFixed(0)}" font-size="7" fill="#999">54°N</text>
+      <text x="3" y="${((60-50)/11*340-2).toFixed(0)}" font-size="7" fill="#999">50°N</text>
+      ${svgPoints}
+    </svg>
+    <div class="legend-row">
+      <div class="legend-item"><span class="legend-dot" style="background:#2d9e5f"></span>Low</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#2980b9"></span>Moderate</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#8e44ad"></span>High</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span>V.High</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#c0392b"></span>Extreme</div>
+    </div>
+  </div>
+</div>
+<div class="zone-summary">
+  <strong>Zone Summary (${rows.length} stations):</strong> ${summaryParts || 'No data'}
+</div>
+<div class="sign-block">
+  <div>Prepared by: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Position/ICS Title: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Date/Time: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+</div>
+<button class="no-print" onclick="window.print()" style="margin-top:10px;padding:8px 20px;cursor:pointer">Print / Save PDF</button>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Pop-up blocked — please allow pop-ups for this site.'); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+/**
+ * Print Station Briefing — portrait A4/Letter, ICS-formatted.
+ * Uses _lastFWI, _lastWeather, _lastVWCalc, _forecastCache.
+ */
+function printStationBriefing() {
+  if (!_lastFWI) { alert('Load a station first.'); return; }
+
+  const r = _lastFWI;
+  const w = _lastWeather || r.weather;
+  const now   = new Date();
+  const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
+
+  const stationDisplayName = _stationName || 'Alberta Station';
+  const lat = _stationLat;
+  const lng = _stationLng;
+  const fuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
+  const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
+  const doy = Math.ceil((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const fmc = calcFMC(lat, doy);
+
+  // FBP prediction
+  const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, 0);
+
+  // DC source
+  const dcSource = w?.fwiFromCWFIS ? 'CWFIS carry-over' : 'Regional estimate';
+
+  // Danger colour for print
+  const PRINT_BG = {
+    'Low':       { bg: '#d4edda', text: '#155724' },
+    'Moderate':  { bg: '#cce5ff', text: '#004085' },
+    'High':      { bg: '#e2d9f3', text: '#4a235a' },
+    'Very High': { bg: '#ffe5cc', text: '#7d3200' },
+    'Extreme':   { bg: '#f8d7da', text: '#721c24' },
+  };
+  const dc = PRINT_BG[r.danger] || PRINT_BG['Moderate'];
+
+  // Source label
+  const srcLabel = w?.stationName ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
+
+  // 7-day forecast table
+  const { days: fDays, results: fResults } = _forecastCache;
+  let forecastRows = '';
+  if (fResults.length > 0) {
+    forecastRows = fResults.map((fr, i) => {
+      const fd = fDays[i] || {};
+      const fdc = PRINT_BG[fr.danger] || PRINT_BG['Moderate'];
+      const barWidth = Math.min(100, (fr.fwi / 50) * 100).toFixed(0);
+      return `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9f9f9'}">
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:600">${fr.label || `D+${i+1}`}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fd.temp != null ? (+fd.temp).toFixed(1) + '°C' : '—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fd.rh != null ? Math.round(fd.rh) + '%' : '—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${fr.fwi.toFixed(1)}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${barWidth}%;background:${fdc.text};border-radius:4px"></div>
+            </div>
+            <span style="background:${fdc.bg};color:${fdc.text};padding:1px 6px;border-radius:10px;font-size:8pt;font-weight:700;white-space:nowrap">${fr.danger}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('\n');
+  } else {
+    forecastRows = '<tr><td colspan="5" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
+  }
+
+  // Escaped fire note
+  const escapedNote = fbp && fbp.hfi >= 4000
+    ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ HFI ≥ 4,000 kW/m — potential for escaped fire / extreme fire behaviour</p>`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fire Weather — Station Briefing · ${stationDisplayName}</title>
+<style>
+  @media print {
+    @page { size: portrait; margin: 1.5cm; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
+    .no-print { display: none; }
+  }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 14px; max-width: 720px; }
+  .header-box { border: 2px solid #333; padding: 10px 14px; margin-bottom: 10px; }
+  .header-title { font-size: 14pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
+  .header-meta { font-size: 9pt; color: #444; margin: 0; line-height: 1.5; }
+  .section { border: 1px solid #ccc; margin-bottom: 8px; }
+  .section-title { background: #333; color: #fff; padding: 5px 10px; font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .section-body { padding: 8px 10px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 16px; }
+  .kv { margin: 0; }
+  .kv .label { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .kv .val { font-size: 12pt; font-weight: 700; }
+  .danger-badge { display: inline-block; padding: 6px 16px; border-radius: 4px; font-size: 16pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 6px; }
+  .fwi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .fwi-cell { text-align: center; background: #f5f5f5; padding: 6px 4px; border-radius: 3px; }
+  .fwi-cell .label { font-size: 7.5pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+  .fwi-cell .val { font-size: 13pt; font-weight: 700; margin-top: 2px; }
+  .sign-block { display: flex; gap: 32px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ccc; font-size: 9pt; }
+  .sign-line { border-bottom: 1px solid #333; min-width: 140px; display: inline-block; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  th { background: #444; color: #fff; padding: 4px 6px; text-align: center; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.04em; }
+  th:first-child { text-align: left; }
+</style>
+</head>
+<body>
+<div class="header-box">
+  <p class="header-title">Fire Weather — Station Briefing</p>
+  <p class="header-meta">
+    Station: <strong>${stationDisplayName}</strong> &nbsp;·&nbsp; ${Math.abs(lat).toFixed(4)}°N ${Math.abs(lng).toFixed(4)}°W<br>
+    Operational Period: ${today} 0600–1800 MDT<br>
+    Prepared: ${prepared} &nbsp;·&nbsp; Source: ${srcLabel}
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title">Current Conditions</div>
+  <div class="section-body">
+    <div class="grid-3">
+      <p class="kv"><span class="label">Temp</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) + '°C' : '—'}</span></p>
+      <p class="kv"><span class="label">Rel. Humidity</span><br><span class="val">${w?.rh != null ? Math.round(w.rh) + '%' : '—'}</span></p>
+      <p class="kv"><span class="label">Wind</span><br><span class="val">${w?.wind != null ? Math.round(w.wind) + ' km/h' : '—'}${w?.wdir != null ? ' ' + compassDir(w.wdir) : ''}</span></p>
+    </div>
+    <div style="margin-top:6px">
+      <span style="font-size:9pt">Rain: <strong>${w?.rain != null ? (+w.rain).toFixed(1) + ' mm' : '—'}</strong></span>
+      &nbsp;&nbsp;
+      <span style="font-size:9pt">DC Source: <strong>${dcSource}</strong></span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">FWI System (Van Wagner CFFDRS)</div>
+  <div class="section-body">
+    <div class="fwi-grid">
+      <div class="fwi-cell"><div class="label">FFMC</div><div class="val">${r.ffmc.toFixed(1)}</div></div>
+      <div class="fwi-cell"><div class="label">DMC</div><div class="val">${r.dmc.toFixed(1)}</div></div>
+      <div class="fwi-cell"><div class="label">DC</div><div class="val">${r.dc.toFixed(0)}</div></div>
+      <div class="fwi-cell"><div class="label">ISI</div><div class="val">${r.isi.toFixed(1)}</div></div>
+      <div class="fwi-cell"><div class="label">BUI</div><div class="val">${r.bui.toFixed(0)}</div></div>
+      <div class="fwi-cell"><div class="label">FWI</div><div class="val" style="font-size:16pt">${r.fwi.toFixed(1)}</div></div>
+    </div>
+    <div>
+      <span class="danger-badge" style="background:${dc.bg};color:${dc.text}">${r.danger} Risk</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Fire Behaviour Prediction (FBP ST-X-3)</div>
+  <div class="section-body">
+    <div class="grid-2" style="margin-bottom:6px">
+      <p class="kv"><span class="label">Fuel Type</span><br><span class="val" style="font-size:10pt">${fuelCode} — ${fuelName}</span></p>
+      <p class="kv"><span class="label">Foliar MC (FMC)</span><br><span class="val">${fmc.toFixed(0)}%</span></p>
+    </div>
+    <div class="grid-2">
+      <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
+      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
+      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
+      <p class="kv"><span class="label">Fire Type</span><br><span class="val">${fbp ? fbp.fireType : '—'}</span></p>
+      <p class="kv"><span class="label">Crown Frac. Burned</span><br><span class="val">${fbp ? (fbp.cfb * 100).toFixed(0) + '%' : '—'}</span></p>
+    </div>
+    ${escapedNote}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">7-Day Outlook</div>
+  <div class="section-body" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left">Day</th>
+          <th>Temp</th>
+          <th>RH</th>
+          <th>FWI</th>
+          <th>Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${forecastRows}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sign-block">
+  <div>Prepared by: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Position: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Date/Time: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+</div>
+<button class="no-print" onclick="window.print()" style="margin-top:10px;padding:8px 20px;cursor:pointer">Print / Save PDF</button>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Pop-up blocked — please allow pop-ups for this site.'); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
 // ─── Live Station Map (Leaflet) ───────────────────────────────────────────────
 
 const MARKER_COLORS = {
@@ -1326,6 +1740,7 @@ const MARKER_COLORS = {
 async function buildStationMap(containerId) {
   const container = document.getElementById(containerId);
   if (!container || typeof L === 'undefined') return;
+  _mapStationCache = []; // reset on each map build
 
   // Initialise map centered on Alberta
   const map = L.map(containerId, {
@@ -1367,6 +1782,7 @@ async function buildStationMap(containerId) {
     try {
       const w = await fetchWeatherPrimary(s.lat, s.lng);
       const r = calculateFWI(w);
+      _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r });
       const color = MARKER_COLORS[r.danger] || '#7bd0ff';
       const radius = r.danger === 'Extreme' ? 10 : r.danger === 'Very High' ? 9 : 7;
 
@@ -1537,4 +1953,4 @@ async function fetchHotspots() {
   return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };
