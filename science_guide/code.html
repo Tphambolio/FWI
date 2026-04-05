@@ -48,7 +48,7 @@
 <span class="material-symbols-outlined text-slate-400">calendar_today</span>
 </div>
 </header>
-<main class="pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto min-h-screen">
+<main class="pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto min-h-screen overflow-x-hidden">
 <!-- Hero Section -->
 <section class="mb-20">
 <div class="flex flex-col md:flex-row gap-12 items-end justify-between border-b border-outline-variant/20 pb-12">
@@ -66,7 +66,7 @@
 <!-- Bento Grid: The Components -->
 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-20">
 <!-- FFMC: Fine Fuel Moisture Code -->
-<div class="md:col-span-8 glass-card rounded-lg p-8 relative overflow-hidden group border border-primary/5">
+<div class="md:col-span-8 glass-card rounded-lg p-5 md:p-8 relative overflow-hidden group border border-primary/5">
 <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
 <span class="material-symbols-outlined text-9xl">grass</span>
 </div>
@@ -74,7 +74,7 @@
 <span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary font-label text-[10px] tracking-widest mb-4">MOISTURE CODE</span>
 <h3 class="font-headline text-3xl font-bold text-on-surface mb-2">FFMC</h3>
 <p class="text-on-surface-variant font-body mb-8 max-w-lg leading-relaxed">Fine Fuel Moisture Code. Numerical rating of the moisture content of litter and other cured fine fuels. A critical indicator of ease of ignition and flammability.</p>
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-3 gap-2 md:gap-6">
 <div class="bg-surface-container-lowest p-4 rounded border-b border-primary">
 <span class="material-symbols-outlined text-primary mb-2">device_thermostat</span>
 <div class="text-xs font-label text-on-surface-variant uppercase mb-1">Temperature</div>
@@ -111,15 +111,15 @@
 <p class="text-on-surface-variant font-body text-sm leading-relaxed">Drought Code. Represents the moisture content of deep, compact organic layers. Indicators of seasonal drought and smoldering potential.</p>
 </div>
 <!-- ISI: Initial Spread Index -->
-<div class="md:col-span-8 glass-card rounded-lg p-8 flex flex-col md:flex-row gap-8 items-center border border-primary/10">
-<div class="w-full md:w-1/3 aspect-square rounded-full border-[12px] border-surface-container-lowest flex items-center justify-center relative">
+<div class="md:col-span-8 glass-card rounded-lg p-5 md:p-8 flex flex-col sm:flex-row gap-5 md:gap-8 items-center border border-primary/10">
+<div class="w-36 sm:w-1/3 flex-shrink-0 aspect-square rounded-full border-[12px] border-surface-container-lowest flex items-center justify-center relative">
 <div class="absolute inset-0 rounded-full border-t-[12px] border-primary rotate-45"></div>
 <div class="text-center">
 <div class="font-headline text-4xl font-bold text-primary">ISI</div>
 <div class="text-[10px] font-label text-on-surface-variant uppercase tracking-widest">Rate of Spread</div>
 </div>
 </div>
-<div class="w-full md:w-2/3">
+<div class="min-w-0 flex-1">
 <h3 class="font-headline text-3xl font-bold text-on-surface mb-4">Initial Spread Index</h3>
 <p class="text-on-surface-variant font-body mb-6">Calculated from FFMC and Wind Speed. It represents the potential rate of fire spread without the influence of fuel quantity.</p>
 <div class="space-y-3">
