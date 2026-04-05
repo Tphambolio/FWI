@@ -13,10 +13,28 @@ const DMC_LL = [0,6.5,7.5,9.0,12.8,13.9,13.9,12.4,10.9,9.4,8.0,7.0,6.0];
 const DC_LL  = [0,-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5.0,2.4,0.4,-1.6,-1.6];
 
 // Spring startup defaults (Van Wagner 1987)
-// Spring startup defaults (Van Wagner 1987).
-// DC=300 reflects carry-over drought typical for Alberta's AG/RM fuel zones
-// (High–VeryHigh at season open); Van Wagner's dc=15 assumes fully saturated soils.
+// Spring startup defaults — FFMC and DMC are uniform; DC varies by Alberta fuel zone.
 const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
+
+// P1: Per-station spring startup DC by Alberta fuel/climate zone.
+// Boreal North (high precip, good snowpack) → low carry-over.
+// Southern AB (dry winters, low snowpack) → high carry-over.
+// Moot during fire season when CWFIS provides live DC; applies to cold-start
+// fallback and the NAEFS forecast carry-forward chain.
+const STATION_STARTUP_DC = {
+  'Fort Chipewyan': 100, 'Fort Vermilion': 100, 'High Level': 100,
+  'Manning': 100, 'Wabasca': 130,
+  'Athabasca': 150, 'Fort McMurray': 150, 'Lac La Biche': 150,
+  'Slave Lake': 150, 'High Prairie': 150, 'Fox Creek': 150,
+  'Edson': 150, 'Hinton': 150, 'Whitecourt': 150, 'Valleyview': 150,
+  'Grande Cache': 150, 'Rocky Mtn House': 150, 'Bonnyville': 150, 'Cold Lake': 150,
+  'Banff': 175, 'Jasper': 175, 'Grande Prairie': 175, 'Peace River': 200,
+  'Edmonton': 300, 'Drayton Valley': 275, 'Wetaskiwin': 300, 'Camrose': 275,
+  'Vegreville': 275, 'Lloydminster': 250, 'Red Deer': 275, 'Stettler': 275,
+  'Calgary': 375, 'Lethbridge': 425, 'Medicine Hat': 450, 'Brooks': 425,
+  'Cardston': 400, 'Claresholm': 375, 'Drumheller': 425, 'Pincher Creek': 375,
+};
+function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 300; }
 
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
@@ -200,6 +218,19 @@ const STATION_FUEL_TYPES = {
  * @param {number} slope     Percent slope (default 0)
  * @returns {{ isi, bui, ros, hfi, cfb, tfc, flameLength, fireType } | null}
  */
+// P5: Van Wagner (1987) seasonal foliar moisture content equation.
+// FMC declines from ~120 (early spring) toward ~85 (peak summer) as foliage matures.
+// Affects crown fire initiation threshold (CSI) — lower FMC = easier crown fire.
+function calcFMC(lat, doy) {
+  const latn = lat < 60
+    ? 46 + 0.234 * (Math.cos(0.0171 * (doy - 200)) - 1) * (lat - 46)
+    : lat;
+  const D0 = 2.6286 * (90 - latn) - 21.626;
+  return Math.min(120, Math.max(85, 85 + 0.0189 * Math.pow(doy - D0, 2)));
+}
+
+let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
+
 function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
   const ft = FUEL_TYPES[fuelCode];
   if (!ft) return null;
@@ -239,7 +270,8 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
 
   // Crown fraction burned — Van Wagner (1977)
   // CSI (critical surface intensity) = 0.001 × CBH^1.5 × (460 + 25.9 × FMC)^1.5
-  const fmc = 100; // foliar moisture content (%), typical mid-season
+  const doy = Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const fmc = calcFMC(_stationLat, doy); // P5: seasonal FMC from station lat + day-of-year
   const csi = ft.cbh > 0 ? 0.001 * Math.pow(ft.cbh, 1.5) * Math.pow(460 + 25.9 * fmc, 1.5) : Infinity;
   const rso = ft.sfc > 0 ? csi / (H * ft.sfc) : Infinity;
   const cfb = (ft.cbh > 0 && ros > rso) ? Math.max(0, 1.0 - Math.exp(-0.23 * (ros - rso))) : 0.0;
@@ -501,6 +533,9 @@ function wireDOM(r) {
 
   // FBP fire behaviour (station_detail only — silently no-ops on other pages)
   wireFBP(r.weather, r);
+
+  // P4: SCRIBE 48-hr validation — async, non-blocking
+  fetchSCRIBE(lat, lng).then(renderSCRIBE);
 }
 
 /**
@@ -511,6 +546,7 @@ function wireDOM(r) {
  * @param {string} station   Station label for [data-fwi="station"] elements
  */
 async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area') {
+  _stationLat = lat; // P5: update for seasonal FMC calculation
   document.querySelectorAll('[data-fwi="station"]').forEach(el => el.textContent = station);
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
 
@@ -607,7 +643,7 @@ function buildStationPicker() {
       if (fp) fp.value = derivedFuel;
     });
     initFWI(lat, lng, name);
-    buildHourlyChart(lat, lng);
+    buildHourlyChart(lat, lng, name);
   }
 
   function selectByValue(val) {
@@ -879,7 +915,7 @@ async function fetchHourly(lat, lng) {
  * Render the 24-hour FWI trend chart into <div id="fwi-chart-bars">.
  * Chains Van Wagner hour-by-hour from STARTUP defaults.
  */
-async function buildHourlyChart(lat, lng) {
+async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
   const container = document.getElementById('fwi-chart-bars');
   if (!container) return;
 
@@ -892,7 +928,7 @@ async function buildHourlyChart(lat, lng) {
   }
   if (!hours.length) return;
 
-  let prev = { ...STARTUP };
+  let prev = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(stationName) };
   const results = hours.map(w => {
     const r = calculateFWI(w, prev);
     prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
@@ -925,8 +961,8 @@ async function buildHourlyChart(lat, lng) {
 }
 
 /** Chain Van Wagner through multiple days, returning FWI result per day. */
-function calcMultiDay(days) {
-  let prev = { ...STARTUP };
+function calcMultiDay(days, startupDC = 300) {
+  let prev = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: startupDC };
   // Guard against null values propagating through chain
   return days.map(w => {
     const safe = {
@@ -968,7 +1004,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       days = await fetchForecast(lat, lng);
       forecastSource = 'Open-Meteo NWP';
     }
-    const results = calcMultiDay(days);
+    const results = calcMultiDay(days, getStartupDC(stationName));
     _forecastCache = { days, results };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
@@ -1255,6 +1291,139 @@ async function buildStationMap(containerId) {
       console.warn(`[FWI Map] ${s.name}:`, e);
     }
   }
+
+  // P3: Active fires layer
+  const activeFiresLayer = L.layerGroup();
+  fetchActiveFires().then(fires => {
+    fires.forEach(f => {
+      const ha = f.hectares || 1;
+      const r  = Math.max(5, Math.min(22, Math.sqrt(ha) * 0.4));
+      L.circleMarker([f.lat, f.lon], {
+        radius: r, fillColor: '#ff3333', color: '#ff8888', weight: 1.5, fillOpacity: 0.65,
+      }).bindPopup(
+        `<div style="font-family:'Space Grotesk',sans-serif;min-width:160px">` +
+        `<div style="font-size:12px;font-weight:700;color:#ff8888;margin-bottom:4px">${f.firename || 'Active Fire'}</div>` +
+        `<div style="font-size:11px;color:#dae2fd">${ha >= 1 ? ha.toLocaleString('en-CA', {maximumFractionDigits:0}) + ' ha' : '< 1 ha'}</div>` +
+        `<div style="font-size:10px;color:#8899cc;margin-top:2px">${f.stage_of_control || ''} · ${f.agency?.toUpperCase() || ''}</div>` +
+        `</div>`, { maxWidth: 220 }
+      ).addTo(activeFiresLayer);
+    });
+  });
+
+  // P3: Hotspots layer (24h satellite detections, Canada bounding box)
+  const hotspotsLayer = L.layerGroup();
+  fetchHotspots().then(spots => {
+    spots.forEach(h => {
+      const hfi  = h.hfi != null ? ` · HFI ${Math.round(h.hfi).toLocaleString()} kW/m` : '';
+      const fuel = h.fuel ? ` · ${h.fuel}` : '';
+      L.circleMarker([h.lat, h.lon], {
+        radius: 4, fillColor: '#ff8c00', color: '#ffaa44', weight: 1, fillOpacity: 0.8,
+      }).bindPopup(
+        `<div style="font-family:'Space Grotesk',sans-serif;min-width:140px">` +
+        `<div style="font-size:11px;font-weight:700;color:#ff8c00;margin-bottom:3px">Satellite Hotspot</div>` +
+        `<div style="font-size:10px;color:#dae2fd">${h.satellite || h.sensor || ''} · ${h.source || ''}</div>` +
+        `<div style="font-size:10px;color:#8899cc;margin-top:2px">${hfi}${fuel}</div>` +
+        `</div>`, { maxWidth: 200 }
+      ).addTo(hotspotsLayer);
+    });
+  });
+
+  // Wire toggle buttons (buttons added in regional_summary HTML)
+  const setupToggle = (btnId, layer, activeClass = 'map-layer-active') => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      if (map.hasLayer(layer)) { map.removeLayer(layer); btn.classList.remove(activeClass); }
+      else { map.addLayer(layer); btn.classList.add(activeClass); }
+    });
+  };
+  setupToggle('btn-activefires', activeFiresLayer);
+  setupToggle('btn-hotspots',    hotspotsLayer);
+}
+
+// ─── P4: SCRIBE 48-hr FWI validation ────────────────────────────────────────
+// NRCan SCRIBE gives pre-computed FWI for today / +24h / +48h at met stations.
+// Sentinel value -101 means no data for that station (off-season or not computed).
+
+async function fetchSCRIBE(lat, lng) {
+  try {
+    const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+      `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_scribe_fcst` +
+      `&outputFormat=application/json` +
+      `&CQL_FILTER=latitude+BETWEEN+${(lat-2).toFixed(2)}+AND+${(lat+2).toFixed(2)}` +
+      `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=100`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const d = await res.json();
+    // Group valid records by station name
+    const byStation = {};
+    for (const f of d.features) {
+      const p = f.properties;
+      if (!p.fwi || p.fwi < 0) continue;
+      if (!byStation[p.name]) byStation[p.name] = { lat: p.latitude, lng: p.longitude, records: [] };
+      byStation[p.name].records.push(p);
+    }
+    // Find nearest station with valid data
+    let best = null, bestDist = Infinity;
+    for (const [name, data] of Object.entries(byStation)) {
+      const dist = _haversineKm(lat, lng, data.lat, data.lng);
+      if (dist < bestDist) { bestDist = dist; best = { name, distKm: Math.round(dist), records: data.records.sort((a,b) => new Date(a.rep_date) - new Date(b.rep_date)) }; }
+    }
+    return best;
+  } catch (e) {
+    console.warn('[FWI SCRIBE]', e);
+    return null;
+  }
+}
+
+function renderSCRIBE(scribe) {
+  const el = document.getElementById('fwi-scribe-section');
+  if (!el) return;
+  if (!scribe || !scribe.records.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const nameEl = document.getElementById('fwi-scribe-station');
+  if (nameEl) nameEl.textContent = `${scribe.name} · ${scribe.distKm} km`;
+  const grid = document.getElementById('fwi-scribe-grid');
+  if (!grid) return;
+  grid.innerHTML = scribe.records.map(r => {
+    const dt = new Date(r.rep_date);
+    const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+    const danger = dangerRating(r.fwi);
+    const c = DANGER_COLORS[danger] || DANGER_COLORS['Moderate'];
+    return `<div class="bg-surface-container-lowest rounded-lg p-4">
+      <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">${label}</p>
+      <p class="font-headline text-2xl font-bold text-white">${r.fwi.toFixed(1)}</p>
+      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${danger}</span>
+      <div class="grid grid-cols-2 gap-x-3 mt-2 text-xs text-on-surface-variant">
+        <span>FFMC ${r.ffmc?.toFixed(1) ?? '—'}</span><span>DC ${r.dc?.toFixed(0) ?? '—'}</span>
+        <span>ISI ${r.isi?.toFixed(1) ?? '—'}</span><span>BUI ${r.bui?.toFixed(0) ?? '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── P3: Active fires + satellite hotspot layers ─────────────────────────────
+
+async function fetchActiveFires() {
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:activefires_current` +
+    `&outputFormat=application/json&count=200`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const d = await res.json();
+  return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
+}
+
+async function fetchHotspots() {
+  // Filter to Canada/northern US bounding box to limit results
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:hotspots_24h` +
+    `&outputFormat=application/json` +
+    `&CQL_FILTER=lat+BETWEEN+48+AND+70+AND+lon+BETWEEN+-140+AND+-50&count=500`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const d = await res.json();
+  return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
 
 window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, ALBERTA_STATIONS, FUEL_TYPES };

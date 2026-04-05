@@ -85,11 +85,20 @@
 <span class="flex items-center gap-1.5 text-[10px] font-label text-tertiary"><span class="w-2.5 h-2.5 rounded-full bg-[#ff4d4d] inline-block"></span>Extreme</span>
 </div>
 </div>
-<div class="rounded-2xl overflow-hidden border border-outline-variant/10" style="height:480px">
+<div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:480px">
 <div id="fwi-station-map" style="height:100%;width:100%;"></div>
+<!-- P3: Layer toggle buttons — positioned over map -->
+<div class="absolute top-3 right-3 z-[500] flex gap-2">
+<button id="btn-activefires" class="map-layer-btn font-label text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-[#1e2740]/90 border border-[#ff3333]/40 text-[#ff8888] hover:bg-[#ff3333]/20 transition-colors">
+  🔥 Active Fires
+</button>
+<button id="btn-hotspots" class="map-layer-btn font-label text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-[#1e2740]/90 border border-[#ff8c00]/40 text-[#ffaa44] hover:bg-[#ff8c00]/20 transition-colors">
+  🛰 Hotspots 24h
+</button>
+</div>
 </div>
 <div class="flex justify-between items-center mt-4">
-<p class="text-[10px] text-on-surface-variant font-label">39 CWFIS stations · Open-Meteo NWP · Click marker for details</p>
+<p class="text-[10px] text-on-surface-variant font-label">39 CWFIS stations · NAEFS/Open-Meteo · Click marker for details</p>
 <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity">
   Export Full Dataset
 </button>
@@ -107,6 +116,7 @@
   #fwi-station-map .leaflet-control-zoom a {
     background: #1e2740; color: #7bd0ff; border-color: rgba(123,208,255,0.2);
   }
+  .map-layer-btn.map-layer-active { background: rgba(255,255,255,0.15) !important; }
   #fwi-station-map .leaflet-control-zoom a:hover { background: #2d3449; }
   #fwi-station-map .leaflet-control-attribution {
     background: rgba(11,19,38,0.8); color: #45464d; font-size: 9px;
@@ -121,7 +131,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=4"></script>
+<script src="../fwi.js?v=12"></script>
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
