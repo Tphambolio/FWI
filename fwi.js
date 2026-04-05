@@ -416,15 +416,73 @@ async function fetchCWFIS(lat, lng) {
 }
 
 /**
- * Fetch weather — CWFIS physical sensor primary, Open-Meteo NWP fallback.
+ * Fetch weather from MSC SWOB realtime (api.weather.gc.ca).
+ * Real sensor data — used as Tier 2 between CWFIS and Open-Meteo NWP.
+ * Targets noon LST (19:00 UTC) when available; uses latest obs otherwise.
+ * CORS: Access-Control-Allow-Origin: * confirmed on MSC open data API.
+ */
+async function fetchSWOB(lat, lng) {
+  const bbox = 1.5; // ±1.5° ≈ 150 km
+  const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
+    `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
+    `&limit=50&f=json`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const d = await res.json();
+  if (!d.features?.length) return null;
+
+  // Find nearest station by geometry
+  let nearest = null, minDist = Infinity;
+  for (const f of d.features) {
+    if (!f.geometry?.coordinates) continue;
+    const [fLng, fLat] = f.geometry.coordinates;
+    const dist = _haversineKm(lat, lng, fLat, fLng);
+    if (dist < minDist) { minDist = dist; nearest = f; }
+  }
+  if (!nearest) return null;
+
+  const p = nearest.properties;
+  const temp = p['air_temp']                    ?? p['avg_air_temp_pst1hr'];
+  const rh   = p['rel_hum']                     ?? p['avg_rel_hum_pst1hr'];
+  const wind = p['avg_wnd_spd_10m_pst1hr']      ?? p['avg_wnd_spd_10m_pst10mts'];
+  const wdir = p['avg_wnd_dir_10m_pst1hr']      ?? p['avg_wnd_dir_10m_pst10mts'];
+  const rain = p['pcpn_amt_pst1hr']             ?? 0;
+  if (temp == null || rh == null || wind == null) return null;
+
+  const obsTime    = new Date(p['date_tm-value'] || p['obs_date_tm']);
+  const obsUTCHour = obsTime.getUTCHours();
+  const isNoonLST  = obsUTCHour >= 18 && obsUTCHour <= 20; // ±1 hr of noon LST (19:00 UTC)
+  const stnName    = (p['stn_nam-value'] || '').replace(/\+/g,' ').trim();
+  const srcLabel   = isNoonLST
+    ? `MSC SWOB · ${stnName} (noon LST)`
+    : `MSC SWOB · ${stnName} (latest obs)`;
+
+  return {
+    temp, rh, wind, wdir, rain,
+    month:       new Date().getMonth() + 1,
+    source:      srcLabel,
+    stationName: stnName,
+    fwiFromCWFIS: false,
+    distKm:      Math.round(minDist),
+  };
+}
+
+/**
+ * Fetch weather — three-tier hierarchy:
+ *   1. CWFIS firewx_stns_current — fire weather stations, pre-computed FWI chain
+ *   2. MSC SWOB realtime         — real sensor obs, noon LST targeted
+ *   3. Open-Meteo NWP            — model output, noon LST targeted, last resort
  */
 async function fetchWeatherPrimary(lat, lng) {
   try {
     const cwfis = await fetchCWFIS(lat, lng);
     if (cwfis) return cwfis;
   } catch (e) { /* fall through */ }
-  const w = await fetchWeather(lat, lng);
-  return { ...w, source: 'Open-Meteo NWP', fwiFromCWFIS: false };
+  try {
+    const swob = await fetchSWOB(lat, lng);
+    if (swob) return swob;
+  } catch (e) { /* fall through */ }
+  return fetchWeather(lat, lng);
 }
 
 /**

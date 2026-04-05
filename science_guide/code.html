@@ -287,11 +287,11 @@
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — CWFIS Primary / Open-Meteo Fallback</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">NRCan CWFIS WFS primary · Open-Meteo NWP fallback · Client-Side Only · No API Key</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — Three-Tier Hierarchy</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">CWFIS WFS · MSC SWOB Realtime · Open-Meteo NWP · Client-Side Only · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser at each page load — no server, no caching. Current conditions use a two-tier priority: CWFIS WFS (NRCan physical sensors) first, Open-Meteo NWP as fallback if no station is found within ±2° (~220 km). Forecasts use CWFIS NAEFS ensemble (Environment Canada, 14–16 days) as primary, falling back to Open-Meteo NWP (7 days) when no NAEFS station is within 150 km. Source is shown on the Forecast page below the bar chart.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">All data is fetched live in the browser — no server, no caching. Current conditions use a three-tier priority. <strong class="text-on-surface">Tier 1 — CWFIS</strong> (NRCan <code>firewx_stns_current</code> WFS): provincial fire weather stations with pre-computed FWI chain; used when a station is found within ±2° (~220 km). <strong class="text-on-surface">Tier 2 — MSC SWOB Realtime</strong> (<code>api.weather.gc.ca/collections/swob-realtime</code>): real sensor observations from Environment Canada's automated weather station network; used when CWFIS has no coverage. Targets noon LST (19:00 UTC) when available. <strong class="text-on-surface">Tier 3 — Open-Meteo NWP</strong>: numerical weather model output, noon LST targeted; last resort only. Forecasts use CWFIS NAEFS ensemble (14–16 days) as primary, falling back to Open-Meteo NWP (7 days) when no NAEFS station is within 150 km.</p>
 
 <div class="space-y-4">
 <!-- CWFIS WFS primary -->
@@ -313,6 +313,24 @@
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">lat / lon / name</span><span class="text-on-surface-variant">Station coords + label</span></div>
 </div>
 <p class="text-xs text-on-surface-variant mt-3">Nearest station is selected by Haversine great-circle distance. When CWFIS provides FWI codes (fire season, approx. Apr–Oct), they are used directly — incorporating NRCan's daily carry-over chain. Off-season, FWI codes are null and Van Wagner equations are applied to the observed weather.</p>
+</div>
+
+<!-- MSC SWOB Realtime -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">Tier 2 — MSC SWOB Realtime</span>
+<span class="text-[10px] text-on-surface-variant font-label">Environment Canada · Real sensor obs · Used when CWFIS has no coverage</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3 leading-relaxed">Minute-level automated weather station observations from Environment Canada's national network. CORS-enabled (<code>Access-Control-Allow-Origin: *</code>). Nearest station within ±1.5° (~150 km) is selected by Haversine distance. The hourly-averaged wind field (<code>avg_wnd_spd_10m_pst1hr</code>) is used rather than instantaneous wind, consistent with CFFDRS input requirements. Observation time is checked: if within ±1 hour of 19:00 UTC (noon LST), the source label reads <em>noon LST</em>; otherwise <em>latest obs</em>.</p>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.weather.gc.ca/collections/swob-realtime/items
+  ?bbox={lng-1.5},{lat-1.5},{lng+1.5},{lat+1.5}
+  &amp;limit=50&amp;f=json</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">air_temp</span><span class="text-on-surface-variant">°C at 2m AGL</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">rel_hum</span><span class="text-on-surface-variant">% relative humidity</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">avg_wnd_spd_10m_pst1hr</span><span class="text-on-surface-variant">km/h 1-hr avg at 10m</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">pcpn_amt_pst1hr</span><span class="text-on-surface-variant">mm precipitation</span></div>
+</div>
 </div>
 
 <!-- Open-Meteo fallback / current -->
