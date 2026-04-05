@@ -1532,8 +1532,26 @@ function printProvincialBriefing() {
  * Print Station Briefing — portrait A4/Letter, ICS-formatted.
  * Uses _lastFWI, _lastWeather, _lastVWCalc, _forecastCache.
  */
-function printStationBriefing() {
+async function printStationBriefing() {
   if (!_lastFWI) { alert('Load a station first.'); return; }
+
+  // Fetch forecast on-demand if not yet loaded (user printing from station detail without visiting forecast page)
+  if (_forecastCache.results.length === 0) {
+    try {
+      const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
+      let days;
+      if (naefsSt) {
+        try { days = await fetchForecastNAEFS(naefsSt.code); }
+        catch (e) { days = await fetchForecast(_stationLat, _stationLng); }
+      } else {
+        days = await fetchForecast(_stationLat, _stationLng);
+      }
+      const results = calcMultiDay(days, getStartupDC(_stationName));
+      _forecastCache = { days, results };
+    } catch (e) {
+      console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
+    }
+  }
 
   const r = _lastFWI;
   const w = _lastWeather || r.weather;
