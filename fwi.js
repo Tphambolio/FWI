@@ -760,6 +760,70 @@ async function buildRegionalSummary() {
 
 // ─── Forecast & Trends ───────────────────────────────────────────────────────
 
+// NAEFS stations available in CWFIS firewx_naefs WFS layer (Alberta only)
+const NAEFS_AB_STATIONS = [
+  { code: 10160, name: 'Banff',               lat: 51.18, lng: -115.57 },
+  { code: 10161, name: 'Calgary Intl',         lat: 51.12, lng: -114.02 },
+  { code: 10162, name: 'Cold Lake',            lat: 54.42, lng: -110.28 },
+  { code: 10163, name: 'Coronation',           lat: 52.07, lng: -111.45 },
+  { code: 10164, name: 'Edmonton Intl A',      lat: 53.30, lng: -113.58 },
+  { code: 10165, name: 'Edmonton Municipal A', lat: 53.57, lng: -113.52 },
+  { code: 10166, name: 'Edson',                lat: 53.58, lng: -116.47 },
+  { code: 10167, name: 'Fort Chipewyan',       lat: 58.77, lng: -111.12 },
+  { code: 10168, name: 'Fort McMurray',        lat: 56.65, lng: -111.22 },
+  { code: 10169, name: 'Grande Prairie',       lat: 55.18, lng: -118.88 },
+  { code: 10170, name: 'High Level',           lat: 58.62, lng: -117.17 },
+  { code: 10171, name: 'Jasper',               lat: 52.88, lng: -118.07 },
+  { code: 10172, name: 'Lac La Biche',         lat: 54.77, lng: -112.02 },
+  { code: 10173, name: 'Lethbridge',           lat: 49.63, lng: -112.80 },
+  { code: 10174, name: 'Lloydminster',         lat: 53.32, lng: -110.07 },
+  { code: 10175, name: 'Medicine Hat',         lat: 50.02, lng: -110.72 },
+  { code: 10176, name: 'Peace River',          lat: 56.23, lng: -117.43 },
+  { code: 10177, name: 'Pincher Creek',        lat: 49.52, lng: -113.98 },
+  { code: 10178, name: 'Red Deer',             lat: 52.18, lng: -113.90 },
+  { code: 10179, name: 'Rocky Mtn House',      lat: 52.43, lng: -114.92 },
+  { code: 10180, name: 'Slave Lake',           lat: 55.30, lng: -114.78 },
+  { code: 10181, name: 'Vermilion',            lat: 53.35, lng: -110.83 },
+  { code: 10182, name: 'Whitecourt',           lat: 54.15, lng: -115.78 },
+];
+
+/** Return nearest NAEFS station within 150 km, or null. */
+function findNearestNAEFS(lat, lng) {
+  let best = null, bestDist = Infinity;
+  for (const st of NAEFS_AB_STATIONS) {
+    const d = _haversineKm(lat, lng, st.lat, st.lng);
+    if (d < bestDist) { bestDist = d; best = st; }
+  }
+  return bestDist <= 150 ? best : null;
+}
+
+/** Fetch NAEFS ensemble forecast from CWFIS WFS for a given station code.
+ *  Returns day objects compatible with calcMultiDay: {temp, rh, wind, rain, month, label}
+ *  Uses max_temp + min_rh (fire weather peak) and median_ws, median_pcp. */
+async function fetchForecastNAEFS(code) {
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
+    `&outputFormat=application/json&CQL_FILTER=code=${code}&count=20`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`NAEFS WFS ${res.status}`);
+  const d = await res.json();
+  return d.features
+    .map(f => {
+      const p = f.properties;
+      const dt = new Date(p.date_time);
+      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      return {
+        temp:  p.max_temp    ?? 15,
+        rh:    p.min_rh      ?? 40,
+        wind:  p.median_ws   ?? 10,
+        rain:  p.median_pcp  ?? 0,
+        month: dt.getMonth() + 1,
+        label,
+      };
+    })
+    .sort((a, b) => new Date(a.label) - new Date(b.label));
+}
+
 /** Fetch 7-day hourly forecast from Open-Meteo, return noon obs for each day. */
 async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
@@ -887,7 +951,23 @@ function trendLabel(fwi, prevFwi) {
 
 async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
   try {
-    const days = await fetchForecast(lat, lng);
+    // Prefer NAEFS (Environment Canada 14-day ensemble at fire weather stations)
+    // Fall back to Open-Meteo if no NAEFS station within 150 km
+    let days, forecastSource;
+    const naefsSt = findNearestNAEFS(lat, lng);
+    if (naefsSt) {
+      try {
+        days = await fetchForecastNAEFS(naefsSt.code);
+        forecastSource = `NAEFS 14-day ensemble (${naefsSt.name})`;
+      } catch (e) {
+        console.warn('[FWI] NAEFS fetch failed, falling back to Open-Meteo:', e);
+        days = await fetchForecast(lat, lng);
+        forecastSource = 'Open-Meteo NWP';
+      }
+    } else {
+      days = await fetchForecast(lat, lng);
+      forecastSource = 'Open-Meteo NWP';
+    }
     const results = calcMultiDay(days);
     _forecastCache = { days, results };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
@@ -907,7 +987,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
 
     // Forecast summary paragraph
     const sumEl = document.getElementById('fwi-forecast-summary');
-    if (sumEl) sumEl.textContent = forecastSummaryText(days, results, stationName);
+    if (sumEl) sumEl.textContent = forecastSummaryText(days, results, stationName, forecastSource);
 
     // Hero stat boxes — peak temp, min RH, max wind across forecast window
     const peakTemp = Math.max(...days.map(d => d.temp ?? -99));
@@ -983,15 +1063,16 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
 
 // ─── Forecast Summary Text ───────────────────────────────────────────────────
 
-function forecastSummaryText(days, results, stationName = 'Edmonton') {
+function forecastSummaryText(days, results, stationName = 'Edmonton', source = 'Open-Meteo NWP') {
   const peakDay  = results.reduce((a, b) => b.fwi > a.fwi ? b : a);
   const trend    = results[results.length - 1].fwi > results[0].fwi ? 'increasing' : 'decreasing';
   const maxDanger = peakDay.danger;
   const peakTemp  = Math.max(...days.map(d => d.temp ?? -99)).toFixed(1);
   const minRH     = Math.min(...days.map(d => d.rh  ?? 999)).toFixed(0);
-  return `${stationName} station — 7-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
+  const nDays     = days.length;
+  return `${stationName} station — ${nDays}-day outlook: FWI peaks at ${peakDay.fwi.toFixed(1)} (${maxDanger}) on ${peakDay.label}. ` +
     `Forecast trend is ${trend}. Peak temperature ${peakTemp}°C, minimum relative humidity ${minRH}%. ` +
-    `Forecast values derived from Open-Meteo NWP using Van Wagner CFFDRS equations.`;
+    `Source: ${source} — Van Wagner CFFDRS carry-forward.`;
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────
