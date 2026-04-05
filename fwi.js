@@ -1246,6 +1246,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       setD1('fwi-d1-temp',  fmt(d1pw.temp) + '°C');
       setD1('fwi-d1-rh',    fmt(d1pw.rh, 0) + '%');
       setD1('fwi-d1-wind',  fmt(d1pw.wind, 0) + ' km/h');
+      setD1('fwi-d1-isi',   d1.isi.toFixed(1));
       setD1('fwi-d1-fwi',   d1.fwi.toFixed(1));
       const d1RatingEl = document.getElementById('fwi-d1-rating');
       if (d1RatingEl) { d1RatingEl.textContent = d1.danger; d1RatingEl.className = `ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${d1c.badge}`; }
