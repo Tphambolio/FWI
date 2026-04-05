@@ -51,7 +51,7 @@
 <span class="material-symbols-outlined text-tertiary" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
 <span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">Critical Temporal Window</span>
 </div>
-<h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">T + 24h <span class="text-primary">FORECAST</span></h2>
+<h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">PEAK: <span class="text-primary" id="fwi-peak-label-hero">—</span></h2>
 <p class="text-on-surface-variant max-w-xl body-md mb-8" id="fwi-forecast-summary">Loading forecast summary…</p>
 </div>
 <div class="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -73,7 +73,8 @@
 <h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">Risk Vector Trend</h3>
 <div class="flex-grow flex items-end gap-1 px-2 h-48" id="fwi-trend-bars"></div>
 <div id="fwi-trend-times" class="flex justify-between text-[10px] text-outline font-label mt-4 px-2"></div>
-<div class="mt-6 pt-6 border-t border-outline-variant">
+<p class="text-[9px] text-outline/50 font-label text-center mt-2 truncate" id="fwi-source-label">—</p>
+<div class="mt-4 pt-4 border-t border-outline-variant">
 <button id="fwi-report-btn" class="w-full gradient-primary text-on-primary-fixed font-headline font-bold py-3 rounded-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
 <span class="material-symbols-outlined text-sm" data-icon="download">download</span>
                         GENERATE REPORT
@@ -81,80 +82,37 @@
 </div>
 </div>
 </section>
-<!-- Forecast Bento Grid -->
+<!-- Outlook Summary Cards -->
 <section>
-<div class="flex items-center justify-between mb-8">
-<h3 class="font-headline text-2xl font-bold tracking-tight text-white">Extended Projections</h3>
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline text-2xl font-bold tracking-tight text-white">Outlook Summary</h3>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-<!-- 24H Forecast -->
-<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(123,208,255,0.15)]">
-<div class="h-48 relative">
-<img class="w-full h-full object-cover" data-alt="thermal heat map of Alberta showing clusters of orange and red danger zones against a dark blue background" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm2IaLXsf-mnGakp91-sOpTZHEzaTo7M8UNYwzTfC4D-NRuLUpfsBfk4EdjiMQWih74hbMZAW0zuSpbUnilprlLaWjj3VMd93cSoq2Jp3aHhHZYLnraDS0bf7idBrbauuW1ppeiWwOUWx30lKHbmq7g85fNCJr_eWUtB8I4E2mEDRnQljJg9CxBc4rsc8IAbh1fYIh-CvRQ03q4-26tW0KCpYh4qllyE1soeUGz_5M6W9xHQkK_9_qVG0pv7LqwKgOcYN7q2VbcIc"/>
-<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
-<div class="absolute top-4 left-4 bg-primary text-on-primary-fixed text-[10px] font-bold px-2 py-0.5 rounded">T + 24H</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Peak Danger Window -->
+<div class="bg-surface-container rounded-lg p-6 border-t-2 border-primary/60">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Peak Danger Window</p>
+<p class="font-headline text-4xl font-black text-white mb-1" id="fwi-peak-window-fwi">—</p>
+<p class="text-sm text-on-surface-variant mb-3" id="fwi-peak-window-dates">—</p>
+<span id="fwi-peak-window-rating" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-surface-container-highest text-outline">—</span>
 </div>
-<div class="p-6">
-<div class="flex justify-between items-center mb-4">
-<h4 class="font-headline font-bold text-white uppercase tracking-wider">Short Term</h4>
-<span class="font-bold font-headline" id="fwi-f24-label">STABLE</span>
+<!-- Days at Elevated Risk -->
+<div class="bg-surface-container rounded-lg p-6 border-t-2 border-tertiary/60">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Days at Elevated Risk</p>
+<p class="font-headline font-black text-white mb-1">
+<span class="text-4xl" id="fwi-days-at-risk">—</span>
+<span class="text-on-surface-variant text-xl font-normal"> / <span id="fwi-total-days">—</span></span>
+</p>
+<p class="text-sm text-on-surface-variant mt-3">FWI ≥ 19 (High or above)</p>
 </div>
-<div class="space-y-3">
-<div class="flex justify-between text-sm">
-<span class="text-outline">Max FWI</span>
-<span class="text-white" id="fwi-f24-val">24.2</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-primary h-full" id="fwi-f24-bar" style="width:40%"></div>
-</div>
-</div>
-</div>
-</div>
-<!-- 48H Forecast -->
-<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(251,171,255,0.15)]">
-<div class="h-48 relative">
-<img class="w-full h-full object-cover" data-alt="meteorological visualization map showing swirling air pressure lines and intensifying purple hotspots over central Alberta" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-c3nsZIRo5hMPkGPmsFIVoiEB9u9Pb4TfC7YW9bfsWxT-kxONTKpsbZHYk4m8NIVbkACjpa2GXAGy3TBz033DVSIh_LDarftkInXzhqAqCk-zPF-OQNczZ0OTmd21uR1Fut7w87RW2IeHHpOqmGFO4LNH8ry0bqWEyhV_FYcGqLHyiRRTh1O8wvFAUGz8F0C3yfdl1LU8pAvU7lQWvZNdRAu-vxYoW6Tf_YippiAr3h4Mn9RCNr9sHMV8KbNmnUPsNjJNb7b1_Pk"/>
-<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
-<div class="absolute top-4 left-4 bg-tertiary text-on-tertiary text-[10px] font-bold px-2 py-0.5 rounded">T + 48H</div>
-</div>
-<div class="p-6">
-<div class="flex justify-between items-center mb-4">
-<h4 class="font-headline font-bold text-white uppercase tracking-wider">Mid Term</h4>
-<span class="text-tertiary font-bold font-headline" id="fwi-f48-label">ESCALATING</span>
-</div>
-<div class="space-y-3">
-<div class="flex justify-between text-sm">
-<span class="text-outline">Max FWI</span>
-<span class="text-white" id="fwi-f48-val">38.9</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-tertiary h-full" id="fwi-f48-bar" style="width:70%"></div>
-</div>
-</div>
-</div>
-</div>
-<!-- 72H Forecast -->
-<div class="bg-surface-container rounded-lg overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-[0_0_30px_rgba(255,180,171,0.15)]">
-<div class="h-48 relative">
-<img class="w-full h-full object-cover" data-alt="abstract satellite data overlay showing lightning strike probability and dense atmospheric moisture layers over rocky mountain range" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUud6NvYiiTsOcqukOPu0xq6Z6UzfEBBOpFLXh8XdmW0R8GqPtHYucFC8GDdhB-f2M-sLEhbyX6Tn4t2oiBjeFD-_U7Ypg4frx_umgYRnooCmptgSolwReDToQPrKfvnVGJDtKoDSoY0Aoo2n2pTjGfdwT8TTNq0jLNy_vzvCGuPZdTecOlDrV6_A4YvlHvx4tS8wftzGar3UYDtb6goaLiuIkMMv1klfJvSlyGP5IyI3SeD1why72u7TQ_jTggE0un8HSyyl6zUk"/>
-<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
-<div class="absolute top-4 left-4 bg-outline text-white text-[10px] font-bold px-2 py-0.5 rounded">T + 72H</div>
-</div>
-<div class="p-6">
-<div class="flex justify-between items-center mb-4">
-<h4 class="font-headline font-bold text-white uppercase tracking-wider">Long Term</h4>
-<span class="text-outline font-bold font-headline" id="fwi-f72-label">UNCERTAIN</span>
-</div>
-<div class="space-y-3">
-<div class="flex justify-between text-sm">
-<span class="text-outline">Max FWI</span>
-<span class="text-white" id="fwi-f72-val">--.-</span>
-</div>
-<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
-<div class="bg-outline h-full opacity-50" id="fwi-f72-bar" style="width:15%"></div>
-</div>
-</div>
-</div>
+<!-- Outlook Trend -->
+<div class="bg-surface-container rounded-lg p-6 border-t-2 border-secondary/60">
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Outlook Trend</p>
+<p class="font-headline text-2xl font-black text-white mb-3" id="fwi-outlook-trend-label">—</p>
+<p class="text-sm text-on-surface-variant">
+Wk 1 avg <span class="text-white font-bold" id="fwi-w1-avg">—</span>
+<span class="text-outline mx-1">→</span>
+Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
+</p>
 </div>
 </div>
 </section>
@@ -199,7 +157,7 @@
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=6"></script>
+<script src="../fwi.js?v=7"></script>
 <script>
   const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];

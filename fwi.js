@@ -972,18 +972,51 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     _forecastCache = { days, results };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
-    // T+24h (day index 1), T+48h (2), T+72h (3)
-    const setCard = (valId, barId, labelId, r, prev) => {
-      const v = document.getElementById(valId);
-      const b = document.getElementById(barId);
-      const l = document.getElementById(labelId);
-      if (v) v.textContent = r.fwi.toFixed(1);
-      if (b) b.style.width = Math.min(100, (r.fwi / 50) * 100).toFixed(1) + '%';
-      if (l) l.textContent = trendLabel(r.fwi, prev.fwi);
-    };
-    setCard('fwi-f24-val', 'fwi-f24-bar', 'fwi-f24-label', results[1], results[0]);
-    setCard('fwi-f48-val', 'fwi-f48-bar', 'fwi-f48-label', results[2], results[1]);
-    setCard('fwi-f72-val', 'fwi-f72-bar', 'fwi-f72-label', results[3], results[2]);
+    // Peak danger window — 3-day block centred on the highest FWI day
+    const peakDay  = results.reduce((a, b) => b.fwi > a.fwi ? b : a);
+    const peakIdx  = results.indexOf(peakDay);
+    const winStart = Math.max(0, peakIdx - 1);
+    const winEnd   = Math.min(results.length - 1, peakIdx + 1);
+    const winLabel = winStart === winEnd
+      ? results[winStart].label.split(',')[0]
+      : `${results[winStart].label.split(',')[0]} – ${results[winEnd].label.split(',')[0]}`;
+    const elPH  = document.getElementById('fwi-peak-label-hero');
+    const elPWF = document.getElementById('fwi-peak-window-fwi');
+    const elPWD = document.getElementById('fwi-peak-window-dates');
+    const elPWR = document.getElementById('fwi-peak-window-rating');
+    if (elPH)  elPH.textContent  = peakDay.label.split(',')[0];
+    if (elPWF) elPWF.textContent = peakDay.fwi.toFixed(1);
+    if (elPWD) elPWD.textContent = winLabel;
+    if (elPWR) {
+      const c = DANGER_COLORS[peakDay.danger] || DANGER_COLORS['Moderate'];
+      elPWR.textContent = peakDay.danger;
+      elPWR.className   = `text-[10px] font-bold uppercase px-2 py-1 rounded-full ${c.badge}`;
+    }
+
+    // Days at elevated risk (FWI ≥ 19 = High)
+    const daysAtRisk = results.filter(r => r.fwi >= 19).length;
+    const elDAR = document.getElementById('fwi-days-at-risk');
+    const elTD  = document.getElementById('fwi-total-days');
+    if (elDAR) elDAR.textContent = daysAtRisk;
+    if (elTD)  elTD.textContent  = results.length;
+
+    // Week-over-week trend
+    const half  = Math.ceil(results.length / 2);
+    const w1    = results.slice(0, half);
+    const w2    = results.slice(half);
+    const w1avg = w1.reduce((s, r) => s + r.fwi, 0) / w1.length;
+    const w2avg = w2.length ? w2.reduce((s, r) => s + r.fwi, 0) / w2.length : w1avg;
+    const wTrend = w2avg > w1avg + 3 ? 'ESCALATING' : w2avg < w1avg - 3 ? 'IMPROVING' : 'STABLE';
+    const elTL  = document.getElementById('fwi-outlook-trend-label');
+    const elW1  = document.getElementById('fwi-w1-avg');
+    const elW2  = document.getElementById('fwi-w2-avg');
+    if (elTL) elTL.textContent = wTrend;
+    if (elW1) elW1.textContent = w1avg.toFixed(1);
+    if (elW2) elW2.textContent = w2avg.toFixed(1);
+
+    // Data source pill
+    const elSrc = document.getElementById('fwi-source-label');
+    if (elSrc) elSrc.textContent = forecastSource;
 
     // Forecast summary paragraph
     const sumEl = document.getElementById('fwi-forecast-summary');
@@ -1012,11 +1045,15 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       }).join('');
     }
 
-    // X-axis labels — 7 actual day labels from data
+    // X-axis labels — show ~5 evenly spaced + peak day; keep all spans for bar alignment
     const timesEl = document.getElementById('fwi-trend-times');
     if (timesEl) {
-      timesEl.innerHTML = results.map(r =>
-        `<span class="truncate">${r.label.split(',')[0]}</span>`
+      const n = results.length;
+      const showSet = new Set([0, n - 1, peakIdx]);
+      const step = Math.max(1, Math.floor(n / 4));
+      for (let i = 0; i < n; i += step) showSet.add(i);
+      timesEl.innerHTML = results.map((r, i) =>
+        `<span class="${showSet.has(i) ? 'truncate' : 'invisible'}">${r.label.split(',')[0]}</span>`
       ).join('');
     }
 
