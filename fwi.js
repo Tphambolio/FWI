@@ -1021,6 +1021,7 @@ async function fetchForecast(lat, lng) {
       rain:  h.precipitation[i12]         ?? 0,
       month: date.getMonth() + 1,
       label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
+      _ts: date.getTime(),
       peak: {
         temp: h.temperature_2m[i14]       ?? h.temperature_2m[i12]       ?? 15,
         rh:   h.relative_humidity_2m[i14]  ?? h.relative_humidity_2m[i12]  ?? 40,
@@ -1235,9 +1236,14 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elMR) elMR.textContent = fmt(minRH, 0) + '%';
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
-    // D+1 Peak Burn section — tomorrow at ~14:00 MDT
+    // D+1 Peak Burn section — first forecast day that is strictly after today
+    // NAEFS can include past days; find the first day with _ts >= tomorrow midnight
+    const _todayMid = new Date(); _todayMid.setHours(0,0,0,0);
+    const _tomorrowMid = new Date(_todayMid); _tomorrowMid.setDate(_tomorrowMid.getDate() + 1);
+    const d1Idx = days.findIndex(d => d._ts && d._ts >= _tomorrowMid.getTime());
+    const d1SafeIdx = d1Idx >= 0 ? d1Idx : 0;
     if (results.length > 0) {
-      const d1 = results[0]; // first forecast day = tomorrow
+      const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
       const d1pw  = d1.peakWeather || d1;
       const d1c   = DANGER_COLORS[d1.danger] || DANGER_COLORS['Moderate'];
@@ -1702,9 +1708,13 @@ async function printStationBriefing() {
     forecastRows = '<tr><td colspan="8" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
   }
 
-  // D+1 peak burn block for the print briefing
-  const d1r  = fResults[0];
-  const d1d  = fDays[0];
+  // D+1 peak burn block — find first day strictly after today
+  const _pTodayMid = new Date(); _pTodayMid.setHours(0,0,0,0);
+  const _pTomMid   = new Date(_pTodayMid); _pTomMid.setDate(_pTomMid.getDate() + 1);
+  const _pd1Idx    = fDays.findIndex(d => d._ts && d._ts >= _pTomMid.getTime());
+  const _pd1Safe   = _pd1Idx >= 0 ? _pd1Idx : 0;
+  const d1r  = fResults[_pd1Safe];
+  const d1d  = fDays[_pd1Safe];
   const d1pw = d1d?.peak || d1d || {};
   const d1fbp = d1r?.fbp;
   const tomorrowDate = d1r?.label || 'D+1';
@@ -1714,7 +1724,7 @@ async function printStationBriefing() {
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
 <div class="section">
-  <div class="section-title" style="background:#1a3a5c">Next Operational Period — D+1 Peak Burn (~14:00 MDT · ${tomorrowDate})</div>
+  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 MDT)</div>
   <div class="section-body">
     <div class="grid-2" style="margin-bottom:6px">
       <p class="kv"><span class="label">Predicted Weather (Peak)</span><br><span class="val" style="font-size:10pt">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
