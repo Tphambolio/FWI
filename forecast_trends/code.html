@@ -201,8 +201,9 @@
 </nav>
 <script src="../fwi.js?v=5"></script>
 <script>
-  const _savedStation = localStorage.getItem('fwi-station');
-  const _st = _savedStation && FWI.ALBERTA_STATIONS.find(s => s.name === _savedStation);
+  const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
+  const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];
+  const _st = _sLat && FWI.ALBERTA_STATIONS.find(s => Math.abs(s.lat - _sLat) < 0.01 && Math.abs(s.lng - _sLng) < 0.01);
   const _lat = _st ? _st.lat : 53.5344;
   const _lng = _st ? _st.lng : -113.4903;
   const _name = _st ? _st.name : 'Edmonton';
