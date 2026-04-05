@@ -139,6 +139,56 @@ const FUEL_TYPES = {
 };
 
 /**
+ * Station-level dominant FBP fuel type derived from CWFIS WMS
+ * cffdrs_fbp_fuel_types (NRCan 30m national grid), sampled Apr 2026.
+ * Method: modal fuel type within 5 km radius of each CWFIS station coordinate.
+ * Corrections: M1/M2 (mixedwood) mapped to C2; northern boreal airport stations
+ * where sampled pixel was agricultural grass corrected to regional forest type.
+ * Users can override via the fuel picker at any time.
+ */
+const STATION_FUEL_TYPES = {
+  'Athabasca':      'C2',   // boreal — airport grass corrected
+  'Banff':          'C3',   // WMS: Mature Jack/Lodgepole Pine ✓
+  'Bonnyville':     'O1a',  // WMS: agricultural Peace Country
+  'Brooks':         'O1a',  // WMS: SE Alberta grassland ✓
+  'Calgary':        'D1',   // WMS: Aspen parkland ✓
+  'Camrose':        'O1a',  // WMS: agricultural central AB
+  'Cardston':       'O1a',  // WMS: SW Alberta grassland ✓
+  'Claresholm':     'O1a',  // WMS: foothills grassland ✓
+  'Cold Lake':      'C3',   // WMS: Mature Jack Pine ✓
+  'Drayton Valley': 'D1',   // WMS: Aspen parkland ✓
+  'Drumheller':     'O1a',  // WMS: badlands/grassland ✓
+  'Edmonton':       'D2',   // WMS area: Aspen parkland; D2 (green) for WUI context
+  'Edson':          'C2',   // M1→C2: mixedwood boreal ✓
+  'Fort Chipewyan': 'C2',   // WMS: Northern Boreal Spruce ✓
+  'Fort McMurray':  'C4',   // WMS: Immature Jack Pine (post-2016 reburn) ✓
+  'Fort Vermilion': 'C2',   // boreal — airport grass corrected
+  'Fox Creek':      'C2',   // WMS: Boreal Spruce ✓
+  'Grande Cache':   'C2',   // WMS: Boreal Spruce ✓
+  'Grande Prairie': 'O1a',  // WMS: Peace Country grass ✓
+  'High Level':     'C2',   // WMS: Northern Boreal Spruce ✓
+  'High Prairie':   'D2',   // boreal transition — corrected from airport grass
+  'Hinton':         'C2',   // WMS: Boreal Spruce ✓
+  'Jasper':         'C3',   // WMS: Rocky Mountain Jack/Lodgepole ✓
+  'Lac La Biche':   'D1',   // WMS: Leafless Aspen ✓
+  'Lethbridge':     'O1a',  // WMS: Grassland ✓
+  'Lloydminster':   'O1a',  // WMS: agricultural boundary ✓
+  'Manning':        'C2',   // boreal — airport grass corrected
+  'Medicine Hat':   'O1a',  // WMS: SE Alberta grassland ✓
+  'Peace River':    'D2',   // Peace Country transition — corrected
+  'Pincher Creek':  'O1a',  // WMS: foothills grassland ✓
+  'Red Deer':       'D1',   // WMS: Aspen parkland ✓
+  'Rocky Mtn House':'C2',   // M1→C2: mixedwood foothills
+  'Slave Lake':     'C2',   // M1→C2: Lesser Slave mixedwood
+  'Stettler':       'O1a',  // WMS: agricultural ✓
+  'Valleyview':     'D1',   // WMS: Peace Country ✓
+  'Vegreville':     'O1a',  // WMS: agricultural ✓
+  'Wabasca':        'C2',   // M1→C2: boreal mixedwood
+  'Wetaskiwin':     'O1a',  // WMS: agricultural ✓
+  'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
+};
+
+/**
  * Calculate FBP fire behaviour from FWI codes + wind speed.
  * Equations: ST-X-3 (Forestry Canada 1992), Van Wagner 1977 (crown fire).
  *
@@ -550,6 +600,12 @@ function buildStationPicker() {
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
     const stLabel = document.getElementById('fwi-map-station');
     if (stLabel) stLabel.textContent = name;
+    // Auto-set fuel type from station lookup; sync both pickers
+    const derivedFuel = STATION_FUEL_TYPES[name] || 'C2';
+    ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+      const fp = document.getElementById(id);
+      if (fp) fp.value = derivedFuel;
+    });
     initFWI(lat, lng, name);
     buildHourlyChart(lat, lng);
   }

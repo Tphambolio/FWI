@@ -427,6 +427,64 @@
 </ul>
 </div>
 
+<!-- Station Fuel Type Table -->
+<div class="bg-surface-container rounded-2xl p-8 mb-8">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">forest</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Fuel Type Assignments</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Source: CWFIS cffdrs_fbp_fuel_types WMS · NRCan 30m · Sampled Apr 2026</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant mb-4 leading-relaxed">Dominant FBP fuel type within 5 km of each CWFIS station coordinate, derived from the NRCan national 30m fuel classification grid. M1/M2 mixedwood mapped to C2. Northern boreal airport stations where the grid returned agricultural grass were corrected to regional forest type. All assignments are overridable via the fuel picker.</p>
+<div class="overflow-x-auto">
+<table class="w-full text-xs border-collapse">
+<thead><tr class="border-b border-outline-variant/30"><th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Station</th><th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Fuel</th><th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Type Name</th><th class="py-2 text-left font-label uppercase tracking-wider text-on-surface-variant">Source</th></tr></thead>
+<tbody class="divide-y divide-outline-variant/10 text-on-surface-variant">
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Athabasca</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>Corrected (boreal)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Banff</td><td class="pr-4 text-primary font-bold">C3</td><td class="pr-4">Mature Jack/Lodgepole Pine</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Bonnyville</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Brooks</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ SE grassland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Calgary</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓ parkland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Camrose</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Cardston</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ SW grassland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Claresholm</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ foothills</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Cold Lake</td><td class="pr-4 text-primary font-bold">C3</td><td class="pr-4">Mature Jack Pine</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drayton Valley</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓ parkland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drumheller</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ badlands</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>WMS area; D2 for WUI context</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edson</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 mixedwood</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort Chipewyan</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓ N. boreal</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort McMurray</td><td class="pr-4 text-primary font-bold">C4</td><td class="pr-4">Immature Jack/Lodgepole Pine</td><td>WMS ✓ post-2016 reburn</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort Vermilion</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>Corrected (N. boreal)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fox Creek</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Grande Cache</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Grande Prairie</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ Peace Country</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">High Level</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓ N. boreal</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">High Prairie</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>Corrected (boreal transition)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Hinton</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Jasper</td><td class="pr-4 text-primary font-bold">C3</td><td class="pr-4">Mature Jack/Lodgepole Pine</td><td>WMS ✓ Rocky Mountain</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lac La Biche</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lethbridge</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ grassland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lloydminster</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Manning</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>Corrected (boreal)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Medicine Hat</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ SE grassland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Peace River</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>Corrected (Peace transition)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Pincher Creek</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ foothills</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Red Deer</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓ parkland</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Rocky Mtn House</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 mixedwood foothills</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Slave Lake</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 Lesser Slave</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Stettler</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Valleyview</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓ Peace Country</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Vegreville</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wabasca</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 boreal mixedwood</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wetaskiwin</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Whitecourt</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 boreal mixedwood</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
 <!-- Limitations -->
 <div class="bg-surface-container rounded-2xl p-8 border border-yellow-400/20">
 <div class="flex items-start gap-4 mb-4">
@@ -443,7 +501,7 @@
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">NWP fallback (off-season / no station):</strong> When CWFIS has no station within ±2° or fails to respond, Open-Meteo NWP is used. NWP interpolates model output at the coordinate; valley inversions, terrain channelling, and lake influence are absent.</span></li>
 <li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Wind direction — displayed, not applied to FBP:</strong> Wind direction (°) is sourced from CWFIS (<code class="text-primary text-xs">wdir</code>) and Open-Meteo (<code class="text-primary text-xs">wind_direction_10m</code>) and shown on the station card. FBP outputs still assume head-fire conditions — ROS and HFI reflect the worst-case spread direction at observed wind speed.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No slope aspect:</strong> FBP slope factor uses 0% for all stations. Actual HFI on slopes may be up to 2× higher (Butler 2007 cap). Mountain stations (Banff, Jasper, Hinton) are most affected.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Fuel type is user-selected:</strong> No automated fuel classification. C2 default is representative of the boreal zone; grassland and mountain stations may require O1a/O1b or C7 respectively.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Fuel type auto-assigned from NRCan 30m grid, user-overridable:</strong> Each station is pre-assigned a dominant FBP fuel type derived from the CWFIS <code class="text-primary">cffdrs_fbp_fuel_types</code> WMS layer (NRCan national 30m grid, Apr 2026). Method: modal fuel type within 5 km radius of each station coordinate. M1/M2 mixedwood codes mapped to C2 (boreal spruce dominant). Northern boreal airport stations where the sampled pixel returned agricultural grass were corrected to regional forest type. The fuel picker on the Home tab shows the derived type and can be overridden for any scenario.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Situational awareness only:</strong> Suppression resource decisions require certified CWFIS station observations and interpretation by a qualified Fire Behaviour Analyst (FBA).</span></li>
 </ul>
 </div>
