@@ -1531,7 +1531,9 @@ function printProvincialBriefing() {
     @page { size: landscape; margin: 1cm; }
     body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
     .no-print { display: none; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 12px; }
   .header-box { border: 2px solid #333; padding: 10px 14px; margin-bottom: 10px; }
   .header-title { font-size: 14pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
@@ -1756,7 +1758,9 @@ async function printStationBriefing() {
     @page { size: portrait; margin: 1.5cm; }
     body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
     .no-print { display: none; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 14px; max-width: 720px; }
   .header-box { border: 2px solid #333; padding: 10px 14px; margin-bottom: 10px; }
   .header-title { font-size: 14pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
