@@ -67,23 +67,62 @@
 <main class="max-w-7xl mx-auto px-4 py-6">
 
 <!-- ── About / Donate ─────────────────────────────────────────────────── -->
-<div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5 flex flex-col gap-3">
-  <p class="text-xs text-slate-400 leading-relaxed">
-    Built by Travis Kennedy with Claude and weekend WhatsApp chats with Glenn — a free, open tool for fire teams across Alberta's green and white zones. No login, no cost. Just live fire weather to help keep your community safe and your crews informed. Spot something wrong or missing? <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:underline">DM on X</a> or <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:underline">open a GitHub issue</a>.
-  </p>
-  <div class="flex flex-wrap items-center gap-3">
-    <style>.pp-8TN6C4ATZYXZY{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-    <form action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-      <input class="pp-8TN6C4ATZYXZY" type="submit" value="Donate" />
-      <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
-      <section style="font-size:0.75rem;">Powered by <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-    </form>
-    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener"
-       class="inline-flex items-center gap-2 bg-[#1e2740] hover:bg-[#263354] text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-      <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      @lactucafarm
-    </a>
+<div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-5 mb-5 flex flex-col gap-4">
+
+  <!-- Brand header -->
+  <div class="flex items-start justify-between gap-4">
+    <div class="flex flex-col gap-0.5">
+      <span class="font-['Space_Grotesk'] font-bold text-lg text-[#7bd0ff]">Alberta FWI System</span>
+      <span class="text-[11px] text-slate-500">Built by Travis Kennedy · Claude · Glenn (WhatsApp) · Free · Open · No login</span>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0 mt-1">
+      <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+      <span class="text-[9px] uppercase tracking-widest text-green-400 font-bold">Live</span>
+    </div>
   </div>
+
+  <!-- 4 feature pills 2×2 -->
+  <div class="grid grid-cols-2 gap-2">
+    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
+      <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-1"></span>
+      <div><p class="text-[11px] font-bold text-slate-200">Moisture Codes</p><p class="text-[10px] text-slate-500 leading-relaxed">FFMC, DMC, DC carry-over chain — daily drought tracking</p></div>
+    </div>
+    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
+      <span class="w-2 h-2 rounded-full bg-green-400 shrink-0 mt-1"></span>
+      <div><p class="text-[11px] font-bold text-slate-200">Spread Indices</p><p class="text-[10px] text-slate-500 leading-relaxed">ISI and FWI — real-time fire spread potential</p></div>
+    </div>
+    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
+      <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1"></span>
+      <div><p class="text-[11px] font-bold text-slate-200">Scientific Clarity</p><p class="text-[10px] text-slate-500 leading-relaxed">Van Wagner equations + NRCan CWFIS operational chain</p></div>
+    </div>
+    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0 mt-1"></span>
+      <div><p class="text-[11px] font-bold text-slate-200">Public Safety</p><p class="text-[10px] text-slate-500 leading-relaxed">39 zones, green and white zones, no login required</p></div>
+    </div>
+  </div>
+
+  <!-- Spot-something-wrong line -->
+  <p class="text-[10px] text-slate-600">Spot something wrong or missing? <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="text-slate-500 hover:text-slate-300 transition-colors">DM on X</a> or <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="text-slate-500 hover:text-slate-300 transition-colors">open a GitHub issue</a>.</p>
+
+  <!-- FUEL THE MISSION -->
+  <div>
+    <h2 class="font-['Space_Grotesk'] font-bold uppercase tracking-widest text-white text-sm border-b border-amber-500/40 pb-2 mb-3">Fuel the Mission</h2>
+    <p class="text-[11px] text-slate-500 mb-3">Keep the data flowing. Contributions fund server costs and ongoing development.</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <style>.pp-8TN6C4ATZYXZY{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
+      <form action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
+        <input class="pp-8TN6C4ATZYXZY" type="submit" value="Donate" />
+        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
+        <section style="font-size:0.75rem;">Powered by <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
+      </form>
+      <a href="https://x.com/lactucafarm" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 bg-[#1e2740] hover:bg-[#263354] text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @lactucafarm
+      </a>
+    </div>
+  </div>
+
 </div>
 
 <!-- ── Mobile Fuel Picker ──────────────────────────────────────────────── -->
@@ -399,6 +438,16 @@
 </div>
 </section>
 
+<!-- ── Footer ──────────────────────────────────────────────────────────── -->
+<footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
+  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Precision Observer · Alberta FWI System</span>
+  <div class="flex gap-4 text-[9px] text-slate-600">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
+    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
+    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+  </div>
+  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
+</footer>
 </main>
 <!-- BottomNavBar -->
 <nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
