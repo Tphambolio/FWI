@@ -1,0 +1,147 @@
+name: Update CWFIS Carry-over Cache
+
+on:
+  schedule:
+    # 20:00 UTC = 14:00 MDT — after CWFIS 13:00 LST daily observations
+    - cron: '0 20 * * *'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  update-cwfis-prev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch CWFIS and write cwfis_prev.json
+        run: |
+          node - <<'EOF'
+          const https = require('https');
+          const fs    = require('fs');
+
+          // Mirror of ALBERTA_STATIONS from fwi.js
+          const STATIONS = [
+            { name: 'High Level',      lat: 58.517, lng: -117.133 },
+            { name: 'Fort Chipewyan',  lat: 58.767, lng: -111.117 },
+            { name: 'Peace River',     lat: 56.233, lng: -117.283 },
+            { name: 'Grande Prairie',  lat: 55.167, lng: -118.883 },
+            { name: 'Valleyview',      lat: 55.083, lng: -117.283 },
+            { name: 'High Prairie',    lat: 55.433, lng: -116.483 },
+            { name: 'Wabasca',         lat: 55.967, lng: -113.833 },
+            { name: 'Slave Lake',      lat: 55.283, lng: -114.767 },
+            { name: 'Fort McMurray',   lat: 56.650, lng: -111.217 },
+            { name: 'Fort Vermilion',  lat: 58.383, lng: -116.017 },
+            { name: 'Manning',         lat: 56.917, lng: -117.617 },
+            { name: 'Lac La Biche',    lat: 54.767, lng: -111.967 },
+            { name: 'Athabasca',       lat: 54.717, lng: -113.283 },
+            { name: 'Bonnyville',      lat: 54.267, lng: -110.733 },
+            { name: 'Cold Lake',       lat: 54.417, lng: -110.283 },
+            { name: 'Fox Creek',       lat: 54.400, lng: -116.800 },
+            { name: 'Whitecourt',      lat: 54.150, lng: -115.683 },
+            { name: 'Edson',           lat: 53.583, lng: -116.433 },
+            { name: 'Hinton',          lat: 53.400, lng: -117.567 },
+            { name: 'Jasper',          lat: 52.867, lng: -118.083 },
+            { name: 'Grande Cache',    lat: 53.883, lng: -118.433 },
+            { name: 'Edmonton',        lat: 53.534, lng: -113.490 },
+            { name: 'Drayton Valley',  lat: 53.217, lng: -114.983 },
+            { name: 'Rocky Mtn House', lat: 52.367, lng: -114.917 },
+            { name: 'Vegreville',      lat: 53.500, lng: -112.050 },
+            { name: 'Camrose',         lat: 53.017, lng: -112.833 },
+            { name: 'Lloydminster',    lat: 53.283, lng: -110.000 },
+            { name: 'Wetaskiwin',      lat: 52.967, lng: -113.367 },
+            { name: 'Stettler',        lat: 52.317, lng: -112.717 },
+            { name: 'Red Deer',        lat: 52.267, lng: -113.800 },
+            { name: 'Drumheller',      lat: 51.467, lng: -112.717 },
+            { name: 'Calgary',         lat: 51.050, lng: -114.067 },
+            { name: 'Banff',           lat: 51.183, lng: -115.567 },
+            { name: 'Claresholm',      lat: 50.017, lng: -113.583 },
+            { name: 'Brooks',          lat: 50.567, lng: -111.900 },
+            { name: 'Medicine Hat',    lat: 50.033, lng: -110.683 },
+            { name: 'Pincher Creek',   lat: 49.483, lng: -113.950 },
+            { name: 'Lethbridge',      lat: 49.700, lng: -112.833 },
+            { name: 'Cardston',        lat: 49.200, lng: -113.300 },
+          ];
+
+          function haversineKm(lat1, lng1, lat2, lng2) {
+            const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          }
+
+          function fetchJSON(url) {
+            return new Promise((resolve, reject) => {
+              const req = https.get(url, { timeout: 12000 }, res => {
+                let body = '';
+                res.on('data', d => body += d);
+                res.on('end', () => {
+                  try { resolve(JSON.parse(body)); } catch(e) { reject(e); }
+                });
+              });
+              req.on('error', reject);
+              req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+            });
+          }
+
+          async function fetchCWFIS(lat, lng) {
+            const bbox = 2.0;
+            const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+              `?service=WFS&version=2.0.0&request=GetFeature` +
+              `&typeName=public:firewx_stns_current&outputFormat=application/json&count=50` +
+              `&CQL_FILTER=lat+BETWEEN+${lat-bbox}+AND+${lat+bbox}` +
+              `+AND+lon+BETWEEN+${lng-bbox}+AND+${lng+bbox}`;
+            try {
+              const data = await fetchJSON(url);
+              if (!data.features?.length) return null;
+              let nearest = null, minDist = Infinity;
+              for (const feat of data.features) {
+                const p = feat.properties;
+                if (p.ffmc == null || p.dmc == null || p.dc == null) continue;
+                const d = haversineKm(lat, lng, +p.lat, +p.lon);
+                if (d < minDist) { minDist = d; nearest = p; }
+              }
+              if (!nearest) return null;
+              const name = (nearest.name || '').replace(/\+/g, ' ').trim();
+              return { ffmc: nearest.ffmc, dmc: nearest.dmc, dc: nearest.dc,
+                       repDate: nearest.rep_date || null, stationName: name, distKm: Math.round(minDist) };
+            } catch(e) {
+              console.warn(`CWFIS fetch error for (${lat},${lng}):`, e.message);
+              return null;
+            }
+          }
+
+          async function main() {
+            const result = { generated: new Date().toISOString(), stations: {} };
+            for (const s of STATIONS) {
+              const data = await fetchCWFIS(s.lat, s.lng);
+              result.stations[s.name] = data; // null if off-season or error
+              console.log(`${s.name}: ${data ? `FFMC=${data.ffmc} DMC=${data.dmc} DC=${data.dc} (${data.stationName})` : 'null'}`);
+            }
+            const outPath = 'data/cwfis_prev.json';
+            const current = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : '';
+            const newContent = JSON.stringify(result, null, 2) + '\n';
+            // Only write if FWI data actually changed (ignore generated timestamp in comparison)
+            const curStations = JSON.stringify(JSON.parse(current || '{}').stations || {});
+            const newStations = JSON.stringify(result.stations);
+            if (curStations !== newStations) {
+              fs.writeFileSync(outPath, newContent);
+              console.log('cwfis_prev.json updated.');
+            } else {
+              // Still write to update the generated timestamp
+              fs.writeFileSync(outPath, newContent);
+              console.log('Station values unchanged; timestamp updated.');
+            }
+          }
+
+          main().catch(e => { console.error(e); process.exit(1); });
+          EOF
+
+      - name: Commit updated cache
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cwfis_prev.json
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "chore: update CWFIS carry-over cache $(date -u '+%Y-%m-%d')"
+          git push

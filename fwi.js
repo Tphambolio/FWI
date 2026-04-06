@@ -731,9 +731,18 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
 
   try {
+    if (!_cwfisPrev.stations) await loadCWFISPrev();
     const weather = await fetchWeatherPrimary(lat, lng);
     if (gen !== _initGeneration) return; // a newer initFWI started; discard stale result
-    const result  = calculateFWI(weather);
+    // Use cached CWFIS carry-over as prev when Van Wagner is needed (SWOB/NWP tier)
+    let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station) };
+    if (!weather.fwiFromCWFIS) {
+      const p = _cwfisPrev?.stations?.[station];
+      if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
+        prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+      }
+    }
+    const result  = calculateFWI(weather, prevFWI);
     wireDOM(result, lat, lng);
     console.log('[FWI]', result);
   } catch (err) {
@@ -983,8 +992,29 @@ const REGIONS = [
 let _regionalCache = [];
 // Cache populated by buildStationMap — stores all 39 station FWI results
 let _mapStationCache = [];
+// Previous-day CWFIS carry-over values loaded from GitHub-hosted JSON (see cwfis-daily.yml)
+let _cwfisPrev = {};
 // Cache populated by buildForecastTrends — used by exportForecastReport
 let _forecastCache = { days: [], results: [] };
+
+/**
+ * Load previous-day CWFIS carry-over values from the GitHub-hosted JSON.
+ * Updated daily by .github/workflows/cwfis-daily.yml after 13:00 LST obs.
+ * Used as `prev` in calculateFWI when CWFIS is not the live source (SWOB/NWP),
+ * giving Van Wagner a real carry-over chain rather than spring STARTUP defaults.
+ * Fails silently — any error leaves _cwfisPrev empty and STARTUP is used instead.
+ */
+async function loadCWFISPrev() {
+  try {
+    const res = await fetch(
+      'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/cwfis_prev.json',
+      { cache: 'no-cache' }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data?.stations) _cwfisPrev = data;
+  } catch (_) { /* network error — fall through to STARTUP defaults */ }
+}
 
 const DANGER_COLORS = {
   'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
@@ -2172,6 +2202,9 @@ async function buildStationMap(containerId) {
   if (!container || typeof L === 'undefined') return;
   _mapStationCache = [];
 
+  // Pre-load yesterday's CWFIS carry-over values for Van Wagner accuracy
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+
   // HFI class → right-half pill color (muted palette — always visually distinct from vivid FWI left half)
   const HFI_CLASS_COLORS = {
     '1-Low':'#a8f0c0','2-Mod':'#b8e2f9','3-High':'#ffe082',
@@ -2268,8 +2301,19 @@ async function buildStationMap(containerId) {
   // Fetch data and update each marker as it arrives
   for (const s of ALBERTA_STATIONS) {
     try {
-      const w        = await fetchWeatherPrimary(s.lat, s.lng);
-      const r        = calculateFWI(w);
+      const w = await fetchWeatherPrimary(s.lat, s.lng);
+
+      // Carry-over: use cached CWFIS prev-day values when Van Wagner is needed (SWOB/NWP tier)
+      let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(s.name) };
+      let usedCachedPrev = false;
+      if (!w.fwiFromCWFIS) {
+        const p = _cwfisPrev?.stations?.[s.name];
+        if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
+          prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+          usedCachedPrev = true;
+        }
+      }
+      const r        = calculateFWI(w, prevFWI);
       const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
       const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
@@ -2316,7 +2360,15 @@ async function buildStationMap(containerId) {
         sourceStnLine +
         `<div style="font-size:9px;color:#94a3b8;font-family:monospace;margin-bottom:1px">${coordStr}</div>` +
         `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
-        `<div style="font-size:8px;color:#64748b;margin-bottom:6px">Obs: <strong>${obsTs}</strong></div>` +
+        `<div style="font-size:8px;color:#64748b;margin-bottom:${usedCachedPrev ? '2' : '6'}px">Obs: <strong>${obsTs}</strong></div>` +
+        (usedCachedPrev ? (() => {
+          const cp = _cwfisPrev.stations[s.name];
+          const cdStr = cp.repDate
+            ? new Date(cp.repDate).toLocaleString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })
+            : 'prev day';
+          return `<div style="font-size:8px;color:#6b7280;margin-bottom:6px">` +
+                 `Carry-over: <strong>${cp.stationName || 'CWFIS'}</strong> · ${cdStr}</div>`;
+        })() : '') +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;margin-bottom:6px">` +
         `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fwiColor};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
         `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fwiColor}">${r.danger}</strong></div>` +
