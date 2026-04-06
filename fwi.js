@@ -768,7 +768,7 @@ const ALBERTA_STATIONS = [
   { name: 'Edson',             lat: 53.583, lng: -116.433 },
   { name: 'Hinton',            lat: 53.400, lng: -117.567 },
   { name: 'Jasper',            lat: 52.867, lng: -118.083 },
-  { name: 'Grande Cache',      lat: 53.883, lng: -119.000 },
+  { name: 'Grande Cache',      lat: 53.883, lng: -118.433 }, // shifted east toward Hinton/SWOB corridor
   // Central
   { name: 'Edmonton',          lat: 53.309, lng: -113.580 }, // YEG International Airport — SWOB station
   { name: 'Edmonton Blatchford', lat: 53.572, lng: -113.521 }, // North Edmonton / former City Centre Airport area
