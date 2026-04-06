@@ -1098,7 +1098,7 @@ async function buildRegionalSummary() {
         <tbody id="fwi-station-tbody" class="divide-y divide-[#1e2740]">
           ${sorted.map(s =>
             `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
-              <td class="py-2 pl-3 pr-2 font-semibold text-[#dae2fd] text-xs">${s.name}</td>
+              <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
               <td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(s.lat)}</td>
               <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
             </tr>`
