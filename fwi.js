@@ -334,6 +334,9 @@ function wireFBP(weather, fwi) {
   set('fwi-fbp-flame', result.flameLength.toFixed(1) + ' m');
   set('fwi-fbp-type',  result.fireType);
   set('fwi-fbp-cfb',   (result.cfb * 100).toFixed(0) + '%');
+  // Today card weather + FWI row
+  set('fwi-today-weather', `${weather.temp != null ? (+weather.temp).toFixed(1) : '—'}°C / ${Math.round(weather.rh ?? 0)}% RH / ${Math.round(weather.wind ?? 0)} km/h`);
+  set('fwi-today-fwi', `${Math.round(fwi.fwi)} — ${fwi.danger}`);
 
   const cl = hfiClassInfo(result.hfi);
   // Accent colour — map print bg to a vivid screen colour
