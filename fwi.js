@@ -524,6 +524,7 @@ async function fetchSWOB(lat, lng) {
     stationLng:  nearestLng,
     fwiFromCWFIS: false,
     distKm:      Math.round(minDist),
+    obsTime:     obsTime.toISOString(),
   };
 }
 
@@ -2271,13 +2272,21 @@ async function buildStationMap(containerId) {
       const fwiMethod  = w.fwiFromCWFIS ? 'CWFIS carry-over' : 'Van Wagner calc';
       const coordStr   = `${Math.abs(stnLat).toFixed(4)}°${stnLat>=0?'N':'S'} ${Math.abs(stnLng).toFixed(4)}°${stnLng>=0?'E':'W'}`;
       const distNote   = w.distKm != null ? ` · ${w.distKm} km offset` : '';
-      const actualName = w.stationName && w.stationName !== s.name ? w.stationName : null;
+      // Observation/report timestamp — use CWFIS repDate, SWOB obsTime, or current time for NWP
+      const rawTs = w.repDate || w.obsTime || null;
+      const obsTs = rawTs
+        ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT'
+        : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT (calc)';
+      const sourceStnLine = w.stationName
+        ? `<div style="font-size:9px;color:#64748b;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
+        : '';
       markers[s.name].setPopupContent(
         `<div style="font-family:'Space Grotesk',sans-serif;min-width:220px">` +
         `<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:1px">${s.name}</div>` +
-        (actualName ? `<div style="font-size:9px;color:#64748b;margin-bottom:1px">CWFIS station: ${actualName}</div>` : '') +
+        sourceStnLine +
         `<div style="font-size:9px;color:#94a3b8;font-family:monospace;margin-bottom:1px">${coordStr}</div>` +
-        `<div style="font-size:8px;color:#94a3b8;margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
+        `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
+        `<div style="font-size:8px;color:#64748b;margin-bottom:6px">Obs: <strong>${obsTs}</strong></div>` +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;margin-bottom:6px">` +
         `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fwiColor};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
         `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fwiColor}">${r.danger}</strong></div>` +
