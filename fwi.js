@@ -1693,45 +1693,17 @@ function printProvincialBriefing() {
   const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
-  // ── SVG map: full-width bicolor markers, 750×370 viewport ────────────────
+  // ── Map markers: serialised for Leaflet in the print window ─────────────
   const SVG_HFI_COLORS = {
     '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800',
     '4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e',
   };
-  const MW = 750, MH = 370;
-  const mx = lng => +((lng - (-120)) / 10 * MW).toFixed(1);
-  const my = lat => +((60 - lat)  / 11 * MH).toFixed(1);
-
-  const LABEL_STNS = new Set(['Fort McMurray','Edmonton','Calgary','Lethbridge','Medicine Hat','Grande Prairie','Fort Chipewyan','High Level']);
-  const svgPoints = rows.map(r => {
-    const x = mx(r.lng), y = my(r.lat);
-    const fwiColor = SVG_COLORS[r.danger] || '#2980b9';
-    const hfiColor = SVG_HFI_COLORS[r.hfiClass] || '#9e9e9e';
-    const rad = ['Extreme','Very High'].includes(r.danger) ? 18 : 15;
-    const fwiLabel = r.fwi != null ? r.fwi.toFixed(1) : '—';
-    const [hfiNum] = (r.hfiClass || '—').split('-');
-    const leftPath  = `M ${x},${y-rad} A ${rad},${rad} 0 0,0 ${x},${y+rad} L ${x},${y} Z`;
-    const rightPath = `M ${x},${y-rad} A ${rad},${rad} 0 0,1 ${x},${y+rad} L ${x},${y} Z`;
-    const lx = (x - rad * 0.44).toFixed(1);
-    const rx = (x + rad * 0.44).toFixed(1);
-    return `<g opacity="0.95" filter="url(#ds)">` +
-           `<path d="${leftPath}" fill="${fwiColor}"/>` +
-           `<path d="${rightPath}" fill="${hfiColor}"/>` +
-           `<line x1="${x}" y1="${y-rad}" x2="${x}" y2="${y+rad}" stroke="rgba(0,0,0,0.18)" stroke-width="0.7"/>` +
-           `<text x="${lx}" y="${y-3}" font-size="5.5" font-weight="700" fill="rgba(0,0,0,0.42)" text-anchor="middle" dominant-baseline="middle">FWI</text>` +
-           `<text x="${lx}" y="${y+4.5}" font-size="9" font-weight="800" fill="rgba(0,0,0,0.78)" text-anchor="middle" dominant-baseline="middle">${fwiLabel}</text>` +
-           `<text x="${rx}" y="${y-3}" font-size="5.5" font-weight="700" fill="rgba(0,0,0,0.42)" text-anchor="middle" dominant-baseline="middle">HFI</text>` +
-           `<text x="${rx}" y="${y+4.5}" font-size="8" font-weight="800" fill="rgba(0,0,0,0.78)" text-anchor="middle" dominant-baseline="middle">${hfiNum}</text>` +
-           `<title>${r.name}: FWI ${fwiLabel} (${r.danger})${r.hfi != null ? ' · HFI ' + Math.round(r.hfi).toLocaleString() + ' kW/m (' + r.hfiClass + ')' : ''}</title>` +
-           `</g>`;
-  }).join('\n    ');
-  const svgLabels = rows.filter(r => LABEL_STNS.has(r.name)).map(r => {
-    const x = mx(r.lng), y = my(r.lat);
-    const right = x > MW * 0.65;
-    const short = r.name.replace('Fort McMurray','Ft McMurray').replace('Fort Chipewyan','Ft Chipewyan').replace('Grande Prairie','Gde Prairie').replace('Medicine Hat','Med Hat');
-    const ox = right ? -22 : 22;
-    return `<text x="${(x + ox).toFixed(0)}" y="${(y + 4).toFixed(0)}" font-size="9" fill="#333" text-anchor="${right ? 'end' : 'start'}" font-style="italic" font-weight="600">${short}</text>`;
-  }).join('\n    ');
+  const mapStationData = JSON.stringify(rows.map(r => ({
+    name: r.name, lat: r.lat, lng: r.lng,
+    fwi: r.fwi != null ? +r.fwi.toFixed(1) : null,
+    danger: r.danger,
+    hfiClass: r.hfiClass || '—',
+  })));
 
   // ── 3-column station grid ─────────────────────────────────────────────────
   const third = Math.ceil(rows.length / 3);
@@ -1773,30 +1745,29 @@ function printProvincialBriefing() {
     .filter(d => tally[d] > 0)
     .map(d => `${tally[d]} ${d}`).join(' · ');
 
-  // ── Grid lines for SVG ────────────────────────────────────────────────────
-  const gridLines = [50, 52, 54, 56, 58].map(lat => {
-    const y = my(lat);
-    return `<line x1="0" y1="${y}" x2="${MW}" y2="${y}" stroke="#c8d0d8" stroke-width="0.6" stroke-dasharray="5,4"/>` +
-           `<text x="4" y="${y - 2}" font-size="7.5" fill="#aaa">${lat}°N</text>`;
-  }).join('\n      ');
+
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Alberta FWI — Provincial Briefing</title>
+<title>Pyra · Alberta FWI — Provincial Briefing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/script>
 <style>
   @media print {
     @page { size: portrait; margin: 0.7cm; }
     .no-print { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    #print-map { height: 295px !important; }
   }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 10px 12px; }
   .hdr { border: 2px solid #2d3748; padding: 7px 12px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center; }
   .hdr-title { font-size: 12pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
   .hdr-meta { font-size: 7.5pt; color: #555; text-align:right; line-height:1.5; }
-  .map-box { border: 1px solid #ccc; display: block; width: 100%; margin-bottom: 4px; }
+  #print-map { width: 100%; height: 295px; border: 1px solid #ccc; margin-bottom: 4px; }
+  .leaflet-control-attribution { font-size: 5.5pt !important; }
   .legend { display:flex; gap:10px; margin-bottom:6px; align-items:center; flex-wrap:wrap; font-size:7.5pt; }
   .ld { display:flex; align-items:center; gap:3px; }
   .lc { width:11px; height:11px; border-radius:50%; display:inline-block; }
@@ -1811,27 +1782,56 @@ function printProvincialBriefing() {
 <body>
 
 <div class="hdr">
-  <div class="hdr-title">Alberta Fire Weather Index — Provincial Briefing</div>
+  <div class="hdr-title">Pyra · Alberta Fire Weather Index — Provincial Briefing</div>
   <div class="hdr-meta">
     ${today} · 0600–1800 MDT<br>
     Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP
   </div>
 </div>
 
-<!-- Full-width SVG map -->
-<svg class="map-box" viewBox="0 0 ${MW} ${MH}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
-    </filter>
-  </defs>
-  <rect width="${MW}" height="${MH}" fill="#dde8f0"/>
-  <polygon points="0,0 ${MW},0 ${MW},${MH} 413,${MH} 375,336 300,302 188,269 113,235 50,201 0,169"
-           fill="#eef2ee" stroke="#8a9e8a" stroke-width="1.5"/>
-  ${gridLines}
-  ${svgLabels}
-  ${svgPoints}
-</svg>
+<!-- Leaflet OSM map -->
+<div id="print-map"></div>
+<script>
+(function() {
+  const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#8e44ad', 'Very High':'#e67e22', Extreme:'#c0392b' };
+  const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
+  const stations = ${mapStationData};
+
+  const map = L.map('print-map', { zoomControl: false, center: [54.5, -114.5], zoom: 5 });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  stations.forEach(s => {
+    const fc = FWI_COLORS[s.danger] || '#2980b9';
+    const hc = HFI_COLORS[s.hfiClass] || '#9e9e9e';
+    const r = ['Extreme','Very High'].includes(s.danger) ? 20 : 17;
+    const label = s.fwi != null ? s.fwi.toFixed(1) : '—';
+    const [hn] = (s.hfiClass || '—').split('-');
+    const d = r * 2;
+    const icon = L.divIcon({
+      html: '<svg width="' + d + '" height="' + d + '" viewBox="0 0 ' + d + ' ' + d + '" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.45))">'
+        + '<path d="M ' + r + ',0 A ' + r + ',' + r + ' 0 0,0 ' + r + ',' + d + ' Z" fill="' + fc + '"/>'
+        + '<path d="M ' + r + ',0 A ' + r + ',' + r + ' 0 0,1 ' + r + ',' + d + ' Z" fill="' + hc + '"/>'
+        + '<line x1="' + r + '" y1="0" x2="' + r + '" y2="' + d + '" stroke="rgba(0,0,0,0.2)" stroke-width="0.8"/>'
+        + '<text x="' + (r*0.52) + '" y="' + (r*0.72) + '" font-size="' + (r*0.48) + '" font-weight="700" fill="rgba(0,0,0,0.5)" text-anchor="middle">FWI</text>'
+        + '<text x="' + (r*0.52) + '" y="' + (r*1.38) + '" font-size="' + (r*0.72) + '" font-weight="800" fill="rgba(0,0,0,0.85)" text-anchor="middle">' + label + '</text>'
+        + '<text x="' + (r*1.48) + '" y="' + (r*0.72) + '" font-size="' + (r*0.48) + '" font-weight="700" fill="rgba(0,0,0,0.5)" text-anchor="middle">HFI</text>'
+        + '<text x="' + (r*1.48) + '" y="' + (r*1.38) + '" font-size="' + (r*0.68) + '" font-weight="800" fill="rgba(0,0,0,0.85)" text-anchor="middle">' + hn + '</text>'
+        + '</svg>',
+      iconSize: [d, d], iconAnchor: [r, r], className: ''
+    });
+    L.marker([s.lat, s.lng], { icon }).bindTooltip(s.name, { permanent: false, direction: 'top' }).addTo(map);
+  });
+
+  // Trigger print after tiles load; 3 s fallback
+  let printed = false;
+  function doPrint() { if (!printed) { printed = true; window.print(); } }
+  map.eachLayer(l => { if (l.on) l.on('load', () => setTimeout(doPrint, 400)); });
+  setTimeout(doPrint, 3000);
+})();
+<\/script>
 
 <!-- Legend row -->
 <div class="legend">
@@ -1875,7 +1875,7 @@ function printProvincialBriefing() {
   if (!win) { alert('Pop-up blocked — please allow pop-ups for this site.'); return; }
   win.document.write(html);
   win.document.close();
-  setTimeout(() => win.print(), 500);
+  // Print triggered inside the popup after Leaflet tiles load
 }
 
 /**
