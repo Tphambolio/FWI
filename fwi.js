@@ -110,24 +110,23 @@ function windCompass(deg) {
   return `${arrows[i]} ${dirs[i]} (${Math.round(deg)}°)`;
 }
 
-// FWI danger thresholds (Van Wagner 1987 / CFFDRS)
+// FWI danger thresholds (NRCan CWFIS operational scale)
 function dangerRating(fwi) {
-  if (fwi < 5)  return 'Low';
-  if (fwi < 10) return 'Moderate';
-  if (fwi < 20) return 'High';
-  if (fwi < 30) return 'Very High';
+  if (fwi <  9) return 'Low';
+  if (fwi < 18) return 'Moderate';
+  if (fwi < 33) return 'High';
+  if (fwi < 50) return 'Very High';
   return 'Extreme';
 }
 
 // Alberta Wildfire danger class 1–6 (CIFFC operational scale)
 // Returns { num, label, bg, text } for colour-coded display in briefings
 function dangerClassNum(fwi) {
-  if (fwi <  6) return { num: 1, label: 'Low',       bg: '#d4edda', text: '#155724' };
-  if (fwi < 12) return { num: 2, label: 'Moderate',  bg: '#cce5ff', text: '#004085' };
-  if (fwi < 25) return { num: 3, label: 'High',      bg: '#fff3cd', text: '#856404' };
-  if (fwi < 38) return { num: 4, label: 'Very High', bg: '#ffe5cc', text: '#7d3200' };
-  if (fwi < 50) return { num: 5, label: 'Extreme',   bg: '#f8d7da', text: '#721c24' };
-  return           { num: 6, label: 'Extreme+',  bg: '#4a0010', text: '#ffccdd' };
+  if (fwi <  9) return { num: 1, label: 'Low',       bg: '#d4edda', text: '#155724' };
+  if (fwi < 18) return { num: 2, label: 'Moderate',  bg: '#cce5ff', text: '#004085' };
+  if (fwi < 33) return { num: 3, label: 'High',      bg: '#fff3cd', text: '#856404' };
+  if (fwi < 50) return { num: 4, label: 'Very High', bg: '#ffe5cc', text: '#7d3200' };
+  return           { num: 5, label: 'Extreme',   bg: '#f8d7da', text: '#721c24' };
 }
 
 // HFI intensity class 1–6 — operational plain-language scale (Glenn, FBAN)
@@ -919,7 +918,7 @@ function _updateStationTableRow(entry) {
     'Error': 'background:#1c191740;color:#78716c;border:1px solid #44403c',
   }[srcBadge] || 'background:#1c191740;color:#78716c;border:1px solid #44403c';
   const dangerColor = {
-    'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#c084fc',
+    'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#f5c518',
     'Very High': '#f97316', 'Extreme': '#ef4444',
   }[r.danger] || '#7bd0ff';
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
@@ -1019,9 +1018,9 @@ async function loadCWFISPrev() {
 const DANGER_COLORS = {
   'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
   'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
-  'High':      { bar: 'bg-tertiary-fixed-dim', badge: 'bg-[#fbabff]/10 text-tertiary',                    dot: 'bg-tertiary-fixed-dim shadow-[0_0_8px_#fbabff]' },
-  'Very High': { bar: 'bg-tertiary',           badge: 'bg-tertiary-container text-tertiary-fixed-dim',    dot: 'bg-tertiary-fixed-dim shadow-[0_0_8px_#fbabff]' },
-  'Extreme':   { bar: 'bg-tertiary',           badge: 'bg-tertiary-container text-tertiary',              dot: 'bg-tertiary shadow-[0_0_8px_#fbabff]' },
+  'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
+  'Very High': { bar: 'bg-[#f97316]',  badge: 'bg-[#f97316]/10 text-[#f97316]',   dot: 'bg-[#f97316] shadow-[0_0_8px_#f97316]' },
+  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/10 text-[#ef4444]',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
 };
 
 function regionCard(name, sector, r) {
@@ -1538,7 +1537,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
   <td class="py-5 font-headline font-bold text-white">${fmt(r.weather.temp)}°C</td>
   <td class="py-5 font-bold ${r.weather.rh < 30 ? 'text-tertiary' : 'text-secondary'}">RH ${fmt(r.weather.rh, 0)}%</td>
   <td class="py-5">
-    <span class="px-3 py-1 rounded-full text-[10px] font-bold ${r.danger === 'Extreme' ? 'bg-tertiary-container text-tertiary' : r.danger === 'High' || r.danger === 'Very High' ? 'bg-[#fbabff]/10 text-tertiary' : 'bg-secondary-container/20 text-secondary border border-secondary/20'}">${r.danger.toUpperCase()}</span>
+    <span class="px-3 py-1 rounded-full text-[10px] font-bold" style="${r.danger === 'Extreme' ? 'background:#ef444420;color:#ef4444' : r.danger === 'Very High' ? 'background:#f9731620;color:#f97316' : r.danger === 'High' ? 'background:#f5c51820;color:#f5c518' : r.danger === 'Moderate' ? 'background:#7bd0ff20;color:#7bd0ff' : 'background:#4ae17620;color:#4ae176'}">${r.danger.toUpperCase()}</span>
   </td>
   <td class="py-5 pr-6">
     <div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
@@ -1642,14 +1641,14 @@ function printProvincialBriefing(mode = 'provincial') {
   const PRINT_COLORS = {
     'Low':       { bg: '#d4edda', text: '#155724' },
     'Moderate':  { bg: '#cce5ff', text: '#004085' },
-    'High':      { bg: '#e2d9f3', text: '#4a235a' },
+    'High':      { bg: '#fff3cd', text: '#856404' },
     'Very High': { bg: '#ffe5cc', text: '#7d3200' },
     'Extreme':   { bg: '#f8d7da', text: '#721c24' },
   };
   const SVG_COLORS = {
     'Low':       '#2d9e5f',
     'Moderate':  '#2980b9',
-    'High':      '#8e44ad',
+    'High':      '#f5c518',
     'Very High': '#e67e22',
     'Extreme':   '#c0392b',
   };
@@ -1764,9 +1763,9 @@ function printProvincialBriefing(mode = 'provincial') {
 <script>
 setTimeout(function() {
 (function() {
-  const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#8e44ad', 'Very High':'#e67e22', Extreme:'#c0392b' };
+  const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#f5c518', 'Very High':'#e67e22', Extreme:'#c0392b' };
   const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
-  const PRINT_COLORS = { Low:{bg:'#d4edda',text:'#155724'}, Moderate:{bg:'#cce5ff',text:'#004085'}, High:{bg:'#e2d9f3',text:'#4a235a'}, 'Very High':{bg:'#ffe5cc',text:'#7d3200'}, Extreme:{bg:'#f8d7da',text:'#721c24'} };
+  const PRINT_COLORS = { Low:{bg:'#d4edda',text:'#155724'}, Moderate:{bg:'#cce5ff',text:'#004085'}, High:{bg:'#fff3cd',text:'#856404'}, 'Very High':{bg:'#ffe5cc',text:'#7d3200'}, Extreme:{bg:'#f8d7da',text:'#721c24'} };
   const allStations = ${allStationData};
 
   const map = L.map('print-map', { zoomControl: true });
@@ -1864,11 +1863,11 @@ setTimeout(function() {
       <th style="padding:2px 5px;text-align:left">Fire Behaviour</th>
     </tr></thead>
     <tbody>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2d9e5f;margin-right:3px;vertical-align:middle"></span><b>Low</b></td><td style="padding:2px 4px;text-align:center">&lt; 6</td><td style="padding:2px 5px;color:#555">Isolated fires; initial attack effective</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2980b9;margin-right:3px;vertical-align:middle"></span><b>Moderate</b></td><td style="padding:2px 4px;text-align:center">6–11</td><td style="padding:2px 5px;color:#555">Fires start easily; control feasible</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8e44ad;margin-right:3px;vertical-align:middle"></span><b>High</b></td><td style="padding:2px 4px;text-align:center">12–24</td><td style="padding:2px 5px;color:#555">Intense surface fire; difficult to control</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin-right:3px;vertical-align:middle"></span><b>Very High</b></td><td style="padding:2px 4px;text-align:center">25–37</td><td style="padding:2px 5px;color:#555">Spotting likely; indirect attack only</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span><b>Extreme</b></td><td style="padding:2px 4px;text-align:center">≥ 38</td><td style="padding:2px 5px;color:#555">Crown fire conditions; evacuate</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2d9e5f;margin-right:3px;vertical-align:middle"></span><b>Low</b></td><td style="padding:2px 4px;text-align:center">0–8</td><td style="padding:2px 5px;color:#555">Isolated fires; initial attack effective</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2980b9;margin-right:3px;vertical-align:middle"></span><b>Moderate</b></td><td style="padding:2px 4px;text-align:center">9–17</td><td style="padding:2px 5px;color:#555">Fires start easily; control feasible</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c518;margin-right:3px;vertical-align:middle"></span><b>High</b></td><td style="padding:2px 4px;text-align:center">18–32</td><td style="padding:2px 5px;color:#555">Intense surface fire; difficult to control</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin-right:3px;vertical-align:middle"></span><b>Very High</b></td><td style="padding:2px 4px;text-align:center">33–49</td><td style="padding:2px 5px;color:#555">Spotting likely; indirect attack only</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span><b>Extreme</b></td><td style="padding:2px 4px;text-align:center">≥ 50</td><td style="padding:2px 5px;color:#555">Crown fire conditions; evacuate</td></tr>
     </tbody>
   </table>
   <table style="border-collapse:collapse;width:100%;font-size:6.5pt">
@@ -1963,7 +1962,7 @@ async function printStationBriefing() {
   const PRINT_BG = {
     'Low':       { bg: '#d4edda', text: '#155724' },
     'Moderate':  { bg: '#cce5ff', text: '#004085' },
-    'High':      { bg: '#e2d9f3', text: '#4a235a' },
+    'High':      { bg: '#fff3cd', text: '#856404' },
     'Very High': { bg: '#ffe5cc', text: '#7d3200' },
     'Extreme':   { bg: '#f8d7da', text: '#721c24' },
   };
@@ -2222,7 +2221,7 @@ ${d1Section}
 const MARKER_COLORS = {
   'Low':       '#4ae176',
   'Moderate':  '#7bd0ff',
-  'High':      '#fbabff',
+  'High':      '#f5c518',
   'Very High': '#ff8c42',
   'Extreme':   '#ff4d4d',
 };
