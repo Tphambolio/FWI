@@ -2239,8 +2239,8 @@ async function buildStationMap(containerId) {
   // MarkerCluster group — separates overlapping stations (e.g. Edmonton YEG + Blatchford)
   const clusterGroup = L.markerClusterGroup
     ? L.markerClusterGroup({
-        maxClusterRadius: 40,
-        disableClusteringAtZoom: 8,
+        maxClusterRadius: 20,
+        disableClusteringAtZoom: 7,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
         iconCreateFunction(cluster) {
@@ -2283,8 +2283,15 @@ async function buildStationMap(containerId) {
       _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
       _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
 
-      // Move marker to actual station position
-      markers[s.name].setLatLng([stnLat, stnLng]);
+      // Move marker to actual station position.
+      // markerClusterGroup requires remove→setLatLng→add to re-index spatial position.
+      if (clusterGroup) {
+        clusterGroup.removeLayer(markers[s.name]);
+        markers[s.name].setLatLng([stnLat, stnLng]);
+        clusterGroup.addLayer(markers[s.name]);
+      } else {
+        markers[s.name].setLatLng([stnLat, stnLng]);
+      }
 
       const scale    = _zoomScale(map.getZoom());
       const fwiColor = MARKER_COLORS[r.danger] || '#7bd0ff';
