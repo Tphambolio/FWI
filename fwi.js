@@ -124,12 +124,12 @@ function dangerClassNum(fwi) {
 // HFI intensity class 1–6 — operational plain-language scale (Glenn, FBAN)
 // "No one understands kW/m" — show the number + what it means in the field
 function hfiClassInfo(hfi) {
-  if (hfi <  200) return { num: 1, label: 'Low Intensity',           desc: 'Walk-in direct attack',             bg: '#d4edda', text: '#155724' };
-  if (hfi <  500) return { num: 2, label: 'Moderate',                desc: 'Direct attack w/ hand tools',       bg: '#cce5ff', text: '#004085' };
-  if (hfi < 2000) return { num: 3, label: 'Tallest FF Flame Length', desc: '~1.5 m — limit of direct attack',   bg: '#fff3cd', text: '#856404' };
-  if (hfi < 4000) return { num: 4, label: 'Fire Truck Height',       desc: 'Direct attack limit — consider indirect', bg: '#ffe5cc', text: '#7d3200' };
-  if (hfi <10000) return { num: 5, label: 'Bungalow Roofline',       desc: 'Aircraft ineffective at the head',  bg: '#f8d7da', text: '#721c24' };
-  return           { num: 6, label: 'Catastrophic',             desc: 'Uncontrollable — evacuate',         bg: '#4a0010', text: '#ffccdd' };
+  if (hfi <  200) return { num: 1, label: 'Low Intensity',           size: 'Flames below knee height',              desc: 'Walk-in direct attack',                    bg: '#d4edda', text: '#155724' };
+  if (hfi <  500) return { num: 2, label: 'Moderate',                size: 'Flames knee to waist height',           desc: 'Direct attack w/ hand tools',              bg: '#cce5ff', text: '#004085' };
+  if (hfi < 2000) return { num: 3, label: 'Tallest FF Flame Length', size: 'Flames to top of a firefighter (~1.8 m)', desc: 'Direct attack limit',                    bg: '#fff3cd', text: '#856404' };
+  if (hfi < 4000) return { num: 4, label: 'Fire Truck Height',       size: 'Flames to top of a fire truck (~3–4 m)', desc: 'Consider indirect attack',               bg: '#ffe5cc', text: '#7d3200' };
+  if (hfi <10000) return { num: 5, label: 'Bungalow Roofline',       size: 'Flames to peak of a bungalow (~5–6 m)',  desc: 'Aircraft ineffective at the head',        bg: '#f8d7da', text: '#721c24' };
+  return           { num: 6, label: 'Catastrophic',             size: 'Flames exceeding building heights',      desc: 'Uncontrollable — evacuate',               bg: '#4a0010', text: '#ffccdd' };
 }
 
 // Hero card gradient per danger level
@@ -339,6 +339,8 @@ function wireFBP(weather, fwi) {
   if (numEl) { numEl.textContent = cl.num; numEl.style.color = screenColour; }
   const lblEl = document.getElementById('fwi-fbp-hfi-label');
   if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = screenColour; }
+  const sizeEl = document.getElementById('fwi-fbp-hfi-size');
+  if (sizeEl) { sizeEl.textContent = cl.size; sizeEl.style.color = screenColour; }
   const desc = document.getElementById('fwi-fbp-hfi-desc');
   if (desc) { desc.textContent = cl.desc; }
 }
