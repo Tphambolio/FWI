@@ -1657,22 +1657,33 @@ function printProvincialBriefing() {
   const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
-  // Build SVG Alberta map
-  const SVG_RING = { '3-High':'#c8960c','4-VH':'#c84b00','5-Ext':'#b71c1c','6-Cat':'#880e4f' };
+  // Build SVG Alberta map — bicolor semicircle: left=FWI danger, right=HFI class
+  const SVG_HFI_COLORS = {
+    '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800',
+    '4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e',
+  };
   const LABEL_STNS = new Set(['Fort McMurray','Edmonton','Calgary','Lethbridge','Medicine Hat','Grande Prairie','Fort Chipewyan','High Level']);
-  // Each station: circle + FWI number + HFI class text inside
   const svgPoints = rows.map(r => {
     const x = +((r.lng - (-120)) / 10 * 300).toFixed(1);
     const y = +((60 - r.lat) / 11 * 340).toFixed(1);
-    const fill = SVG_COLORS[r.danger] || '#2980b9';
-    const ring = SVG_RING[r.hfiClass] || fill;
-    const rw = SVG_RING[r.hfiClass] ? '2' : '1';
-    const rad = ['Extreme','Very High'].includes(r.danger) ? 12 : 10;
+    const fwiColor = SVG_COLORS[r.danger] || '#2980b9';
+    const hfiColor = SVG_HFI_COLORS[r.hfiClass] || '#9e9e9e';
+    const rad = ['Extreme','Very High'].includes(r.danger) ? 13 : 11;
     const fwiLabel = r.fwi != null ? r.fwi.toFixed(1) : '—';
-    const hfiLabel = r.hfiClass || '—';
-    return `<g><circle cx="${x}" cy="${y}" r="${rad}" fill="${fill}" stroke="${ring}" stroke-width="${rw}" opacity="0.95"/>` +
-           `<text x="${x}" y="${y - 1}" font-size="6.5" font-weight="700" fill="white" text-anchor="middle" dominant-baseline="middle" style="text-shadow:0 0 2px rgba(0,0,0,0.6)">${fwiLabel}</text>` +
-           `<text x="${x}" y="${y + 5.5}" font-size="5" fill="rgba(255,255,255,0.88)" text-anchor="middle" dominant-baseline="middle">${hfiLabel}</text>` +
+    const [hfiNum] = (r.hfiClass || '—').split('-');
+    // Left semicircle = FWI danger; right = HFI class
+    const leftPath  = `M ${x},${y-rad} A ${rad},${rad} 0 0,0 ${x},${y+rad} L ${x},${y} Z`;
+    const rightPath = `M ${x},${y-rad} A ${rad},${rad} 0 0,1 ${x},${y+rad} L ${x},${y} Z`;
+    const lx = (x - rad * 0.42).toFixed(1);
+    const rx = (x + rad * 0.42).toFixed(1);
+    return `<g opacity="0.95">` +
+           `<path d="${leftPath}" fill="${fwiColor}"/>` +
+           `<path d="${rightPath}" fill="${hfiColor}"/>` +
+           `<line x1="${x}" y1="${y-rad}" x2="${x}" y2="${y+rad}" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>` +
+           `<text x="${lx}" y="${y-2.5}" font-size="4.5" font-weight="700" fill="rgba(0,0,0,0.45)" text-anchor="middle" dominant-baseline="middle">FWI</text>` +
+           `<text x="${lx}" y="${y+3.5}" font-size="6.5" font-weight="800" fill="rgba(0,0,0,0.75)" text-anchor="middle" dominant-baseline="middle">${fwiLabel}</text>` +
+           `<text x="${rx}" y="${y-2.5}" font-size="4.5" font-weight="700" fill="rgba(0,0,0,0.45)" text-anchor="middle" dominant-baseline="middle">HFI</text>` +
+           `<text x="${rx}" y="${y+3.5}" font-size="6" font-weight="800" fill="rgba(0,0,0,0.75)" text-anchor="middle" dominant-baseline="middle">${hfiNum}</text>` +
            `<title>${r.name}: FWI ${fwiLabel} (${r.danger})${r.hfi != null ? ' · HFI ' + Math.round(r.hfi).toLocaleString() + ' kW/m (' + r.hfiClass + ')' : ''}</title>` +
            `</g>`;
   }).join('\n    ');
@@ -2153,39 +2164,45 @@ async function buildStationMap(containerId) {
   if (!container || typeof L === 'undefined') return;
   _mapStationCache = [];
 
-  // HFI class → marker ring color
-  const HFI_RING_MAP = {
-    '1-Low':'rgba(0,0,0,0.15)','2-Mod':'rgba(0,0,0,0.15)',
-    '3-High':'#d4a017','4-VH':'#e65c00','5-Ext':'#c62828','6-Cat':'#880e4f',
+  // HFI class → right-half pill color
+  const HFI_CLASS_COLORS = {
+    '1-Low':'#4ae176','2-Mod':'#7bd0ff','3-High':'#ffee58',
+    '4-VH':'#ffa726','5-Ext':'#ff4d4d','6-Cat':'#cc2222','—':'#d1d5db',
   };
 
-  // Build divIcon marker HTML: FWI number on top, HFI class below
-  function _makeIcon(fill, ring, rw, fwiLabel, hfiCls, big) {
-    const sz = big ? 42 : 36;
-    const shadow = `0 2px 6px rgba(0,0,0,0.45),0 0 0 ${rw}px ${ring}`;
+  // Bicolor pill: left half = FWI danger color, right half = HFI class color
+  // Dark text for legibility on all background colors
+  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls) {
+    const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
     return L.divIcon({
       className: '',
-      html: `<div style="width:${sz}px;height:${sz}px;background:${fill};border-radius:50%;` +
-            `display:flex;flex-direction:column;align-items:center;justify-content:center;` +
-            `box-shadow:${shadow};font-family:'Space Grotesk',sans-serif;cursor:pointer;line-height:1">` +
-            `<span style="font-size:${big?12:11}px;font-weight:800;color:#fff;letter-spacing:-.02em;` +
-            `text-shadow:0 1px 3px rgba(0,0,0,0.5)">${fwiLabel}</span>` +
-            `<span style="font-size:${big?7.5:6.5}px;font-weight:600;color:rgba(255,255,255,0.85);` +
-            `text-shadow:0 1px 2px rgba(0,0,0,0.5);margin-top:1px">${hfiCls}</span>` +
+      html: `<div style="width:64px;height:42px;border-radius:21px;overflow:hidden;display:flex;` +
+            `box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 1.5px rgba(0,0,0,0.12);` +
+            `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
+            `<div style="width:32px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
+            `align-items:center;justify-content:center">` +
+            `<span style="font-size:5px;font-weight:700;color:rgba(0,0,0,0.45);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
+            `<span style="font-size:13px;font-weight:800;color:rgba(0,0,0,0.78);letter-spacing:-.03em;line-height:1.1">${fwiVal}</span>` +
+            `</div>` +
+            `<div style="width:1px;background:rgba(0,0,0,0.15);flex-shrink:0"></div>` +
+            `<div style="width:31px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
+            `align-items:center;justify-content:center">` +
+            `<span style="font-size:5px;font-weight:700;color:rgba(0,0,0,0.45);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
+            `<span style="font-size:11px;font-weight:800;color:rgba(0,0,0,0.78);line-height:1.1">${hfiNum || '—'}</span>` +
+            `<span style="font-size:6px;font-weight:600;color:rgba(0,0,0,0.55);line-height:1">${hfiWord || ''}</span>` +
+            `</div>` +
             `</div>`,
-      iconSize: [sz, sz],
-      iconAnchor: [sz/2, sz/2],
-      popupAnchor: [0, -(sz/2 + 4)],
+      iconSize: [64, 42], iconAnchor: [32, 21], popupAnchor: [0, -25],
     });
   }
 
   function _makeLoadingIcon() {
     return L.divIcon({
       className: '',
-      html: `<div style="width:30px;height:30px;background:#374151;border-radius:50%;` +
-            `display:flex;align-items:center;justify-content:center;` +
-            `box-shadow:0 1px 4px rgba(0,0,0,0.3);font-size:10px;color:#6b7280">…</div>`,
-      iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -18],
+      html: `<div style="width:64px;height:42px;border-radius:21px;background:#374151;display:flex;` +
+            `align-items:center;justify-content:center;` +
+            `box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:10px;color:#6b7280">…</div>`,
+      iconSize: [64, 42], iconAnchor: [32, 21], popupAnchor: [0, -25],
     });
   }
 
@@ -2218,12 +2235,10 @@ async function buildStationMap(containerId) {
       _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
       _updateStationTableRow({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
 
-      const fill   = MARKER_COLORS[r.danger] || '#7bd0ff';
-      const hfiCls = fbp ? _hfiClass(fbp.hfi) : '—';
-      const ring   = HFI_RING_MAP[hfiCls] || 'rgba(0,0,0,0.15)';
-      const rw     = ['4-VH','5-Ext','6-Cat'].includes(hfiCls) ? 4 : 2;
-      const big    = r.danger === 'Extreme' || r.danger === 'Very High';
-      markers[s.name].setIcon(_makeIcon(fill, ring, rw, r.fwi.toFixed(1), hfiCls, big));
+      const fwiColor = MARKER_COLORS[r.danger] || '#7bd0ff';
+      const hfiCls   = fbp ? _hfiClass(fbp.hfi) : '—';
+      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
+      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls));
 
       const hfiNum     = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
       const fwiMethod  = w.fwiFromCWFIS ? 'CWFIS carry-over chain' : 'Van Wagner calc';
@@ -2233,8 +2248,8 @@ async function buildStationMap(containerId) {
         `<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:2px">${s.name}</div>` +
         `<div style="font-size:9px;color:#94a3b8;margin-bottom:7px;text-transform:uppercase;letter-spacing:.08em">${w.source || srcBadge}${distNote} · ${fwiMethod}</div>` +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">` +
-        `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fill};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
-        `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fill}">${r.danger}</strong></div>` +
+        `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fwiColor};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
+        `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fwiColor}">${r.danger}</strong></div>` +
         `<div><span style="color:#94a3b8">HFI</span><br><span style="color:#1e293b">${hfiNum}</span></div>` +
         `<div><span style="color:#94a3b8">HFI Class</span><br><strong style="color:#1e293b">${hfiCls}</strong></div>` +
         `<div><span style="color:#94a3b8">Temp</span><br><span style="color:#1e293b">${fmt(w.temp)}°C</span></div>` +
