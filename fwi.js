@@ -334,13 +334,15 @@ function wireFBP(weather, fwi) {
 
   const badge = document.getElementById('fwi-fbp-hfi-rating');
   if (badge) {
-    let rating, cls;
-    if      (result.hfi < 500)  { rating = 'Low';       cls = 'text-secondary'; }
-    else if (result.hfi < 2000) { rating = 'High';      cls = 'text-yellow-400'; }
-    else if (result.hfi < 4000) { rating = 'Very High'; cls = 'text-orange-400'; }
-    else                        { rating = 'Extreme';   cls = 'text-tertiary'; }
-    badge.textContent = rating;
-    badge.className = `px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container ${cls}`;
+    const cl = hfiClassInfo(result.hfi);
+    badge.textContent = `${cl.num}`;
+    badge.style.cssText = `background:${cl.bg};color:${cl.text};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:900`;
+  }
+  const desc = document.getElementById('fwi-fbp-hfi-desc');
+  if (desc) {
+    const cl = hfiClassInfo(result.hfi);
+    desc.textContent = `Class ${cl.num} · ${cl.label} · ${cl.desc}`;
+    desc.style.color = cl.text === '#ffccdd' ? '#ff8888' : cl.text;
   }
 }
 
