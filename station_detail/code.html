@@ -74,39 +74,16 @@
 <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-5 mb-5 flex flex-col gap-4">
 
   <!-- Brand header -->
-  <div class="flex items-start justify-between gap-4">
+  <div class="flex items-center justify-between gap-4">
     <div class="flex flex-col gap-0.5">
       <span class="font-['Space_Grotesk'] font-bold text-lg text-[#7bd0ff]">Pyra</span>
-      <span class="text-[11px] text-slate-500">Built by Travis Kennedy · Claude · Glenn (WhatsApp) · Free · Open · No login</span>
+      <span class="text-[11px] text-slate-500">Built by Travis Kennedy · Claude · Glenn (WhatsApp) · Free · Open · No login · <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-300 transition-colors">DM on X</a> · <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="hover:text-slate-300 transition-colors">GitHub issues</a></span>
     </div>
-    <div class="flex items-center gap-1.5 shrink-0 mt-1">
+    <div class="flex items-center gap-1.5 shrink-0">
       <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
       <span class="text-[9px] uppercase tracking-widest text-green-400 font-bold">Live</span>
     </div>
   </div>
-
-  <!-- 4 feature pills 2×2 -->
-  <div class="grid grid-cols-2 gap-2">
-    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
-      <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-1"></span>
-      <div><p class="text-[11px] font-bold text-slate-200">Moisture Codes</p><p class="text-[10px] text-slate-500 leading-relaxed">FFMC, DMC, DC carry-over chain — daily drought tracking</p></div>
-    </div>
-    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
-      <span class="w-2 h-2 rounded-full bg-green-400 shrink-0 mt-1"></span>
-      <div><p class="text-[11px] font-bold text-slate-200">Spread Indices</p><p class="text-[10px] text-slate-500 leading-relaxed">ISI and FWI — real-time fire spread potential</p></div>
-    </div>
-    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
-      <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1"></span>
-      <div><p class="text-[11px] font-bold text-slate-200">Scientific Clarity</p><p class="text-[10px] text-slate-500 leading-relaxed">Van Wagner equations + NRCan CWFIS operational chain</p></div>
-    </div>
-    <div class="bg-[#131b2e] rounded-xl p-3 flex gap-2.5 items-start">
-      <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0 mt-1"></span>
-      <div><p class="text-[11px] font-bold text-slate-200">Public Safety</p><p class="text-[10px] text-slate-500 leading-relaxed">39 zones, green and white zones, no login required</p></div>
-    </div>
-  </div>
-
-  <!-- Spot-something-wrong line -->
-  <p class="text-[10px] text-slate-600">Spot something wrong or missing? <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="text-slate-500 hover:text-slate-300 transition-colors">DM on X</a> or <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="text-slate-500 hover:text-slate-300 transition-colors">open a GitHub issue</a>.</p>
 
   <!-- FUEL THE MISSION -->
   <div>
@@ -170,10 +147,12 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     TODAY — Current Fire Behaviour Card
-     Background set dynamically by JS via DANGER_GRADIENTS[danger]
+     TODAY + TOMORROW — side-by-side on md+
      ══════════════════════════════════════════════════════════════════════ -->
-<div id="fwi-score-card" class="behaviour-card rounded-2xl p-5 mb-4 transition-all"
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+<!-- TODAY -->
+<div id="fwi-score-card" class="behaviour-card rounded-2xl p-5 transition-all"
      style="background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
 
   <!-- Card header -->
@@ -184,7 +163,7 @@
 
   <!-- FWI score + danger -->
   <div class="flex items-end gap-4 mb-4">
-    <div class="font-headline font-black leading-none" style="font-size: 5rem" data-fwi="fwi">—</div>
+    <div class="font-headline font-black leading-none" style="font-size: 4rem" data-fwi="fwi">—</div>
     <div class="pb-1">
       <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
       <div class="font-headline text-xl font-extrabold uppercase tracking-wide" data-fwi="danger">—</div>
@@ -219,7 +198,7 @@
   <div class="pt-3 mb-4 border-t card-divider border-t">
     <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
     <div class="flex items-baseline gap-3 mb-1">
-      <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-fbp-hfi-rating">—</span>
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating">—</span>
       <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label">—</span>
     </div>
     <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi">— kW/m</p>
@@ -249,12 +228,9 @@
 
 </div><!-- /today card -->
 
-<!-- ══════════════════════════════════════════════════════════════════════
-     TOMORROW — D+1 Peak Burn Card
-     Background set dynamically by JS via DANGER_GRADIENTS[d1 danger]
-     ══════════════════════════════════════════════════════════════════════ -->
-<section id="fwi-d1-preview-section" class="mb-6">
-<div id="fwi-d1-card" class="behaviour-card rounded-2xl p-5 transition-all"
+<!-- TOMORROW -->
+<section id="fwi-d1-preview-section">
+<div id="fwi-d1-card" class="behaviour-card rounded-2xl p-5 h-full transition-all"
      style="background: linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
 
   <!-- Card header -->
@@ -265,7 +241,7 @@
 
   <!-- FWI score + danger -->
   <div class="flex items-end gap-4 mb-4">
-    <div class="font-headline font-black leading-none" style="font-size: 5rem" id="fwi-d1-preview-fwi-score">—</div>
+    <div class="font-headline font-black leading-none" style="font-size: 4rem" id="fwi-d1-preview-fwi-score">—</div>
     <div class="pb-1">
       <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
       <div class="font-headline text-xl font-extrabold uppercase tracking-wide" id="fwi-d1-preview-danger">—</div>
@@ -296,7 +272,7 @@
   <div class="pt-3 mb-4 border-t card-divider border-t">
     <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
     <div class="flex items-baseline gap-3 mb-1">
-      <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-d1-preview-hfi-num">—</span>
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num">—</span>
       <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label">—</span>
     </div>
     <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm">— kW/m</p>
@@ -326,6 +302,8 @@
 
 </div><!-- /tomorrow card -->
 </section>
+
+</div><!-- /today+tomorrow grid -->
 
 <!-- ── FWI Components ─────────────────────────────────────────────────── -->
 <section class="mb-10">
