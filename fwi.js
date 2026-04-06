@@ -869,6 +869,101 @@ function buildStationPicker() {
 
 // ─── Regional Summary ────────────────────────────────────────────────────────
 
+/** Map lat to one of 5 Alberta sectors (North→South). */
+function _stationSector(lat) {
+  if (lat >= 56.5) return 'Far North';
+  if (lat >= 54.5) return 'North';
+  if (lat >= 53.0) return 'Central';
+  if (lat >= 51.5) return 'Central-South';
+  return 'South';
+}
+
+/** Byram HFI intensity class label (1–6) from kW/m value. */
+function _hfiClass(hfi) {
+  if (hfi == null || isNaN(hfi)) return '—';
+  if (hfi < 10)    return '1-Low';
+  if (hfi < 500)   return '2-Mod';
+  if (hfi < 2000)  return '3-High';
+  if (hfi < 4000)  return '4-VH';
+  if (hfi < 10000) return '5-Ext';
+  return '6-Cat';
+}
+
+/** Update a single skeleton row in fwi-station-tbody with live data. */
+function _updateStationTableRow(entry) {
+  const id = 'srow-' + entry.name.replace(/\s+/g, '-');
+  const tr = document.getElementById(id);
+  if (!tr) return;
+  const r = entry.result;
+  const fbp = entry.fbp;
+  const srcBadge = entry.srcBadge || 'NWP';
+  const srcStyle = {
+    'CWFIS': 'background:#14532d40;color:#4ade80;border:1px solid #166534',
+    'SWOB':  'background:#17255440;color:#93c5fd;border:1px solid #1e40af',
+    'NWP':   'background:#451a0340;color:#fcd34d;border:1px solid #92400e',
+    'Error': 'background:#1c191740;color:#78716c;border:1px solid #44403c',
+  }[srcBadge] || 'background:#1c191740;color:#78716c;border:1px solid #44403c';
+  const dangerColor = {
+    'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#c084fc',
+    'Very High': '#f97316', 'Extreme': '#ef4444',
+  }[r.danger] || '#7bd0ff';
+  const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
+  const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
+  tr.innerHTML =
+    `<td class="py-2 pl-3 pr-2 font-semibold text-[#dae2fd] text-xs">${entry.name}</td>` +
+    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(entry.lat)}</td>` +
+    `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.wind != null ? Math.round(r.weather.wind) : '—'}</td>` +
+    `<td class="py-2 pr-2 text-right text-xs font-bold text-[#dae2fd]">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>` +
+    `<td class="py-2 pr-2 text-xs font-bold" style="color:${dangerColor}">${r.danger}</td>` +
+    `<td class="py-2 pr-3 text-right text-[10px] text-slate-400">${hfiLabel}<br><span class="text-[9px] text-slate-600">${hfiNum!=='—' ? hfiNum+' kW/m' : ''}</span></td>`;
+
+  // Update header stats from running cache
+  const valid = _mapStationCache.filter(e => e.result?.fwi != null);
+  const extCnt = valid.filter(e => e.result.danger === 'Extreme').length;
+  const avgRH  = valid.length ? valid.reduce((s, e) => s + (e.result.weather?.rh ?? 0), 0) / valid.length : null;
+  const el1 = document.getElementById('fwi-extreme-count');
+  const el2 = document.getElementById('fwi-avg-rh');
+  if (el1) el1.textContent = `${extCnt} Extreme`;
+  if (el2 && avgRH != null) el2.textContent = `${avgRH.toFixed(0)}%`;
+}
+
+/** Sort station table by column key (asc/desc). */
+function _sortStationTable(col, asc) {
+  const tbody = document.getElementById('fwi-station-tbody');
+  if (!tbody) return;
+  const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+  const dangerOrder = ['Low', 'Moderate', 'High', 'Very High', 'Extreme'];
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a, b) => {
+    const na = a.id.replace('srow-', '').replace(/-/g, ' ');
+    const nb = b.id.replace('srow-', '').replace(/-/g, ' ');
+    const ea = _mapStationCache.find(e => e.name === na);
+    const eb = _mapStationCache.find(e => e.name === nb);
+    if (!ea && !eb) return 0;
+    if (!ea) return 1;
+    if (!eb) return -1;
+    let va, vb;
+    switch (col) {
+      case 'sector':  va = sectorOrder.indexOf(_stationSector(ea.lat)); vb = sectorOrder.indexOf(_stationSector(eb.lat)); break;
+      case 'name':    va = ea.name; vb = eb.name; break;
+      case 'temp':    va = ea.result?.weather?.temp ?? -999; vb = eb.result?.weather?.temp ?? -999; break;
+      case 'rh':      va = ea.result?.weather?.rh ?? -1;   vb = eb.result?.weather?.rh ?? -1; break;
+      case 'wind':    va = ea.result?.weather?.wind ?? -1; vb = eb.result?.weather?.wind ?? -1; break;
+      case 'fwi':     va = ea.result?.fwi ?? -1;           vb = eb.result?.fwi ?? -1; break;
+      case 'danger':  va = dangerOrder.indexOf(ea.result?.danger); vb = dangerOrder.indexOf(eb.result?.danger); break;
+      case 'hfi':     va = ea.fbp?.hfi ?? -1;              vb = eb.fbp?.hfi ?? -1; break;
+      default:        return 0;
+    }
+    if (va < vb) return asc ? -1 : 1;
+    if (va > vb) return asc ? 1 : -1;
+    return 0;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
 const REGIONS = [
   { name: 'Fort McMurray',  sector: 'Northeast Boreal',  lat: 56.650, lng: -111.217 },
   { name: 'Peace River',    sector: 'Northwest Sector',  lat: 56.233, lng: -117.283 },
@@ -938,38 +1033,58 @@ async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
   if (!list) return;
 
-  // Load sequentially to avoid rate-limiting; update DOM as each arrives
-  list.innerHTML = REGIONS.map(r =>
-    `<div id="fwi-region-${r.name.replace(/\s+/g,'-')}" class="bg-surface-container rounded-xl p-6 flex items-center gap-4 text-slate-500 text-sm">
-      <span class="material-symbols-outlined animate-pulse text-primary">sync</span> Loading ${r.name}…
-    </div>`
-  ).join('');
+  const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+  const sorted = [...ALBERTA_STATIONS].sort((a, b) => {
+    const sa = sectorOrder.indexOf(_stationSector(a.lat));
+    const sb = sectorOrder.indexOf(_stationSector(b.lat));
+    if (sa !== sb) return sa - sb;
+    return a.name.localeCompare(b.name);
+  });
 
-  const loaded = [];
-  for (const reg of REGIONS) {
-    const id = `fwi-region-${reg.name.replace(/\s+/g,'-')}`;
-    const el = document.getElementById(id);
-    try {
-      const w = await fetchWeatherPrimary(reg.lat, reg.lng);
-      const result = calculateFWI(w);
-      loaded.push({ ...reg, result });
-      _regionalCache.push({ ...reg, result });
-      if (el) el.outerHTML = regionCard(reg.name, reg.sector, result);
-    } catch (e) {
-      console.warn(`[FWI] ${reg.name}:`, e);
-      if (el) el.innerHTML = `<span class="text-slate-600 text-xs">${reg.name} — unavailable</span>`;
-    }
-  }
+  let _sortCol = 'sector', _sortAsc = true;
 
-  // Update header stats from whatever loaded
-  if (loaded.length) {
-    const extremeCount = loaded.filter(r => r.result.danger === 'Extreme').length;
-    const avgRH = loaded.reduce((s, r) => s + r.result.weather.rh, 0) / loaded.length;
-    const el1 = document.getElementById('fwi-extreme-count');
-    const el2 = document.getElementById('fwi-avg-rh');
-    if (el1) el1.textContent = `${extremeCount} Extreme`;
-    if (el2) el2.textContent = `${avgRH.toFixed(0)}%`;
-  }
+  list.innerHTML = `
+    <div class="overflow-x-auto rounded-xl border border-outline-variant/10">
+      <table id="fwi-station-table" class="w-full text-sm">
+        <thead class="bg-[#131b2e] sticky top-0">
+          <tr>
+            <th class="text-left py-2.5 pl-3 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="name">Station ↕</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="sector">Sector</th>
+            <th class="py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 whitespace-nowrap">Src</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="temp">Temp</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="rh">RH</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="wind">Wind</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="fwi">FWI</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="danger">Danger</th>
+            <th class="text-right py-2.5 pr-3 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="hfi">HFI Cls</th>
+          </tr>
+        </thead>
+        <tbody id="fwi-station-tbody" class="divide-y divide-[#1e2740]">
+          ${sorted.map(s =>
+            `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
+              <td class="py-2 pl-3 pr-2 font-semibold text-[#dae2fd] text-xs">${s.name}</td>
+              <td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(s.lat)}</td>
+              <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
+            </tr>`
+          ).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  // Wire sortable column headers
+  list.querySelectorAll('#fwi-station-table th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (_sortCol === col) _sortAsc = !_sortAsc;
+      else { _sortCol = col; _sortAsc = col !== 'fwi' && col !== 'hfi'; }
+      // Update header indicators
+      list.querySelectorAll('#fwi-station-table th[data-sort]').forEach(h => {
+        const base = h.textContent.replace(/ [↑↓]$/, '');
+        h.textContent = h.dataset.sort === _sortCol ? `${base} ${_sortAsc ? '↑' : '↓'}` : base;
+      });
+      _sortStationTable(_sortCol, _sortAsc);
+    });
+  });
 }
 
 // ─── Forecast & Trends ───────────────────────────────────────────────────────
@@ -1522,11 +1637,12 @@ function printProvincialBriefing() {
       const sb = sectorOrder.indexOf(sectorMap[b.name]);
       if (sa !== sb) return sa - sb;
       return b.result.fwi - a.result.fwi;
-    }).map(({ name, lat, lng, result: r }) => ({
+    }).map(({ name, lat, lng, result: r, fbp }) => ({
       name, lat, lng,
       temp: r.weather?.temp, rh: r.weather?.rh, wind: r.weather?.wind,
       dc: r.dc, fwi: r.fwi, danger: r.danger,
       sector: sectorMap[name] || '—',
+      hfi: fbp?.hfi, hfiClass: fbp ? _hfiClass(fbp.hfi) : '—',
     }));
   } else {
     rows = _regionalCache.map(({ name, sector, lat, lng, result: r }) => ({
@@ -1542,21 +1658,30 @@ function printProvincialBriefing() {
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
   // Build SVG Alberta map
+  const HFI_RING = { '1-Low':'#ffffff','2-Mod':'#ffffff','3-High':'#ffee58','4-VH':'#ffa726','5-Ext':'#ef5350','6-Cat':'#b71c1c' };
+  const LABEL_STNS = new Set(['Fort McMurray','Edmonton','Calgary','Lethbridge','Medicine Hat','Grande Prairie','Fort Chipewyan','High Level']);
   const svgPoints = rows.map(r => {
     const x = ((r.lng - (-120)) / 10 * 300).toFixed(1);
     const y = ((60 - r.lat) / 11 * 340).toFixed(1);
     const fill = SVG_COLORS[r.danger] || '#2980b9';
-    return `<circle cx="${x}" cy="${y}" r="5" fill="${fill}" stroke="white" stroke-width="1" opacity="0.9"><title>${r.name}: FWI ${r.fwi.toFixed(1)} (${r.danger})</title></circle>`;
+    const ring = HFI_RING[r.hfiClass] || '#ffffff';
+    const rw = ['4-VH','5-Ext','6-Cat'].includes(r.hfiClass) ? '2' : '1';
+    const hfiTip = r.hfi != null ? ` · HFI ${Math.round(r.hfi).toLocaleString()} kW/m (${r.hfiClass})` : '';
+    return `<circle cx="${x}" cy="${y}" r="5" fill="${fill}" stroke="${ring}" stroke-width="${rw}" opacity="0.92"><title>${r.name}: FWI ${r.fwi?.toFixed(1)} (${r.danger})${hfiTip}</title></circle>`;
   }).join('\n    ');
-
-  const svgLegend = Object.entries(SVG_COLORS).map(([label, color]) =>
-    `<rect x="0" y="0" width="10" height="10" fill="${color}" rx="2"/><text x="14" y="9" font-size="9" fill="#333">${label}</text>`
-  ).map((item, i) => `<g transform="translate(${i * 70}, 0)">${item}</g>`).join('\n');
+  const svgLabels = rows.filter(r => LABEL_STNS.has(r.name)).map(r => {
+    const x = parseFloat(((r.lng - (-120)) / 10 * 300).toFixed(1));
+    const y = parseFloat(((60 - r.lat) / 11 * 340).toFixed(1));
+    const right = x > 200;
+    const short = r.name.replace('Fort McMurray','Ft McMurray').replace('Fort Chipewyan','Ft Chipewyan').replace('Grande Prairie','Gde Prairie');
+    return `<text x="${(x + (right ? -7 : 7)).toFixed(0)}" y="${(y + 4).toFixed(0)}" font-size="7" fill="#333" text-anchor="${right ? 'end' : 'start'}">${short}</text>`;
+  }).join('\n    ');
 
   // Build table rows HTML
   const tableRows = rows.map((r, i) => {
     const bg = i % 2 === 0 ? '#ffffff' : '#f9f9f9';
     const dc = PRINT_COLORS[r.danger] || PRINT_COLORS['Moderate'];
+    const hfiBg = { '3-High': '#fff9c4', '4-VH': '#ffe0b2', '5-Ext': '#ffcdd2', '6-Cat': '#ef9a9a' }[r.hfiClass] || '';
     return `<tr style="background:${bg}">
       <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:600">${r.name}</td>
       <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.sector}</td>
@@ -1565,6 +1690,7 @@ function printProvincialBriefing() {
       <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.wind != null ? Math.round(r.wind) + ' km/h' : '—'}</td>
       <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.dc != null ? r.dc.toFixed(0) : '—'}</td>
       <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt;${hfiBg ? 'background:'+hfiBg+';' : ''}font-weight:600">${r.hfiClass}${r.hfi != null ? '<br><span style="font-size:7.5pt;font-weight:400;color:#555">' + Math.round(r.hfi).toLocaleString() + ' kW/m</span>' : ''}</td>
       <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;text-align:center;background:${dc.bg};color:${dc.text};font-weight:700;font-size:9pt">${r.danger}</td>
     </tr>`;
   }).join('\n');
@@ -1626,6 +1752,7 @@ function printProvincialBriefing() {
           <th>Wind</th>
           <th>DC</th>
           <th>FWI</th>
+          <th>HFI Class</th>
           <th>Rating</th>
         </tr>
       </thead>
@@ -1636,25 +1763,43 @@ function printProvincialBriefing() {
   </div>
   <div class="map-wrap">
     <svg viewBox="0 0 300 340" width="300" height="340" style="border:1px solid #bbb;display:block">
-      <rect x="0" y="0" width="300" height="340" fill="#f5f5f0" stroke="#999" stroke-width="1.5"/>
+      <!-- Background -->
+      <rect x="0" y="0" width="300" height="340" fill="#e8eef4"/>
+      <!-- Alberta approximate outline: NW→NE→SE then west boundary (continental divide) -->
+      <polygon points="0,0 300,0 300,340 165,340 150,309 120,278 75,247 45,216 20,185 0,155"
+               fill="#f0f4f0" stroke="#888" stroke-width="1.2"/>
       <!-- Grid lines at lat 50, 52, 54, 56, 58 -->
-      <line x1="0" y1="${((60-50)/11*340).toFixed(0)}" x2="300" y2="${((60-50)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
-      <line x1="0" y1="${((60-52)/11*340).toFixed(0)}" x2="300" y2="${((60-52)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
-      <line x1="0" y1="${((60-54)/11*340).toFixed(0)}" x2="300" y2="${((60-54)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
-      <line x1="0" y1="${((60-56)/11*340).toFixed(0)}" x2="300" y2="${((60-56)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
-      <line x1="0" y1="${((60-58)/11*340).toFixed(0)}" x2="300" y2="${((60-58)/11*340).toFixed(0)}" stroke="#ddd" stroke-width="0.5"/>
+      <line x1="0" y1="${((60-50)/11*340).toFixed(0)}" x2="300" y2="${((60-50)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
+      <line x1="0" y1="${((60-52)/11*340).toFixed(0)}" x2="300" y2="${((60-52)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
+      <line x1="0" y1="${((60-54)/11*340).toFixed(0)}" x2="300" y2="${((60-54)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
+      <line x1="0" y1="${((60-56)/11*340).toFixed(0)}" x2="300" y2="${((60-56)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
+      <line x1="0" y1="${((60-58)/11*340).toFixed(0)}" x2="300" y2="${((60-58)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
       <!-- Lat labels -->
-      <text x="3" y="${((60-58)/11*340-2).toFixed(0)}" font-size="7" fill="#999">58°N</text>
-      <text x="3" y="${((60-54)/11*340-2).toFixed(0)}" font-size="7" fill="#999">54°N</text>
-      <text x="3" y="${((60-50)/11*340-2).toFixed(0)}" font-size="7" fill="#999">50°N</text>
+      <text x="2" y="${((60-58)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">58°N</text>
+      <text x="2" y="${((60-56)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">56°N</text>
+      <text x="2" y="${((60-54)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">54°N</text>
+      <text x="2" y="${((60-52)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">52°N</text>
+      <text x="2" y="${((60-50)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">50°N</text>
+      <!-- Station labels -->
+      ${svgLabels}
+      <!-- Station dots (fill=FWI danger, ring=HFI class) -->
       ${svgPoints}
     </svg>
+    <!-- FWI danger legend -->
     <div class="legend-row">
       <div class="legend-item"><span class="legend-dot" style="background:#2d9e5f"></span>Low</div>
       <div class="legend-item"><span class="legend-dot" style="background:#2980b9"></span>Moderate</div>
       <div class="legend-item"><span class="legend-dot" style="background:#8e44ad"></span>High</div>
       <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span>V.High</div>
       <div class="legend-item"><span class="legend-dot" style="background:#c0392b"></span>Extreme</div>
+    </div>
+    <!-- HFI ring legend -->
+    <div class="legend-row" style="margin-top:4px">
+      <span style="font-size:7pt;color:#555;font-weight:700;margin-right:4px">HFI ring:</span>
+      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:1.5px solid #999"></span>Low/Mod</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2px solid #ffee58"></span>High</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2px solid #ffa726"></span>V.High</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2.5px solid #ef5350"></span>Extreme+</div>
     </div>
   </div>
 </div>
@@ -2043,7 +2188,11 @@ async function buildStationMap(containerId) {
     try {
       const w = await fetchWeatherPrimary(s.lat, s.lng);
       const r = calculateFWI(w);
-      _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r });
+      const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
+      const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
+      const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
+      _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
+      _updateStationTableRow({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
       const color = MARKER_COLORS[r.danger] || '#7bd0ff';
       const radius = r.danger === 'Extreme' ? 10 : r.danger === 'Very High' ? 9 : 7;
 
