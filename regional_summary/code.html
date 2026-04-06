@@ -80,7 +80,7 @@
 </div>
 <!-- Slim footer: source note + print button -->
 <div class="flex justify-between items-center mt-2">
-  <p class="text-[9px] text-slate-600 font-label">39 stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
+  <p class="text-[9px] text-slate-600 font-label">40 stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
   <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-5 py-2 rounded-sm active:opacity-70 transition-opacity">
     Print Briefing
   </button>
@@ -137,12 +137,12 @@
 <!-- Station Network Table -->
 <section class="mb-10">
 <div class="flex items-baseline justify-between mb-2">
-  <h4 class="font-headline text-xl font-bold text-on-surface">Station Network — All 39 Stations</h4>
+  <h4 class="font-headline text-xl font-bold text-on-surface">Station Network — All 40 Stations</h4>
   <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
   <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Click headers to sort</span>
 </div>
 <p class="text-[10px] text-on-surface-variant mb-4 leading-relaxed">
-  Live observations from 39 CWFIS network stations across Alberta. <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-green-400">CWFIS</span> uses the pre-computed FWI carry-over chain; <span class="text-blue-400">SWOB</span> is real-time MSC sensor data with Van Wagner calculation; <span class="text-amber-400">NWP</span> is Open-Meteo model output used when live observations are unavailable. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
+  Live observations from 40 CWFIS network stations across Alberta. <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-green-400">CWFIS</span> uses the pre-computed FWI carry-over chain; <span class="text-blue-400">SWOB</span> is real-time MSC sensor data with Van Wagner calculation; <span class="text-amber-400">NWP</span> is Open-Meteo model output used when live observations are unavailable. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
 </p>
 <div id="fwi-region-list"></div>
 </section>
@@ -163,7 +163,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=57"></script>
+<script src="../fwi.js?v=58"></script>
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
