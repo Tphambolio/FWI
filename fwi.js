@@ -2236,12 +2236,35 @@ async function buildStationMap(containerId) {
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
 
+  // MarkerCluster group — separates overlapping stations (e.g. Edmonton YEG + Blatchford)
+  const clusterGroup = L.markerClusterGroup
+    ? L.markerClusterGroup({
+        maxClusterRadius: 40,
+        disableClusteringAtZoom: 8,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        iconCreateFunction(cluster) {
+          const n = cluster.getChildCount();
+          return L.divIcon({
+            className: '',
+            html: `<div style="width:36px;height:36px;border-radius:50%;background:#1e3a8a;border:2px solid #7bd0ff;
+                   display:flex;align-items:center;justify-content:center;
+                   font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#7bd0ff;
+                   box-shadow:0 2px 8px rgba(0,0,0,0.5)">${n}</div>`,
+            iconSize: [36, 36], iconAnchor: [18, 18],
+          });
+        },
+      })
+    : null;
+  if (clusterGroup) map.addLayer(clusterGroup);
+
   // Place all loading markers immediately at nominal coords
   const markers = {};
   for (const s of ALBERTA_STATIONS) {
-    markers[s.name] = L.marker([s.lat, s.lng], { icon: _makeLoadingIcon(_zoomScale(map.getZoom())) })
-      .bindPopup(`<b style="font-family:'Space Grotesk',sans-serif">${s.name}</b><br><small style="color:#9ca3af">Loading…</small>`, { maxWidth: 260 })
-      .addTo(map);
+    const m = L.marker([s.lat, s.lng], { icon: _makeLoadingIcon(_zoomScale(map.getZoom())) })
+      .bindPopup(`<b style="font-family:'Space Grotesk',sans-serif">${s.name}</b><br><small style="color:#9ca3af">Loading…</small>`, { maxWidth: 260 });
+    markers[s.name] = m;
+    if (clusterGroup) clusterGroup.addLayer(m); else m.addTo(map);
   }
 
   // Fetch data and update each marker as it arrives
