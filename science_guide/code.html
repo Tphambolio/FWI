@@ -552,7 +552,7 @@
 <div class="text-[10px] font-label uppercase tracking-widest text-secondary mb-1">FBP System — Forestry Canada ST-X-3 (1992)</div>
 <p class="text-sm text-on-surface-variant leading-relaxed">Inputs: FFMC, DMC, DC, wind speed, user-selected fuel type. Outputs: ISI, BUI, surface ROS, BUI effect (BE), slope-adjusted ROS, surface fire intensity (SFI), crown fraction burned (CFB), total fuel consumption (TFC), head fire intensity (HFI), flame length.</p>
 <p class="text-sm text-on-surface-variant mt-2">Crown fire assessment uses Van Wagner (1977). Foliar moisture content (FMC) is computed seasonally via the Van Wagner (1987) DOY + latitude equation: FMC = 85 + 0.0189 × (DOY − D₀)², clamped to [85, 120]%, where D₀ is the latitude-adjusted green-up date. FMC declines from ~120% (early spring, wet foliage) toward ~85% (peak summer), reducing the Critical Surface Intensity (CSI) threshold and making crown fire initiation progressively easier through the season. CFB = 1 − e<sup>−0.23(ROS − RSO)</sup>. Flame length from Byram (1959): L = 0.0775 × HFI<sup>0.46</sup>. Fuel type parameters (a, b, c, q, BUI₀, CBH, CFL, SFC) from ST-X-3 Tables 4–6.</p>
-<p class="text-sm text-on-surface-variant mt-2">Fuel type is auto-selected per station from the 39-station lookup table derived from the NRCan 30m fuel classification grid (see Station Fuel Type Assignments below). C2 — Boreal Spruce is the fallback when no assignment exists. User-selectable from 14 fuel types via the picker on the Home page.</p>
+<p class="text-sm text-on-surface-variant mt-2">Fuel type is auto-selected per station from the 40-station lookup table derived from the NRCan 30m fuel classification grid (see Station Fuel Type Assignments below). C2 — Boreal Spruce is the fallback when no assignment exists. User-selectable from 14 fuel types via the picker on the Home page.</p>
 </div>
 <div class="border-l-2 border-tertiary pl-5">
 <div class="text-[10px] font-label uppercase tracking-widest text-tertiary mb-1">NRCan SCRIBE Forecast — 48-hr Validation</div>
@@ -607,7 +607,8 @@
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Cold Lake</td><td class="pr-4 text-primary font-bold">C3</td><td class="pr-4">Mature Jack Pine</td><td>WMS ✓</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drayton Valley</td><td class="pr-4 text-primary font-bold">D1</td><td class="pr-4">Leafless Aspen</td><td>WMS ✓ parkland</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drumheller</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS ✓ badlands</td></tr>
-<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>WMS area; D2 for WUI context</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>YEG airport; D2 for WUI context</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton Blatchford</td><td class="pr-4 text-primary font-bold">D2</td><td class="pr-4">Green Aspen</td><td>North Edmonton WUI context</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edson</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 mixedwood</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort Chipewyan</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>WMS ✓ N. boreal</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort McMurray</td><td class="pr-4 text-primary font-bold">C4</td><td class="pr-4">Immature Jack/Lodgepole Pine</td><td>WMS ✓ post-2016 reburn</td></tr>
@@ -635,6 +636,119 @@
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wabasca</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 boreal mixedwood</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wetaskiwin</td><td class="pr-4 text-primary font-bold">O1a</td><td class="pr-4">Matted Grass</td><td>WMS — agricultural</td></tr>
 <tr><td class="py-1.5 pr-4 font-bold text-on-surface">Whitecourt</td><td class="pr-4 text-primary font-bold">C2</td><td class="pr-4">Boreal Spruce</td><td>M1→C2 boreal mixedwood</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Data Sources & Station Network -->
+<div class="bg-surface-container rounded-2xl p-8 mb-8 border border-primary/10">
+<div class="flex items-start gap-4 mb-6">
+  <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cell_tower</span>
+  <div>
+    <h4 class="font-headline text-lg font-bold text-on-surface mb-1">Data Sources & Station Network</h4>
+    <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Three-tier live data hierarchy · 40 Alberta reporting zones</p>
+  </div>
+</div>
+
+<!-- Priority ladder -->
+<p class="text-sm text-on-surface-variant mb-5 leading-relaxed">
+  Each of the 40 reporting zones queries three data sources in priority order. The first that returns valid temperature, humidity, and wind data wins. The source badge shown in every popup and table row tells you which tier was used.
+</p>
+<div class="space-y-3 mb-6">
+
+  <!-- Tier 1 -->
+  <div class="flex gap-4 items-start bg-green-900/20 border border-green-400/20 rounded-xl p-4">
+    <span class="bg-green-900/40 text-green-400 font-label text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded shrink-0 mt-0.5">CWFIS</span>
+    <div>
+      <div class="text-sm font-bold text-on-surface mb-1">Tier 1 — NRCan Fire Weather Station Network</div>
+      <p class="text-xs text-on-surface-variant leading-relaxed">NRCan <code class="text-primary text-xs">firewx_stns_current</code> WFS layer. Certified fire weather stations operated by NRCan and provincial services, typically co-located at airports or forestry offices. Searched within ±2° (~220 km) of the reporting zone; nearest station with valid obs selected. <strong class="text-on-surface">When active (approx. Apr–Oct), returns the pre-computed daily FWI carry-over chain</strong> — FFMC, DMC, DC, ISI, BUI, and FWI from NRCan's official calculation using yesterday's codes as startup values. This is the operationally authoritative source. Many stations go dormant in winter; the query returns null and falls through to Tier 2.</p>
+    </div>
+  </div>
+
+  <!-- Tier 2 -->
+  <div class="flex gap-4 items-start bg-blue-900/20 border border-blue-400/20 rounded-xl p-4">
+    <span class="bg-blue-900/40 text-blue-300 font-label text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded shrink-0 mt-0.5">SWOB</span>
+    <div>
+      <div class="text-sm font-bold text-on-surface mb-1">Tier 2 — MSC Surface Weather Observations</div>
+      <p class="text-xs text-on-surface-variant leading-relaxed">Environment and Climate Change Canada <code class="text-primary text-xs">swob-realtime</code> API. All-year real sensor data from airports, climate reference stations, and AgriMet sites. Searched within ±1.5° (~165 km), past 3-hour window; nearest station with valid T/RH/wind selected. Preferentially uses <strong class="text-on-surface">noon LST observation (19:00 UTC ±1 hr)</strong> to align with CFFDRS calculation timing — if no noon obs is found in the window, falls back to most recent. FWI codes are <em>not</em> pre-computed — Van Wagner equations are applied live against spring startup constants or the last known carry-over. Good coverage across southern and central Alberta (airports are dense); sparser in the deep boreal north.</p>
+    </div>
+  </div>
+
+  <!-- Tier 3 -->
+  <div class="flex gap-4 items-start bg-amber-900/20 border border-amber-400/20 rounded-xl p-4">
+    <span class="bg-amber-900/30 text-amber-400 font-label text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded shrink-0 mt-0.5">NWP</span>
+    <div>
+      <div class="text-sm font-bold text-on-surface mb-1">Tier 3 — Open-Meteo Numerical Weather Prediction</div>
+      <p class="text-xs text-on-surface-variant leading-relaxed">Open-Meteo ECMWF IFS 0.25° model, targeting <strong class="text-on-surface">noon LST (19:00 UTC)</strong> — the standard CFFDRS observation time. Used when both CWFIS and SWOB fail (station offline, outside search radius, or data gap). NWP interpolates grid-point model output to the exact coordinate; it captures synoptic patterns but misses valley inversions, terrain channelling, and local lake/urban influence. FWI chain uses startup constants. Zones in remote or mountainous areas most commonly fall back here. Identified in the popup by the amber NWP badge.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Coverage & offset note -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+  <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10">
+    <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Km Offset — What It Means</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">The popup shows <em>"X km offset"</em> — the distance between the reporting zone's nominal coordinate and the physical station that actually provided the data. A 0 km offset means the data came from a station at essentially the same location. A large offset (e.g. 37 km for Wetaskiwin → Camrose SWOB) means local micro-climate effects may differ. For operational use, verify the source station name is plausible for your zone of interest.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10">
+    <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Coverage Patterns</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">CWFIS stations concentrate in the <strong class="text-on-surface">forested boreal and foothills</strong> — where wildfire risk is highest. Southern agricultural zones (Lethbridge, Brooks, Camrose, Stettler, Vegreville) typically report via SWOB from the nearest airport. <strong class="text-on-surface">Urban zones</strong> (Edmonton, Calgary) now target the main international airport coordinate for reliable all-season SWOB coverage. Off-season (Nov–Mar) most zones fall to SWOB or NWP as CWFIS dormant stations return null.</p>
+  </div>
+</div>
+
+<!-- Station zone table -->
+<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-3">40 Reporting Zones — Nominal Coordinates</div>
+<p class="text-xs text-on-surface-variant mb-3 leading-relaxed">These are the <em>search origin coordinates</em> used to query the data hierarchy above — not necessarily the location of the physical station that responds. The actual station name and its true coordinates are returned in the API response and shown in the popup.</p>
+<div class="overflow-x-auto">
+<table class="w-full text-xs border-collapse">
+<thead><tr class="border-b border-outline-variant/30">
+  <th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Zone</th>
+  <th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Sector</th>
+  <th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Search Origin</th>
+  <th class="py-2 text-left font-label uppercase tracking-wider text-on-surface-variant">Notes</th>
+</tr></thead>
+<tbody class="divide-y divide-outline-variant/10 text-on-surface-variant text-[11px]">
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">High Level</td><td class="pr-4">Far North</td><td class="pr-4 font-mono text-[10px]">58.517, -117.133</td><td>Near CYOH airport — CWFIS/SWOB active</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort Chipewyan</td><td class="pr-4">Far North</td><td class="pr-4 font-mono text-[10px]">58.767, -111.117</td><td>Near CYFH — remote; CWFIS in-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort Vermilion</td><td class="pr-4">Far North</td><td class="pr-4 font-mono text-[10px]">58.383, -116.017</td><td>Near CYFV — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Manning</td><td class="pr-4">Far North</td><td class="pr-4 font-mono text-[10px]">56.917, -117.617</td><td>CWFIS in-season; NWP off-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Peace River</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">56.233, -117.283</td><td>Near CYPE — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wabasca</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">55.967, -113.833</td><td>Remote boreal; CWFIS primary</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fort McMurray</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">56.650, -111.217</td><td>Near CYMM — strong CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Grande Prairie</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">55.167, -118.883</td><td>Near CYQU — reliable SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">High Prairie</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">55.433, -116.483</td><td>CWFIS in-season; SWOB fallback</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Slave Lake</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">55.283, -114.767</td><td>Near CYZH — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Valleyview</td><td class="pr-4">North</td><td class="pr-4 font-mono text-[10px]">55.083, -117.283</td><td>CWFIS in-season; NWP off-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Athabasca</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.717, -113.283</td><td>Near CYAH — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lac La Biche</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.767, -111.967</td><td>Near CYLB — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Bonnyville</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.267, -110.733</td><td>SWOB primary (ag zone)</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Cold Lake</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.417, -110.283</td><td>Near CYOD (CFB) — strong SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Fox Creek</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.400, -116.800</td><td>CWFIS in-season; NWP off-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Whitecourt</td><td class="pr-4">Central-N</td><td class="pr-4 font-mono text-[10px]">54.150, -115.683</td><td>Near CYZU — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edson</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.583, -116.433</td><td>Near CYET — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Hinton</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.400, -117.567</td><td>CWFIS in-season; NWP off-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Grande Cache</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.883, -119.000</td><td>Remote mountain; CWFIS/NWP</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.309, -113.580</td><td>CYEG Intl Airport — SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Edmonton Blatchford</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.572, -113.521</td><td>North Edmonton — nearest available SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Vegreville</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.500, -112.050</td><td>SWOB from nearest ag/airport station</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lloydminster</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.283, -110.000</td><td>Near CYLL — SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drayton Valley</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.217, -114.983</td><td>CWFIS in-season; SWOB fallback</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Jasper</td><td class="pr-4">Central-S</td><td class="pr-4 font-mono text-[10px]">52.867, -118.083</td><td>Near CYJA — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Camrose</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">53.017, -112.833</td><td>Near CYCX — SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Wetaskiwin</td><td class="pr-4">Central</td><td class="pr-4 font-mono text-[10px]">52.967, -113.367</td><td>Ag zone — SWOB from Camrose/Lacombe area</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Rocky Mtn House</td><td class="pr-4">Central-S</td><td class="pr-4 font-mono text-[10px]">52.367, -114.917</td><td>Near CYRM — CWFIS/SWOB</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Stettler</td><td class="pr-4">Central-S</td><td class="pr-4 font-mono text-[10px]">52.317, -112.717</td><td>Ag zone — SWOB; CWFIS rare</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Red Deer</td><td class="pr-4">Central-S</td><td class="pr-4 font-mono text-[10px]">52.267, -113.800</td><td>Near CYQF — strong SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Drumheller</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">51.467, -112.717</td><td>Ag/badlands — SWOB from nearest airport</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Calgary</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">51.050, -114.067</td><td>Near CYYC — strong SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Banff</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">51.183, -115.567</td><td>Near CXBF — CWFIS/SWOB; terrain effects</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Brooks</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">50.567, -111.900</td><td>Near CYBR — SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Claresholm</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">50.017, -113.583</td><td>Foothills — SWOB from nearest airport</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Medicine Hat</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">50.033, -110.683</td><td>Near CYXH — strong SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Pincher Creek</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">49.483, -113.950</td><td>Foothills — CWFIS in-season</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Lethbridge</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">49.700, -112.833</td><td>Near CYQL — strong SWOB year-round</td></tr>
+<tr><td class="py-1.5 pr-4 font-bold text-on-surface">Cardston</td><td class="pr-4">South</td><td class="pr-4 font-mono text-[10px]">49.200, -113.300</td><td>Near CZCD — SWOB; near US border</td></tr>
 </tbody>
 </table>
 </div>
