@@ -254,25 +254,29 @@
 </div>
 </div>
 <!-- HFI operational thresholds -->
-<h4 class="font-headline text-lg font-bold mb-4">HFI Operational Thresholds — Alberta</h4>
+<h4 class="font-headline text-lg font-bold mb-2">FBP System HFI Intensity Class 1–6</h4>
+<p class="text-sm text-on-surface-variant mb-4">Official classification published in the Alberta Wildland Urban Interface Pocket Guide (Government of Alberta, Forestry &amp; Parks). Originating source: Cole &amp; Alexander (1995), Canadian Forest Service Northern Forestry Centre, Edmonton.</p>
 <div class="overflow-x-auto mb-4">
 <table class="w-full text-sm">
 <thead>
 <tr class="border-b border-outline-variant/20">
-<th class="text-left py-2 pr-6 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Class</th>
-<th class="text-left py-2 pr-6 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">HFI (kW/m)</th>
-<th class="text-left py-2 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Operational Significance</th>
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Class</th>
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">HFI (kW/m)</th>
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Flame Length</th>
+<th class="text-left py-2 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Attack Mode</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant/10">
-<tr><td class="py-3 pr-6 text-secondary font-bold">Low</td><td class="py-3 pr-6">&lt; 500</td><td class="py-3 text-on-surface-variant">Direct attack possible; hand crews effective</td></tr>
-<tr><td class="py-3 pr-6 text-yellow-400 font-bold">High</td><td class="py-3 pr-6">500 – 2,000</td><td class="py-3 text-on-surface-variant">Machine attack required; suppression challenging</td></tr>
-<tr><td class="py-3 pr-6 text-orange-400 font-bold">Very High</td><td class="py-3 pr-6">2,000 – 4,000</td><td class="py-3 text-on-surface-variant">Potential for crown fire initiation; indirect tactics</td></tr>
-<tr><td class="py-3 pr-6 text-tertiary font-bold">Extreme</td><td class="py-3 pr-6">≥ 4,000</td><td class="py-3 text-on-surface-variant">Alberta escaped wildfire threshold; suppression ineffective</td></tr>
+<tr><td class="py-2 pr-4 text-secondary font-bold">1 — Low</td><td class="py-2 pr-4">&lt; 10</td><td class="py-2 pr-4">&lt; 0.2 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools</td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#7bd0ff">2 — Moderate</td><td class="py-2 pr-4">10 – 500</td><td class="py-2 pr-4">0.2 – 1.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools</td></tr>
+<tr><td class="py-2 pr-4 text-yellow-400 font-bold">3 — High</td><td class="py-2 pr-4">500 – 2,000</td><td class="py-2 pr-4">1.5 – 2.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with pump/hose or air support</td></tr>
+<tr><td class="py-2 pr-4 text-orange-400 font-bold">4 — Very High</td><td class="py-2 pr-4">2,000 – 4,000</td><td class="py-2 pr-4">2.5 – 3.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack — air attack still successful on head</td></tr>
+<tr><td class="py-2 pr-4 text-tertiary font-bold">5 — Extreme</td><td class="py-2 pr-4">4,000 – 10,000</td><td class="py-2 pr-4">3.5 – 5.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack — suppress flanks, coordinate ground &amp; air</td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#ff88aa">6 — Catastrophic</td><td class="py-2 pr-4">&gt; 10,000</td><td class="py-2 pr-4">&gt; 5.5 m</td><td class="py-2 text-on-surface-variant">Air attack likely to fail on head — evacuation priority</td></tr>
 </tbody>
 </table>
 </div>
-<p class="text-[10px] text-on-surface-variant">Source: Forestry Canada Fire Danger Group (1992). <em>Development and Structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3.</p>
+<p class="text-[10px] text-on-surface-variant">Sources: Alberta WUI Pocket Guide (Gov. of Alberta, 2026); Cole, F.V. &amp; Alexander, M.E. (1995), CFS Northern Forestry Centre; Forestry Canada Fire Danger Group (1992), ST-X-3.</p>
 </section>
 <!-- Data & Methodology Section -->
 <section class="mb-16">
@@ -433,12 +437,14 @@
 <p class="text-on-surface-variant leading-relaxed">Van Wagner's FWI System uses <strong class="text-on-surface">noon LST</strong> as the standard observation time for daily indices (FFMC, DMC, DC). Peak fire behaviour, however, typically occurs in the mid-afternoon when temperature is highest and RH is lowest — approximately <strong class="text-on-surface">13:00–15:00 LST</strong>. The FBP calculation uses the FFMC/DMC/DC from the noon chain (correct for fuel moisture state) but applies the 14:00 wind and weather to predict actual fire behaviour at peak burn.</p>
 </div>
 <div class="bg-surface-container-lowest rounded-xl p-4">
-<p class="font-bold text-on-surface mb-2">HFI Operational Thresholds</p>
+<p class="font-bold text-on-surface mb-2">FBP System HFI Intensity Class 1–6</p>
 <div class="space-y-1 text-on-surface-variant">
-<p><span class="text-secondary font-bold">Low</span> — HFI &lt; 500 kW/m · Hand crew direct attack</p>
-<p><span class="text-yellow-400 font-bold">High</span> — 500–2,000 kW/m · Machine support required</p>
-<p><span class="text-orange-400 font-bold">Very High</span> — 2,000–4,000 kW/m · Aerial required</p>
-<p><span class="text-tertiary font-bold">Extreme</span> — ≥ 4,000 kW/m · <strong class="text-on-surface">Alberta escaped fire threshold</strong> · Indirect/monitor only</p>
+<p><span class="text-secondary font-bold">1–2</span> — &lt; 500 kW/m · Direct attack with hand tools</p>
+<p><span class="text-yellow-400 font-bold">3</span> — 500–2,000 kW/m · Direct attack with pump/hose or air support</p>
+<p><span class="text-orange-400 font-bold">4</span> — 2,000–4,000 kW/m · Indirect — air attack still effective on head</p>
+<p><span class="text-tertiary font-bold">5</span> — 4,000–10,000 kW/m · Indirect — suppress flanks, coordinate ground &amp; air</p>
+<p><span style="color:#ff88aa" class="font-bold">6</span> — &gt; 10,000 kW/m · Air attack likely to fail on head</p>
+<p class="text-[9px] mt-1">Alberta WUI Pocket Guide; Cole &amp; Alexander (1995), CFS</p>
 </div>
 </div>
 </div>

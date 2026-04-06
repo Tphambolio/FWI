@@ -123,13 +123,16 @@ function dangerClassNum(fwi) {
 
 // HFI intensity class 1–6 — operational plain-language scale (Glenn, FBAN)
 // "No one understands kW/m" — show the number + what it means in the field
+// FBP System HFI Intensity Class 1–6
+// Source: Alberta WUI Pocket Guide (Gov. of Alberta, Forestry & Parks);
+// Cole & Alexander (1995), CFS Northern Forestry Centre, Edmonton.
 function hfiClassInfo(hfi) {
-  if (hfi <  200) return { num: 1, label: 'Low Intensity',           size: 'Flames below knee height',              desc: 'Walk-in direct attack',                    bg: '#d4edda', text: '#155724' };
-  if (hfi <  500) return { num: 2, label: 'Moderate',                size: 'Flames knee to waist height',           desc: 'Direct attack w/ hand tools',              bg: '#cce5ff', text: '#004085' };
-  if (hfi < 2000) return { num: 3, label: 'Tallest FF Flame Length', size: 'Flames to top of a firefighter (~1.8 m)', desc: 'Direct attack limit',                    bg: '#fff3cd', text: '#856404' };
-  if (hfi < 4000) return { num: 4, label: 'Fire Truck Height',       size: 'Flames to top of a fire truck (~3–4 m)', desc: 'Consider indirect attack',               bg: '#ffe5cc', text: '#7d3200' };
-  if (hfi <10000) return { num: 5, label: 'Bungalow Roofline',       size: 'Flames to peak of a bungalow (~5–6 m)',  desc: 'Aircraft ineffective at the head',        bg: '#f8d7da', text: '#721c24' };
-  return           { num: 6, label: 'Catastrophic',             size: 'Flames exceeding building heights',      desc: 'Uncontrollable — evacuate',               bg: '#4a0010', text: '#ffccdd' };
+  if (hfi <   10) return { num: 1, label: 'Low',        size: 'Flame length < 0.2 m',             desc: 'Direct attack with hand tools',                     bg: '#d4edda', text: '#155724' };
+  if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m',         desc: 'Direct attack with hand tools',                     bg: '#cce5ff', text: '#004085' };
+  if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m',         desc: 'Direct attack with pump/hose or air support',       bg: '#fff3cd', text: '#856404' };
+  if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m',         desc: 'Indirect attack — air attack successful on head',   bg: '#ffe5cc', text: '#7d3200' };
+  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 – 5.5 m',         desc: 'Indirect attack — suppress flanks, coordinate air', bg: '#f8d7da', text: '#721c24' };
+  return           { num: 6, label: 'Catastrophic', size: 'Flame length > 5.5 m',             desc: 'Air attack likely to fail on head — evacuate',      bg: '#4a0010', text: '#ffccdd' };
 }
 
 // Hero card gradient per danger level
@@ -1777,7 +1780,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
-    ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">Glenn's HFI Scale &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
+    ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
     ${d1EscapeNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 MDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
@@ -1881,7 +1884,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
-    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">Glenn's HFI Scale &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
+    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
     ${escapedNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
@@ -1914,7 +1917,7 @@ ${d1Section}
 </div>
 
 <div style="border:1px solid #ccc;margin-bottom:8px;page-break-inside:avoid">
-  <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Glenn's HFI Scale — Intensity Class Legend</div>
+  <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">FBP System HFI Class — Intensity Class Legend</div>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
     <thead>
       <tr style="background:#f0f0f0">
@@ -2198,14 +2201,18 @@ async function buildD1Card() {
     if (_forecastCache.results.length) {
       ({ days, results } = _forecastCache);
     } else {
-      try { days = await fetchForecastNAEFS(_stationLat, _stationLng); }
-      catch(e) { days = await fetchForecast(_stationLat, _stationLng); }
+      // Try ECMWF first (faster, point-specific); fall back to NAEFS
+      try { days = await fetchForecast(_stationLat, _stationLng); }
+      catch(e) {
+        console.warn('[D+1] ECMWF failed, trying NAEFS:', e);
+        days = await fetchForecastNAEFS(_stationLat, _stationLng);
+      }
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
       const fuelCode = _savedFuelCode();
       results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode);
       _forecastCache = { days, results, fuelCode };
     }
-  } catch(e) { set('fwi-d1-preview-date', 'Forecast unavailable'); return; }
+  } catch(e) { console.error('[D+1] Forecast fetch failed:', e); set('fwi-d1-preview-date', 'Forecast unavailable'); return; }
 
   const todayMid = new Date(); todayMid.setHours(0,0,0,0);
   const tomMid = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
