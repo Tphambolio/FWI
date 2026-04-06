@@ -1829,7 +1829,7 @@ async function printStationBriefing() {
 </div>
 
 <div class="section">
-  <div class="section-title">Fire Behaviour Prediction (FBP ST-X-3)</div>
+  <div class="section-title">Current Fire Behaviour · Today · ${today}</div>
   <div class="section-body">
     <div class="grid-2" style="margin-bottom:6px">
       <p class="kv"><span class="label">Fuel Type</span><br><span class="val" style="font-size:10pt">${fuelCode} — ${fuelName}</span></p>
