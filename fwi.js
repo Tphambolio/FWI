@@ -1662,65 +1662,92 @@ function printProvincialBriefing() {
   const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
-  // Build SVG Alberta map — bicolor semicircle: left=FWI danger, right=HFI class
+  // ── SVG map: full-width bicolor markers, 750×370 viewport ────────────────
   const SVG_HFI_COLORS = {
     '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800',
     '4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e',
   };
+  const MW = 750, MH = 370;
+  const mx = lng => +((lng - (-120)) / 10 * MW).toFixed(1);
+  const my = lat => +((60 - lat)  / 11 * MH).toFixed(1);
+
   const LABEL_STNS = new Set(['Fort McMurray','Edmonton','Calgary','Lethbridge','Medicine Hat','Grande Prairie','Fort Chipewyan','High Level']);
   const svgPoints = rows.map(r => {
-    const x = +((r.lng - (-120)) / 10 * 300).toFixed(1);
-    const y = +((60 - r.lat) / 11 * 340).toFixed(1);
+    const x = mx(r.lng), y = my(r.lat);
     const fwiColor = SVG_COLORS[r.danger] || '#2980b9';
     const hfiColor = SVG_HFI_COLORS[r.hfiClass] || '#9e9e9e';
-    const rad = ['Extreme','Very High'].includes(r.danger) ? 13 : 11;
+    const rad = ['Extreme','Very High'].includes(r.danger) ? 18 : 15;
     const fwiLabel = r.fwi != null ? r.fwi.toFixed(1) : '—';
     const [hfiNum] = (r.hfiClass || '—').split('-');
-    // Left semicircle = FWI danger; right = HFI class
     const leftPath  = `M ${x},${y-rad} A ${rad},${rad} 0 0,0 ${x},${y+rad} L ${x},${y} Z`;
     const rightPath = `M ${x},${y-rad} A ${rad},${rad} 0 0,1 ${x},${y+rad} L ${x},${y} Z`;
-    const lx = (x - rad * 0.42).toFixed(1);
-    const rx = (x + rad * 0.42).toFixed(1);
-    return `<g opacity="0.95">` +
+    const lx = (x - rad * 0.44).toFixed(1);
+    const rx = (x + rad * 0.44).toFixed(1);
+    return `<g opacity="0.95" filter="url(#ds)">` +
            `<path d="${leftPath}" fill="${fwiColor}"/>` +
            `<path d="${rightPath}" fill="${hfiColor}"/>` +
-           `<line x1="${x}" y1="${y-rad}" x2="${x}" y2="${y+rad}" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>` +
-           `<text x="${lx}" y="${y-2.5}" font-size="4.5" font-weight="700" fill="rgba(0,0,0,0.45)" text-anchor="middle" dominant-baseline="middle">FWI</text>` +
-           `<text x="${lx}" y="${y+3.5}" font-size="6.5" font-weight="800" fill="rgba(0,0,0,0.75)" text-anchor="middle" dominant-baseline="middle">${fwiLabel}</text>` +
-           `<text x="${rx}" y="${y-2.5}" font-size="4.5" font-weight="700" fill="rgba(0,0,0,0.45)" text-anchor="middle" dominant-baseline="middle">HFI</text>` +
-           `<text x="${rx}" y="${y+3.5}" font-size="6" font-weight="800" fill="rgba(0,0,0,0.75)" text-anchor="middle" dominant-baseline="middle">${hfiNum}</text>` +
+           `<line x1="${x}" y1="${y-rad}" x2="${x}" y2="${y+rad}" stroke="rgba(0,0,0,0.18)" stroke-width="0.7"/>` +
+           `<text x="${lx}" y="${y-3}" font-size="5.5" font-weight="700" fill="rgba(0,0,0,0.42)" text-anchor="middle" dominant-baseline="middle">FWI</text>` +
+           `<text x="${lx}" y="${y+4.5}" font-size="9" font-weight="800" fill="rgba(0,0,0,0.78)" text-anchor="middle" dominant-baseline="middle">${fwiLabel}</text>` +
+           `<text x="${rx}" y="${y-3}" font-size="5.5" font-weight="700" fill="rgba(0,0,0,0.42)" text-anchor="middle" dominant-baseline="middle">HFI</text>` +
+           `<text x="${rx}" y="${y+4.5}" font-size="8" font-weight="800" fill="rgba(0,0,0,0.78)" text-anchor="middle" dominant-baseline="middle">${hfiNum}</text>` +
            `<title>${r.name}: FWI ${fwiLabel} (${r.danger})${r.hfi != null ? ' · HFI ' + Math.round(r.hfi).toLocaleString() + ' kW/m (' + r.hfiClass + ')' : ''}</title>` +
            `</g>`;
   }).join('\n    ');
   const svgLabels = rows.filter(r => LABEL_STNS.has(r.name)).map(r => {
-    const x = parseFloat(((r.lng - (-120)) / 10 * 300).toFixed(1));
-    const y = parseFloat(((60 - r.lat) / 11 * 340).toFixed(1));
-    const right = x > 200;
-    const short = r.name.replace('Fort McMurray','Ft McMurray').replace('Fort Chipewyan','Ft Chipewyan').replace('Grande Prairie','Gde Prairie');
-    return `<text x="${(x + (right ? -14 : 14)).toFixed(0)}" y="${(y + 4).toFixed(0)}" font-size="7" fill="#333" text-anchor="${right ? 'end' : 'start'}" font-style="italic">${short}</text>`;
+    const x = mx(r.lng), y = my(r.lat);
+    const right = x > MW * 0.65;
+    const short = r.name.replace('Fort McMurray','Ft McMurray').replace('Fort Chipewyan','Ft Chipewyan').replace('Grande Prairie','Gde Prairie').replace('Medicine Hat','Med Hat');
+    const ox = right ? -22 : 22;
+    return `<text x="${(x + ox).toFixed(0)}" y="${(y + 4).toFixed(0)}" font-size="9" fill="#333" text-anchor="${right ? 'end' : 'start'}" font-style="italic" font-weight="600">${short}</text>`;
   }).join('\n    ');
 
-  // Build table rows HTML
-  const tableRows = rows.map((r, i) => {
-    const bg = i % 2 === 0 ? '#ffffff' : '#f9f9f9';
-    const dc = PRINT_COLORS[r.danger] || PRINT_COLORS['Moderate'];
-    const hfiBg = { '3-High': '#fff9c4', '4-VH': '#ffe0b2', '5-Ext': '#ffcdd2', '6-Cat': '#ef9a9a' }[r.hfiClass] || '';
-    return `<tr style="background:${bg}">
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:600">${r.name}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.sector}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.temp != null ? (+r.temp).toFixed(1) + '°C' : '—'}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.rh != null ? Math.round(r.rh) + '%' : '—'}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.wind != null ? Math.round(r.wind) + ' km/h' : '—'}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${r.dc != null ? r.dc.toFixed(0) : '—'}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt;${hfiBg ? 'background:'+hfiBg+';' : ''}font-weight:600">${r.hfiClass}${r.hfi != null ? '<br><span style="font-size:7.5pt;font-weight:400;color:#555">' + Math.round(r.hfi).toLocaleString() + ' kW/m</span>' : ''}</td>
-      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;text-align:center;background:${dc.bg};color:${dc.text};font-weight:700;font-size:9pt">${r.danger}</td>
-    </tr>`;
-  }).join('\n');
+  // ── 3-column station grid ─────────────────────────────────────────────────
+  const third = Math.ceil(rows.length / 3);
+  const colGroups = [rows.slice(0, third), rows.slice(third, third * 2), rows.slice(third * 2)];
+
+  function buildColRows(stRows) {
+    return stRows.map((r, i) => {
+      const bg = i % 2 === 0 ? '#fff' : '#f7f8f9';
+      const dc = PRINT_COLORS[r.danger] || PRINT_COLORS['Moderate'];
+      const [hfiNum] = (r.hfiClass || '—').split('-');
+      const fwiC = SVG_COLORS[r.danger] || '#2980b9';
+      const hfiC = SVG_HFI_COLORS[r.hfiClass] || '#9e9e9e';
+      return `<tr style="background:${bg};border-bottom:1px solid #e8e8e8">` +
+        `<td style="padding:2px 4px;font-weight:600;white-space:nowrap;font-size:7pt;max-width:85px;overflow:hidden">${r.name}</td>` +
+        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.temp != null ? (+r.temp).toFixed(0) + '°' : '—'}</td>` +
+        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.rh != null ? Math.round(r.rh) + '%' : '—'}</td>` +
+        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.wind != null ? Math.round(r.wind) : '—'}</td>` +
+        `<td style="padding:2px 3px;text-align:center">` +
+          `<span style="display:inline-flex;border-radius:3px;overflow:hidden;font-size:7.5pt;font-weight:800;line-height:1.35;box-shadow:0 1px 3px rgba(0,0,0,0.25)">` +
+            `<span style="padding:0 4px;background:${fwiC};color:rgba(0,0,0,0.78)">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</span>` +
+            `<span style="padding:0 4px;background:${hfiC};color:rgba(0,0,0,0.78)">${hfiNum}</span>` +
+          `</span>` +
+        `</td>` +
+        `<td style="padding:2px 5px;text-align:center;background:${dc.bg};color:${dc.text};font-weight:700;font-size:7pt">${r.danger}</td>` +
+        `</tr>`;
+    }).join('\n');
+  }
+
+  const colHeader = `<tr style="background:#2d3748;color:#fff">` +
+    `<th style="padding:3px 4px;text-align:left;font-size:6.5pt;text-transform:uppercase;letter-spacing:.05em">Station</th>` +
+    `<th style="padding:3px;text-align:center;font-size:6.5pt">T°C</th>` +
+    `<th style="padding:3px;text-align:center;font-size:6.5pt">RH</th>` +
+    `<th style="padding:3px;text-align:center;font-size:6.5pt">W</th>` +
+    `<th style="padding:3px;text-align:center;font-size:6.5pt">FWI/HFI</th>` +
+    `<th style="padding:3px;text-align:center;font-size:6.5pt">Rating</th>` +
+    `</tr>`;
 
   const summaryParts = ['Extreme', 'Very High', 'High', 'Moderate', 'Low']
     .filter(d => tally[d] > 0)
     .map(d => `${tally[d]} ${d}`).join(' · ');
+
+  // ── Grid lines for SVG ────────────────────────────────────────────────────
+  const gridLines = [50, 52, 54, 56, 58].map(lat => {
+    const y = my(lat);
+    return `<line x1="0" y1="${y}" x2="${MW}" y2="${y}" stroke="#c8d0d8" stroke-width="0.6" stroke-dasharray="5,4"/>` +
+           `<text x="4" y="${y - 2}" font-size="7.5" fill="#aaa">${lat}°N</text>`;
+  }).join('\n      ');
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -1729,112 +1756,87 @@ function printProvincialBriefing() {
 <title>Alberta FWI — Provincial Briefing</title>
 <style>
   @media print {
-    @page { size: landscape; margin: 1cm; }
-    body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
-    .no-print { display: none; }
+    @page { size: portrait; margin: 0.7cm; }
+    .no-print { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 12px; }
-  .header-box { border: 2px solid #333; padding: 10px 14px; margin-bottom: 10px; }
-  .header-title { font-size: 14pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
-  .header-meta { font-size: 9pt; color: #444; margin: 0; }
-  .content-wrap { display: flex; gap: 16px; align-items: flex-start; }
-  .table-wrap { flex: 1 1 auto; overflow: hidden; }
-  .map-wrap { flex: 0 0 310px; }
-  table { border-collapse: collapse; width: 100%; font-size: 9pt; }
-  th { background: #333; color: #fff; padding: 5px 6px; text-align: center; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-  th:first-child { text-align: left; }
-  .zone-summary { border: 1px solid #ccc; padding: 7px 10px; margin-top: 10px; font-size: 9pt; background: #f5f5f5; }
-  .sign-block { display: flex; gap: 40px; margin-top: 8px; border-top: 1px solid #ccc; padding-top: 8px; font-size: 9pt; }
-  .sign-line { border-bottom: 1px solid #333; min-width: 160px; display: inline-block; margin-right: 4px; }
-  .legend-row { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; font-size: 8pt; }
-  .legend-item { display: flex; align-items: center; gap: 4px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 10px 12px; }
+  .hdr { border: 2px solid #2d3748; padding: 7px 12px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center; }
+  .hdr-title { font-size: 12pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+  .hdr-meta { font-size: 7.5pt; color: #555; text-align:right; line-height:1.5; }
+  .map-box { border: 1px solid #ccc; display: block; width: 100%; margin-bottom: 4px; }
+  .legend { display:flex; gap:10px; margin-bottom:6px; align-items:center; flex-wrap:wrap; font-size:7.5pt; }
+  .ld { display:flex; align-items:center; gap:3px; }
+  .lc { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .pill-demo { display:inline-flex; border-radius:3px; overflow:hidden; font-size:7pt; font-weight:800; line-height:1.35; vertical-align:middle; }
+  .station-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 6px; }
+  .station-grid table { border-collapse: collapse; width: 100%; }
+  .zone-bar { background:#f0f2f5; border:1px solid #ccc; padding:4px 8px; font-size:8pt; margin-top:6px; }
+  .sign-row { display:flex; gap:30px; margin-top:6px; border-top:1px solid #ccc; padding-top:5px; font-size:8pt; }
+  .sign-line { border-bottom:1px solid #333; min-width:140px; display:inline-block; }
 </style>
 </head>
 <body>
-<div class="header-box">
-  <p class="header-title">Alberta Fire Weather Index — Provincial Briefing</p>
-  <p class="header-meta">
-    Operational Period: ${today} 0600–1800 MDT &nbsp;·&nbsp;
-    Prepared: ${prepared} &nbsp;·&nbsp;
-    Source: CWFIS / MSC SWOB / Open-Meteo NWP &nbsp;·&nbsp;
-    tphambolio.github.io/FWI
-  </p>
-</div>
-<div class="content-wrap">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="text-align:left">Station</th>
-          <th>Sector</th>
-          <th>Temp</th>
-          <th>RH</th>
-          <th>Wind</th>
-          <th>DC</th>
-          <th>FWI</th>
-          <th>HFI Class</th>
-          <th>Rating</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-  </div>
-  <div class="map-wrap">
-    <svg viewBox="0 0 300 340" width="300" height="340" style="border:1px solid #bbb;display:block">
-      <!-- Background -->
-      <rect x="0" y="0" width="300" height="340" fill="#e8eef4"/>
-      <!-- Alberta approximate outline: NW→NE→SE then west boundary (continental divide) -->
-      <polygon points="0,0 300,0 300,340 165,340 150,309 120,278 75,247 45,216 20,185 0,155"
-               fill="#f0f4f0" stroke="#888" stroke-width="1.2"/>
-      <!-- Grid lines at lat 50, 52, 54, 56, 58 -->
-      <line x1="0" y1="${((60-50)/11*340).toFixed(0)}" x2="300" y2="${((60-50)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
-      <line x1="0" y1="${((60-52)/11*340).toFixed(0)}" x2="300" y2="${((60-52)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
-      <line x1="0" y1="${((60-54)/11*340).toFixed(0)}" x2="300" y2="${((60-54)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
-      <line x1="0" y1="${((60-56)/11*340).toFixed(0)}" x2="300" y2="${((60-56)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
-      <line x1="0" y1="${((60-58)/11*340).toFixed(0)}" x2="300" y2="${((60-58)/11*340).toFixed(0)}" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,3"/>
-      <!-- Lat labels -->
-      <text x="2" y="${((60-58)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">58°N</text>
-      <text x="2" y="${((60-56)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">56°N</text>
-      <text x="2" y="${((60-54)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">54°N</text>
-      <text x="2" y="${((60-52)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">52°N</text>
-      <text x="2" y="${((60-50)/11*340-2).toFixed(0)}" font-size="6.5" fill="#999">50°N</text>
-      <!-- Station labels -->
-      ${svgLabels}
-      <!-- Station dots (fill=FWI danger, ring=HFI class) -->
-      ${svgPoints}
-    </svg>
-    <!-- FWI danger legend -->
-    <div class="legend-row">
-      <div class="legend-item"><span class="legend-dot" style="background:#2d9e5f"></span>Low</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#2980b9"></span>Moderate</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#8e44ad"></span>High</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span>V.High</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#c0392b"></span>Extreme</div>
-    </div>
-    <!-- HFI ring legend -->
-    <div class="legend-row" style="margin-top:4px">
-      <span style="font-size:7pt;color:#555;font-weight:700;margin-right:4px">HFI ring:</span>
-      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:1.5px solid #999"></span>Low/Mod</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2px solid #ffee58"></span>High</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2px solid #ffa726"></span>V.High</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#fff;border:2.5px solid #ef5350"></span>Extreme+</div>
-    </div>
+
+<div class="hdr">
+  <div class="hdr-title">Alberta Fire Weather Index — Provincial Briefing</div>
+  <div class="hdr-meta">
+    ${today} · 0600–1800 MDT<br>
+    Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP
   </div>
 </div>
-<div class="zone-summary">
+
+<!-- Full-width SVG map -->
+<svg class="map-box" viewBox="0 0 ${MW} ${MH}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+  </defs>
+  <rect width="${MW}" height="${MH}" fill="#dde8f0"/>
+  <polygon points="0,0 ${MW},0 ${MW},${MH} 413,${MH} 375,336 300,302 188,269 113,235 50,201 0,169"
+           fill="#eef2ee" stroke="#8a9e8a" stroke-width="1.5"/>
+  ${gridLines}
+  ${svgLabels}
+  ${svgPoints}
+</svg>
+
+<!-- Legend row -->
+<div class="legend">
+  <strong style="font-size:7pt;text-transform:uppercase;letter-spacing:.05em">FWI (left):</strong>
+  <div class="ld"><span class="lc" style="background:#2d9e5f"></span>Low</div>
+  <div class="ld"><span class="lc" style="background:#2980b9"></span>Moderate</div>
+  <div class="ld"><span class="lc" style="background:#8e44ad"></span>High</div>
+  <div class="ld"><span class="lc" style="background:#e67e22"></span>V.High</div>
+  <div class="ld"><span class="lc" style="background:#c0392b"></span>Extreme</div>
+  <span style="color:#bbb;margin:0 4px">|</span>
+  <strong style="font-size:7pt;text-transform:uppercase;letter-spacing:.05em">HFI class (right):</strong>
+  <div class="ld"><span class="lc" style="background:#27ae60"></span>1-Low</div>
+  <div class="ld"><span class="lc" style="background:#2574a9"></span>2-Mod</div>
+  <div class="ld"><span class="lc" style="background:#c9a800"></span>3-High</div>
+  <div class="ld"><span class="lc" style="background:#d4660a"></span>4-VH</div>
+  <div class="ld"><span class="lc" style="background:#c62828"></span>5-Ext</div>
+  <div class="ld"><span class="lc" style="background:#7b0000"></span>6-Cat</div>
+</div>
+
+<!-- 3-column station grid: Station | T°C | RH | Wind | FWI/HFI pill | Rating -->
+<div class="station-grid">
+  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[0])}</tbody></table>
+  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[1])}</tbody></table>
+  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[2])}</tbody></table>
+</div>
+
+<div class="zone-bar">
   <strong>Zone Summary (${rows.length} stations):</strong> ${summaryParts || 'No data'}
 </div>
-<div class="sign-block">
-  <div>Prepared by: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
-  <div>Position/ICS Title: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
-  <div>Date/Time: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+<div class="sign-row">
+  <div>Prepared by: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Position/ICS Title: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div>Date/Time: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
 </div>
-<button class="no-print" onclick="window.print()" style="margin-top:10px;padding:8px 20px;cursor:pointer">Print / Save PDF</button>
+<button class="no-print" onclick="window.print()" style="margin-top:8px;padding:6px 18px;cursor:pointer;font-size:9pt">Print / Save PDF</button>
+
 </body>
 </html>`;
 
