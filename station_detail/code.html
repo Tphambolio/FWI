@@ -20,6 +20,10 @@
     .synthetic-gradient {
       background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%);
     }
+    /* Behaviour card — all children inherit white */
+    .behaviour-card { color: white; }
+    .behaviour-card .card-label   { font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6; }
+    .behaviour-card .card-divider { border-color: rgba(255,255,255,0.15); }
   </style>
 <style>
     body {
@@ -60,10 +64,10 @@
 </div>
 <span class="font-label text-[10px] text-slate-500" data-fwi="updated">—</span>
 </header>
-<main class="max-w-7xl mx-auto px-6 py-8">
+<main class="max-w-7xl mx-auto px-4 py-6">
 
 <!-- ── Mobile Fuel Picker ──────────────────────────────────────────────── -->
-<div class="md:hidden flex items-center gap-3 mb-6 surface-container-low p-3 rounded-xl">
+<div class="md:hidden flex items-center gap-3 mb-5 bg-[#1e2740] p-3 rounded-xl">
   <span class="material-symbols-outlined text-[#7bd0ff] text-sm">forest</span>
   <div class="flex flex-col flex-1">
     <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
@@ -86,126 +90,162 @@
   </div>
 </div>
 
-<!-- ── HERO: FWI Score ────────────────────────────────────────────────── -->
-<div id="fwi-score-card" class="surface-container-highest p-6 rounded-xl synthetic-gradient text-on-primary-fixed mb-8">
-  <div class="flex justify-between items-start mb-4">
+<!-- ══════════════════════════════════════════════════════════════════════
+     TODAY — Current Fire Behaviour Card
+     Background set dynamically by JS via DANGER_GRADIENTS[danger]
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="fwi-score-card" class="behaviour-card rounded-2xl p-5 mb-4 transition-all"
+     style="background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
+
+  <!-- Card header -->
+  <div class="flex justify-between items-baseline mb-3">
+    <span class="card-label font-bold">TODAY · Noon LST · Observed</span>
+    <span class="text-[9px] opacity-60" data-fwi="source-station">—</span>
+  </div>
+
+  <!-- FWI score + danger -->
+  <div class="flex items-end gap-4 mb-4">
+    <div class="font-headline font-black leading-none" style="font-size: 5rem" data-fwi="fwi">—</div>
+    <div class="pb-1">
+      <div class="card-label mb-0.5">Fire Weather Index</div>
+      <div class="font-headline text-lg font-extrabold uppercase tracking-widest" data-fwi="danger">—</div>
+    </div>
+  </div>
+
+  <!-- Weather row -->
+  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-3 mb-4 border-t card-divider border-t">
     <div>
-      <h3 class="font-headline font-extrabold text-2xl leading-tight">FWI SCORE</h3>
-      <p class="text-[10px] opacity-80 font-label uppercase font-bold">Fire Weather Index</p>
+      <p class="card-label">Temp</p>
+      <p class="font-bold text-sm mt-0.5" data-fwi="temp">—</p>
     </div>
-    <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+    <div>
+      <p class="card-label">RH</p>
+      <p class="font-bold text-sm mt-0.5" data-fwi="rh">—</p>
+    </div>
+    <div>
+      <p class="card-label">Wind</p>
+      <p class="font-bold text-sm mt-0.5" data-fwi="wind">—</p>
+    </div>
+    <div>
+      <p class="card-label">Direction</p>
+      <p class="font-bold text-sm mt-0.5" data-fwi="wdir">—</p>
+    </div>
+    <div class="col-span-4">
+      <p class="card-label">Rain</p>
+      <p class="font-bold text-sm mt-0.5" data-fwi="rain">—</p>
+    </div>
   </div>
-  <div class="font-headline text-7xl font-black mb-3" data-fwi="fwi">—</div>
-  <div class="text-base font-bold uppercase tracking-widest mb-4" data-fwi="danger-label">Loading…</div>
-  <div class="grid grid-cols-2 gap-x-6 gap-y-1 border-t border-black/10 pt-4 mt-2">
-    <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Temp</span><span class="font-bold text-sm" data-fwi="temp">—</span></div>
-    <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">RH</span><span class="font-bold text-sm" data-fwi="rh">—</span></div>
-    <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Wind</span><span class="font-bold text-sm" data-fwi="wind">—</span></div>
-    <div class="flex items-baseline gap-1.5"><span class="text-[9px] opacity-70 uppercase tracking-widest">Dir</span><span class="font-bold text-sm" data-fwi="wdir">—</span></div>
-    <div class="flex items-baseline gap-1.5 col-span-2"><span class="text-[9px] opacity-70 uppercase tracking-widest">Rain</span><span class="font-bold text-sm" data-fwi="rain">—</span></div>
-  </div>
-  <div class="text-[9px] opacity-50 mt-3 truncate" data-fwi="source-station">—</div>
-</div>
 
-<!-- ── Today · Current Fire Behaviour ────────────────────────────────── -->
-<section class="mb-8">
-  <div class="flex items-center gap-3 mb-4">
-    <h3 class="font-headline text-xl font-bold text-on-surface">Today · Current Fire Behaviour</h3>
-    <div class="h-px flex-1 bg-outline-variant/15"></div>
-    <span class="text-[10px] font-label text-on-surface-variant">Noon LST · Observed</span>
+  <!-- HFI Class hero -->
+  <div class="pt-3 mb-4 border-t card-divider border-t">
+    <p class="card-label mb-2">FBP System HFI Class · Class 1–6</p>
+    <div class="flex items-baseline gap-3 mb-1">
+      <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-fbp-hfi-rating">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label">—</span>
+    </div>
+    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size">—</p>
+    <p class="text-xs opacity-70 mt-0.5" id="fwi-fbp-hfi-desc">—</p>
   </div>
-  <div class="surface-container-high p-5 rounded-xl border-l-2 border-[#2d6a4f]">
-    <div class="flex justify-between items-start mb-4">
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Observed Weather</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-today-weather">—</p>
-      </div>
-      <div class="text-right">
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">FWI</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-today-fwi">—</p>
-      </div>
-    </div>
-    <div class="mb-4">
-      <div class="flex justify-between items-start">
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head Fire Intensity</p>
-        <span class="text-[11px] font-bold text-on-surface-variant/60" id="fwi-fbp-hfi">— kW/m</span>
-      </div>
-      <div class="flex items-center gap-3 mt-1">
-        <span id="fwi-fbp-hfi-rating" class="font-headline text-4xl font-black leading-none" style="color:#7bd0ff">—</span>
-        <span id="fwi-fbp-hfi-label" class="font-headline text-xl font-bold" style="color:#7bd0ff">—</span>
-      </div>
-      <p class="text-[11px] mt-1 font-medium" id="fwi-fbp-hfi-size">—</p>
-      <p class="text-[10px] mt-0.5 text-on-surface-variant/60" id="fwi-fbp-hfi-desc">—</p>
-    </div>
-    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant/15">
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-fbp-ros">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-fbp-flame">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-fbp-type">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Frac.</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-fbp-cfb">—</p>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ── Tomorrow — D+1 Peak Burn ───────────────────────────────────────── -->
-<section class="mb-10" id="fwi-d1-preview-section">
-  <div class="flex items-center gap-3 mb-4">
-    <h3 class="font-headline text-xl font-bold text-on-surface">Tomorrow · Peak Burn</h3>
-    <div class="h-px flex-1 bg-outline-variant/15"></div>
-    <span class="text-[10px] font-label text-on-surface-variant" id="fwi-d1-preview-date">~14:00 MDT</span>
-  </div>
-  <div class="surface-container-high p-5 rounded-xl border-l-2 border-[#1a3a5c]">
-    <div class="flex justify-between items-start mb-4">
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Predicted Weather</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-weather">—</p>
-      </div>
-      <div class="text-right">
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">FWI</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-fwi">—</p>
-      </div>
+  <!-- FBP behaviour grid -->
+  <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t mb-3">
+    <div>
+      <p class="card-label mb-0.5">Head ROS</p>
+      <p class="font-headline text-xl font-bold" id="fwi-fbp-ros">—</p>
     </div>
-    <div class="mb-4">
-      <div class="flex justify-between items-start">
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head Fire Intensity</p>
-        <span class="text-[11px] font-bold text-on-surface-variant/60" id="fwi-d1-preview-hfi-kwm">—</span>
-      </div>
-      <div class="flex items-center gap-3 mt-1">
-        <span class="font-headline text-4xl font-black leading-none" id="fwi-d1-preview-hfi-num" style="color:#7bd0ff">—</span>
-        <span class="font-headline text-xl font-bold" id="fwi-d1-preview-hfi-label" style="color:#7bd0ff">—</span>
-      </div>
-      <p class="text-[11px] mt-1 font-medium" id="fwi-d1-preview-hfi-size">—</p>
+    <div>
+      <p class="card-label mb-0.5">Flame Length</p>
+      <p class="font-headline text-xl font-bold" id="fwi-fbp-flame">—</p>
     </div>
-    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant/15">
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-ros">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-flame">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
-        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-type">—</p>
-      </div>
-      <div>
-        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Frac.</p>
-        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-cfb">—</p>
-      </div>
+    <div>
+      <p class="card-label mb-0.5">Fire Type</p>
+      <p class="font-headline text-base font-bold" id="fwi-fbp-type">—</p>
+    </div>
+    <div>
+      <p class="card-label mb-0.5">Crown Fraction Burned</p>
+      <p class="font-headline text-xl font-bold" id="fwi-fbp-cfb">—</p>
     </div>
   </div>
+
+</div><!-- /today card -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TOMORROW — D+1 Peak Burn Card
+     Background set dynamically by JS via DANGER_GRADIENTS[d1 danger]
+     ══════════════════════════════════════════════════════════════════════ -->
+<section id="fwi-d1-preview-section" class="mb-6">
+<div id="fwi-d1-card" class="behaviour-card rounded-2xl p-5 transition-all"
+     style="background: linear-gradient(135deg, #4ae176 0%, #1a8a3e 100%)">
+
+  <!-- Card header -->
+  <div class="flex justify-between items-baseline mb-3">
+    <span class="card-label font-bold">TOMORROW · Peak Burn · ~14:00 MDT</span>
+    <span class="text-[9px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
+  </div>
+
+  <!-- FWI score + danger -->
+  <div class="flex items-end gap-4 mb-4">
+    <div class="font-headline font-black leading-none" style="font-size: 5rem" id="fwi-d1-preview-fwi-score">—</div>
+    <div class="pb-1">
+      <div class="card-label mb-0.5">Fire Weather Index</div>
+      <div class="font-headline text-lg font-extrabold uppercase tracking-widest" id="fwi-d1-preview-danger">—</div>
+    </div>
+  </div>
+
+  <!-- Weather row -->
+  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-3 mb-4 border-t card-divider border-t">
+    <div>
+      <p class="card-label">Temp</p>
+      <p class="font-bold text-sm mt-0.5" id="fwi-d1-preview-temp">—</p>
+    </div>
+    <div>
+      <p class="card-label">RH</p>
+      <p class="font-bold text-sm mt-0.5" id="fwi-d1-preview-rh">—</p>
+    </div>
+    <div>
+      <p class="card-label">Wind</p>
+      <p class="font-bold text-sm mt-0.5" id="fwi-d1-preview-wind">—</p>
+    </div>
+    <div>
+      <p class="card-label">Direction</p>
+      <p class="font-bold text-sm mt-0.5" id="fwi-d1-preview-wdir">—</p>
+    </div>
+  </div>
+
+  <!-- HFI Class hero -->
+  <div class="pt-3 mb-4 border-t card-divider border-t">
+    <p class="card-label mb-2">FBP System HFI Class · Class 1–6</p>
+    <div class="flex items-baseline gap-3 mb-1">
+      <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-d1-preview-hfi-num">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label">—</span>
+    </div>
+    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size">—</p>
+    <p class="text-xs opacity-70 mt-0.5" id="fwi-d1-preview-hfi-desc">—</p>
+  </div>
+
+  <!-- FBP behaviour grid -->
+  <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t mb-3">
+    <div>
+      <p class="card-label mb-0.5">Head ROS</p>
+      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-ros">—</p>
+    </div>
+    <div>
+      <p class="card-label mb-0.5">Flame Length</p>
+      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-flame">—</p>
+    </div>
+    <div>
+      <p class="card-label mb-0.5">Fire Type</p>
+      <p class="font-headline text-base font-bold" id="fwi-d1-preview-type">—</p>
+    </div>
+    <div>
+      <p class="card-label mb-0.5">Crown Fraction Burned</p>
+      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-cfb">—</p>
+    </div>
+  </div>
+
+</div><!-- /tomorrow card -->
 </section>
 
 <!-- ── FWI Components ─────────────────────────────────────────────────── -->
@@ -331,7 +371,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=44"></script>
+<script src="../fwi.js?v=45"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);

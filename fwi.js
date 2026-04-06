@@ -101,6 +101,15 @@ function _fwi(isi, bui) {
   return b<=1 ? b : Math.exp(2.72*(0.434*Math.log(b))**0.647);
 }
 
+// Wind degrees → compass direction + arrow
+function windCompass(deg) {
+  if (deg == null) return '';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const arrows = ['↓','↓','↙','↙','←','↖','↖','↑','↑','↑','↗','↗','→','↘','↘','↓'];
+  const i = Math.round(deg / 22.5) % 16;
+  return `${arrows[i]} ${dirs[i]} (${Math.round(deg)}°)`;
+}
+
 // FWI danger thresholds (Van Wagner 1987 / CFFDRS)
 function dangerRating(fwi) {
   if (fwi < 5)  return 'Low';
@@ -334,19 +343,15 @@ function wireFBP(weather, fwi) {
   set('fwi-fbp-flame', result.flameLength.toFixed(1) + ' m');
   set('fwi-fbp-type',  result.fireType);
   set('fwi-fbp-cfb',   (result.cfb * 100).toFixed(0) + '%');
-  // Today card weather + FWI row
-  set('fwi-today-weather', `${weather.temp != null ? (+weather.temp).toFixed(1) : '—'}°C / ${Math.round(weather.rh ?? 0)}% RH / ${Math.round(weather.wind ?? 0)} km/h`);
-  set('fwi-today-fwi', `${Math.round(fwi.fwi)} — ${fwi.danger}`);
 
   const cl = hfiClassInfo(result.hfi);
-  // Accent colour — map print bg to a vivid screen colour
-  const screenColour = cl.num === 1 ? '#4ae176' : cl.num === 2 ? '#7bd0ff' : cl.num === 3 ? '#f4c430' : cl.num === 4 ? '#ff8c42' : cl.num === 5 ? '#ff4d4d' : '#ff88aa';
+  // On the gradient card, all text is white
   const numEl = document.getElementById('fwi-fbp-hfi-rating');
-  if (numEl) { numEl.textContent = cl.num; numEl.style.color = screenColour; }
+  if (numEl) { numEl.textContent = cl.num; numEl.style.color = 'white'; }
   const lblEl = document.getElementById('fwi-fbp-hfi-label');
-  if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = screenColour; }
+  if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
   const sizeEl = document.getElementById('fwi-fbp-hfi-size');
-  if (sizeEl) { sizeEl.textContent = cl.size; sizeEl.style.color = screenColour; }
+  if (sizeEl) { sizeEl.textContent = cl.size; sizeEl.style.color = 'rgba(255,255,255,0.85)'; }
   const desc = document.getElementById('fwi-fbp-hfi-desc');
   if (desc) { desc.textContent = cl.desc; }
 }
@@ -1033,7 +1038,7 @@ async function fetchForecastNAEFS(code) {
 async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
     `&timezone=auto&forecast_days=7&models=ecmwf_ifs025`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
@@ -1055,9 +1060,10 @@ async function fetchForecast(lat, lng) {
       label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
       _ts: date.getTime(),
       peak: {
-        temp: h.temperature_2m[i14]       ?? h.temperature_2m[i12]       ?? 15,
+        temp: h.temperature_2m[i14]        ?? h.temperature_2m[i12]        ?? 15,
         rh:   h.relative_humidity_2m[i14]  ?? h.relative_humidity_2m[i12]  ?? 40,
         wind: h.wind_speed_10m[i14]        ?? h.wind_speed_10m[i12]        ?? 10,
+        wdir: h.wind_direction_10m?.[i14]  ?? h.wind_direction_10m?.[i12]  ?? null,
       },
     });
   }
@@ -2227,19 +2233,29 @@ async function buildD1Card() {
   const d1pw = d1d?.peak || d1d || {};
   const d1fbp = d1r.fbp;
 
-  set('fwi-d1-preview-date',    `${d1r.label || 'D+1'} · ~14:00 MDT`);
-  set('fwi-d1-preview-weather', `${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h`);
-  set('fwi-d1-preview-fwi',     `${Math.round(d1r.fwi)} — ${d1r.danger}`);
+  // Set tomorrow card background to danger colour
+  const d1Card = document.getElementById('fwi-d1-card');
+  if (d1Card) d1Card.style.background = DANGER_GRADIENTS[d1r.danger] || DANGER_GRADIENTS['Moderate'];
+
+  set('fwi-d1-preview-date',      `${d1r.label || 'D+1'}`);
+  set('fwi-d1-preview-fwi-score', `${Math.round(d1r.fwi)}`);
+  set('fwi-d1-preview-danger',    `${d1r.danger} Risk`);
+  set('fwi-d1-preview-temp',  `${(+d1pw.temp||0).toFixed(1)}°C`);
+  set('fwi-d1-preview-rh',    `${Math.round(d1pw.rh||0)}%`);
+  set('fwi-d1-preview-wind',  `${Math.round(d1pw.wind||0)} km/h`);
+  set('fwi-d1-preview-wdir',  d1pw.wdir != null ? windCompass(d1pw.wdir) : '—');
 
   if (d1fbp) {
     const cl = hfiClassInfo(d1fbp.hfi);
-    const col = cl.num===1?'#4ae176':cl.num===2?'#7bd0ff':cl.num===3?'#f4c430':cl.num===4?'#ff8c42':cl.num===5?'#ff4d4d':'#ff88aa';
     const numEl = document.getElementById('fwi-d1-preview-hfi-num');
     const lblEl = document.getElementById('fwi-d1-preview-hfi-label');
     const szEl  = document.getElementById('fwi-d1-preview-hfi-size');
-    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = col; }
-    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = col; }
-    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = col; }
+    const dscEl = document.getElementById('fwi-d1-preview-hfi-desc');
+    // All white text on gradient card
+    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
+    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+    if (dscEl) { dscEl.textContent = cl.desc; }
     set('fwi-d1-preview-hfi-kwm',  `${Math.round(d1fbp.hfi).toLocaleString()} kW/m`);
     set('fwi-d1-preview-ros',      `${d1fbp.ros.toFixed(1)} m/min`);
     set('fwi-d1-preview-flame',    `${d1fbp.flameLength.toFixed(1)} m`);
