@@ -86,13 +86,64 @@
   </button>
 </div>
 </section>
+<!-- Reference tables: FWI + HFI -->
+<section class="mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+  <!-- FWI Danger Rating -->
+  <div class="bg-surface-container rounded-xl p-4">
+    <h5 class="font-headline text-sm font-bold text-on-surface mb-1">Fire Weather Index — Danger Rating</h5>
+    <p class="text-[10px] text-on-surface-variant mb-3 leading-relaxed">The FWI is a unitless index combining fuel moisture and wind. The <strong class="text-on-surface">left half</strong> of each map marker shows the danger class.</p>
+    <table class="w-full text-[10px]">
+      <thead><tr class="text-[9px] uppercase tracking-wider text-on-surface-variant">
+        <th class="text-left pb-1 font-label">Class</th>
+        <th class="text-left pb-1 font-label">FWI Range</th>
+        <th class="text-left pb-1 font-label">Meaning</th>
+      </tr></thead>
+      <tbody class="font-label divide-y divide-outline-variant/10">
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#4ae17622;color:#4ae176">Low</span></td><td class="py-1.5 pr-3 text-on-surface-variant">0 – 8</td><td class="py-1.5 text-on-surface-variant">Fuels moist, spread unlikely</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#7bd0ff22;color:#7bd0ff">Moderate</span></td><td class="py-1.5 pr-3 text-on-surface-variant">9 – 17</td><td class="py-1.5 text-on-surface-variant">Some fire activity possible</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#fbabff22;color:#fbabff">High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">18 – 32</td><td class="py-1.5 text-on-surface-variant">Rapid spread, control difficult</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff8c4222;color:#ff8c42">Very High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">33 – 49</td><td class="py-1.5 text-on-surface-variant">Intense fire, suppression limited</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff4d4d22;color:#ff4d4d">Extreme</span></td><td class="py-1.5 pr-3 text-on-surface-variant">50+</td><td class="py-1.5 text-on-surface-variant">Crown fire conditions, evacuate</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- HFI Class -->
+  <div class="bg-surface-container rounded-xl p-4">
+    <h5 class="font-headline text-sm font-bold text-on-surface mb-1">Head Fire Intensity — Byram Class</h5>
+    <p class="text-[10px] text-on-surface-variant mb-3 leading-relaxed">HFI (kW/m) is the energy output at the fire front from FBP. The <strong class="text-on-surface">right half</strong> of each marker shows the intensity class. Click any marker for the kW/m value.</p>
+    <table class="w-full text-[10px]">
+      <thead><tr class="text-[9px] uppercase tracking-wider text-on-surface-variant">
+        <th class="text-left pb-1 font-label">Class</th>
+        <th class="text-left pb-1 font-label">HFI (kW/m)</th>
+        <th class="text-left pb-1 font-label">Meaning</th>
+      </tr></thead>
+      <tbody class="font-label divide-y divide-outline-variant/10">
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#a8f0c022;color:#4ae176">1-Low</span></td><td class="py-1.5 pr-3 text-on-surface-variant">&lt; 10</td><td class="py-1.5 text-on-surface-variant">Hand tools effective</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#b8e2f922;color:#7bd0ff">2-Mod</span></td><td class="py-1.5 pr-3 text-on-surface-variant">10 – 499</td><td class="py-1.5 text-on-surface-variant">Equipment needed, manageable</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ffe08222;color:#c9a800">3-High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">500 – 1 999</td><td class="py-1.5 text-on-surface-variant">Active crown fire potential</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ffb74d22;color:#ff8c42">4-VH</span></td><td class="py-1.5 pr-3 text-on-surface-variant">2 000 – 3 999</td><td class="py-1.5 text-on-surface-variant">Direct attack unsafe, aerial only</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff704322;color:#ff7043">5-Ext</span></td><td class="py-1.5 pr-3 text-on-surface-variant">4 000 – 9 999</td><td class="py-1.5 text-on-surface-variant">Extreme — conifer torching</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#b71c1c22;color:#ff4d4d">6-Cat</span></td><td class="py-1.5 pr-3 text-on-surface-variant">≥ 10 000</td><td class="py-1.5 text-on-surface-variant">Catastrophic — no suppression</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</section>
+
 <!-- Station Network Table -->
 <section class="mb-10">
-<div class="flex items-baseline justify-between mb-4">
+<div class="flex items-baseline justify-between mb-2">
   <h4 class="font-headline text-xl font-bold text-on-surface">Station Network — All 39 Stations</h4>
   <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
   <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Click headers to sort</span>
 </div>
+<p class="text-[10px] text-on-surface-variant mb-4 leading-relaxed">
+  Live observations from 39 CWFIS network stations across Alberta. <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-green-400">CWFIS</span> uses the pre-computed FWI carry-over chain; <span class="text-blue-400">SWOB</span> is real-time MSC sensor data with Van Wagner calculation; <span class="text-amber-400">NWP</span> is Open-Meteo model output used when live observations are unavailable. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
+</p>
 <div id="fwi-region-list"></div>
 </section>
 <style>
@@ -112,7 +163,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=56"></script>
+<script src="../fwi.js?v=57"></script>
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
