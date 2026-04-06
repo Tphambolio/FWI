@@ -332,18 +332,15 @@ function wireFBP(weather, fwi) {
   set('fwi-fbp-type',  result.fireType);
   set('fwi-fbp-cfb',   (result.cfb * 100).toFixed(0) + '%');
 
-  const badge = document.getElementById('fwi-fbp-hfi-rating');
-  if (badge) {
-    const cl = hfiClassInfo(result.hfi);
-    badge.textContent = `${cl.num}`;
-    badge.style.cssText = `background:${cl.bg};color:${cl.text};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:900`;
-  }
+  const cl = hfiClassInfo(result.hfi);
+  // Accent colour — map print bg to a vivid screen colour
+  const screenColour = cl.num === 1 ? '#4ae176' : cl.num === 2 ? '#7bd0ff' : cl.num === 3 ? '#f4c430' : cl.num === 4 ? '#ff8c42' : cl.num === 5 ? '#ff4d4d' : '#ff88aa';
+  const numEl = document.getElementById('fwi-fbp-hfi-rating');
+  if (numEl) { numEl.textContent = cl.num; numEl.style.color = screenColour; }
+  const lblEl = document.getElementById('fwi-fbp-hfi-label');
+  if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = screenColour; }
   const desc = document.getElementById('fwi-fbp-hfi-desc');
-  if (desc) {
-    const cl = hfiClassInfo(result.hfi);
-    desc.textContent = `Class ${cl.num} · ${cl.label} · ${cl.desc}`;
-    desc.style.color = cl.text === '#ffccdd' ? '#ff8888' : cl.text;
-  }
+  if (desc) { desc.textContent = cl.desc; }
 }
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */

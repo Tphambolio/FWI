@@ -117,10 +117,13 @@
           <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Head Fire Intensity</p>
           <p class="text-[9px] text-on-surface-variant/60 mt-0.5">Glenn's HFI Scale · Class 1–6</p>
         </div>
-        <span id="fwi-fbp-hfi-rating" class="px-2 py-1 rounded-full text-[10px] font-bold bg-surface-container text-secondary">—</span>
+        <span id="fwi-fbp-hfi" class="text-[11px] font-bold text-on-surface-variant/60">— kW/m</span>
       </div>
-      <p class="font-headline text-4xl font-black mt-2" id="fwi-fbp-hfi">—</p>
-      <p class="text-[10px] mt-1 text-on-surface-variant/70" id="fwi-fbp-hfi-desc">—</p>
+      <div class="flex items-center gap-3 mt-3">
+        <span id="fwi-fbp-hfi-rating" class="font-headline text-5xl font-black leading-none" style="color:#7bd0ff">—</span>
+        <span id="fwi-fbp-hfi-label" class="font-headline text-2xl font-bold leading-tight" style="color:#7bd0ff">—</span>
+      </div>
+      <p class="text-[11px] mt-2 text-on-surface-variant/70" id="fwi-fbp-hfi-desc">—</p>
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div class="surface-container-high p-4 rounded-xl">
@@ -266,7 +269,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=39"></script>
+<script src="../fwi.js?v=40"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
