@@ -2176,33 +2176,33 @@ async function buildStationMap(containerId) {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
     return L.divIcon({
       className: '',
-      html: `<div style="width:64px;height:42px;border-radius:21px;overflow:hidden;display:flex;` +
+      html: `<div style="width:72px;height:48px;border-radius:24px;overflow:hidden;display:flex;` +
             `box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 1.5px rgba(0,0,0,0.12);` +
             `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
-            `<div style="width:32px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
-            `align-items:center;justify-content:center">` +
-            `<span style="font-size:5px;font-weight:700;color:rgba(0,0,0,0.45);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
-            `<span style="font-size:13px;font-weight:800;color:rgba(0,0,0,0.78);letter-spacing:-.03em;line-height:1.1">${fwiVal}</span>` +
+            `<div style="width:36px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
+            `align-items:center;justify-content:center;gap:1px">` +
+            `<span style="font-size:7px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
+            `<span style="font-size:15px;font-weight:800;color:rgba(0,0,0,0.8);letter-spacing:-.03em;line-height:1">${fwiVal}</span>` +
             `</div>` +
             `<div style="width:1px;background:rgba(0,0,0,0.15);flex-shrink:0"></div>` +
-            `<div style="width:31px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
-            `align-items:center;justify-content:center">` +
-            `<span style="font-size:5px;font-weight:700;color:rgba(0,0,0,0.45);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
-            `<span style="font-size:11px;font-weight:800;color:rgba(0,0,0,0.78);line-height:1.1">${hfiNum || '—'}</span>` +
-            `<span style="font-size:6px;font-weight:600;color:rgba(0,0,0,0.55);line-height:1">${hfiWord || ''}</span>` +
+            `<div style="width:35px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
+            `align-items:center;justify-content:center;gap:1px">` +
+            `<span style="font-size:7px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
+            `<span style="font-size:13px;font-weight:800;color:rgba(0,0,0,0.8);line-height:1">${hfiNum || '—'}</span>` +
+            `<span style="font-size:7px;font-weight:600;color:rgba(0,0,0,0.6);line-height:1">${hfiWord || ''}</span>` +
             `</div>` +
             `</div>`,
-      iconSize: [64, 42], iconAnchor: [32, 21], popupAnchor: [0, -25],
+      iconSize: [72, 48], iconAnchor: [36, 24], popupAnchor: [0, -28],
     });
   }
 
   function _makeLoadingIcon() {
     return L.divIcon({
       className: '',
-      html: `<div style="width:64px;height:42px;border-radius:21px;background:#374151;display:flex;` +
+      html: `<div style="width:72px;height:48px;border-radius:24px;background:#374151;display:flex;` +
             `align-items:center;justify-content:center;` +
-            `box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:10px;color:#6b7280">…</div>`,
-      iconSize: [64, 42], iconAnchor: [32, 21], popupAnchor: [0, -25],
+            `box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:11px;color:#6b7280">…</div>`,
+      iconSize: [72, 48], iconAnchor: [36, 24], popupAnchor: [0, -28],
     });
   }
 
