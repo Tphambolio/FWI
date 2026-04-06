@@ -931,7 +931,7 @@ function _updateStationTableRow(entry) {
   const avgRH  = valid.length ? valid.reduce((s, e) => s + (e.result.weather?.rh ?? 0), 0) / valid.length : null;
   const el1 = document.getElementById('fwi-extreme-count');
   const el2 = document.getElementById('fwi-avg-rh');
-  if (el1) el1.textContent = `${extCnt} Extreme`;
+  if (el1) el1.textContent = extCnt > 0 ? `${extCnt} Extreme` : extCnt === 0 ? '0' : '—';
   if (el2 && avgRH != null) el2.textContent = `${avgRH.toFixed(0)}%`;
 }
 
@@ -2169,10 +2169,10 @@ async function buildStationMap(containerId) {
   if (!container || typeof L === 'undefined') return;
   _mapStationCache = [];
 
-  // HFI class → right-half pill color
+  // HFI class → right-half pill color (muted palette — always visually distinct from vivid FWI left half)
   const HFI_CLASS_COLORS = {
-    '1-Low':'#4ae176','2-Mod':'#7bd0ff','3-High':'#ffee58',
-    '4-VH':'#ffa726','5-Ext':'#ff4d4d','6-Cat':'#cc2222','—':'#d1d5db',
+    '1-Low':'#a8f0c0','2-Mod':'#b8e2f9','3-High':'#ffe082',
+    '4-VH':'#ffb74d','5-Ext':'#ff7043','6-Cat':'#b71c1c','—':'#d1d5db',
   };
 
   // Zoom-responsive pill sizes: sm=provincial, md=regional, lg=municipal
@@ -2295,6 +2295,18 @@ async function buildStationMap(containerId) {
       );
     } catch (e) {
       console.warn(`[FWI Map] ${s.name}:`, e);
+    }
+  }
+
+  // Final sweep — ensure all markers reflect current zoom after async loading completes
+  {
+    const finalScale = _zoomScale(map.getZoom());
+    for (const entry of _mapStationCache) {
+      if (!entry.result) continue;
+      const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
+      const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
+      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
+      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, finalScale));
     }
   }
 

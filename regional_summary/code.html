@@ -45,45 +45,30 @@
 <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
 </div>
 </header>
-<main class="pt-24 pb-32 px-6 max-w-5xl mx-auto">
-<!-- Dashboard Header Hero -->
-<section class="mb-12">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-<div>
-<span class="font-label text-primary tracking-[0.2em] uppercase text-xs mb-2 block">CWFIS Network · Live</span>
-<h2 class="font-headline text-4xl font-bold tracking-tighter text-on-surface mb-4">Alberta Fire Weather Index</h2>
-<p class="text-on-surface-variant leading-relaxed max-w-md">
-                        Real-time fire weather index across 39 Alberta CWFIS station coordinates. Weather via Open-Meteo NWP — calculated live in-browser using Van Wagner CFFDRS equations.
-                    </p>
+<main class="pt-20 pb-32 px-4 max-w-5xl mx-auto">
+<!-- Live Station Map -->
+<section class="mb-6">
+<!-- Compact header: title + live stat chips -->
+<div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+  <h4 class="font-headline text-lg font-bold text-on-surface">Alberta FWI · Live</h4>
+  <div class="flex items-center gap-2">
+    <div class="bg-surface-container px-3 py-1.5 rounded-lg border-b border-primary/30 flex items-center gap-2">
+      <span class="font-label text-[9px] uppercase text-on-surface-variant tracking-wider">Alerts</span>
+      <span class="font-headline text-base font-bold text-tertiary" id="fwi-extreme-count">—</span>
+    </div>
+    <div class="bg-surface-container px-3 py-1.5 rounded-lg border-b border-secondary/30 flex items-center gap-2">
+      <span class="font-label text-[9px] uppercase text-on-surface-variant tracking-wider">Avg RH</span>
+      <span class="font-headline text-base font-bold text-secondary" id="fwi-avg-rh">—%</span>
+    </div>
+    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#4ae176"></span>Low</span>
+    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#7bd0ff"></span>Mod</span>
+    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#fbabff"></span>High</span>
+    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#ff8c42"></span>VH</span>
+    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#ff4d4d"></span>Ext</span>
+  </div>
 </div>
-<div class="flex gap-4 md:justify-end">
-<div class="bg-surface-container p-4 rounded-xl border-b-2 border-primary/30">
-<span class="font-label text-[10px] uppercase text-on-surface-variant block mb-1">Active Alerts</span>
-<span class="font-headline text-2xl font-bold text-tertiary" id="fwi-extreme-count">— Extreme</span>
-</div>
-<div class="bg-surface-container p-4 rounded-xl border-b-2 border-secondary/30">
-<span class="font-label text-[10px] uppercase text-on-surface-variant block mb-1">Avg Humidity</span>
-<span class="font-headline text-2xl font-bold text-secondary" id="fwi-avg-rh">—%</span>
-</div>
-</div>
-</div>
-</section>
-<!-- Live Station Map — top of content -->
-<section class="mb-10">
-<div class="flex items-baseline justify-between mb-4">
-<h4 class="font-headline text-xl font-bold text-on-surface">Station Network — Live FWI</h4>
-<div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
-<div class="flex items-center gap-3">
-<span class="flex items-center gap-1.5 text-[10px] font-label text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span>Loading</span>
-<span class="flex items-center gap-1.5 text-[10px] font-label text-secondary"><span class="w-2.5 h-2.5 rounded-full bg-[#4ae176] inline-block"></span>Low</span>
-<span class="flex items-center gap-1.5 text-[10px] font-label text-primary"><span class="w-2.5 h-2.5 rounded-full bg-[#7bd0ff] inline-block"></span>Mod</span>
-<span class="flex items-center gap-1.5 text-[10px] font-label" style="color:#fbabff"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#fbabff"></span>High+</span>
-<span class="flex items-center gap-1.5 text-[10px] font-label text-tertiary"><span class="w-2.5 h-2.5 rounded-full bg-[#ff4d4d] inline-block"></span>Extreme</span>
-</div>
-</div>
-<div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:400px">
+<div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:420px">
 <div id="fwi-station-map" style="height:100%;width:100%;"></div>
-<!-- P3: Layer toggle buttons — positioned over map -->
 <div class="absolute top-3 right-3 z-[500] flex gap-2">
 <button id="btn-activefires" class="map-layer-btn font-label text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-[#1e2740]/90 border border-[#ff3333]/40 text-[#ff8888] hover:bg-[#ff3333]/20 transition-colors">
   🔥 Active Fires
@@ -93,20 +78,11 @@
 </button>
 </div>
 </div>
-<!-- Map legend + controls -->
-<div class="flex flex-wrap gap-x-5 gap-y-1 items-center mt-3">
-  <span class="font-label text-[9px] uppercase tracking-widest text-slate-600">Marker fill = FWI danger:</span>
-  <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-3 h-3 rounded-full inline-block" style="background:#4ae176"></span>Low</span>
-  <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-3 h-3 rounded-full inline-block" style="background:#7bd0ff"></span>Moderate</span>
-  <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-3 h-3 rounded-full inline-block" style="background:#fbabff"></span>High</span>
-  <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-3 h-3 rounded-full inline-block" style="background:#ff8c42"></span>Very High</span>
-  <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-3 h-3 rounded-full inline-block" style="background:#ff4d4d"></span>Extreme</span>
-  <span class="font-label text-[9px] text-slate-600 ml-2">· marker shows FWI / HFI class · thick ring = HFI 4+ · click for detail</span>
-</div>
+<!-- Slim footer: source note + print button -->
 <div class="flex justify-between items-center mt-2">
-  <p class="text-[10px] text-slate-600 font-label">39 stations · CWFIS/SWOB/NWP · CartoDB Voyager</p>
-  <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity">
-    Print Provincial Briefing
+  <p class="text-[9px] text-slate-600 font-label">39 stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
+  <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-5 py-2 rounded-sm active:opacity-70 transition-opacity">
+    Print Briefing
   </button>
 </div>
 </section>
@@ -136,7 +112,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=53"></script>
+<script src="../fwi.js?v=54"></script>
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
