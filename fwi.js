@@ -1628,7 +1628,7 @@ function _triggerCSVDownload(rows, filename) {
  * Print Provincial Briefing — landscape A4/Letter, ICS-formatted.
  * Uses _mapStationCache (all 39 stations) if populated, else _regionalCache (5 zones).
  */
-function printProvincialBriefing() {
+function printProvincialBriefing(mode = 'provincial') {
   // Determine data source
   const useMap = _mapStationCache.length > 0;
   const useRegional = !useMap && _regionalCache.length > 0;
@@ -1693,57 +1693,27 @@ function printProvincialBriefing() {
   const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
-  // ── Map markers: serialised for Leaflet in the print window ─────────────
-  const SVG_HFI_COLORS = {
-    '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800',
-    '4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e',
-  };
-  const mapStationData = JSON.stringify(rows.map(r => ({
+  // ── Selected station (for regional mode) ─────────────────────────────────
+  const selLat = _stationLat;
+  const selLng = _stationLng;
+  const selName = _stationName;
+
+  const briefingTitle = mode === 'regional'
+    ? `Pyra · Fire Weather — Regional Briefing · ${selName} Area`
+    : 'Pyra · Alberta Fire Weather Index — Provincial Briefing';
+
+  const mapInitScript = mode === 'regional'
+    ? `map.setView([${selLat}, ${selLng}], 8);`
+    : `map.fitBounds([[49.0, -120.0], [60.0, -110.0]]);`;
+
+  // ── All station data serialised for dynamic table + Leaflet markers ───────
+  const allStationData = JSON.stringify(rows.map(r => ({
     name: r.name, lat: r.lat, lng: r.lng,
+    temp: r.temp, rh: r.rh, wind: r.wind,
     fwi: r.fwi != null ? +r.fwi.toFixed(1) : null,
     danger: r.danger,
     hfiClass: r.hfiClass || '—',
   })));
-
-  // ── 3-column station grid ─────────────────────────────────────────────────
-  const third = Math.ceil(rows.length / 3);
-  const colGroups = [rows.slice(0, third), rows.slice(third, third * 2), rows.slice(third * 2)];
-
-  function buildColRows(stRows) {
-    return stRows.map((r, i) => {
-      const bg = i % 2 === 0 ? '#fff' : '#f7f8f9';
-      const dc = PRINT_COLORS[r.danger] || PRINT_COLORS['Moderate'];
-      const [hfiNum] = (r.hfiClass || '—').split('-');
-      const fwiC = SVG_COLORS[r.danger] || '#2980b9';
-      const hfiC = SVG_HFI_COLORS[r.hfiClass] || '#9e9e9e';
-      return `<tr style="background:${bg};border-bottom:1px solid #e8e8e8">` +
-        `<td style="padding:2px 4px;font-weight:600;white-space:nowrap;font-size:7pt;max-width:85px;overflow:hidden">${r.name}</td>` +
-        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.temp != null ? (+r.temp).toFixed(0) + '°' : '—'}</td>` +
-        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.rh != null ? Math.round(r.rh) + '%' : '—'}</td>` +
-        `<td style="padding:2px 3px;text-align:center;font-size:7pt">${r.wind != null ? Math.round(r.wind) : '—'}</td>` +
-        `<td style="padding:2px 3px;text-align:center">` +
-          `<span style="display:inline-flex;border-radius:3px;overflow:hidden;font-size:7.5pt;font-weight:800;line-height:1.35;box-shadow:0 1px 3px rgba(0,0,0,0.25)">` +
-            `<span style="padding:0 4px;background:${fwiC};color:rgba(0,0,0,0.78)">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</span>` +
-            `<span style="padding:0 4px;background:${hfiC};color:rgba(0,0,0,0.78)">${hfiNum}</span>` +
-          `</span>` +
-        `</td>` +
-        `<td style="padding:2px 5px;text-align:center;background:${dc.bg};color:${dc.text};font-weight:700;font-size:7pt">${r.danger}</td>` +
-        `</tr>`;
-    }).join('\n');
-  }
-
-  const colHeader = `<tr style="background:#2d3748;color:#fff">` +
-    `<th style="padding:3px 4px;text-align:left;font-size:6.5pt;text-transform:uppercase;letter-spacing:.05em">Station</th>` +
-    `<th style="padding:3px;text-align:center;font-size:6.5pt">T°C</th>` +
-    `<th style="padding:3px;text-align:center;font-size:6.5pt">RH</th>` +
-    `<th style="padding:3px;text-align:center;font-size:6.5pt">W</th>` +
-    `<th style="padding:3px;text-align:center;font-size:6.5pt">FWI/HFI</th>` +
-    `<th style="padding:3px;text-align:center;font-size:6.5pt">Rating</th>` +
-    `</tr>`;
-
-  const summaryParts = ['Extreme', 'Very High', 'High', 'Moderate', 'Low']
-    .filter(d => tally[d] > 0)
-    .map(d => `${tally[d]} ${d}`).join(' · ');
 
 
 
@@ -1751,7 +1721,7 @@ function printProvincialBriefing() {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pyra · Alberta FWI — Provincial Briefing</title>
+<title>${briefingTitle}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/script>
 <style>
@@ -1782,7 +1752,7 @@ function printProvincialBriefing() {
 <body>
 
 <div class="hdr">
-  <div class="hdr-title">Pyra · Alberta Fire Weather Index — Provincial Briefing</div>
+  <div class="hdr-title">${briefingTitle}</div>
   <div class="hdr-meta">
     ${today} · 0600–1800 MDT<br>
     Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP
@@ -1796,21 +1766,22 @@ setTimeout(function() {
 (function() {
   const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#8e44ad', 'Very High':'#e67e22', Extreme:'#c0392b' };
   const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
-  const stations = ${mapStationData};
+  const PRINT_COLORS = { Low:{bg:'#d4edda',text:'#155724'}, Moderate:{bg:'#cce5ff',text:'#004085'}, High:{bg:'#e2d9f3',text:'#4a235a'}, 'Very High':{bg:'#ffe5cc',text:'#7d3200'}, Extreme:{bg:'#f8d7da',text:'#721c24'} };
+  const allStations = ${allStationData};
 
-  const map = L.map('print-map', { zoomControl: false });
-  // Force Alberta bounding box — most reliable centering in a document.write context
-  map.fitBounds([[49.0, -120.0], [60.0, -110.0]]);
+  const map = L.map('print-map', { zoomControl: true });
+  ${mapInitScript}
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19
   }).addTo(map);
 
-  stations.forEach(s => {
+  // Draw all station markers (always visible regardless of zoom)
+  allStations.forEach(s => {
     const fc = FWI_COLORS[s.danger] || '#2980b9';
     const hc = HFI_COLORS[s.hfiClass] || '#9e9e9e';
     const r = ['Extreme','Very High'].includes(s.danger) ? 20 : 17;
-    const label = s.fwi != null ? s.fwi.toFixed(1) : '—';
+    const label = s.fwi != null ? (+s.fwi).toFixed(1) : '—';
     const [hn] = (s.hfiClass || '—').split('-');
     const d = r * 2;
     const icon = L.divIcon({
@@ -1828,11 +1799,55 @@ setTimeout(function() {
     L.marker([s.lat, s.lng], { icon }).bindTooltip(s.name, { permanent: false, direction: 'top' }).addTo(map);
   });
 
-  // Trigger print after tiles load; 3 s fallback
+  // Dynamic table: rebuilds whenever map is panned/zoomed
+  const colHeader = '<tr style="background:#2d3748;color:#fff">'
+    + '<th style="padding:3px 4px;text-align:left;font-size:6.5pt;text-transform:uppercase;letter-spacing:.05em">Station</th>'
+    + '<th style="padding:3px;text-align:center;font-size:6.5pt">T\u00b0C</th>'
+    + '<th style="padding:3px;text-align:center;font-size:6.5pt">RH</th>'
+    + '<th style="padding:3px;text-align:center;font-size:6.5pt">W</th>'
+    + '<th style="padding:3px;text-align:center;font-size:6.5pt">FWI/HFI</th>'
+    + '<th style="padding:3px;text-align:center;font-size:6.5pt">Rating</th>'
+    + '</tr>';
+
+  function buildRow(s, i) {
+    const bg = i % 2 === 0 ? '#fff' : '#f7f8f9';
+    const dc = PRINT_COLORS[s.danger] || PRINT_COLORS['Moderate'];
+    const [hn] = (s.hfiClass || '—').split('-');
+    const fc = FWI_COLORS[s.danger] || '#2980b9';
+    const hc = HFI_COLORS[s.hfiClass] || '#9e9e9e';
+    return '<tr style="background:' + bg + ';border-bottom:1px solid #e8e8e8">'
+      + '<td style="padding:2px 4px;font-weight:600;white-space:nowrap;font-size:7pt;max-width:85px;overflow:hidden">' + s.name + '</td>'
+      + '<td style="padding:2px 3px;text-align:center;font-size:7pt">' + (s.temp != null ? (+s.temp).toFixed(0) + '\u00b0' : '—') + '</td>'
+      + '<td style="padding:2px 3px;text-align:center;font-size:7pt">' + (s.rh != null ? Math.round(s.rh) + '%' : '—') + '</td>'
+      + '<td style="padding:2px 3px;text-align:center;font-size:7pt">' + (s.wind != null ? Math.round(s.wind) : '—') + '</td>'
+      + '<td style="padding:2px 3px;text-align:center">'
+      + '<span style="display:inline-flex;border-radius:3px;overflow:hidden;font-size:7.5pt;font-weight:800;line-height:1.35;box-shadow:0 1px 3px rgba(0,0,0,0.25)">'
+      + '<span style="padding:0 4px;background:' + fc + ';color:rgba(0,0,0,0.78)">' + (s.fwi != null ? (+s.fwi).toFixed(1) : '—') + '</span>'
+      + '<span style="padding:0 4px;background:' + hc + ';color:rgba(0,0,0,0.78)">' + hn + '</span>'
+      + '</span></td>'
+      + '<td style="padding:2px 5px;text-align:center;background:' + dc.bg + ';color:' + dc.text + ';font-weight:700;font-size:7pt">' + s.danger + '</td>'
+      + '</tr>';
+  }
+
+  function updateTable() {
+    const bounds = map.getBounds();
+    const visible = allStations.filter(s => bounds.contains(L.latLng(s.lat, s.lng)));
+    const third = Math.ceil(visible.length / 3) || 1;
+    const cols = [visible.slice(0, third), visible.slice(third, third * 2), visible.slice(third * 2)];
+    document.getElementById('station-grid').innerHTML =
+      cols.map(col => '<table><thead>' + colHeader + '</thead><tbody>' + col.map(buildRow).join('') + '</tbody></table>').join('');
+    const tally = {Low:0, Moderate:0, High:0, 'Very High':0, Extreme:0};
+    visible.forEach(s => { if (tally[s.danger] !== undefined) tally[s.danger]++; });
+    const parts = ['Extreme','Very High','High','Moderate','Low'].filter(d => tally[d] > 0).map(d => tally[d] + ' ' + d).join(' · ');
+    document.getElementById('zone-bar').innerHTML = '<strong>Zone Summary (' + visible.length + ' stations · pan/zoom to adjust):</strong> ' + (parts || 'No data');
+  }
+  map.on('moveend zoomend', updateTable);
+
+  // Trigger print after tiles load; also run initial table build
   let printed = false;
   function doPrint() { if (!printed) { printed = true; window.print(); } }
-  map.eachLayer(l => { if (l.on) l.on('load', () => setTimeout(doPrint, 400)); });
-  setTimeout(doPrint, 3000);
+  map.eachLayer(l => { if (l.on) l.on('load', () => { updateTable(); setTimeout(doPrint, 400); }); });
+  setTimeout(() => { updateTable(); doPrint(); }, 3000);
 })();
 }, 0);
 <\/script>
@@ -1877,16 +1892,10 @@ setTimeout(function() {
   </table>
 </div>
 
-<!-- 3-column station grid: Station | T°C | RH | Wind | FWI/HFI pill | Rating -->
-<div class="station-grid">
-  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[0])}</tbody></table>
-  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[1])}</tbody></table>
-  <table><thead>${colHeader}</thead><tbody>${buildColRows(colGroups[2])}</tbody></table>
-</div>
+<!-- 3-column station grid: populated dynamically from map extent -->
+<div id="station-grid" class="station-grid"></div>
 
-<div class="zone-bar">
-  <strong>Zone Summary (${rows.length} stations):</strong> ${summaryParts || 'No data'}
-</div>
+<div id="zone-bar" class="zone-bar"></div>
 <div class="sign-row">
   <div>Prepared by: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
   <div>Position/ICS Title: <span class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
