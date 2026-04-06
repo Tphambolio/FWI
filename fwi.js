@@ -210,8 +210,7 @@ const STATION_FUEL_TYPES = {
   'Cold Lake':      'C3',   // WMS: Mature Jack Pine ✓
   'Drayton Valley': 'D1',   // WMS: Aspen parkland ✓
   'Drumheller':     'O1a',  // WMS: badlands/grassland ✓
-  'Edmonton':           'D2',   // YEG airport area: Aspen parkland WUI context
-  'Edmonton Blatchford':'D2',   // North Edmonton: Aspen parkland WUI context
+  'Edmonton':            'D2',   // Aspen parkland WUI context
   'Edson':          'C2',   // M1→C2: mixedwood boreal ✓
   'Fort Chipewyan': 'C2',   // WMS: Northern Boreal Spruce ✓
   'Fort McMurray':  'C4',   // WMS: Immature Jack Pine (post-2016 reburn) ✓
@@ -770,8 +769,7 @@ const ALBERTA_STATIONS = [
   { name: 'Jasper',            lat: 52.867, lng: -118.083 },
   { name: 'Grande Cache',      lat: 53.883, lng: -118.433 }, // shifted east toward Hinton/SWOB corridor
   // Central
-  { name: 'Edmonton',          lat: 53.309, lng: -113.580 }, // YEG International Airport — SWOB station
-  { name: 'Edmonton Blatchford', lat: 53.572, lng: -113.521 }, // North Edmonton / former City Centre Airport area
+  { name: 'Edmonton',          lat: 53.534, lng: -113.490 }, // City centre — equidistant from YEG/Blatchford/City AWS SWOB
   { name: 'Drayton Valley',    lat: 53.217, lng: -114.983 },
   { name: 'Rocky Mtn House',   lat: 52.367, lng: -114.917 },
   { name: 'Vegreville',        lat: 53.500, lng: -112.050 },
@@ -2236,7 +2234,7 @@ async function buildStationMap(containerId) {
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
 
-  // MarkerCluster group — separates overlapping stations (e.g. Edmonton YEG + Blatchford)
+  // MarkerCluster group — separates overlapping stations at low zoom
   const clusterGroup = L.markerClusterGroup
     ? L.markerClusterGroup({
         maxClusterRadius: 20,
