@@ -1727,7 +1727,8 @@ async function printStationBriefing() {
       const fpw = fd.peak || fd; // peak (14:00) conditions for FBP
       const fdc = PRINT_BG[fr.danger] || PRINT_BG['Moderate'];
       const ffbp = fr.fbp;
-      const hfiTxt = !ffbp ? '—' : (() => { const cl = hfiClassInfo(ffbp.hfi); return `<span style="display:inline-block;min-width:18px;padding:0 5px;border-radius:3px;background:${cl.bg};color:${cl.text};font-weight:900;font-size:8.5pt">${cl.num}</span> <span style="font-size:8pt">${Math.round(ffbp.hfi).toLocaleString()}</span>`; })();
+      const hfiTxt = ffbp ? Math.round(ffbp.hfi).toLocaleString() : '—';
+      const hfiClassTxt = !ffbp ? '—' : (() => { const cl = hfiClassInfo(ffbp.hfi); return `<span style="display:inline-block;min-width:20px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-weight:900;font-size:9pt;text-align:center">${cl.num}</span>`; })();
       const isD1 = i === 0;
       return `<tr style="background:${isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9'}">
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
@@ -1737,6 +1738,7 @@ async function printStationBriefing() {
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${classBadge(fr.fwi)}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${ffbp ? ffbp.ros.toFixed(1) : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiTxt}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiClassTxt}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt">${ffbp ? ffbp.fireType : '—'}</td>
       </tr>`;
     }).join('\n');
@@ -1764,12 +1766,13 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (~14:00 MDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(d1r.fwi)} &nbsp;${classBadge(d1r.fwi)}</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${Math.round(d1r.fwi)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
-      <p class="kv"><span class="label">Head Fire Intensity (kW/m)</span><br><span class="val" style="font-size:11pt">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') : '—'}</span>${d1fbp ? `<br><span style="font-size:9pt">${hfiBadge(d1fbp.hfi)}</span>` : ''}</p>
+      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
+    ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">HFI Intensity Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
     ${d1EscapeNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 MDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
@@ -1867,12 +1870,13 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (Noon LST)</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(r.fwi)} &nbsp;${classBadge(r.fwi)}</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(r.fwi)} — ${r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
-      <p class="kv"><span class="label">Head Fire Intensity (kW/m)</span><br><span class="val" style="font-size:11pt">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') : '—'}</span>${fbp ? `<br><span style="font-size:9pt">${hfiBadge(fbp.hfi)}</span>` : ''}</p>
+      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
+    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">HFI Intensity Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
     ${escapedNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
@@ -1893,6 +1897,7 @@ ${d1Section}
           <th>Rating</th>
           <th>ROS m/min</th>
           <th>HFI kW/m</th>
+          <th>HFI Class</th>
           <th>Fire Type</th>
         </tr>
       </thead>
@@ -1900,6 +1905,19 @@ ${d1Section}
         ${forecastRows}
       </tbody>
     </table>
+  </div>
+</div>
+
+<div style="border:1px solid #ccc;margin-bottom:8px;page-break-inside:avoid">
+  <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">HFI Intensity Class Legend</div>
+  <div style="padding:6px 10px;display:grid;grid-template-columns:1fr 1fr;gap:3px 24px">
+    ${[{n:1,r:'< 200 kW/m',    d:'Walk-in direct attack',                  bg:'#d4edda',t:'#155724'},
+       {n:2,r:'200–500 kW/m',  d:'Direct attack with hand tools',           bg:'#cce5ff',t:'#004085'},
+       {n:3,r:'500–2,000 kW/m',d:'Tallest FF flame length — direct attack limit', bg:'#fff3cd',t:'#856404'},
+       {n:4,r:'2,000–4,000 kW/m',d:'Fire truck height — consider indirect attack', bg:'#ffe5cc',t:'#7d3200'},
+       {n:5,r:'4,000–10,000 kW/m',d:'Bungalow roofline — aircraft ineffective at head', bg:'#f8d7da',t:'#721c24'},
+       {n:6,r:'10,000+ kW/m',  d:'Catastrophic — uncontrollable',           bg:'#4a0010',t:'#ffccdd'}]
+      .map(c=>`<div style="display:flex;align-items:baseline;gap:6px;font-size:8pt;padding:1px 0"><span style="display:inline-block;min-width:20px;padding:0 5px;border-radius:3px;background:${c.bg};color:${c.t};font-weight:900;text-align:center;flex-shrink:0">${c.n}</span><span><strong>${c.r}</strong> — ${c.d}</span></div>`).join('')}
   </div>
 </div>
 
