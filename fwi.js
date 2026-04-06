@@ -680,6 +680,9 @@ function wireDOM(r, lat, lng) {
   // FBP fire behaviour (station_detail only — silently no-ops on other pages)
   wireFBP(r.weather, r);
 
+  // D+1 tomorrow card (station_detail only — silently no-ops on other pages)
+  if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
+
   // P4: SCRIBE 48-hr validation — async, non-blocking
   fetchSCRIBE(lat, lng).then(renderSCRIBE);
 }
@@ -2185,4 +2188,54 @@ async function fetchHotspots() {
   return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };
+/** Populate the D+1 Tomorrow card on station_detail. Called from initFWI after _lastFWI is set. */
+async function buildD1Card() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('fwi-d1-preview-date', 'Loading…');
+
+  let days, results;
+  try {
+    if (_forecastCache.results.length) {
+      ({ days, results } = _forecastCache);
+    } else {
+      try { days = await fetchForecastNAEFS(_stationLat, _stationLng); }
+      catch(e) { days = await fetchForecast(_stationLat, _stationLng); }
+      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const fuelCode = _savedFuelCode();
+      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode);
+      _forecastCache = { days, results, fuelCode };
+    }
+  } catch(e) { set('fwi-d1-preview-date', 'Forecast unavailable'); return; }
+
+  const todayMid = new Date(); todayMid.setHours(0,0,0,0);
+  const tomMid = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
+  const d1Idx = days.findIndex(d => d._ts && d._ts >= tomMid.getTime());
+  const idx = d1Idx >= 0 ? d1Idx : 0;
+  const d1r = results[idx], d1d = days[idx];
+  if (!d1r) return;
+
+  const d1pw = d1d?.peak || d1d || {};
+  const d1fbp = d1r.fbp;
+
+  set('fwi-d1-preview-date',    `${d1r.label || 'D+1'} · ~14:00 MDT`);
+  set('fwi-d1-preview-weather', `${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h`);
+  set('fwi-d1-preview-fwi',     `${Math.round(d1r.fwi)} — ${d1r.danger}`);
+
+  if (d1fbp) {
+    const cl = hfiClassInfo(d1fbp.hfi);
+    const col = cl.num===1?'#4ae176':cl.num===2?'#7bd0ff':cl.num===3?'#f4c430':cl.num===4?'#ff8c42':cl.num===5?'#ff4d4d':'#ff88aa';
+    const numEl = document.getElementById('fwi-d1-preview-hfi-num');
+    const lblEl = document.getElementById('fwi-d1-preview-hfi-label');
+    const szEl  = document.getElementById('fwi-d1-preview-hfi-size');
+    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = col; }
+    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = col; }
+    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = col; }
+    set('fwi-d1-preview-hfi-kwm',  `${Math.round(d1fbp.hfi).toLocaleString()} kW/m`);
+    set('fwi-d1-preview-ros',      `${d1fbp.ros.toFixed(1)} m/min`);
+    set('fwi-d1-preview-flame',    `${d1fbp.flameLength.toFixed(1)} m`);
+    set('fwi-d1-preview-type',     d1fbp.fireType);
+    set('fwi-d1-preview-cfb',      `${(d1fbp.cfb*100).toFixed(0)}%`);
+  }
+}
+
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };

@@ -147,6 +147,56 @@
   </div>
 </div>
 
+<!-- ── Tomorrow — D+1 Peak Burn ───────────────────────────────────────── -->
+<section class="mb-10" id="fwi-d1-preview-section">
+  <div class="flex items-center gap-3 mb-4">
+    <h3 class="font-headline text-xl font-bold text-on-surface">Tomorrow · Peak Burn</h3>
+    <div class="h-px flex-1 bg-outline-variant/15"></div>
+    <span class="text-[10px] font-label text-on-surface-variant" id="fwi-d1-preview-date">~14:00 MDT</span>
+  </div>
+  <div class="surface-container-high p-5 rounded-xl border-l-2 border-[#1a3a5c]">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Predicted Weather</p>
+        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-weather">—</p>
+      </div>
+      <div class="text-right">
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">FWI</p>
+        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-fwi">—</p>
+      </div>
+    </div>
+    <div class="mb-4">
+      <div class="flex justify-between items-start">
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head Fire Intensity</p>
+        <span class="text-[11px] font-bold text-on-surface-variant/60" id="fwi-d1-preview-hfi-kwm">—</span>
+      </div>
+      <div class="flex items-center gap-3 mt-1">
+        <span class="font-headline text-4xl font-black leading-none" id="fwi-d1-preview-hfi-num" style="color:#7bd0ff">—</span>
+        <span class="font-headline text-xl font-bold" id="fwi-d1-preview-hfi-label" style="color:#7bd0ff">—</span>
+      </div>
+      <p class="text-[11px] mt-1 font-medium" id="fwi-d1-preview-hfi-size">—</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant/15">
+      <div>
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Head ROS</p>
+        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-ros">—</p>
+      </div>
+      <div>
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Flame Length</p>
+        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-flame">—</p>
+      </div>
+      <div>
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Fire Type</p>
+        <p class="font-headline text-base font-bold text-on-surface" id="fwi-d1-preview-type">—</p>
+      </div>
+      <div>
+        <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Crown Frac.</p>
+        <p class="font-headline text-xl font-bold text-on-surface" id="fwi-d1-preview-cfb">—</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── FWI Components ─────────────────────────────────────────────────── -->
 <section class="mb-10">
 <div class="flex items-center justify-between mb-6">
@@ -270,7 +320,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=41"></script>
+<script src="../fwi.js?v=42"></script>
 <script>
   FWI.buildStationPicker();
   document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
