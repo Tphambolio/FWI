@@ -457,6 +457,8 @@ async function fetchCWFIS(lat, lng) {
         ? `CWFIS · ${stationName}`
         : `CWFIS · ${stationName} · FWI calc`,
       stationName,
+      stationLat: +nearest.lat,
+      stationLng: +nearest.lon,
       distKm: Math.round(minDist),
     };
   } catch (e) {
@@ -512,11 +514,14 @@ async function fetchSWOB(lat, lng) {
     ? `MSC SWOB · ${stnName} (noon LST)`
     : `MSC SWOB · ${stnName} (latest obs)`;
 
+  const [nearestLng, nearestLat] = nearest.geometry.coordinates;
   return {
     temp, rh, wind, wdir, rain,
     month:       new Date().getMonth() + 1,
     source:      srcLabel,
     stationName: stnName,
+    stationLat:  nearestLat,
+    stationLng:  nearestLng,
     fwiFromCWFIS: false,
     distKm:      Math.round(minDist),
   };
@@ -2170,39 +2175,49 @@ async function buildStationMap(containerId) {
     '4-VH':'#ffa726','5-Ext':'#ff4d4d','6-Cat':'#cc2222','—':'#d1d5db',
   };
 
+  // Zoom-responsive pill sizes: sm=provincial, md=regional, lg=municipal
+  const PILL_SIZES = {
+    sm: { w:46, h:30, r:15, lbl:5,  fv:10, hn:9,  hw:0  },
+    md: { w:60, h:40, r:20, lbl:6,  fv:13, hn:11, hw:5.5},
+    lg: { w:72, h:48, r:24, lbl:7,  fv:15, hn:13, hw:7  },
+  };
+  function _zoomScale(zoom) { return zoom <= 5 ? 'sm' : zoom <= 7 ? 'md' : 'lg'; }
+
   // Bicolor pill: left half = FWI danger color, right half = HFI class color
-  // Dark text for legibility on all background colors
-  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls) {
+  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls, scale) {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
+    const sz = PILL_SIZES[scale] || PILL_SIZES.md;
+    const half = Math.floor(sz.w / 2);
     return L.divIcon({
       className: '',
-      html: `<div style="width:72px;height:48px;border-radius:24px;overflow:hidden;display:flex;` +
+      html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${sz.r}px;overflow:hidden;display:flex;` +
             `box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 1.5px rgba(0,0,0,0.12);` +
             `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
-            `<div style="width:36px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
+            `<div style="width:${half}px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
             `align-items:center;justify-content:center;gap:1px">` +
-            `<span style="font-size:7px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
-            `<span style="font-size:15px;font-weight:800;color:rgba(0,0,0,0.8);letter-spacing:-.03em;line-height:1">${fwiVal}</span>` +
+            `<span style="font-size:${sz.lbl}px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
+            `<span style="font-size:${sz.fv}px;font-weight:800;color:rgba(0,0,0,0.8);letter-spacing:-.03em;line-height:1">${fwiVal}</span>` +
             `</div>` +
             `<div style="width:1px;background:rgba(0,0,0,0.15);flex-shrink:0"></div>` +
-            `<div style="width:35px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
+            `<div style="width:${sz.w - half - 1}px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
             `align-items:center;justify-content:center;gap:1px">` +
-            `<span style="font-size:7px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
-            `<span style="font-size:13px;font-weight:800;color:rgba(0,0,0,0.8);line-height:1">${hfiNum || '—'}</span>` +
-            `<span style="font-size:7px;font-weight:600;color:rgba(0,0,0,0.6);line-height:1">${hfiWord || ''}</span>` +
+            `<span style="font-size:${sz.lbl}px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
+            `<span style="font-size:${sz.hn}px;font-weight:800;color:rgba(0,0,0,0.8);line-height:1">${hfiNum || '—'}</span>` +
+            (sz.hw ? `<span style="font-size:${sz.hw}px;font-weight:600;color:rgba(0,0,0,0.6);line-height:1">${hfiWord || ''}</span>` : '') +
             `</div>` +
             `</div>`,
-      iconSize: [72, 48], iconAnchor: [36, 24], popupAnchor: [0, -28],
+      iconSize: [sz.w, sz.h], iconAnchor: [sz.w/2, sz.h/2], popupAnchor: [0, -(sz.h/2 + 4)],
     });
   }
 
-  function _makeLoadingIcon() {
+  function _makeLoadingIcon(scale) {
+    const sz = PILL_SIZES[scale] || PILL_SIZES.md;
     return L.divIcon({
       className: '',
-      html: `<div style="width:72px;height:48px;border-radius:24px;background:#374151;display:flex;` +
+      html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${sz.r}px;background:#374151;display:flex;` +
             `align-items:center;justify-content:center;` +
-            `box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:11px;color:#6b7280">…</div>`,
-      iconSize: [72, 48], iconAnchor: [36, 24], popupAnchor: [0, -28],
+            `box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:${sz.lbl+2}px;color:#6b7280">…</div>`,
+      iconSize: [sz.w, sz.h], iconAnchor: [sz.w/2, sz.h/2], popupAnchor: [0, -(sz.h/2 + 4)],
     });
   }
 
@@ -2216,52 +2231,84 @@ async function buildStationMap(containerId) {
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
 
-  // Place all loading markers immediately
+  // Place all loading markers immediately at nominal coords
   const markers = {};
   for (const s of ALBERTA_STATIONS) {
-    markers[s.name] = L.marker([s.lat, s.lng], { icon: _makeLoadingIcon() })
-      .bindPopup(`<b style="font-family:'Space Grotesk',sans-serif">${s.name}</b><br><small style="color:#9ca3af">Loading…</small>`, { maxWidth: 240 })
+    markers[s.name] = L.marker([s.lat, s.lng], { icon: _makeLoadingIcon(_zoomScale(map.getZoom())) })
+      .bindPopup(`<b style="font-family:'Space Grotesk',sans-serif">${s.name}</b><br><small style="color:#9ca3af">Loading…</small>`, { maxWidth: 260 })
       .addTo(map);
   }
 
   // Fetch data and update each marker as it arrives
   for (const s of ALBERTA_STATIONS) {
     try {
-      const w   = await fetchWeatherPrimary(s.lat, s.lng);
-      const r   = calculateFWI(w);
+      const w        = await fetchWeatherPrimary(s.lat, s.lng);
+      const r        = calculateFWI(w);
       const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
-      const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
+      const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
       const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
-      _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
-      _updateStationTableRow({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
 
+      // Use actual station coords from data response if available; otherwise keep nominal
+      const stnLat = w.stationLat ?? s.lat;
+      const stnLng = w.stationLng ?? s.lng;
+
+      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
+      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
+
+      // Move marker to actual station position
+      markers[s.name].setLatLng([stnLat, stnLng]);
+
+      const scale    = _zoomScale(map.getZoom());
       const fwiColor = MARKER_COLORS[r.danger] || '#7bd0ff';
       const hfiCls   = fbp ? _hfiClass(fbp.hfi) : '—';
       const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls));
+      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls, scale));
 
-      const hfiNum     = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
-      const fwiMethod  = w.fwiFromCWFIS ? 'CWFIS carry-over chain' : 'Van Wagner calc';
-      const distNote   = w.distKm != null ? ` · ${w.distKm} km` : '';
+      // Popup — full station detail card
+      const hfiNumStr  = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
+      const fwiMethod  = w.fwiFromCWFIS ? 'CWFIS carry-over' : 'Van Wagner calc';
+      const coordStr   = `${Math.abs(stnLat).toFixed(4)}°${stnLat>=0?'N':'S'} ${Math.abs(stnLng).toFixed(4)}°${stnLng>=0?'E':'W'}`;
+      const distNote   = w.distKm != null ? ` · ${w.distKm} km offset` : '';
+      const actualName = w.stationName && w.stationName !== s.name ? w.stationName : null;
       markers[s.name].setPopupContent(
-        `<div style="font-family:'Space Grotesk',sans-serif;min-width:190px">` +
-        `<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:2px">${s.name}</div>` +
-        `<div style="font-size:9px;color:#94a3b8;margin-bottom:7px;text-transform:uppercase;letter-spacing:.08em">${w.source || srcBadge}${distNote} · ${fwiMethod}</div>` +
-        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">` +
+        `<div style="font-family:'Space Grotesk',sans-serif;min-width:220px">` +
+        `<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:1px">${s.name}</div>` +
+        (actualName ? `<div style="font-size:9px;color:#64748b;margin-bottom:1px">CWFIS station: ${actualName}</div>` : '') +
+        `<div style="font-size:9px;color:#94a3b8;font-family:monospace;margin-bottom:1px">${coordStr}</div>` +
+        `<div style="font-size:8px;color:#94a3b8;margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;margin-bottom:6px">` +
         `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fwiColor};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
         `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fwiColor}">${r.danger}</strong></div>` +
-        `<div><span style="color:#94a3b8">HFI</span><br><span style="color:#1e293b">${hfiNum}</span></div>` +
+        `<div><span style="color:#94a3b8">HFI</span><br><span style="color:#1e293b">${hfiNumStr}</span></div>` +
         `<div><span style="color:#94a3b8">HFI Class</span><br><strong style="color:#1e293b">${hfiCls}</strong></div>` +
-        `<div><span style="color:#94a3b8">Temp</span><br><span style="color:#1e293b">${fmt(w.temp)}°C</span></div>` +
-        `<div><span style="color:#94a3b8">RH</span><br><span style="color:#1e293b">${fmt(w.rh,0)}%</span></div>` +
-        `<div><span style="color:#94a3b8">Wind</span><br><span style="color:#1e293b">${fmt(w.wind,0)} km/h</span></div>` +
-        `<div><span style="color:#94a3b8">Rain</span><br><span style="color:#1e293b">${fmt(w.rain)} mm</span></div>` +
+        `</div>` +
+        `<div style="border-top:1px solid #e2e8f0;padding-top:5px;display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:10px">` +
+        `<div><span style="color:#94a3b8">Temp</span> <span style="color:#1e293b">${fmt(w.temp)}°C</span></div>` +
+        `<div><span style="color:#94a3b8">RH</span> <span style="color:#1e293b">${fmt(w.rh,0)}%</span></div>` +
+        `<div><span style="color:#94a3b8">Wind</span> <span style="color:#1e293b">${fmt(w.wind,0)} km/h</span></div>` +
+        `<div><span style="color:#94a3b8">Rain</span> <span style="color:#1e293b">${fmt(w.rain)} mm</span></div>` +
+        `<div><span style="color:#94a3b8">FFMC</span> <span style="color:#1e293b">${r.ffmc?.toFixed(1) ?? '—'}</span></div>` +
+        `<div><span style="color:#94a3b8">DMC</span> <span style="color:#1e293b">${r.dmc?.toFixed(1) ?? '—'}</span></div>` +
+        `<div><span style="color:#94a3b8">DC</span> <span style="color:#1e293b">${r.dc?.toFixed(0) ?? '—'}</span></div>` +
+        `<div><span style="color:#94a3b8">BUI</span> <span style="color:#1e293b">${r.bui?.toFixed(1) ?? '—'}</span></div>` +
         `</div></div>`
       );
     } catch (e) {
       console.warn(`[FWI Map] ${s.name}:`, e);
     }
   }
+
+  // Rescale all loaded markers on zoom change
+  map.on('zoomend', () => {
+    const scale = _zoomScale(map.getZoom());
+    for (const entry of _mapStationCache) {
+      if (!entry.result) continue;
+      const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
+      const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
+      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
+      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, scale));
+    }
+  });
 
   // Active fires layer
   const activeFiresLayer = L.layerGroup();
