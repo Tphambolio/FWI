@@ -1684,8 +1684,9 @@ async function printStationBriefing() {
   // Source label
   const srcLabel = w?.stationName ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
 
-  // 7-day forecast table
+  // Forecast source label — NAEFS days carry a stationName; Open-Meteo/ECMWF days do not
   const { days: fDays, results: fResults } = _forecastCache;
+  const fSrcLabel = fDays[0]?.stationName ? 'NAEFS CDA' : 'ECMWF IFS 0.25° · Open-Meteo';
   let forecastRows = '';
   if (fResults.length > 0) {
     forecastRows = fResults.map((fr, i) => {
@@ -1728,18 +1729,16 @@ async function printStationBriefing() {
 <div class="section">
   <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 MDT)</div>
   <div class="section-body">
-    <div class="grid-2" style="margin-bottom:6px">
-      <p class="kv"><span class="label">Predicted Weather (Peak)</span><br><span class="val" style="font-size:10pt">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
-      <p class="kv"><span class="label">Predicted FWI</span><br><span class="val" style="font-size:10pt">${d1r.fwi.toFixed(1)} — <span style="color:${d1HfiColor}">${d1r.danger}</span></span></p>
-    </div>
     <div class="grid-2">
+      <p class="kv"><span class="label">Weather (~14:00 MDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${d1r.fwi.toFixed(1)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
-      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'} <span style="font-size:9pt;font-weight:400">[${d1HfiRating}]</span></span></p>
+      <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${d1EscapeNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:6px">Fuel: ${fuelCode} — ${fuelName} · FBP ST-X-3 · Source: ${srcLabel}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">Forecast valid: ~14:00 MDT ${tomorrowDate} · ${fSrcLabel} · Prepared: ${prepared}</p>
   </div>
 </div>` : '';
 
@@ -1828,21 +1827,21 @@ async function printStationBriefing() {
   </div>
 </div>
 
+<p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})</p>
+
 <div class="section">
   <div class="section-title">Current Fire Behaviour · Today · ${today}</div>
   <div class="section-body">
-    <div class="grid-2" style="margin-bottom:6px">
-      <p class="kv"><span class="label">Fuel Type</span><br><span class="val" style="font-size:10pt">${fuelCode} — ${fuelName}</span></p>
-      <p class="kv"><span class="label">Foliar MC (FMC)</span><br><span class="val">${fmc.toFixed(0)}%</span></p>
-    </div>
     <div class="grid-2">
+      <p class="kv"><span class="label">Weather (Noon LST)</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
-      <p class="kv"><span class="label">Fire Type</span><br><span class="val">${fbp ? fbp.fireType : '—'}</span></p>
-      <p class="kv"><span class="label">Crown Frac. Burned</span><br><span class="val">${fbp ? (fbp.cfb * 100).toFixed(0) + '%' : '—'}</span></p>
+      <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${escapedNote}
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: noon LST · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
 </div>
 
