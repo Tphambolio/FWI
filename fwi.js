@@ -110,6 +110,17 @@ function dangerRating(fwi) {
   return 'Extreme';
 }
 
+// Alberta Wildfire danger class 1–6 (CIFFC operational scale)
+// Returns { num, label, bg, text } for colour-coded display in briefings
+function dangerClassNum(fwi) {
+  if (fwi <  6) return { num: 1, label: 'Low',       bg: '#d4edda', text: '#155724' };
+  if (fwi < 12) return { num: 2, label: 'Moderate',  bg: '#cce5ff', text: '#004085' };
+  if (fwi < 25) return { num: 3, label: 'High',      bg: '#fff3cd', text: '#856404' };
+  if (fwi < 38) return { num: 4, label: 'Very High', bg: '#ffe5cc', text: '#7d3200' };
+  if (fwi < 50) return { num: 5, label: 'Extreme',   bg: '#f8d7da', text: '#721c24' };
+  return           { num: 6, label: 'Extreme+',  bg: '#4a0010', text: '#ffccdd' };
+}
+
 // Hero card gradient per danger level
 const DANGER_GRADIENTS = {
   'Low':       'linear-gradient(135deg, #4ae176 0%, #1a8a3e 100%)',
@@ -1681,6 +1692,12 @@ async function printStationBriefing() {
   };
   const dc = PRINT_BG[r.danger] || PRINT_BG['Moderate'];
 
+  // Alberta danger class helper — inline badge HTML
+  const classBadge = (fwi) => {
+    const cl = dangerClassNum(fwi);
+    return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${cl.num}</span> ${cl.label}`;
+  };
+
   // Source label
   const srcLabel = w?.stationName ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
 
@@ -1700,8 +1717,8 @@ async function printStationBriefing() {
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.rh != null ? Math.round(fpw.rh) + '%' : '—'}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${fr.fwi.toFixed(1)}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center"><span style="background:${fdc.bg};color:${fdc.text};padding:1px 6px;border-radius:10px;font-size:7.5pt;font-weight:700">${fr.danger}</span></td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${Math.round(fr.fwi)}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${classBadge(fr.fwi)}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${ffbp ? ffbp.ros.toFixed(1) : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiTxt}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt">${ffbp ? ffbp.fireType : '—'}</td>
@@ -1731,7 +1748,7 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (~14:00 MDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${d1r.fwi.toFixed(1)} — ${d1r.danger}</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(d1r.fwi)} &nbsp;${classBadge(d1r.fwi)}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
@@ -1834,7 +1851,7 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (Noon LST)</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(r.fwi)} &nbsp;${classBadge(r.fwi)}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
