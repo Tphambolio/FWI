@@ -1373,8 +1373,9 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
     const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
     const fuelCode = _savedFuelCode();
-    const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, _savedCuring());
-    _forecastCache = { days, results, fuelCode };
+    const curing   = _savedCuring();
+    const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, curing);
+    _forecastCache = { days, results, fuelCode, curing };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
     // Peak danger window — 3-day block centred on the highest FWI day
@@ -2577,19 +2578,24 @@ async function buildD1Card() {
 
   let days, results;
   try {
-    if (_forecastCache.results.length) {
+    const fuelCode = _savedFuelCode();
+    const curing   = _savedCuring();
+    if (_forecastCache.results.length && _forecastCache.fuelCode === fuelCode && _forecastCache.curing === curing) {
       ({ days, results } = _forecastCache);
     } else {
       // Try ECMWF first (faster, point-specific); fall back to NAEFS
-      try { days = await fetchForecast(_stationLat, _stationLng); }
-      catch(e) {
-        console.warn('[D+1] ECMWF failed, trying NAEFS:', e);
-        days = await fetchForecastNAEFS(_stationLat, _stationLng);
+      if (!_forecastCache.days.length) {
+        try { days = await fetchForecast(_stationLat, _stationLng); }
+        catch(e) {
+          console.warn('[D+1] ECMWF failed, trying NAEFS:', e);
+          days = await fetchForecastNAEFS(_stationLat, _stationLng);
+        }
+      } else {
+        days = _forecastCache.days; // reuse fetched days; only recalc FBP
       }
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
-      const fuelCode = _savedFuelCode();
-      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode, _savedCuring());
-      _forecastCache = { days, results, fuelCode };
+      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode, curing);
+      _forecastCache = { days, results, fuelCode, curing };
     }
   } catch(e) { console.error('[D+1] Forecast fetch failed:', e); set('fwi-d1-preview-date', 'Forecast unavailable'); return; }
 
