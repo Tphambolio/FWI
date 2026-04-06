@@ -1703,10 +1703,11 @@ async function printStationBriefing() {
   };
   const dc = PRINT_BG[r.danger] || PRINT_BG['Moderate'];
 
-  // Alberta danger class helper — inline badge HTML
+  // Alberta danger class helper — inline badge HTML (abbreviated labels for table fit)
   const classBadge = (fwi) => {
     const cl = dangerClassNum(fwi);
-    return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${cl.num}</span> ${cl.label}`;
+    const short = cl.label === 'Moderate' ? 'Mod' : cl.label === 'Very High' ? 'V. High' : cl.label;
+    return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${cl.num}</span> ${short}`;
   };
   // HFI class badge — number + plain-language label + operational descriptor
   const hfiBadge = (hfi) => {
