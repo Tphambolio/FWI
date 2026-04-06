@@ -1837,22 +1837,44 @@ window.addEventListener('load', function() {
 });
 <\/script>
 
-<!-- Legend row -->
-<div class="legend">
-  <strong style="font-size:7pt;text-transform:uppercase;letter-spacing:.05em">FWI (left):</strong>
-  <div class="ld"><span class="lc" style="background:#2d9e5f"></span>Low</div>
-  <div class="ld"><span class="lc" style="background:#2980b9"></span>Moderate</div>
-  <div class="ld"><span class="lc" style="background:#8e44ad"></span>High</div>
-  <div class="ld"><span class="lc" style="background:#e67e22"></span>V.High</div>
-  <div class="ld"><span class="lc" style="background:#c0392b"></span>Extreme</div>
-  <span style="color:#bbb;margin:0 4px">|</span>
-  <strong style="font-size:7pt;text-transform:uppercase;letter-spacing:.05em">HFI class (right):</strong>
-  <div class="ld"><span class="lc" style="background:#27ae60"></span>1-Low</div>
-  <div class="ld"><span class="lc" style="background:#2574a9"></span>2-Mod</div>
-  <div class="ld"><span class="lc" style="background:#c9a800"></span>3-High</div>
-  <div class="ld"><span class="lc" style="background:#d4660a"></span>4-VH</div>
-  <div class="ld"><span class="lc" style="background:#c62828"></span>5-Ext</div>
-  <div class="ld"><span class="lc" style="background:#7b0000"></span>6-Cat</div>
+<!-- Rating reference tables -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:5px">
+  <table style="border-collapse:collapse;width:100%;font-size:6.5pt">
+    <thead><tr style="background:#2d3748;color:#fff">
+      <th colspan="3" style="padding:3px 5px;text-align:left;letter-spacing:.05em;text-transform:uppercase">FWI Danger Rating (marker left half)</th>
+    </tr>
+    <tr style="background:#f0f2f5">
+      <th style="padding:2px 5px;text-align:left">Rating</th>
+      <th style="padding:2px 4px;text-align:center">FWI</th>
+      <th style="padding:2px 5px;text-align:left">Fire Behaviour</th>
+    </tr></thead>
+    <tbody>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2d9e5f;margin-right:3px;vertical-align:middle"></span><b>Low</b></td><td style="padding:2px 4px;text-align:center">&lt; 6</td><td style="padding:2px 5px;color:#555">Isolated fires; initial attack effective</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2980b9;margin-right:3px;vertical-align:middle"></span><b>Moderate</b></td><td style="padding:2px 4px;text-align:center">6–11</td><td style="padding:2px 5px;color:#555">Fires start easily; control feasible</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8e44ad;margin-right:3px;vertical-align:middle"></span><b>High</b></td><td style="padding:2px 4px;text-align:center">12–24</td><td style="padding:2px 5px;color:#555">Intense surface fire; difficult to control</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin-right:3px;vertical-align:middle"></span><b>Very High</b></td><td style="padding:2px 4px;text-align:center">25–37</td><td style="padding:2px 5px;color:#555">Spotting likely; indirect attack only</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span><b>Extreme</b></td><td style="padding:2px 4px;text-align:center">≥ 38</td><td style="padding:2px 5px;color:#555">Crown fire conditions; evacuate</td></tr>
+    </tbody>
+  </table>
+  <table style="border-collapse:collapse;width:100%;font-size:6.5pt">
+    <thead><tr style="background:#2d3748;color:#fff">
+      <th colspan="4" style="padding:3px 5px;text-align:left;letter-spacing:.05em;text-transform:uppercase">HFI Byram Intensity Class (marker right half)</th>
+    </tr>
+    <tr style="background:#f0f2f5">
+      <th style="padding:2px 5px;text-align:left">Class</th>
+      <th style="padding:2px 4px;text-align:center">kW/m</th>
+      <th style="padding:2px 4px;text-align:center">Flame</th>
+      <th style="padding:2px 5px;text-align:left">Suppression</th>
+    </tr></thead>
+    <tbody>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27ae60;margin-right:3px;vertical-align:middle"></span><b>1-Low</b></td><td style="padding:2px 4px;text-align:center">&lt; 10</td><td style="padding:2px 4px;text-align:center">&lt; 0.2 m</td><td style="padding:2px 5px;color:#555">Hand tools</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2574a9;margin-right:3px;vertical-align:middle"></span><b>2-Mod</b></td><td style="padding:2px 4px;text-align:center">10–500</td><td style="padding:2px 4px;text-align:center">0.2–1.5 m</td><td style="padding:2px 5px;color:#555">Hand tools / ground tanker</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c9a800;margin-right:3px;vertical-align:middle"></span><b>3-High</b></td><td style="padding:2px 4px;text-align:center">500–2,000</td><td style="padding:2px 4px;text-align:center">1.5–2.5 m</td><td style="padding:2px 5px;color:#555">Pump/hose or air support</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4660a;margin-right:3px;vertical-align:middle"></span><b>4-VH</b></td><td style="padding:2px 4px;text-align:center">2,000–4,000</td><td style="padding:2px 4px;text-align:center">2.5–3.5 m</td><td style="padding:2px 5px;color:#555">Indirect — air on head still effective</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c62828;margin-right:3px;vertical-align:middle"></span><b>5-Ext</b></td><td style="padding:2px 4px;text-align:center">4,000–10,000</td><td style="padding:2px 4px;text-align:center">3.5–5.5 m</td><td style="padding:2px 5px;color:#555">Indirect — suppress flanks; coordinate air</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7b0000;margin-right:3px;vertical-align:middle"></span><b>6-Cat</b></td><td style="padding:2px 4px;text-align:center">&gt; 10,000</td><td style="padding:2px 4px;text-align:center">&gt; 5.5 m</td><td style="padding:2px 5px;color:#555">Air attack fails on head — evacuate</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- 3-column station grid: Station | T°C | RH | Wind | FWI/HFI pill | Rating -->
