@@ -85,9 +85,14 @@
 <!-- Slim footer: source note + print button -->
 <div class="flex justify-between items-center mt-2">
   <p class="text-[9px] text-slate-600 font-label">39 stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
-  <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-5 py-2 rounded-sm active:opacity-70 transition-opacity">
-    Print Briefing
-  </button>
+  <div class="flex gap-2">
+    <button id="fwi-export-regional-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-4 py-2 rounded-sm active:opacity-70 transition-opacity">
+      Regional
+    </button>
+    <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-4 py-2 rounded-sm active:opacity-70 transition-opacity">
+      Provincial
+    </button>
+  </div>
 </div>
 </section>
 <!-- Reference tables: FWI + HFI -->
@@ -181,7 +186,8 @@
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
-  document.getElementById('fwi-export-btn').addEventListener('click', FWI.printProvincialBriefing);
+  document.getElementById('fwi-export-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
+  document.getElementById('fwi-export-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>
