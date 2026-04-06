@@ -1772,7 +1772,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
-    ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">HFI Intensity Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
+    ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">Glenn's HFI Scale &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
     ${d1EscapeNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 MDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
@@ -1876,7 +1876,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
-    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">HFI Intensity Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
+    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">Glenn's HFI Scale &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
     ${escapedNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
@@ -1909,7 +1909,7 @@ ${d1Section}
 </div>
 
 <div style="border:1px solid #ccc;margin-bottom:8px;page-break-inside:avoid">
-  <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">HFI Intensity Class Legend</div>
+  <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Glenn's HFI Scale — Intensity Class Legend</div>
   <div style="padding:6px 10px;display:grid;grid-template-columns:1fr 1fr;gap:3px 24px">
     ${[{n:1,r:'< 200 kW/m',    d:'Walk-in direct attack',                  bg:'#d4edda',t:'#155724'},
        {n:2,r:'200–500 kW/m',  d:'Direct attack with hand tools',           bg:'#cce5ff',t:'#004085'},
