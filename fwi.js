@@ -1910,15 +1910,28 @@ ${d1Section}
 
 <div style="border:1px solid #ccc;margin-bottom:8px;page-break-inside:avoid">
   <div style="background:#444;color:#fff;padding:4px 10px;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Glenn's HFI Scale — Intensity Class Legend</div>
-  <div style="padding:6px 10px;display:grid;grid-template-columns:1fr 1fr;gap:3px 24px">
-    ${[{n:1,r:'< 200 kW/m',    d:'Walk-in direct attack',                  bg:'#d4edda',t:'#155724'},
-       {n:2,r:'200–500 kW/m',  d:'Direct attack with hand tools',           bg:'#cce5ff',t:'#004085'},
-       {n:3,r:'500–2,000 kW/m',d:'Tallest FF flame length — direct attack limit', bg:'#fff3cd',t:'#856404'},
-       {n:4,r:'2,000–4,000 kW/m',d:'Fire truck height — consider indirect attack', bg:'#ffe5cc',t:'#7d3200'},
-       {n:5,r:'4,000–10,000 kW/m',d:'Bungalow roofline — aircraft ineffective at head', bg:'#f8d7da',t:'#721c24'},
-       {n:6,r:'10,000+ kW/m',  d:'Catastrophic — uncontrollable',           bg:'#4a0010',t:'#ffccdd'}]
-      .map(c=>`<div style="display:flex;align-items:baseline;gap:6px;font-size:8pt;padding:1px 0"><span style="display:inline-block;min-width:20px;padding:0 5px;border-radius:3px;background:${c.bg};color:${c.t};font-weight:900;text-align:center;flex-shrink:0">${c.n}</span><span><strong>${c.r}</strong> — ${c.d}</span></div>`).join('')}
-  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+    <thead>
+      <tr style="background:#f0f0f0">
+        <th style="padding:4px 8px;text-align:center;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #ccc;width:52px">Class</th>
+        <th style="padding:4px 8px;text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #ccc;width:140px">kW/m Range</th>
+        <th style="padding:4px 8px;text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #ccc">Operational Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${[{n:1,r:'< 200',        d:'Walk-in direct attack',                           bg:'#d4edda',t:'#155724'},
+         {n:2,r:'200 – 500',    d:'Direct attack with hand tools',                   bg:'#cce5ff',t:'#004085'},
+         {n:3,r:'500 – 2,000',  d:'Tallest firefighter flame length — direct attack limit', bg:'#fff3cd',t:'#856404'},
+         {n:4,r:'2,000 – 4,000',d:'Fire truck height — consider indirect attack',    bg:'#ffe5cc',t:'#7d3200'},
+         {n:5,r:'4,000 – 10,000',d:'Bungalow roofline — aircraft ineffective at the head', bg:'#f8d7da',t:'#721c24'},
+         {n:6,r:'10,000+',      d:'Catastrophic — uncontrollable',                   bg:'#4a0010',t:'#ffccdd'}]
+        .map((c,i)=>`<tr style="background:${i%2===0?'#fff':'#fafafa'}">
+          <td style="padding:4px 8px;text-align:center;border-bottom:1px solid #eee"><span style="display:inline-block;min-width:24px;padding:2px 6px;border-radius:3px;background:${c.bg};color:${c.t};font-weight:900;font-size:9.5pt;text-align:center">${c.n}</span></td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;font-weight:600">${c.r} kW/m</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee">${c.d}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
 </div>
 
 <div class="sign-block">
