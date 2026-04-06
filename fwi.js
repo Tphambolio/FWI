@@ -144,13 +144,13 @@ function hfiClassInfo(hfi) {
   return           { num: 6, label: 'Catastrophic', size: 'Flame length > 5.5 m',             desc: 'Air attack likely to fail on head — evacuate',      bg: '#4a0010', text: '#ffccdd' };
 }
 
-// Hero card gradient per danger level
+// Behaviour card gradient per danger level — used on full-height cards so keep tones rich, not neon
 const DANGER_GRADIENTS = {
-  'Low':       'linear-gradient(135deg, #4ae176 0%, #1a8a3e 100%)',
+  'Low':       'linear-gradient(135deg, #2d9e58 0%, #175c30 100%)',
   'Moderate':  'linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)',
-  'High':      'linear-gradient(135deg, #fbabff 0%, #9b3dbd 100%)',
-  'Very High': 'linear-gradient(135deg, #ff8c42 0%, #c45000 100%)',
-  'Extreme':   'linear-gradient(135deg, #ff4d4d 0%, #b01010 100%)',
+  'High':      'linear-gradient(135deg, #c97ae0 0%, #7a28a8 100%)',
+  'Very High': 'linear-gradient(135deg, #f07030 0%, #9e3800 100%)',
+  'Extreme':   'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',
 };
 
 // Per-component thresholds (CFFDRS operational scale)
