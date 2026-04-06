@@ -1790,14 +1790,17 @@ function printProvincialBriefing() {
 </div>
 
 <!-- Leaflet OSM map -->
-<div id="print-map"></div>
+<div id="print-map" style="width:100%;height:295px;border:1px solid #ccc;margin-bottom:4px"></div>
 <script>
+window.addEventListener('load', function() {
 (function() {
   const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#8e44ad', 'Very High':'#e67e22', Extreme:'#c0392b' };
   const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
   const stations = ${mapStationData};
 
-  const map = L.map('print-map', { zoomControl: false, center: [54.5, -114.5], zoom: 5 });
+  const map = L.map('print-map', { zoomControl: false });
+  map.setView([54.5, -115.0], 5);
+  map.invalidateSize();
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19
@@ -1831,6 +1834,7 @@ function printProvincialBriefing() {
   map.eachLayer(l => { if (l.on) l.on('load', () => setTimeout(doPrint, 400)); });
   setTimeout(doPrint, 3000);
 })();
+});
 <\/script>
 
 <!-- Legend row -->
