@@ -268,7 +268,7 @@ let _stationLng = -113.5; // module-level; set by initFWI
 let _stationName = 'Edmonton'; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
-function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
+function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100) {
   const ft = FUEL_TYPES[fuelCode];
   if (!ft) return null;
 
@@ -276,6 +276,15 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
   const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
   const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
   const isi = 0.208 * ff * Math.exp(0.05039 * windSpeed);
+
+  // Grass curing factor — FBP ST-X-3 (O1a/O1b only)
+  // CF = 0.005 × (exp(0.061 × PC) − 1); modifies effective ISI before ROS calc.
+  // At PC=0 → CF=0 (no spread); PC=80 → CF≈0.65; PC=100 → CF≈2.22
+  let isiForROS = isi;
+  if (fuelCode === 'O1a' || fuelCode === 'O1b') {
+    const pc = Math.max(0, Math.min(100, curing));
+    isiForROS = 0.005 * (Math.exp(0.061 * pc) - 1) * isi;
+  }
 
   // BUI — same formula as _bui()
   let bui;
@@ -292,8 +301,8 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
     be = Math.exp(50.0 * Math.log(ft.q) * (1.0 / bui - 1.0 / ft.bui0));
   }
 
-  // Surface ROS (m/min): RSI = a × (1 − e^{−b·ISI})^c × BE
-  let ros = ft.a * Math.pow(1.0 - Math.exp(-ft.b * isi), ft.c) * be;
+  // Surface ROS (m/min): RSI = a × (1 − e^{−b·ISI_eff})^c × BE
+  let ros = ft.a * Math.pow(1.0 - Math.exp(-ft.b * isiForROS), ft.c) * be;
 
   // Slope factor — Butler (2007), capped at 2×
   if (slope > 0) {
@@ -334,7 +343,8 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0) {
 function wireFBP(weather, fwi) {
   const fuelCode = document.getElementById('fwi-fuel-picker')?.value || 'C2';
   localStorage.setItem('fwi-fuel-type', fuelCode); // persist for forecast page
-  const result = calculateFBP(fuelCode, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0);
+  const curing = _savedCuring();
+  const result = calculateFBP(fuelCode, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing);
   if (!result) return;
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -1168,14 +1178,17 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
 function _savedFuelCode() {
   return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type')) || 'C2';
 }
+function _savedCuring() {
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-grass-curing')) || '80', 10);
+}
 
 /** Chain Van Wagner + FBP per day. FBP uses each day's peak (14:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
-function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2') {
+function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100) {
   const results = calcMultiDay(days, startupDC, startState);
   return results.map((r, i) => {
     const pw = days[i]?.peak || days[i]; // peak = 14:00; fallback to noon
-    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10);
+    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing);
     return { ...r, fbp, peakWeather: pw };
   });
 }
@@ -1209,7 +1222,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
     const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
     const fuelCode = _savedFuelCode();
-    const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode);
+    const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, _savedCuring());
     _forecastCache = { days, results, fuelCode };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
@@ -1880,7 +1893,7 @@ async function printStationBriefing() {
   </div>
 </div>
 
-<p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})</p>
+<p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})${(fuelCode==='O1a'||fuelCode==='O1b') ? ` &nbsp;·&nbsp; Curing: ${_savedCuring()}% (CF=${(0.005*(Math.exp(0.061*_savedCuring())-1)).toFixed(3)})` : ''}</p>
 
 <div class="section">
   <div class="section-title">Current Fire Behaviour · Today · ${today}</div>
@@ -2218,7 +2231,7 @@ async function buildD1Card() {
       }
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
       const fuelCode = _savedFuelCode();
-      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode);
+      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode, _savedCuring());
       _forecastCache = { days, results, fuelCode };
     }
   } catch(e) { console.error('[D+1] Forecast fetch failed:', e); set('fwi-d1-preview-date', 'Forecast unavailable'); return; }

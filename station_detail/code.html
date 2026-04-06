@@ -90,6 +90,22 @@
   </div>
 </div>
 
+<!-- ── Grass Curing Stepper — shown only for O1a / O1b ─────────────────── -->
+<div id="fwi-curing-row" class="hidden flex items-center gap-3 mb-4 bg-[#1e2740] p-3 rounded-xl">
+  <span class="material-symbols-outlined text-amber-400 text-base">grass</span>
+  <div class="flex flex-col flex-1">
+    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Grass Curing — % Dead / Dry</label>
+    <div class="flex items-center gap-2">
+      <button id="fwi-curing-dec" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
+      <span class="font-headline text-2xl font-bold text-amber-400 w-14 text-center" id="fwi-curing-display">80%</span>
+      <button id="fwi-curing-inc" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
+      <input type="range" id="fwi-curing-slider" min="0" max="100" step="5" value="80"
+             class="flex-1 h-1 accent-amber-400 cursor-pointer">
+    </div>
+    <p class="text-[9px] text-slate-500 mt-1">CF = <span id="fwi-curing-cf">0.649</span> · FBP ST-X-3 O1 curing factor</p>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════════════════════
      TODAY — Current Fire Behaviour Card
      Background set dynamically by JS via DANGER_GRADIENTS[danger]
@@ -371,10 +387,13 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=45"></script>
+<script src="../fwi.js?v=46"></script>
 <script>
   FWI.buildStationPicker();
-  document.getElementById('fwi-fuel-picker').addEventListener('change', FWI.refreshFBP);
+  document.getElementById('fwi-fuel-picker').addEventListener('change', e => {
+    _syncCuringVisibility(e.target.value);
+    FWI.refreshFBP();
+  });
   document.getElementById('fwi-print-btn').addEventListener('click', FWI.printStationBriefing);
   document.getElementById('fwi-compare-btn').addEventListener('click', () => {
     const panel = document.getElementById('fwi-compare-panel');
@@ -387,8 +406,43 @@
   const _mfp = document.getElementById('fwi-fuel-picker-mobile');
   if (_mfp) _mfp.addEventListener('change', () => {
     document.getElementById('fwi-fuel-picker').value = _mfp.value;
+    _syncCuringVisibility(_mfp.value);
     FWI.refreshFBP();
   });
+
+  // ── Grass curing controls ─────────────────────────────────────────────
+  function _syncCuringVisibility(fuelCode) {
+    const isGrass = fuelCode === 'O1a' || fuelCode === 'O1b';
+    document.getElementById('fwi-curing-row').classList.toggle('hidden', !isGrass);
+  }
+  function _updateCuringDisplay(pc) {
+    const cf = (0.005 * (Math.exp(0.061 * pc) - 1)).toFixed(3);
+    document.getElementById('fwi-curing-display').textContent = pc + '%';
+    document.getElementById('fwi-curing-slider').value = pc;
+    document.getElementById('fwi-curing-cf').textContent = cf;
+  }
+  function _setCuring(pc) {
+    pc = Math.max(0, Math.min(100, Math.round(pc / 5) * 5)); // snap to nearest 5
+    localStorage.setItem('fwi-grass-curing', pc);
+    _updateCuringDisplay(pc);
+    FWI.refreshFBP();
+  }
+  document.getElementById('fwi-curing-dec').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('fwi-grass-curing')||'80',10)) - 5));
+  document.getElementById('fwi-curing-inc').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('fwi-grass-curing')||'80',10)) + 5));
+  document.getElementById('fwi-curing-slider').addEventListener('input', e => _setCuring(parseInt(e.target.value, 10)));
+
+  // Initialise on load from saved state
+  const _savedFuel = localStorage.getItem('fwi-fuel-type') || 'C2';
+  const _savedPC   = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
+  _syncCuringVisibility(_savedFuel);
+  _updateCuringDisplay(_savedPC);
+  // Sync pickers to saved fuel
+  if (_savedFuel) {
+    const fp = document.getElementById('fwi-fuel-picker');
+    if (fp) fp.value = _savedFuel;
+    const mfp = document.getElementById('fwi-fuel-picker-mobile');
+    if (mfp) mfp.value = _savedFuel;
+  }
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>

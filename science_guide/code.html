@@ -277,6 +277,52 @@
 </table>
 </div>
 <p class="text-[10px] text-on-surface-variant">Sources: Alberta WUI Pocket Guide (Gov. of Alberta, 2026); Cole, F.V. &amp; Alexander, M.E. (1995), CFS Northern Forestry Centre; Forestry Canada Fire Danger Group (1992), ST-X-3.</p>
+
+<!-- Grass Curing — O1a/O1b -->
+<div class="glass-panel rounded-2xl p-8 border border-amber-500/20 mt-8">
+  <div class="flex items-start gap-4 mb-6">
+    <span class="material-symbols-outlined text-amber-400 text-2xl mt-0.5">grass</span>
+    <div>
+      <h4 class="font-headline text-lg font-bold text-amber-400 mb-1">Grass Curing — O1a &amp; O1b Fuel Types</h4>
+      <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">FBP ST-X-3 · Van Wagner · Dominant driver of grass fire behaviour</p>
+    </div>
+  </div>
+  <p class="text-on-surface-variant text-sm leading-relaxed mb-6">For O1a (Matted Grass) and O1b (Standing Grass), <strong class="text-on-surface">percent curing is the dominant driver of fire behaviour</strong> — more influential than wind speed or FFMC. At 0% curing the grass is fully green and will not carry fire; at 100% curing the grass is fully desiccated and spread rates reach their theoretical maximum. The FBP System applies a <em>Curing Factor (CF)</em> to modify the effective ISI before the ROS formula is evaluated.</p>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-surface-container-lowest rounded-xl p-5">
+      <p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3">Curing Factor Equation</p>
+      <p class="font-mono text-sm text-amber-300">CF = 0.005 × (e<sup>0.061 × PC</sup> − 1)</p>
+      <p class="font-mono text-sm text-on-surface mt-2">ISI<sub>eff</sub> = CF × ISI</p>
+      <p class="font-mono text-sm text-on-surface mt-1">ROS = a × (1 − e<sup>−b · ISI<sub>eff</sub></sup>)<sup>c</sup> × BE</p>
+      <p class="text-[10px] text-on-surface-variant mt-3">where PC = percent curing (0–100). The O1a/O1b <em>a, b, c</em> coefficients (190/0.031/1.4 and 250/0.035/1.7) are calibrated to work with CF-modified ISI.</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-5">
+      <p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3">CF Reference Values</p>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-outline-variant/20">
+            <th class="text-left py-1.5 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Curing %</th>
+            <th class="text-left py-1.5 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">CF</th>
+            <th class="text-left py-1.5 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Operational State</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/10 text-xs">
+          <tr><td class="py-1.5 pr-4 font-bold text-secondary">0%</td><td class="pr-4 font-mono">0.000</td><td class="text-on-surface-variant">Green grass — no spread</td></tr>
+          <tr><td class="py-1.5 pr-4 font-bold text-secondary">30%</td><td class="pr-4 font-mono">0.028</td><td class="text-on-surface-variant">Early dry-down — negligible spread</td></tr>
+          <tr><td class="py-1.5 pr-4 font-bold text-primary">60%</td><td class="pr-4 font-mono">0.190</td><td class="text-on-surface-variant">Marginal — threshold for notable spread</td></tr>
+          <tr><td class="py-1.5 pr-4 font-bold text-amber-400">80%</td><td class="pr-4 font-mono">0.649</td><td class="text-on-surface-variant"><strong class="text-amber-400">Default</strong> — typical Alberta active season</td></tr>
+          <tr><td class="py-1.5 pr-4 font-bold text-orange-400">90%</td><td class="pr-4 font-mono">1.175</td><td class="text-on-surface-variant">Late summer / drought conditions</td></tr>
+          <tr><td class="py-1.5 pr-4 font-bold text-tertiary">100%</td><td class="pr-4 font-mono">2.222</td><td class="text-on-surface-variant">Fully desiccated — maximum spread (ISI × 2.2×)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-5">
+    <p class="text-[10px] uppercase tracking-widest text-amber-400 mb-2 font-bold">Operational Note — Alberta Application</p>
+    <p class="text-sm text-on-surface-variant leading-relaxed">The default curing value in this application is <strong class="text-amber-400">80%</strong> — representative of typical Alberta active-season conditions. Adjust curing using the stepper on the Home page when O1a or O1b is selected. At 60% curing, CF ≈ 0.19 — spread is marginal; at 100%, CF ≈ 2.22 — ISI is amplified 2.2× and ROS approaches extreme values. Field observation or satellite-derived curing estimates (e.g., NDVI-based phenology products) should inform this value when available. Prior to July 1, field-observed curing in southern Alberta grasslands commonly exceeds 80%; standing-grass (O1b) stations often reach 90%+ by August.</p>
+  </div>
+  <p class="text-[10px] text-on-surface-variant mt-4">Source: Forestry Canada Fire Danger Group (1992). Development and structure of the Canadian Forest Fire Behavior Prediction System. ST-X-3. §O1 grass fuel type equations.</p>
+</div>
 </section>
 <!-- Data & Methodology Section -->
 <section class="mb-16">
