@@ -1738,7 +1738,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${d1EscapeNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:4px">Forecast valid: ~14:00 MDT ${tomorrowDate} · ${fSrcLabel} · Prepared: ${prepared}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 MDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
 </div>` : '';
 
@@ -1841,7 +1841,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${escapedNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: noon LST · ${srcLabel} · Prepared: ${prepared}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
 </div>
 
