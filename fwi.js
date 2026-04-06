@@ -2137,145 +2137,185 @@ const MARKER_COLORS = {
 };
 
 /**
- * Build a Leaflet map into the element with the given id.
- * Places a grey marker for all 39 CWFIS stations immediately, then fetches
- * weather for each sequentially, updating marker colour and popup as data arrives.
- *
- * @param {string} containerId  id of the <div> to render into
+ * Build a static SVG station map for Alberta.
+ * Alberta polygon outline, 39 station dots: fill=FWI danger, ring=HFI class.
+ * Hover tooltip shows full station data. Active fires/hotspot overlays optional.
  */
 async function buildStationMap(containerId) {
   const container = document.getElementById(containerId);
-  if (!container || typeof L === 'undefined') return;
-  _mapStationCache = []; // reset on each map build
+  if (!container) return;
+  _mapStationCache = [];
 
-  // Initialise map centered on Alberta
-  const map = L.map(containerId, {
-    center: [54.5, -114.5],
-    zoom: 5,
-    zoomControl: true,
-    attributionControl: true,
+  // Coordinate projection — Alberta: lng -120→-110, lat 49→60
+  const VW = 440, VH = 500;
+  const toX = lng => +((lng + 120) / 10 * VW).toFixed(1);
+  const toY = lat => +((60 - lat) / 11 * VH).toFixed(1);
+
+  // HFI class ring colors (visible on dark bg)
+  const HFI_RING = {
+    '1-Low': 'rgba(255,255,255,0.25)', '2-Mod': 'rgba(255,255,255,0.4)',
+    '3-High': '#ffee58', '4-VH': '#ffa726', '5-Ext': '#ef5350', '6-Cat': '#ff1744',
+  };
+
+  // Initial loading dot placeholders
+  const loadingDots = ALBERTA_STATIONS.map(s => {
+    const id = s.name.replace(/\s+/g, '-');
+    return `<g id="stn-${id}" style="cursor:pointer">
+      <circle cx="${toX(s.lng)}" cy="${toY(s.lat)}" r="5.5" fill="#1e2740" stroke="#2d3449" stroke-width="1.5"/>
+    </g>`;
+  }).join('');
+
+  container.style.position = 'relative';
+  container.innerHTML = `
+    <svg id="fwi-svg-map" viewBox="0 0 ${VW} ${VH}"
+         style="display:block;width:100%;height:100%;background:#060e20"
+         xmlns="http://www.w3.org/2000/svg">
+      <!-- Ocean/outside fill -->
+      <rect width="${VW}" height="${VH}" fill="#060e20"/>
+      <!-- Alberta province polygon (approximate continental divide western boundary) -->
+      <polygon points="${VW},0 ${VW},${VH} 242,${VH} 229,455 220,409 198,386 154,341 88,318 44,273 22,227 0,182 0,0"
+               fill="#0f1829" stroke="none"/>
+      <!-- Province border highlight -->
+      <polyline points="0,0 0,182 22,227 44,273 88,318 154,341 198,386 220,409 229,455 242,${VH}"
+                fill="none" stroke="#7bd0ff" stroke-width="0.8" stroke-opacity="0.4"/>
+      <line x1="0" y1="0" x2="${VW}" y2="0" stroke="#7bd0ff" stroke-width="0.8" stroke-opacity="0.2"/>
+      <line x1="${VW}" y1="0" x2="${VW}" y2="${VH}" stroke="#7bd0ff" stroke-width="0.8" stroke-opacity="0.2"/>
+      <line x1="${VW}" y1="${VH}" x2="242" y2="${VH}" stroke="#7bd0ff" stroke-width="0.8" stroke-opacity="0.4"/>
+      <!-- Lat grid lines -->
+      ${[50,52,54,56,58].map(lat =>
+        `<line x1="0" y1="${toY(lat)}" x2="${VW}" y2="${toY(lat)}" stroke="#ffffff" stroke-width="0.3" stroke-opacity="0.07"/>
+         <text x="3" y="${toY(lat) - 2}" font-size="7" fill="#ffffff" fill-opacity="0.18" font-family="monospace">${lat}°N</text>`
+      ).join('')}
+      <!-- Province watermark -->
+      <text x="${VW * 0.73}" y="${VH * 0.46}" font-size="30" fill="#7bd0ff" fill-opacity="0.035"
+            font-weight="900" font-family="sans-serif" text-anchor="middle"
+            transform="rotate(-58,${VW * 0.73},${VH * 0.46})">ALBERTA</text>
+      <!-- Overlay layers (fires, hotspots) -->
+      <g id="svg-fires-layer" style="display:none"></g>
+      <g id="svg-hotspots-layer" style="display:none"></g>
+      <!-- Station dots -->
+      <g id="svg-stations">${loadingDots}</g>
+    </svg>
+    <div id="fwi-map-tip" style="display:none;position:absolute;background:rgba(14,22,44,0.95);border:1px solid rgba(123,208,255,0.25);border-radius:10px;padding:9px 13px;font-size:11px;color:#dae2fd;pointer-events:none;z-index:200;min-width:175px;box-shadow:0 6px 28px rgba(0,0,0,0.7);backdrop-filter:blur(10px)"></div>`;
+
+  const tip = document.getElementById('fwi-map-tip');
+  const svgEl = document.getElementById('fwi-svg-map');
+  const tipData = {};
+
+  // Wire tooltip to all station groups once (reads tipData lazily)
+  ALBERTA_STATIONS.forEach(s => {
+    const g = document.getElementById(`stn-${s.name.replace(/\s+/g, '-')}`);
+    if (!g) return;
+    g.addEventListener('mouseenter', e => {
+      const d = tipData[s.name];
+      tip.innerHTML = d || `<div style="font-weight:700;color:#7bd0ff;margin-bottom:2px">${s.name}</div><div style="color:#3d4f70;font-size:9px">Loading…</div>`;
+      tip.style.display = 'block';
+      const rect = container.getBoundingClientRect();
+      tip.style.left = (e.clientX - rect.left + 14) + 'px';
+      tip.style.top  = (e.clientY - rect.top  - 10) + 'px';
+    });
+    g.addEventListener('mousemove', e => {
+      if (tip.style.display === 'none') return;
+      const rect = container.getBoundingClientRect();
+      tip.style.left = (e.clientX - rect.left + 14) + 'px';
+      tip.style.top  = (e.clientY - rect.top  - 10) + 'px';
+    });
+    g.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
   });
+  svgEl.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 
-  // CartoDB Dark Matter tiles — matches dashboard theme
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
-
-  // Place all markers in loading state immediately
-  const markers = {};
-  for (const s of ALBERTA_STATIONS) {
-    const marker = L.circleMarker([s.lat, s.lng], {
-      radius: 7,
-      fillColor: '#45464d',
-      color: 'rgba(255,255,255,0.15)',
-      weight: 1,
-      fillOpacity: 0.85,
-    }).addTo(map);
-    marker.bindPopup(
-      `<div style="font-family:'Space Grotesk',sans-serif;min-width:160px">` +
-      `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:4px">${s.name}</div>` +
-      `<div style="font-size:10px;color:#8899cc;text-transform:uppercase;letter-spacing:.1em">Loading…</div>` +
-      `</div>`,
-      { maxWidth: 220 }
-    );
-    markers[s.name] = marker;
-  }
-
-  // Fetch weather for each station and update its marker
+  // Fetch station data and update SVG markers progressively
   for (const s of ALBERTA_STATIONS) {
     try {
-      const w = await fetchWeatherPrimary(s.lat, s.lng);
-      const r = calculateFWI(w);
+      const w   = await fetchWeatherPrimary(s.lat, s.lng);
+      const r   = calculateFWI(w);
       const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
       const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
       const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
       _mapStationCache.push({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
       _updateStationTableRow({ name: s.name, lat: s.lat, lng: s.lng, result: r, fbp, srcBadge });
-      const color = MARKER_COLORS[r.danger] || '#7bd0ff';
-      const radius = r.danger === 'Extreme' ? 10 : r.danger === 'Very High' ? 9 : 7;
 
-      markers[s.name].setStyle({
-        fillColor: color,
-        color: color,
-        weight: 1.5,
-        fillOpacity: 0.9,
-        radius,
-      });
+      const fill   = MARKER_COLORS[r.danger] || '#7bd0ff';
+      const hfiCls = fbp ? _hfiClass(fbp.hfi) : '—';
+      const ring   = HFI_RING[hfiCls] || 'rgba(255,255,255,0.25)';
+      const rw     = ['4-VH','5-Ext','6-Cat'].includes(hfiCls) ? 2.5 : 1.5;
+      const rad    = r.danger === 'Extreme' ? 8 : r.danger === 'Very High' ? 7 : 6;
+      const cx = toX(s.lng), cy = toY(s.lat);
 
-      // Source label — CWFIS shows sensor name + distance, Open-Meteo notes NWP
-      const srcLabel = w.source || 'Open-Meteo NWP';
-      const fwiMethod = w.fwiFromCWFIS ? 'CWFIS carry-over chain' : 'Van Wagner calc';
-      const distNote = w.distKm != null ? ` · ${w.distKm} km` : '';
+      const g = document.getElementById(`stn-${s.name.replace(/\s+/g, '-')}`);
+      if (g) {
+        g.innerHTML =
+          `<circle cx="${cx}" cy="${cy}" r="${rad + 5}" fill="${fill}" fill-opacity="0.08"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${fill}" stroke="${ring}" stroke-width="${rw}" opacity="0.95"/>`;
+      }
 
-      markers[s.name].setPopupContent(
-        `<div style="font-family:'Space Grotesk',sans-serif;min-width:180px">` +
-        `<div style="font-size:13px;font-weight:700;color:#7bd0ff;margin-bottom:2px">${s.name}</div>` +
-        `<div style="font-size:9px;color:#8899cc;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">${srcLabel}${distNote}</div>` +
-        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">` +
-        `<div><span style="color:#8899cc">FWI</span><br><strong style="color:#dae2fd;font-size:16px">${r.fwi.toFixed(1)}</strong></div>` +
-        `<div><span style="color:#8899cc">Danger</span><br><strong style="color:${color}">${r.danger.toUpperCase()}</strong></div>` +
-        `<div><span style="color:#8899cc">Temp</span><br><span style="color:#dae2fd">${fmt(w.temp)}°C</span></div>` +
-        `<div><span style="color:#8899cc">RH</span><br><span style="color:#dae2fd">${fmt(w.rh, 0)}%</span></div>` +
-        `<div><span style="color:#8899cc">Wind</span><br><span style="color:#dae2fd">${fmt(w.wind, 0)} km/h ${w.wdir != null ? compassDir(w.wdir) : ''}</span></div>` +
-        `<div><span style="color:#8899cc">Rain</span><br><span style="color:#dae2fd">${fmt(w.rain)} mm</span></div>` +
-        `</div>` +
-        `<div style="margin-top:8px;font-size:9px;color:#45464d;text-transform:uppercase;letter-spacing:.1em">${fwiMethod}</div>` +
-        `</div>`
-      );
+      // Tooltip content
+      const hfiNum = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
+      const fwiMethod = w.fwiFromCWFIS ? 'CWFIS chain' : 'Van Wagner';
+      tipData[s.name] =
+        `<div style="font-weight:700;color:#7bd0ff;font-size:12px;margin-bottom:3px">${s.name}</div>` +
+        `<div style="color:#3d4f70;font-size:8px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${w.source || srcBadge} · ${fwiMethod}</div>` +
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:10px">` +
+        `<div><span style="color:#3d4f70">FWI</span><br><strong style="color:${fill};font-size:15px">${r.fwi.toFixed(1)}</strong></div>` +
+        `<div><span style="color:#3d4f70">Danger</span><br><strong style="color:${fill}">${r.danger}</strong></div>` +
+        `<div><span style="color:#3d4f70">HFI</span><br><span>${hfiNum}</span></div>` +
+        `<div><span style="color:#3d4f70">HFI Class</span><br><span style="color:${ring.startsWith('rgba') ? '#aaa' : ring}">${hfiCls}</span></div>` +
+        `<div><span style="color:#3d4f70">Temp</span><br><span>${fmt(w.temp)}°C</span></div>` +
+        `<div><span style="color:#3d4f70">RH</span><br><span>${fmt(w.rh, 0)}%</span></div>` +
+        `<div><span style="color:#3d4f70">Wind</span><br><span>${fmt(w.wind, 0)} km/h</span></div>` +
+        `<div><span style="color:#3d4f70">Rain</span><br><span>${fmt(w.rain)} mm</span></div>` +
+        `</div>`;
     } catch (e) {
       console.warn(`[FWI Map] ${s.name}:`, e);
+      const g = document.getElementById(`stn-${s.name.replace(/\s+/g, '-')}`);
+      if (g) g.innerHTML = `<circle cx="${toX(s.lng)}" cy="${toY(s.lat)}" r="4.5" fill="#1e2740" stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>`;
     }
   }
 
-  // P3: Active fires layer
-  const activeFiresLayer = L.layerGroup();
+  // Active fires overlay
   fetchActiveFires().then(fires => {
+    const layer = document.getElementById('svg-fires-layer');
+    if (!layer) return;
     fires.forEach(f => {
       const ha = f.hectares || 1;
-      const r  = Math.max(3, Math.min(10, Math.sqrt(ha) * 0.25));
-      L.circleMarker([f.lat, f.lon], {
-        radius: r, fillColor: '#ff3333', color: '#ff8888', weight: 1, fillOpacity: 0.5,
-      }).bindPopup(
-        `<div style="font-family:'Space Grotesk',sans-serif;min-width:160px">` +
-        `<div style="font-size:12px;font-weight:700;color:#ff8888;margin-bottom:4px">${f.firename || 'Active Fire'}</div>` +
-        `<div style="font-size:11px;color:#dae2fd">${ha >= 1 ? ha.toLocaleString('en-CA', {maximumFractionDigits:0}) + ' ha' : '< 1 ha'}</div>` +
-        `<div style="font-size:10px;color:#8899cc;margin-top:2px">${f.stage_of_control || ''} · ${f.agency?.toUpperCase() || ''}</div>` +
-        `</div>`, { maxWidth: 220 }
-      ).addTo(activeFiresLayer);
+      const r  = Math.max(3, Math.min(9, Math.sqrt(ha) * 0.22));
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      el.setAttribute('cx', toX(f.lon)); el.setAttribute('cy', toY(f.lat)); el.setAttribute('r', r);
+      el.setAttribute('fill', '#ff3333'); el.setAttribute('fill-opacity', '0.55');
+      el.setAttribute('stroke', '#ff8888'); el.setAttribute('stroke-width', '1');
+      el.innerHTML = `<title>${f.firename || 'Active Fire'} · ${ha >= 1 ? ha.toLocaleString('en-CA', {maximumFractionDigits:0}) + ' ha' : '< 1 ha'} · ${f.stage_of_control || ''}</title>`;
+      layer.appendChild(el);
     });
   });
 
-  // P3: Hotspots layer (24h satellite detections, Canada bounding box)
-  const hotspotsLayer = L.layerGroup();
+  // Hotspots overlay
   fetchHotspots().then(spots => {
+    const layer = document.getElementById('svg-hotspots-layer');
+    if (!layer) return;
     spots.forEach(h => {
-      const hfi  = h.hfi != null ? ` · HFI ${Math.round(h.hfi).toLocaleString()} kW/m` : '';
-      const fuel = h.fuel ? ` · ${h.fuel}` : '';
-      L.circleMarker([h.lat, h.lon], {
-        radius: 4, fillColor: '#ff8c00', color: '#ffaa44', weight: 1, fillOpacity: 0.8,
-      }).bindPopup(
-        `<div style="font-family:'Space Grotesk',sans-serif;min-width:140px">` +
-        `<div style="font-size:11px;font-weight:700;color:#ff8c00;margin-bottom:3px">Satellite Hotspot</div>` +
-        `<div style="font-size:10px;color:#dae2fd">${h.satellite || h.sensor || ''} · ${h.source || ''}</div>` +
-        `<div style="font-size:10px;color:#8899cc;margin-top:2px">${hfi}${fuel}</div>` +
-        `</div>`, { maxWidth: 200 }
-      ).addTo(hotspotsLayer);
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('x', toX(h.lon) - 2.5); el.setAttribute('y', toY(h.lat) - 2.5);
+      el.setAttribute('width', '5'); el.setAttribute('height', '5');
+      el.setAttribute('fill', '#ff8c00'); el.setAttribute('fill-opacity', '0.75');
+      el.setAttribute('stroke', '#ffaa44'); el.setAttribute('stroke-width', '0.5');
+      el.innerHTML = `<title>Hotspot · ${h.satellite || h.sensor || ''}</title>`;
+      layer.appendChild(el);
     });
   });
 
-  // Wire toggle buttons (buttons added in regional_summary HTML)
-  const setupToggle = (btnId, layer, activeClass = 'map-layer-active') => {
+  // Toggle buttons for overlay layers
+  ['btn-activefires/svg-fires-layer', 'btn-hotspots/svg-hotspots-layer'].forEach(pair => {
+    const [btnId, layerId] = pair.split('/');
     const btn = document.getElementById(btnId);
     if (!btn) return;
     btn.addEventListener('click', () => {
-      if (map.hasLayer(layer)) { map.removeLayer(layer); btn.classList.remove(activeClass); }
-      else { map.addLayer(layer); btn.classList.add(activeClass); }
+      const layer = document.getElementById(layerId);
+      if (!layer) return;
+      const on = layer.style.display !== 'none';
+      layer.style.display = on ? 'none' : '';
+      btn.classList.toggle('map-layer-active', !on);
     });
-  };
-  setupToggle('btn-activefires', activeFiresLayer);
-  setupToggle('btn-hotspots',    hotspotsLayer);
+  });
 }
 
 // ─── P4: SCRIBE 48-hr FWI validation ────────────────────────────────────────

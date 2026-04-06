@@ -5,8 +5,6 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="../fwi-theme.js"></script>
 <style>
@@ -93,11 +91,29 @@
 </button>
 </div>
 </div>
-<div class="flex justify-between items-center mt-4">
-<p class="text-[10px] text-on-surface-variant font-label">39 CWFIS stations · NAEFS/Open-Meteo · Click marker for details</p>
-<button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity">
-  Print Provincial Briefing
-</button>
+<!-- Map legend + controls -->
+<div class="flex flex-wrap justify-between items-start gap-3 mt-3">
+  <div class="flex flex-wrap gap-x-4 gap-y-1 items-center">
+    <span class="font-label text-[9px] uppercase tracking-widest text-slate-600">FWI Danger →</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#4ae176"></span>Low</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#7bd0ff"></span>Moderate</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#fbabff"></span>High</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#ff8c42"></span>Very High</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#ff4d4d"></span>Extreme</span>
+  </div>
+  <div class="flex flex-wrap gap-x-4 gap-y-1 items-center">
+    <span class="font-label text-[9px] uppercase tracking-widest text-slate-600">HFI Ring →</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block border border-white/30" style="background:transparent"></span>Low/Mod</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block border-2" style="background:transparent;border-color:#ffee58"></span>High</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block border-2" style="background:transparent;border-color:#ffa726"></span>V.High</span>
+    <span class="flex items-center gap-1 font-label text-[9px] text-slate-400"><span class="w-2.5 h-2.5 rounded-full inline-block border-2" style="background:transparent;border-color:#ef5350"></span>Extreme+</span>
+  </div>
+</div>
+<div class="flex justify-between items-center mt-3">
+  <p class="text-[10px] text-slate-600 font-label">39 stations · hover for detail · CWFIS/SWOB/NWP</p>
+  <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity">
+    Print Provincial Briefing
+  </button>
 </div>
 </section>
 <!-- Station Network Table -->
@@ -110,23 +126,7 @@
 <div id="fwi-region-list"></div>
 </section>
 <style>
-  /* Leaflet dark theme overrides */
-  #fwi-station-map .leaflet-container { background: #0b1326; }
-  #fwi-station-map .leaflet-popup-content-wrapper {
-    background: #1e2740; border: 1px solid rgba(123,208,255,0.15);
-    border-radius: 12px; color: #dae2fd; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  #fwi-station-map .leaflet-popup-tip { background: #1e2740; }
-  #fwi-station-map .leaflet-popup-close-button { color: #7bd0ff !important; }
-  #fwi-station-map .leaflet-control-zoom a {
-    background: #1e2740; color: #7bd0ff; border-color: rgba(123,208,255,0.2);
-  }
   .map-layer-btn.map-layer-active { background: rgba(255,255,255,0.15) !important; }
-  #fwi-station-map .leaflet-control-zoom a:hover { background: #2d3449; }
-  #fwi-station-map .leaflet-control-attribution {
-    background: rgba(11,19,38,0.8); color: #45464d; font-size: 9px;
-  }
-  #fwi-station-map .leaflet-control-attribution a { color: #7bd0ff; }
 </style>
 </main>
 <!-- BottomNavBar -->
@@ -136,7 +136,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=48"></script>
+<script src="../fwi.js?v=49"></script>
 <script>
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
