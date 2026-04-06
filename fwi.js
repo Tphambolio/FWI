@@ -373,6 +373,7 @@ let _lastVWCalc  = null; // Van Wagner cold-start result for compare panel
 
 function refreshFBP() {
   if (_lastWeather && _lastFWI) wireFBP(_lastWeather, _lastFWI);
+  if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
 }
 
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
