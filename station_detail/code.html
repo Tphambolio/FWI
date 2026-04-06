@@ -22,7 +22,7 @@
     }
     /* Behaviour card — all children inherit white */
     .behaviour-card { color: white; }
-    .behaviour-card .card-label   { font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6; }
+    .behaviour-card .card-label   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; font-weight: 600; }
     .behaviour-card .card-divider { border-color: rgba(255,255,255,0.15); }
   </style>
 <style>
@@ -99,16 +99,16 @@
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-3">
-    <span class="card-label font-bold">TODAY · Noon LST · Observed</span>
-    <span class="text-[9px] opacity-60" data-fwi="source-station">—</span>
+    <span class="text-xs font-bold uppercase tracking-widest opacity-80">Today · Noon LST · Observed</span>
+    <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
   </div>
 
   <!-- FWI score + danger -->
   <div class="flex items-end gap-4 mb-4">
     <div class="font-headline font-black leading-none" style="font-size: 5rem" data-fwi="fwi">—</div>
     <div class="pb-1">
-      <div class="card-label mb-0.5">Fire Weather Index</div>
-      <div class="font-headline text-lg font-extrabold uppercase tracking-widest" data-fwi="danger">—</div>
+      <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
+      <div class="font-headline text-xl font-extrabold uppercase tracking-wide" data-fwi="danger">—</div>
     </div>
   </div>
 
@@ -138,7 +138,7 @@
 
   <!-- HFI Class hero -->
   <div class="pt-3 mb-4 border-t card-divider border-t">
-    <p class="card-label mb-2">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
     <div class="flex items-baseline gap-3 mb-1">
       <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-fbp-hfi-rating">—</span>
       <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label">—</span>
@@ -180,16 +180,16 @@
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-3">
-    <span class="card-label font-bold">TOMORROW · Peak Burn · ~14:00 MDT</span>
-    <span class="text-[9px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
+    <span class="text-xs font-bold uppercase tracking-widest opacity-80">Tomorrow · Peak Burn · ~14:00 MDT</span>
+    <span class="text-[10px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
   </div>
 
   <!-- FWI score + danger -->
   <div class="flex items-end gap-4 mb-4">
     <div class="font-headline font-black leading-none" style="font-size: 5rem" id="fwi-d1-preview-fwi-score">—</div>
     <div class="pb-1">
-      <div class="card-label mb-0.5">Fire Weather Index</div>
-      <div class="font-headline text-lg font-extrabold uppercase tracking-widest" id="fwi-d1-preview-danger">—</div>
+      <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
+      <div class="font-headline text-xl font-extrabold uppercase tracking-wide" id="fwi-d1-preview-danger">—</div>
     </div>
   </div>
 
@@ -215,7 +215,7 @@
 
   <!-- HFI Class hero -->
   <div class="pt-3 mb-4 border-t card-divider border-t">
-    <p class="card-label mb-2">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
     <div class="flex items-baseline gap-3 mb-1">
       <span class="font-headline font-black leading-none" style="font-size:3.5rem" id="fwi-d1-preview-hfi-num">—</span>
       <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label">—</span>
