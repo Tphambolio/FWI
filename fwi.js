@@ -135,12 +135,12 @@ function dangerClassNum(fwi) {
 // Source: Alberta WUI Pocket Guide (Gov. of Alberta, Forestry & Parks);
 // Cole & Alexander (1995), CFS Northern Forestry Centre, Edmonton.
 function hfiClassInfo(hfi) {
-  if (hfi <   10) return { num: 1, label: 'Low',        size: 'Flame length < 0.2 m',             desc: 'Direct attack with hand tools',                     bg: '#d4edda', text: '#155724' };
-  if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m',         desc: 'Direct attack with hand tools',                     bg: '#cce5ff', text: '#004085' };
-  if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m',         desc: 'Direct attack with pump/hose or air support',       bg: '#fff3cd', text: '#856404' };
-  if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m',         desc: 'Indirect attack — air attack successful on head',   bg: '#ffe5cc', text: '#7d3200' };
-  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 – 5.5 m',         desc: 'Indirect attack — suppress flanks, coordinate air', bg: '#f8d7da', text: '#721c24' };
-  return           { num: 6, label: 'Catastrophic', size: 'Flame length > 5.5 m',             desc: 'Air attack likely to fail on head — evacuate',      bg: '#4a0010', text: '#ffccdd' };
+  if (hfi <   10) return { num: 1, label: 'Low',        size: 'Flame length < 0.2 m · Short firefighter',      desc: 'Direct attack with hand tools · Should anchor',             bg: '#d4edda', text: '#155724' };
+  if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m · Tallest firefighter', desc: 'Direct attack with hand tools · Should anchor',             bg: '#cce5ff', text: '#004085' };
+  if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m · Tallest firefighter', desc: 'Direct attack with pump and hose · Should anchor',          bg: '#fff3cd', text: '#856404' };
+  if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m · Fire engine',        desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#ffe5cc', text: '#7d3200' };
+  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#f8d7da', text: '#721c24' };
+  return           { num: 6, label: 'Catastrophic', size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'No direct attack — evacuate structure zone',               bg: '#4a0010', text: '#ffccdd' };
 }
 
 // Behaviour card gradient per danger level — used on full-height cards so keep tones rich, not neon
