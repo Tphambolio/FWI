@@ -1200,7 +1200,7 @@ async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=auto&forecast_days=7&models=ecmwf_ifs025`;
+    `&timezone=auto&forecast_days=7`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
   const d = await res.json();
@@ -2585,10 +2585,15 @@ async function buildD1Card() {
     } else {
       // Try ECMWF first (faster, point-specific); fall back to NAEFS
       if (!_forecastCache.days.length) {
-        try { days = await fetchForecast(_stationLat, _stationLng); }
-        catch(e) {
-          console.warn('[D+1] ECMWF failed, trying NAEFS:', e);
-          days = await fetchForecastNAEFS(_stationLat, _stationLng);
+        const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
+        if (naefsSt) {
+          try { days = await fetchForecastNAEFS(naefsSt.code); }
+          catch(e) {
+            console.warn('[D+1] NAEFS failed, trying Open-Meteo:', e);
+            days = await fetchForecast(_stationLat, _stationLng);
+          }
+        } else {
+          days = await fetchForecast(_stationLat, _stationLng);
         }
       } else {
         days = _forecastCache.days; // reuse fetched days; only recalc FBP
