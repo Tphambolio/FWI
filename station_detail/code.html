@@ -210,14 +210,6 @@
     <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
   </div>
 
-  <!-- FWI compact row -->
-  <div class="flex items-center gap-2 mb-3">
-    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60">FWI</span>
-    <span class="font-headline text-2xl font-bold" data-fwi="fwi">—</span>
-    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mx-1">·</span>
-    <span class="font-headline text-base font-extrabold uppercase tracking-wide" data-fwi="danger">—</span>
-  </div>
-
   <!-- Weather row -->
   <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-2 mb-4 border-t card-divider border-t">
     <div>
@@ -317,14 +309,6 @@
     <span class="text-[10px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
   </div>
 
-  <!-- FWI compact row -->
-  <div class="flex items-center gap-2 mb-3">
-    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60">FWI</span>
-    <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-fwi-score">—</span>
-    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mx-1">·</span>
-    <span class="font-headline text-base font-extrabold uppercase tracking-wide" id="fwi-d1-preview-danger">—</span>
-  </div>
-
   <!-- Weather row -->
   <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-2 mb-4 border-t card-divider border-t">
     <div>
@@ -411,6 +395,35 @@
 </section>
 
 </div><!-- /today+tomorrow grid -->
+
+<!-- ── FWI Score ───────────────────────────────────────────────────────── -->
+<div id="fwi-score-strip" class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5 flex flex-wrap items-center gap-x-8 gap-y-3 transition-all">
+  <div>
+    <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Fire Weather Index · Today</p>
+    <div class="flex items-baseline gap-3">
+      <span class="font-headline text-4xl font-black text-white" data-fwi="fwi">—</span>
+      <span class="font-headline text-xl font-extrabold uppercase tracking-wide text-white" data-fwi="danger">—</span>
+    </div>
+  </div>
+  <div class="flex gap-6 text-sm">
+    <div>
+      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">ISI</p>
+      <p class="font-headline font-bold text-white" data-fwi="isi">—</p>
+    </div>
+    <div>
+      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">BUI</p>
+      <p class="font-headline font-bold text-white" data-fwi="bui">—</p>
+    </div>
+    <div>
+      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">FFMC</p>
+      <p class="font-headline font-bold text-white" data-fwi="ffmc">—</p>
+    </div>
+  </div>
+  <div class="ml-auto text-right">
+    <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Source</p>
+    <p class="text-sm font-bold text-white" data-fwi="source-station">—</p>
+  </div>
+</div>
 
 <!-- ── Fuel the Mission ────────────────────────────────────────────────── -->
 <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5">
