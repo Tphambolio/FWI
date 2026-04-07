@@ -363,8 +363,6 @@ function wireFBP(weather, fwi) {
   if (sizeEl) { sizeEl.textContent = cl.size; sizeEl.style.color = 'rgba(255,255,255,0.85)'; }
   const desc = document.getElementById('fwi-fbp-hfi-desc');
   if (desc) { desc.textContent = cl.desc; }
-  const iconEl = document.getElementById('fwi-fbp-hfi-icon');
-  if (iconEl) { iconEl.src = `../assets/hfi/byram_${_hfiClass(result.hfi)}.png`; iconEl.style.opacity = '0.88'; }
 }
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
@@ -2634,8 +2632,6 @@ async function buildD1Card() {
     if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
     if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
     if (dscEl) { dscEl.textContent = cl.desc; }
-    const d1IconEl = document.getElementById('fwi-d1-preview-hfi-icon');
-    if (d1IconEl) { d1IconEl.src = `../assets/hfi/byram_${_hfiClass(d1fbp.hfi)}.png`; d1IconEl.style.opacity = '0.88'; }
     set('fwi-d1-preview-hfi-kwm',  `${Math.round(d1fbp.hfi).toLocaleString()} kW/m`);
     set('fwi-d1-preview-ros',      `${d1fbp.ros.toFixed(1)} m/min`);
     set('fwi-d1-preview-flame',    `${d1fbp.flameLength.toFixed(1)} m`);
