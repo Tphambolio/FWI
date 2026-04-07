@@ -44,7 +44,7 @@
 </select>
 </div>
 <div class="hidden md:flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
-<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
+<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel A</label>
 <select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded">
   <option value="C2" selected>C2 — Boreal Spruce</option>
   <option value="C1">C1 — Spruce-Lichen Woodland</option>
@@ -55,6 +55,29 @@
   <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
   <option value="D1">D1 — Leafless Aspen</option>
   <option value="D2">D2 — Green Aspen</option>
+  <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
+  <option value="M2">M2 — Boreal Mixedwood (Green)</option>
+  <option value="O1a">O1a — Matted Grass</option>
+  <option value="O1b">O1b — Standing Grass</option>
+  <option value="S1">S1 — Jack Pine Slash</option>
+  <option value="S2">S2 — Spruce/Balsam Slash</option>
+  <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
+</select>
+</div>
+<div class="hidden md:flex flex-col ml-3 pl-3 border-l border-[#7bd0ff]/10">
+<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel B</label>
+<select id="fwi-fuel-picker-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff]/70 bg-[#0b1326] border-none outline-none cursor-pointer rounded">
+  <option value="C2">C2 — Boreal Spruce</option>
+  <option value="C1">C1 — Spruce-Lichen Woodland</option>
+  <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+  <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
+  <option value="C5">C5 — Red and White Pine</option>
+  <option value="C6">C6 — Conifer Plantation</option>
+  <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
+  <option value="D1" selected>D1 — Leafless Aspen</option>
+  <option value="D2">D2 — Green Aspen</option>
+  <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
+  <option value="M2">M2 — Boreal Mixedwood (Green)</option>
   <option value="O1a">O1a — Matted Grass</option>
   <option value="O1b">O1b — Standing Grass</option>
   <option value="S1">S1 — Jack Pine Slash</option>
@@ -103,6 +126,34 @@
       <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
       <option value="D1">D1 — Leafless Aspen</option>
       <option value="D2">D2 — Green Aspen</option>
+      <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
+      <option value="M2">M2 — Boreal Mixedwood (Green)</option>
+      <option value="O1a">O1a — Matted Grass</option>
+      <option value="O1b">O1b — Standing Grass</option>
+      <option value="S1">S1 — Jack Pine Slash</option>
+      <option value="S2">S2 — Spruce/Balsam Slash</option>
+      <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
+    </select>
+  </div>
+</div>
+
+<!-- ── Mobile Fuel Picker 2 (Fuel B) ──────────────────────────────────── -->
+<div class="md:hidden flex items-center gap-3 mb-3 bg-[#1a2236] p-3 rounded-xl">
+  <span class="material-symbols-outlined text-[#7bd0ff]/60 text-sm">forest</span>
+  <div class="flex flex-col flex-1">
+    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type B</label>
+    <select id="fwi-fuel-picker-mobile-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full">
+      <option value="C2">C2 — Boreal Spruce</option>
+      <option value="C1">C1 — Spruce-Lichen Woodland</option>
+      <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+      <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
+      <option value="C5">C5 — Red and White Pine</option>
+      <option value="C6">C6 — Conifer Plantation</option>
+      <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
+      <option value="D1" selected>D1 — Leafless Aspen</option>
+      <option value="D2">D2 — Green Aspen</option>
+      <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
+      <option value="M2">M2 — Boreal Mixedwood (Green)</option>
       <option value="O1a">O1a — Matted Grass</option>
       <option value="O1b">O1b — Standing Grass</option>
       <option value="S1">S1 — Jack Pine Slash</option>
@@ -128,6 +179,22 @@
   </div>
 </div>
 
+<!-- ── % Softwood Stepper — shown only for M1 / M2 ──────────────────────── -->
+<div id="fwi-ps-row" class="hidden flex items-center gap-3 mb-4 bg-[#1e2740] p-3 rounded-xl">
+  <span class="material-symbols-outlined text-[#7bd0ff] text-base">forest</span>
+  <div class="flex flex-col flex-1">
+    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">% Softwood (C2 component)</label>
+    <div class="flex items-center gap-2">
+      <button id="fwi-ps-dec" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
+      <span class="font-headline text-2xl font-bold text-[#7bd0ff] w-14 text-center" id="fwi-ps-display">50%</span>
+      <button id="fwi-ps-inc" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
+      <input type="range" id="fwi-ps-slider" min="0" max="100" step="5" value="50"
+             class="flex-1 h-1 accent-[#7bd0ff] cursor-pointer">
+    </div>
+    <p class="text-[9px] text-slate-500 mt-1">ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2 · FBP ST-X-3 §M1/M2</p>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════════════════════
      TODAY + TOMORROW — side-by-side on md+
      ══════════════════════════════════════════════════════════════════════ -->
@@ -138,22 +205,21 @@
      style="background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
 
   <!-- Card header -->
-  <div class="flex justify-between items-baseline mb-3">
+  <div class="flex justify-between items-baseline mb-2">
     <span class="text-xs font-bold uppercase tracking-widest opacity-80">Today · Noon LST · Observed</span>
     <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
   </div>
 
-  <!-- FWI score + danger -->
-  <div class="flex items-end gap-4 mb-4">
-    <div class="font-headline font-black leading-none" style="font-size: 4rem" data-fwi="fwi">—</div>
-    <div class="pb-1">
-      <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
-      <div class="font-headline text-xl font-extrabold uppercase tracking-wide" data-fwi="danger">—</div>
-    </div>
+  <!-- FWI compact row -->
+  <div class="flex items-center gap-2 mb-3">
+    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60">FWI</span>
+    <span class="font-headline text-2xl font-bold" data-fwi="fwi">—</span>
+    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mx-1">·</span>
+    <span class="font-headline text-base font-extrabold uppercase tracking-wide" data-fwi="danger">—</span>
   </div>
 
   <!-- Weather row -->
-  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-3 mb-4 border-t card-divider border-t">
+  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-2 mb-4 border-t card-divider border-t">
     <div>
       <p class="card-label">Temp</p>
       <p class="font-bold text-sm mt-0.5" data-fwi="temp">—</p>
@@ -176,35 +242,65 @@
     </div>
   </div>
 
-  <!-- HFI Class hero -->
-  <div class="pt-3 mb-4 border-t card-divider border-t">
-    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
+  <!-- Fuel A section -->
+  <div class="pt-3 border-t card-divider border-t">
+    <p class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-bold opacity-80 mb-2" id="fwi-fbp-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
-      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating">—</span>
-      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label">—</span>
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating-a">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label-a">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi">— kW/m</p>
-    <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size">—</p>
-    <p class="text-xs opacity-70 mt-0.5" id="fwi-fbp-hfi-desc">—</p>
+    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi-a">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size-a">—</p>
+    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-fbp-hfi-desc-a">—</p>
+    <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
+      <div>
+        <p class="card-label mb-0.5">Head ROS</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-ros-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Flame Length</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-flame-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Fire Type</p>
+        <p class="font-headline text-base font-bold" id="fwi-fbp-type-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Crown Fraction Burned</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-cfb-a">—</p>
+      </div>
+    </div>
   </div>
 
-  <!-- FBP behaviour grid -->
-  <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t mb-3">
-    <div>
-      <p class="card-label mb-0.5">Head ROS</p>
-      <p class="font-headline text-xl font-bold" id="fwi-fbp-ros">—</p>
+  <!-- Fuel B section -->
+  <div class="pt-3 mt-3 border-t card-divider border-t">
+    <p class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-bold opacity-80 mb-2" id="fwi-fbp-fuel-name-b">—</p>
+    <div class="flex items-baseline gap-3 mb-1">
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating-b">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label-b">—</span>
     </div>
-    <div>
-      <p class="card-label mb-0.5">Flame Length</p>
-      <p class="font-headline text-xl font-bold" id="fwi-fbp-flame">—</p>
-    </div>
-    <div>
-      <p class="card-label mb-0.5">Fire Type</p>
-      <p class="font-headline text-base font-bold" id="fwi-fbp-type">—</p>
-    </div>
-    <div>
-      <p class="card-label mb-0.5">Crown Fraction Burned</p>
-      <p class="font-headline text-xl font-bold" id="fwi-fbp-cfb">—</p>
+    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi-b">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size-b">—</p>
+    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-fbp-hfi-desc-b">—</p>
+    <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
+      <div>
+        <p class="card-label mb-0.5">Head ROS</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-ros-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Flame Length</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-flame-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Fire Type</p>
+        <p class="font-headline text-base font-bold" id="fwi-fbp-type-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Crown Fraction Burned</p>
+        <p class="font-headline text-xl font-bold" id="fwi-fbp-cfb-b">—</p>
+      </div>
     </div>
   </div>
 
@@ -216,22 +312,21 @@
      style="background: linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
 
   <!-- Card header -->
-  <div class="flex justify-between items-baseline mb-3">
+  <div class="flex justify-between items-baseline mb-2">
     <span class="text-xs font-bold uppercase tracking-widest opacity-80">Tomorrow · Peak Burn · ~14:00 MDT</span>
     <span class="text-[10px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
   </div>
 
-  <!-- FWI score + danger -->
-  <div class="flex items-end gap-4 mb-4">
-    <div class="font-headline font-black leading-none" style="font-size: 4rem" id="fwi-d1-preview-fwi-score">—</div>
-    <div class="pb-1">
-      <div class="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-0.5">Fire Weather Index</div>
-      <div class="font-headline text-xl font-extrabold uppercase tracking-wide" id="fwi-d1-preview-danger">—</div>
-    </div>
+  <!-- FWI compact row -->
+  <div class="flex items-center gap-2 mb-3">
+    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60">FWI</span>
+    <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-fwi-score">—</span>
+    <span class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mx-1">·</span>
+    <span class="font-headline text-base font-extrabold uppercase tracking-wide" id="fwi-d1-preview-danger">—</span>
   </div>
 
   <!-- Weather row -->
-  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-3 mb-4 border-t card-divider border-t">
+  <div class="grid grid-cols-4 gap-x-3 gap-y-2 pt-2 mb-4 border-t card-divider border-t">
     <div>
       <p class="card-label">Temp</p>
       <p class="font-bold text-sm mt-0.5" id="fwi-d1-preview-temp">—</p>
@@ -250,35 +345,65 @@
     </div>
   </div>
 
-  <!-- HFI Class hero -->
-  <div class="pt-3 mb-4 border-t card-divider border-t">
-    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-2">FBP System HFI Class · Class 1–6</p>
+  <!-- Fuel A section -->
+  <div class="pt-3 border-t card-divider border-t">
+    <p class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-bold opacity-80 mb-2" id="fwi-d1-preview-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
-      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num">—</span>
-      <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label">—</span>
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num-a">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label-a">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm">— kW/m</p>
-    <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size">—</p>
-    <p class="text-xs opacity-70 mt-0.5" id="fwi-d1-preview-hfi-desc">—</p>
+    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm-a">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size-a">—</p>
+    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-a">—</p>
+    <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
+      <div>
+        <p class="card-label mb-0.5">Head ROS</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-ros-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Flame Length</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-flame-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Fire Type</p>
+        <p class="font-headline text-base font-bold" id="fwi-d1-preview-type-a">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Crown Fraction Burned</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-cfb-a">—</p>
+      </div>
+    </div>
   </div>
 
-  <!-- FBP behaviour grid -->
-  <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t mb-3">
-    <div>
-      <p class="card-label mb-0.5">Head ROS</p>
-      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-ros">—</p>
+  <!-- Fuel B section -->
+  <div class="pt-3 mt-3 border-t card-divider border-t">
+    <p class="text-[9px] font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-[10px] font-bold opacity-80 mb-2" id="fwi-d1-preview-fuel-name-b">—</p>
+    <div class="flex items-baseline gap-3 mb-1">
+      <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num-b">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label-b">—</span>
     </div>
-    <div>
-      <p class="card-label mb-0.5">Flame Length</p>
-      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-flame">—</p>
-    </div>
-    <div>
-      <p class="card-label mb-0.5">Fire Type</p>
-      <p class="font-headline text-base font-bold" id="fwi-d1-preview-type">—</p>
-    </div>
-    <div>
-      <p class="card-label mb-0.5">Crown Fraction Burned</p>
-      <p class="font-headline text-xl font-bold" id="fwi-d1-preview-cfb">—</p>
+    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm-b">— kW/m</p>
+    <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size-b">—</p>
+    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-b">—</p>
+    <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
+      <div>
+        <p class="card-label mb-0.5">Head ROS</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-ros-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Flame Length</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-flame-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Fire Type</p>
+        <p class="font-headline text-base font-bold" id="fwi-d1-preview-type-b">—</p>
+      </div>
+      <div>
+        <p class="card-label mb-0.5">Crown Fraction Burned</p>
+        <p class="font-headline text-xl font-bold" id="fwi-d1-preview-cfb-b">—</p>
+      </div>
     </div>
   </div>
 
@@ -446,13 +571,11 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=76"></script>
+<script src="../fwi.js?v=77"></script>
 <script>
   FWI.buildStationPicker();
-  document.getElementById('fwi-fuel-picker').addEventListener('change', e => {
-    _syncCuringVisibility(e.target.value);
-    FWI.refreshFBP();
-  });
+
+  // ── Print + compare buttons ───────────────────────────────────────────
   document.getElementById('fwi-print-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
   document.getElementById('fwi-print-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
   document.getElementById('fwi-compare-btn').addEventListener('click', () => {
@@ -462,17 +585,43 @@
     btn.classList.toggle('border-primary/50', !open);
     btn.classList.toggle('text-primary', !open);
   });
-  // Mobile fuel picker — sync value to desktop picker then re-run FBP
+
+  // ── Fuel A picker ────────────────────────────────────────────────────
+  document.getElementById('fwi-fuel-picker').addEventListener('change', e => {
+    _syncCuringVisibility();
+    _syncPSVisibility();
+    FWI.refreshFBP();
+  });
+  // Mobile Fuel A — sync to desktop
   const _mfp = document.getElementById('fwi-fuel-picker-mobile');
   if (_mfp) _mfp.addEventListener('change', () => {
     document.getElementById('fwi-fuel-picker').value = _mfp.value;
-    _syncCuringVisibility(_mfp.value);
+    _syncCuringVisibility();
+    _syncPSVisibility();
+    FWI.refreshFBP();
+  });
+
+  // ── Fuel B picker ────────────────────────────────────────────────────
+  document.getElementById('fwi-fuel-picker-2').addEventListener('change', e => {
+    localStorage.setItem('fwi-fuel-type-2', e.target.value);
+    _syncCuringVisibility();
+    _syncPSVisibility();
+    FWI.refreshFBP();
+  });
+  const _mfp2 = document.getElementById('fwi-fuel-picker-mobile-2');
+  if (_mfp2) _mfp2.addEventListener('change', () => {
+    document.getElementById('fwi-fuel-picker-2').value = _mfp2.value;
+    localStorage.setItem('fwi-fuel-type-2', _mfp2.value);
+    _syncCuringVisibility();
+    _syncPSVisibility();
     FWI.refreshFBP();
   });
 
   // ── Grass curing controls ─────────────────────────────────────────────
-  function _syncCuringVisibility(fuelCode) {
-    const isGrass = fuelCode === 'O1a' || fuelCode === 'O1b';
+  function _syncCuringVisibility() {
+    const fA = document.getElementById('fwi-fuel-picker')?.value   || '';
+    const fB = document.getElementById('fwi-fuel-picker-2')?.value || '';
+    const isGrass = fA === 'O1a' || fA === 'O1b' || fB === 'O1a' || fB === 'O1b';
     document.getElementById('fwi-curing-row').classList.toggle('hidden', !isGrass);
   }
   function _updateCuringDisplay(pc) {
@@ -482,7 +631,7 @@
     document.getElementById('fwi-curing-cf').textContent = cf;
   }
   function _setCuring(pc) {
-    pc = Math.max(0, Math.min(100, Math.round(pc / 5) * 5)); // snap to nearest 5
+    pc = Math.max(0, Math.min(100, Math.round(pc / 5) * 5));
     localStorage.setItem('fwi-grass-curing', pc);
     _updateCuringDisplay(pc);
     FWI.refreshFBP();
@@ -491,18 +640,43 @@
   document.getElementById('fwi-curing-inc').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('fwi-grass-curing')||'80',10)) + 5));
   document.getElementById('fwi-curing-slider').addEventListener('input', e => _setCuring(parseInt(e.target.value, 10)));
 
-  // Initialise on load from saved state
-  const _savedFuel = localStorage.getItem('fwi-fuel-type') || 'C2';
-  const _savedPC   = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
-  _syncCuringVisibility(_savedFuel);
-  _updateCuringDisplay(_savedPC);
-  // Sync pickers to saved fuel
-  if (_savedFuel) {
-    const fp = document.getElementById('fwi-fuel-picker');
-    if (fp) fp.value = _savedFuel;
-    const mfp = document.getElementById('fwi-fuel-picker-mobile');
-    if (mfp) mfp.value = _savedFuel;
+  // ── % Softwood (PS) controls ─────────────────────────────────────────
+  function _syncPSVisibility() {
+    const fA = document.getElementById('fwi-fuel-picker')?.value   || '';
+    const fB = document.getElementById('fwi-fuel-picker-2')?.value || '';
+    const isMixed = fA === 'M1' || fA === 'M2' || fB === 'M1' || fB === 'M2';
+    document.getElementById('fwi-ps-row').classList.toggle('hidden', !isMixed);
   }
+  function _updatePSDisplay(ps) {
+    document.getElementById('fwi-ps-display').textContent = ps + '%';
+    document.getElementById('fwi-ps-slider').value = ps;
+  }
+  function _setPS(ps) {
+    ps = Math.max(0, Math.min(100, Math.round(ps / 5) * 5));
+    localStorage.setItem('fwi-ps-percent', ps);
+    _updatePSDisplay(ps);
+    FWI.refreshFBP();
+  }
+  document.getElementById('fwi-ps-dec').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('fwi-ps-percent')||'50',10)) - 5));
+  document.getElementById('fwi-ps-inc').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('fwi-ps-percent')||'50',10)) + 5));
+  document.getElementById('fwi-ps-slider').addEventListener('input', e => _setPS(parseInt(e.target.value, 10)));
+
+  // ── Initialise on load from saved state ──────────────────────────────
+  const _savedFuel  = localStorage.getItem('fwi-fuel-type')   || 'C2';
+  const _savedFuel2 = localStorage.getItem('fwi-fuel-type-2') || 'D1';
+  const _savedPC    = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
+  const _savedPS_   = parseInt(localStorage.getItem('fwi-ps-percent')   || '50', 10);
+  // Sync all pickers to saved values
+  ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = _savedFuel;
+  });
+  ['fwi-fuel-picker-2', 'fwi-fuel-picker-mobile-2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = _savedFuel2;
+  });
+  _syncCuringVisibility();
+  _syncPSVisibility();
+  _updateCuringDisplay(_savedPC);
+  _updatePSDisplay(_savedPS_);
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>

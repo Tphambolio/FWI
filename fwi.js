@@ -187,6 +187,9 @@ const FUEL_TYPES = {
   S1:  { name:'Jack/Lodgepole Pine Slash',    a:75,  b:0.0297, c:1.3, q:0.75, bui0:38,  cbh:0,  cfl:0.00, sfc:4.50 },
   S2:  { name:'White Spruce/Balsam Slash',    a:40,  b:0.0438, c:1.7, q:0.75, bui0:63,  cbh:0,  cfl:0.00, sfc:4.50 },
   S3:  { name:'Cedar/Hemlock/DF Slash',       a:55,  b:0.0829, c:3.2, q:0.75, bui0:31,  cbh:0,  cfl:0.00, sfc:4.50 },
+  // M1/M2 — Boreal Mixedwood (ST-X-3). No a/b/c — ROS blends C2 (softwood) + D1/D2 (hardwood) by PS%.
+  M1:  { name:'Boreal Mixedwood \u2014 Leafless', softwood:'C2', hardwood:'D1', mixedwood:true },
+  M2:  { name:'Boreal Mixedwood \u2014 Green',    softwood:'C2', hardwood:'D2', mixedwood:true },
 };
 
 /**
@@ -267,9 +270,29 @@ let _stationLng = -113.5; // module-level; set by initFWI
 let _stationName = 'Edmonton'; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
-function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100) {
+function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100, ps = 50) {
   const ft = FUEL_TYPES[fuelCode];
   if (!ft) return null;
+
+  // Mixedwood blend — M1/M2 (ST-X-3 §M1/M2)
+  // ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2; crown fire from softwood component only.
+  if (ft.mixedwood) {
+    const r  = Math.max(0, Math.min(100, ps)) / 100;
+    const sw = calculateFBP(ft.softwood, ffmc, dmc, dc, windSpeed, slope, curing, ps);
+    const hw = calculateFBP(ft.hardwood, ffmc, dmc, dc, windSpeed, slope, curing, ps);
+    if (!sw || !hw) return null;
+    const ros         = r * sw.ros + (1 - r) * hw.ros;
+    const cfb         = sw.cfb; // crown fire from softwood only
+    const sfc         = r * FUEL_TYPES[ft.softwood].sfc + (1 - r) * FUEL_TYPES[ft.hardwood].sfc;
+    const cfl         = r * FUEL_TYPES[ft.softwood].cfl; // hardwood cfl = 0
+    const tfc         = sfc + cfb * cfl;
+    const hfi         = 18000 * tfc * ros / 60;
+    const flameLength = hfi > 0 ? 0.0775 * Math.pow(hfi, 0.46) : 0;
+    let fireType = 'Surface';
+    if      (cfb > 0.9) fireType = 'Active Crown';
+    else if (cfb > 0.1) fireType = 'Passive Crown';
+    return { isi: sw.isi, bui: sw.bui, ros, hfi, cfb, tfc, flameLength, fireType };
+  }
 
   // ISI — identical to Van Wagner formula used in FWI system
   const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
@@ -338,31 +361,39 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   return { isi, bui, ros, hfi, cfb, tfc, flameLength, fireType };
 }
 
-/** Render FBP results into the station_detail FBP section. */
+/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
 function wireFBP(weather, fwi) {
-  const fuelCode = document.getElementById('fwi-fuel-picker')?.value || 'C2';
-  localStorage.setItem('fwi-fuel-type', fuelCode); // persist for forecast page
+  const fuelA = document.getElementById('fwi-fuel-picker')?.value   || 'C2';
+  const fuelB = document.getElementById('fwi-fuel-picker-2')?.value || 'D1';
+  localStorage.setItem('fwi-fuel-type',   fuelA);
+  localStorage.setItem('fwi-fuel-type-2', fuelB);
   const curing = _savedCuring();
-  const result = calculateFBP(fuelCode, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing);
-  if (!result) return;
+  const ps     = _savedPS();
 
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('fwi-fbp-ros',   result.ros.toFixed(1) + ' m/min');
-  set('fwi-fbp-hfi',   Math.round(result.hfi).toLocaleString() + ' kW/m');
-  set('fwi-fbp-flame', result.flameLength.toFixed(1) + ' m');
-  set('fwi-fbp-type',  result.fireType);
-  set('fwi-fbp-cfb',   (result.cfb * 100).toFixed(0) + '%');
+  const populateSection = (suffix, result) => {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    if (!result) { set('fwi-fbp-hfi-label' + suffix, 'N/A'); return; }
+    set('fwi-fbp-ros'   + suffix, result.ros.toFixed(1) + ' m/min');
+    set('fwi-fbp-hfi'   + suffix, Math.round(result.hfi).toLocaleString() + ' kW/m');
+    set('fwi-fbp-flame' + suffix, result.flameLength.toFixed(1) + ' m');
+    set('fwi-fbp-type'  + suffix, result.fireType);
+    set('fwi-fbp-cfb'   + suffix, (result.cfb * 100).toFixed(0) + '%');
+    const cl    = hfiClassInfo(result.hfi);
+    const numEl = document.getElementById('fwi-fbp-hfi-rating' + suffix);
+    const lblEl = document.getElementById('fwi-fbp-hfi-label'  + suffix);
+    const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
+    const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
+    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
+    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+    if (dscEl) { dscEl.textContent = cl.desc; }
+  };
 
-  const cl = hfiClassInfo(result.hfi);
-  // On the gradient card, all text is white
-  const numEl = document.getElementById('fwi-fbp-hfi-rating');
-  if (numEl) { numEl.textContent = cl.num; numEl.style.color = 'white'; }
-  const lblEl = document.getElementById('fwi-fbp-hfi-label');
-  if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
-  const sizeEl = document.getElementById('fwi-fbp-hfi-size');
-  if (sizeEl) { sizeEl.textContent = cl.size; sizeEl.style.color = 'rgba(255,255,255,0.85)'; }
-  const desc = document.getElementById('fwi-fbp-hfi-desc');
-  if (desc) { desc.textContent = cl.desc; }
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl('fwi-fbp-fuel-name-a', FUEL_TYPES[fuelA]?.name || fuelA);
+  setEl('fwi-fbp-fuel-name-b', FUEL_TYPES[fuelB]?.name || fuelB);
+  populateSection('-a', calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps));
+  populateSection('-b', calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps));
 }
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
@@ -1327,19 +1358,25 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
 
 /** Read persisted fuel type (set by station_detail fuel picker), default C2. */
 function _savedFuelCode() {
-  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type')) || 'C2';
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type'))  || 'C2';
+}
+function _savedFuelCode2() {
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type-2')) || 'D1';
 }
 function _savedCuring() {
   return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-grass-curing')) || '80', 10);
 }
+function _savedPS() {
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-ps-percent')) || '50', 10);
+}
 
 /** Chain Van Wagner + FBP per day. FBP uses each day's peak (14:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
-function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100) {
+function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50) {
   const results = calcMultiDay(days, startupDC, startState);
   return results.map((r, i) => {
     const pw = days[i]?.peak || days[i]; // peak = 14:00; fallback to noon
-    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing);
+    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing, ps);
     return { ...r, fbp, peakWeather: pw };
   });
 }
@@ -2576,15 +2613,21 @@ async function buildD1Card() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('fwi-d1-preview-date', 'Loading…');
 
-  let days, results;
+  let days, results, resultsB;
   try {
-    const fuelCode = _savedFuelCode();
-    const curing   = _savedCuring();
-    if (_forecastCache.results.length && _forecastCache.fuelCode === fuelCode && _forecastCache.curing === curing) {
-      ({ days, results } = _forecastCache);
+    const fuelCode  = _savedFuelCode();
+    const fuelCodeB = _savedFuelCode2();
+    const curing    = _savedCuring();
+    const ps        = _savedPS();
+    const cacheHit  = _forecastCache.results?.length &&
+                      _forecastCache.fuelCode  === fuelCode  &&
+                      _forecastCache.fuelCodeB === fuelCodeB &&
+                      _forecastCache.curing    === curing    &&
+                      _forecastCache.ps        === ps;
+    if (cacheHit) {
+      ({ days, results, resultsB } = _forecastCache);
     } else {
-      // Try ECMWF first (faster, point-specific); fall back to NAEFS
-      if (!_forecastCache.days.length) {
+      if (!_forecastCache.days?.length) {
         const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
         if (naefsSt) {
           try { days = await fetchForecastNAEFS(naefsSt.code); }
@@ -2596,12 +2639,14 @@ async function buildD1Card() {
           days = await fetchForecast(_stationLat, _stationLng);
         }
       } else {
-        days = _forecastCache.days; // reuse fetched days; only recalc FBP
+        days = _forecastCache.days; // reuse weather; only recalc FBP
       }
       if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
-      results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode, curing);
-      _forecastCache = { days, results, fuelCode, curing };
+      const startupDC  = getStartupDC(_stationName);
+      results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
+      resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps);
+      _forecastCache = { days, results, resultsB, fuelCode, fuelCodeB, curing, ps };
     }
   } catch(e) {
     console.error('[D+1] Forecast fetch failed:', e);
@@ -2609,21 +2654,20 @@ async function buildD1Card() {
     set('fwi-d1-preview-fwi-score', '—');
     set('fwi-d1-preview-danger', 'Forecast unavailable — tap to retry');
     const card = document.getElementById('fwi-d1-card');
-    if (card) { card.style.cursor = 'pointer'; card.onclick = () => { _forecastCache = { days: [], results: [] }; buildD1Card(); }; }
+    if (card) { card.style.cursor = 'pointer'; card.onclick = () => { _forecastCache = { days: [], results: [], resultsB: [] }; buildD1Card(); }; }
     return;
   }
 
   const todayMid = new Date(); todayMid.setHours(0,0,0,0);
-  const tomMid = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
-  const d1Idx = days.findIndex(d => d._ts && d._ts >= tomMid.getTime());
-  const idx = d1Idx >= 0 ? d1Idx : 0;
+  const tomMid   = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
+  const d1Idx    = days.findIndex(d => d._ts && d._ts >= tomMid.getTime());
+  const idx      = d1Idx >= 0 ? d1Idx : 0;
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
   const d1pw = d1d?.peak || d1d || {};
-  const d1fbp = d1r.fbp;
 
-  // Set tomorrow card background to danger colour
+  // Card background driven by FWI danger of primary fuel chain
   const d1Card = document.getElementById('fwi-d1-card');
   if (d1Card) d1Card.style.background = DANGER_GRADIENTS[d1r.danger] || DANGER_GRADIENTS['Moderate'];
 
@@ -2635,23 +2679,33 @@ async function buildD1Card() {
   set('fwi-d1-preview-wind',  `${Math.round(d1pw.wind||0)} km/h`);
   set('fwi-d1-preview-wdir',  d1pw.wdir != null ? windCompass(d1pw.wdir) : '—');
 
-  if (d1fbp) {
-    const cl = hfiClassInfo(d1fbp.hfi);
-    const numEl = document.getElementById('fwi-d1-preview-hfi-num');
-    const lblEl = document.getElementById('fwi-d1-preview-hfi-label');
-    const szEl  = document.getElementById('fwi-d1-preview-hfi-size');
-    const dscEl = document.getElementById('fwi-d1-preview-hfi-desc');
-    // All white text on gradient card
+  // Populate fuel sections A and B
+  const populateD1Section = (suffix, r) => {
+    const fbp = r?.fbp;
+    if (!fbp) { set('fwi-d1-preview-hfi-label' + suffix, 'N/A'); return; }
+    const cl    = hfiClassInfo(fbp.hfi);
+    const numEl = document.getElementById('fwi-d1-preview-hfi-num'   + suffix);
+    const lblEl = document.getElementById('fwi-d1-preview-hfi-label' + suffix);
+    const szEl  = document.getElementById('fwi-d1-preview-hfi-size'  + suffix);
+    const dscEl = document.getElementById('fwi-d1-preview-hfi-desc'  + suffix);
     if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
     if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
     if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
     if (dscEl) { dscEl.textContent = cl.desc; }
-    set('fwi-d1-preview-hfi-kwm',  `${Math.round(d1fbp.hfi).toLocaleString()} kW/m`);
-    set('fwi-d1-preview-ros',      `${d1fbp.ros.toFixed(1)} m/min`);
-    set('fwi-d1-preview-flame',    `${d1fbp.flameLength.toFixed(1)} m`);
-    set('fwi-d1-preview-type',     d1fbp.fireType);
-    set('fwi-d1-preview-cfb',      `${(d1fbp.cfb*100).toFixed(0)}%`);
-  }
+    set('fwi-d1-preview-hfi-kwm' + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
+    set('fwi-d1-preview-ros'     + suffix, `${fbp.ros.toFixed(1)} m/min`);
+    set('fwi-d1-preview-flame'   + suffix, `${fbp.flameLength.toFixed(1)} m`);
+    set('fwi-d1-preview-type'    + suffix, fbp.fireType);
+    set('fwi-d1-preview-cfb'     + suffix, `${(fbp.cfb*100).toFixed(0)}%`);
+  };
+
+  const fuelA = _savedFuelCode();
+  const fuelB = _savedFuelCode2();
+  const setLbl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setLbl('fwi-d1-preview-fuel-name-a', FUEL_TYPES[fuelA]?.name || fuelA);
+  setLbl('fwi-d1-preview-fuel-name-b', FUEL_TYPES[fuelB]?.name || fuelB);
+  populateD1Section('-a', results[idx]);
+  populateD1Section('-b', resultsB?.[idx]);
 }
 
 window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };
