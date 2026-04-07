@@ -2598,11 +2598,20 @@ async function buildD1Card() {
       } else {
         days = _forecastCache.days; // reuse fetched days; only recalc FBP
       }
+      if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
       results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, fuelCode, curing);
       _forecastCache = { days, results, fuelCode, curing };
     }
-  } catch(e) { console.error('[D+1] Forecast fetch failed:', e); set('fwi-d1-preview-date', 'Forecast unavailable'); return; }
+  } catch(e) {
+    console.error('[D+1] Forecast fetch failed:', e);
+    set('fwi-d1-preview-date', 'Unavailable');
+    set('fwi-d1-preview-fwi-score', '—');
+    set('fwi-d1-preview-danger', 'Forecast unavailable — tap to retry');
+    const card = document.getElementById('fwi-d1-card');
+    if (card) { card.style.cursor = 'pointer'; card.onclick = () => { _forecastCache = { days: [], results: [] }; buildD1Card(); }; }
+    return;
+  }
 
   const todayMid = new Date(); todayMid.setHours(0,0,0,0);
   const tomMid = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
