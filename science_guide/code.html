@@ -193,27 +193,27 @@
 <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
   <div class="bg-surface-container rounded-lg p-5 border-t-2 border-secondary">
     <div class="font-headline text-2xl font-bold text-secondary mb-1">Low</div>
-    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI &lt; 5</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI &lt; 9</div>
     <p class="text-xs text-on-surface-variant leading-relaxed">Fuels do not ignite easily. Fires spread slowly and are easily controlled.</p>
   </div>
   <div class="bg-surface-container rounded-lg p-5 border-t-2 border-primary">
     <div class="font-headline text-2xl font-bold text-primary mb-1">Moderate</div>
-    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 5–9</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 9–17</div>
     <p class="text-xs text-on-surface-variant leading-relaxed">Fires start easily from sparks. Moderate spread rate; control is feasible with initial attack.</p>
   </div>
-  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-tertiary-fixed-dim">
-    <div class="font-headline text-2xl font-bold text-tertiary-fixed-dim mb-1">High</div>
-    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 10–19</div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2" style="border-top-color:#f5c518">
+    <div class="font-headline text-2xl font-bold mb-1" style="color:#f5c518">High</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 18–32</div>
     <p class="text-xs text-on-surface-variant leading-relaxed">Fire starts readily and spreads quickly. Suppression requires increased resources.</p>
   </div>
-  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-tertiary">
-    <div class="font-headline text-2xl font-bold text-tertiary mb-1">Very High</div>
-    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 20–29</div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-orange-400">
+    <div class="font-headline text-2xl font-bold text-orange-400 mb-1">Very High</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 33–49</div>
     <p class="text-xs text-on-surface-variant leading-relaxed">Intense fire behaviour. Spotting and crowning possible. Difficult to control.</p>
   </div>
   <div class="bg-surface-container rounded-lg p-5 border-t-2 border-tertiary shadow-[0_0_20px_rgba(251,171,255,0.15)]">
     <div class="font-headline text-2xl font-bold text-tertiary mb-1">Extreme</div>
-    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI ≥ 30</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI ≥ 50</div>
     <p class="text-xs text-on-surface-variant leading-relaxed">Blow-up potential. Erratic fire behaviour. Direct attack not recommended.</p>
   </div>
 </div>
@@ -226,7 +226,15 @@
 <div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
 <span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">ST-X-3 · 1992</span>
 </div>
-<p class="text-on-surface-variant leading-relaxed mb-8 max-w-2xl">The FBP System translates FWI System outputs and fuel type into operational fire behaviour outputs: Rate of Spread (ROS), Head Fire Intensity (HFI), Crown Fraction Burned (CFB), and flame length. FBP outputs depend on fuel type — the same FWI conditions produce vastly different fire behaviour in C2 Boreal Spruce vs. D1 Leafless Aspen.</p>
+<p class="text-on-surface-variant leading-relaxed mb-6 max-w-2xl">The FBP System translates FWI System outputs and fuel type into operational fire behaviour outputs: Rate of Spread (ROS), Head Fire Intensity (HFI), Crown Fraction Burned (CFB), and flame length. FBP outputs depend on fuel type — the same FWI conditions produce vastly different fire behaviour in C2 Boreal Spruce vs. D1 Leafless Aspen.</p>
+<!-- Caution note — Taylor et al. 1997 -->
+<div class="bg-amber-500/5 border border-amber-500/30 rounded-xl p-5 mb-8 flex items-start gap-4">
+  <span class="material-symbols-outlined text-amber-400 text-xl mt-0.5 shrink-0">warning</span>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Operational Caution — Taylor, Pike &amp; Alexander (1997)</p>
+    <p class="text-sm text-on-surface-variant leading-relaxed">"Fire behavior predictions are intended to assist in decision making, and are not a substitute for experience, sound judgment, or observation of actual fire behavior." ROS predictions are accurate to approximately ±20% for rates &gt; 3 m/min; accuracy decreases for slow-moving fires. Predictions assume flat terrain, open-canopy wind, and homogeneous fuel — adjust for slope, sheltering, and fuel patchiness. CFB thresholds: &lt;10% surface fire; 10–89% intermittent crown fire; ≥90% continuous crown fire.</p>
+  </div>
+</div>
 <!-- Key equations -->
 <div class="glass-panel rounded-2xl p-8 border border-outline-variant/10 mb-8">
 <h4 class="font-headline text-lg font-bold mb-6 text-primary">Core Equations</h4>
@@ -267,16 +275,16 @@
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant/10">
-<tr><td class="py-2 pr-4 text-secondary font-bold">1 — Low</td><td class="py-2 pr-4">&lt; 10</td><td class="py-2 pr-4">&lt; 0.2 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools</td></tr>
-<tr><td class="py-2 pr-4 font-bold" style="color:#7bd0ff">2 — Moderate</td><td class="py-2 pr-4">10 – 500</td><td class="py-2 pr-4">0.2 – 1.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools</td></tr>
-<tr><td class="py-2 pr-4 text-yellow-400 font-bold">3 — High</td><td class="py-2 pr-4">500 – 2,000</td><td class="py-2 pr-4">1.5 – 2.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with pump/hose or air support</td></tr>
-<tr><td class="py-2 pr-4 text-orange-400 font-bold">4 — Very High</td><td class="py-2 pr-4">2,000 – 4,000</td><td class="py-2 pr-4">2.5 – 3.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack — air attack still successful on head</td></tr>
-<tr><td class="py-2 pr-4 text-tertiary font-bold">5 — Extreme</td><td class="py-2 pr-4">4,000 – 10,000</td><td class="py-2 pr-4">3.5 – 5.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack — suppress flanks, coordinate ground &amp; air</td></tr>
-<tr><td class="py-2 pr-4 font-bold" style="color:#ff88aa">6 — Catastrophic</td><td class="py-2 pr-4">&gt; 10,000</td><td class="py-2 pr-4">&gt; 5.5 m</td><td class="py-2 text-on-surface-variant">Air attack likely to fail on head — evacuation priority</td></tr>
+<tr><td class="py-2 pr-4 text-secondary font-bold">1 — Low</td><td class="py-2 pr-4">&lt; 10</td><td class="py-2 pr-4">&lt; 0.2 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#7bd0ff">2 — Moderate</td><td class="py-2 pr-4">10 – 500</td><td class="py-2 pr-4">0.2 – 1.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-yellow-400 font-bold">3 — High</td><td class="py-2 pr-4">500 – 2,000</td><td class="py-2 pr-4">1.5 – 2.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with pump and hose · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-orange-400 font-bold">4 — Very High</td><td class="py-2 pr-4">2,000 – 4,000</td><td class="py-2 pr-4">2.5 – 3.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack; direct attack on less intense area · <em>Must anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-tertiary font-bold">5 — Extreme</td><td class="py-2 pr-4">4,000 – 10,000</td><td class="py-2 pr-4">3.5 – 5.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack; direct attack on less intense area · <em>Must anchor</em></td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#ff88aa">6 — Catastrophic</td><td class="py-2 pr-4">&gt; 10,000</td><td class="py-2 pr-4">&gt; 5.5 m</td><td class="py-2 text-on-surface-variant">No direct attack — evacuate structure zone</td></tr>
 </tbody>
 </table>
 </div>
-<p class="text-[10px] text-on-surface-variant">Sources: Alberta WUI Pocket Guide (Gov. of Alberta, 2026); Cole, F.V. &amp; Alexander, M.E. (1995), CFS Northern Forestry Centre; Forestry Canada Fire Danger Group (1992), ST-X-3.</p>
+<p class="text-[10px] text-on-surface-variant">Sources: Taylor, Pike &amp; Alexander (1997), Special Report 11 [8]; Alberta WUI Pocket Guide (Gov. of Alberta); Forestry Canada Fire Danger Group (1992), ST-X-3 [3].</p>
 
 <!-- Grass Curing — O1a/O1b -->
 <div class="glass-panel rounded-2xl p-8 border border-amber-500/20 mt-8">
@@ -432,7 +440,8 @@
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation
-  &amp;timezone=auto&amp;forecast_days=7&amp;models=ecmwf_ifs025</code>
+  &amp;timezone=auto&amp;forecast_days=7
+  → models=ecmwf_ifs025 removed (premium-only endpoint; default model used)</code>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
 <div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
 <div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 14 (14:00)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
@@ -485,12 +494,12 @@
 <div class="bg-surface-container-lowest rounded-xl p-4">
 <p class="font-bold text-on-surface mb-2">FBP System HFI Intensity Class 1–6</p>
 <div class="space-y-1 text-on-surface-variant">
-<p><span class="text-secondary font-bold">1–2</span> — &lt; 500 kW/m · Direct attack with hand tools</p>
-<p><span class="text-yellow-400 font-bold">3</span> — 500–2,000 kW/m · Direct attack with pump/hose or air support</p>
-<p><span class="text-orange-400 font-bold">4</span> — 2,000–4,000 kW/m · Indirect — air attack still effective on head</p>
-<p><span class="text-tertiary font-bold">5</span> — 4,000–10,000 kW/m · Indirect — suppress flanks, coordinate ground &amp; air</p>
-<p><span style="color:#ff88aa" class="font-bold">6</span> — &gt; 10,000 kW/m · Air attack likely to fail on head</p>
-<p class="text-[9px] mt-1">Alberta WUI Pocket Guide; Cole &amp; Alexander (1995), CFS</p>
+<p><span class="text-secondary font-bold">1–2</span> — &lt; 500 kW/m · Direct attack with hand tools · <em>Should anchor</em></p>
+<p><span class="text-yellow-400 font-bold">3</span> — 500–2,000 kW/m · Direct attack with pump and hose · <em>Should anchor</em></p>
+<p><span class="text-orange-400 font-bold">4</span> — 2,000–4,000 kW/m · Indirect attack; direct on less intense area · <em>Must anchor</em></p>
+<p><span class="text-tertiary font-bold">5</span> — 4,000–10,000 kW/m · Indirect attack; direct on less intense area · <em>Must anchor</em></p>
+<p><span style="color:#ff88aa" class="font-bold">6</span> — &gt; 10,000 kW/m · No direct attack — evacuate structure zone</p>
+<p class="text-[9px] mt-1">Taylor, Pike &amp; Alexander (1997) Special Report 11; Alberta WUI Pocket Guide</p>
 </div>
 </div>
 </div>
@@ -577,8 +586,9 @@
 <li class="flex gap-3"><span class="text-primary shrink-0">[3]</span><span>Forestry Canada Fire Danger Group (1992). <em>Development and structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3. Forestry Canada, Ottawa.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
-<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> This app uses the ECMWF IFS 0.25° model (<code class="text-primary text-xs">models=ecmwf_ifs025</code>) for forecast data — the same model ECCC uses for verification. 12Z run available ~13:00 MST; updated hourly.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>Zuur, E. &amp; Förster, D. (2022–present). Open-Meteo: Free Weather API. <em>open-meteo.com.</em> Used for current conditions fallback (Tier 3) and 7-day forecast fallback when no NAEFS station is within 150 km. Default model (no <code class="text-primary text-xs">models=</code> parameter); <code class="text-primary text-xs">models=ecmwf_ifs025</code> is now a premium-only endpoint and is not used. 12Z run available ~13:00 MST.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[7]</span><span>Environment and Climate Change Canada / NOAA (2003–present). North American Ensemble Forecast System (NAEFS). Bi-daily 00Z/12Z ensemble runs; 14-day horizon. Distributed via NRCan CWFIS WFS layer <em>public:firewx_naefs</em>.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[8]</span><span>Taylor, S.W.; Pike, R.G.; Alexander, M.E. (1997). <em>Field Guide to the Canadian Forest Fire Behavior Prediction (FBP) System.</em> Special Report 11. ISBN 0-660-17099-X. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton, AB. 60 p. — Primary operational field reference for HFI intensity classes 1–6, flame length scale anchors, attack mode decisions, crown fraction burned thresholds, and the caution that "fire behavior predictions are intended to assist in decision making, and are not a substitute for experience, sound judgment, or observation of actual fire behavior."</span></li>
 </ul>
 </div>
 
