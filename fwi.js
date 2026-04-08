@@ -152,6 +152,17 @@ const DANGER_GRADIENTS = {
   'Extreme':   'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',
 };
 
+// HFI class gradients for independent fuel section colouring (class 1–6)
+const HFI_GRADIENTS = [
+  null,
+  'linear-gradient(135deg, #2d9e58 0%, #175c30 100%)',  // 1 Low       — green
+  'linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)',  // 2 Moderate  — blue
+  'linear-gradient(135deg, #c97ae0 0%, #7a28a8 100%)',  // 3 High      — purple
+  'linear-gradient(135deg, #f07030 0%, #9e3800 100%)',  // 4 Very High — orange
+  'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',  // 5 Extreme   — red
+  'linear-gradient(135deg, #8c0a0a 0%, #4a0010 100%)',  // 6 Catastrophic — dark red
+];
+
 // Per-component thresholds (CFFDRS operational scale)
 const COMPONENT_THRESHOLDS = {
   ffmc: [77, 84, 88, 91],   // Low / Mod / High / Very High / Extreme
@@ -387,6 +398,8 @@ function wireFBP(weather, fwi) {
     if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
     if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
     if (dscEl) { dscEl.textContent = cl.desc; }
+    const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
+    if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
   };
 
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -667,9 +680,7 @@ function wireDOM(r, lat, lng) {
   set('danger',       r.danger.toUpperCase() + ' RISK');
   set('danger-label', r.danger + ' Risk Level');
 
-  // Hero card colour
-  const scoreCard = document.getElementById('fwi-score-card');
-  if (scoreCard) scoreCard.style.background = DANGER_GRADIENTS[r.danger] || DANGER_GRADIENTS['Moderate'];
+  // Hero card colour driven by individual fuel section gradients; outer card stays neutral
 
   // Rating badges — per-component thresholds
   document.querySelectorAll('[data-fwi-rating]').forEach(el => {
@@ -2669,7 +2680,7 @@ async function buildD1Card() {
 
   // Card background driven by FWI danger of primary fuel chain
   const d1Card = document.getElementById('fwi-d1-card');
-  if (d1Card) d1Card.style.background = DANGER_GRADIENTS[d1r.danger] || DANGER_GRADIENTS['Moderate'];
+  // D+1 card background driven by individual fuel section gradients; outer card stays neutral
 
   set('fwi-d1-preview-date',      `${d1r.label || 'D+1'}`);
   set('fwi-d1-preview-fwi-score', `${Math.round(d1r.fwi)}`);
@@ -2697,6 +2708,8 @@ async function buildD1Card() {
     set('fwi-d1-preview-flame'   + suffix, `${fbp.flameLength.toFixed(1)} m`);
     set('fwi-d1-preview-type'    + suffix, fbp.fireType);
     set('fwi-d1-preview-cfb'     + suffix, `${(fbp.cfb*100).toFixed(0)}%`);
+    const sectionEl = document.getElementById('fwi-d1-preview-section' + suffix);
+    if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
   };
 
   const fuelA = _savedFuelCode();

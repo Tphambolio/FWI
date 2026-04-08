@@ -23,8 +23,10 @@
     }
     /* Behaviour card — all children inherit white */
     .behaviour-card { color: white; }
-    .behaviour-card .card-label   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; font-weight: 600; }
-    .behaviour-card .card-divider { border-color: rgba(255,255,255,0.15); }
+    .card-label   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; font-weight: 600; }
+    .card-divider { border-color: rgba(255,255,255,0.15); }
+    /* Outer fuel card containers */
+    #fwi-score-card, #fwi-d1-card { color: white; }
   </style>
 <style>
     body {
@@ -201,8 +203,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
 <!-- TODAY -->
-<div id="fwi-score-card" class="behaviour-card rounded-2xl p-5 transition-all"
-     style="background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
+<div id="fwi-score-card" class="rounded-2xl p-5 transition-all"
+     style="background:#0f1829; border:1px solid #1e2740">
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-2">
@@ -235,7 +237,7 @@
   </div>
 
   <!-- Fuel A section -->
-  <div class="pt-3 border-t card-divider border-t">
+  <div id="fwi-fbp-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
     <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
     <p class="text-sm font-bold opacity-90 mb-2" id="fwi-fbp-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
@@ -266,7 +268,7 @@
   </div>
 
   <!-- Fuel B section -->
-  <div class="pt-3 mt-3 border-t card-divider border-t">
+  <div id="fwi-fbp-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
     <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
     <p class="text-sm font-bold opacity-90 mb-2" id="fwi-fbp-fuel-name-b">—</p>
     <div class="flex items-baseline gap-3 mb-1">
@@ -300,8 +302,8 @@
 
 <!-- TOMORROW -->
 <section id="fwi-d1-preview-section">
-<div id="fwi-d1-card" class="behaviour-card rounded-2xl p-5 h-full transition-all"
-     style="background: linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
+<div id="fwi-d1-card" class="rounded-2xl p-5 h-full transition-all"
+     style="background:#0f1829; border:1px solid #1e2740">
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-2">
@@ -330,7 +332,7 @@
   </div>
 
   <!-- Fuel A section -->
-  <div class="pt-3 border-t card-divider border-t">
+  <div id="fwi-d1-preview-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
     <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
     <p class="text-sm font-bold opacity-90 mb-2" id="fwi-d1-preview-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
@@ -361,7 +363,7 @@
   </div>
 
   <!-- Fuel B section -->
-  <div class="pt-3 mt-3 border-t card-divider border-t">
+  <div id="fwi-d1-preview-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
     <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
     <p class="text-sm font-bold opacity-90 mb-2" id="fwi-d1-preview-fuel-name-b">—</p>
     <div class="flex items-baseline gap-3 mb-1">
