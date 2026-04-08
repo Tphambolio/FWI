@@ -1,0 +1,20 @@
+{
+  "bounds": {
+    "west":  -113.7156395,
+    "east":  -113.2704493,
+    "north":  53.7177166,
+    "south":  53.3356739
+  },
+  "width": 1974,
+  "height": 1694,
+  "source": "Edmonton_FBP_FuelLayer_20251105_10m.tif (LiDAR-derived, DJI Zenmuse L3, Jan 2026)",
+  "codes": {
+    "0":  null,
+    "2":  "O1b",
+    "12": "C2",
+    "14": "C4",
+    "31": "D1",
+    "32": "D2",
+    "99": null
+  }
+}

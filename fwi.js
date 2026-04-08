@@ -882,6 +882,46 @@ async function _queryWMSFuelType(lat, lng) {
   return _normalizeFuelCode(raw);
 }
 
+// Edmonton LiDAR fuel raster — loaded once, cached in memory
+let _edmFuelCanvas = null;
+let _edmFuelMeta   = null;
+
+async function _loadEdmontonFuelRaster() {
+  if (_edmFuelCanvas) return; // already loaded
+  const base = document.querySelector('script[src*="fwi.js"]')?.src.replace(/fwi\.js.*$/, '') || '../';
+  const [meta, imgBlob] = await Promise.all([
+    fetch(base + 'data/edmonton_fuels.json').then(r => r.json()),
+    fetch(base + 'data/edmonton_fuels.png').then(r => r.blob()),
+  ]);
+  const img = await createImageBitmap(imgBlob);
+  const canvas = new OffscreenCanvas(meta.width, meta.height);
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  _edmFuelCanvas = canvas;
+  _edmFuelMeta   = meta;
+}
+
+/** Query Edmonton LiDAR fuel raster at lat/lng. Returns FBP code or null. */
+async function _queryEdmontonFuelType(lat, lng) {
+  await _loadEdmontonFuelRaster();
+  const { bounds, width, height, codes } = _edmFuelMeta;
+  if (lat < bounds.south || lat > bounds.north || lng < bounds.west || lng > bounds.east) return null;
+  const px = Math.floor((lng - bounds.west)  / (bounds.east  - bounds.west)  * width);
+  const py = Math.floor((bounds.north - lat) / (bounds.north - bounds.south) * height);
+  const pixel = _edmFuelCanvas.getContext('2d').getImageData(px, py, 1, 1).data;
+  const code  = pixel[0]; // R channel = fuel code value
+  return codes[String(code)] || null;
+}
+
+/** Returns true if lat/lng is within the Edmonton fuel raster extent. */
+function _isInEdmontonBounds(lat, lng) {
+  if (!_edmFuelMeta) return false; // not loaded yet — check rough bounds
+  const b = _edmFuelMeta.bounds;
+  return lat >= b.south && lat <= b.north && lng >= b.west && lng <= b.east;
+}
+
+// Rough Edmonton bounds for pre-load trigger (before meta is fetched)
+const _EDM_ROUGH = { south: 53.33, north: 53.72, west: -113.72, east: -113.27 };
+
 /**
  * Replace the station-detail OSM iframe with an interactive Leaflet map.
  * User clicks anywhere → queries WMS fuel type → sets both fuel pickers
@@ -895,8 +935,9 @@ function _initPinDropMap() {
   const map = L.map(container, { zoomControl: true, attributionControl: false });
   container._leafletMap = map;
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png', {
-    maxZoom: 14,
+  // Esri World Imagery — satellite, no API key, no CSP issues
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18,
   }).addTo(map);
 
   // Station marker dots
@@ -914,6 +955,9 @@ function _initPinDropMap() {
   } else {
     map.setView([54.5, -115], 6);
   }
+
+  // Pre-load Edmonton raster in background
+  _loadEdmontonFuelRaster().catch(() => {});
 
   let pinMarker = null;
   const statusEl  = document.getElementById('fwi-map-status');
@@ -933,12 +977,17 @@ function _initPinDropMap() {
 
     if (statusEl) statusEl.textContent = 'Querying fuel type…';
 
-    // WMS fuel type query
+    // Edmonton LiDAR raster first; fall back to NRCan WMS
     let fuelA = null;
-    try {
-      fuelA = await _queryWMSFuelType(lat, lng);
-    } catch (err) {
-      console.warn('[PinDrop] WMS query failed:', err);
+    const inEdm = lat >= _EDM_ROUGH.south && lat <= _EDM_ROUGH.north &&
+                  lng >= _EDM_ROUGH.west  && lng <= _EDM_ROUGH.east;
+    if (inEdm) {
+      try { fuelA = await _queryEdmontonFuelType(lat, lng); } catch(e) {}
+    }
+    if (!fuelA) {
+      try { fuelA = await _queryWMSFuelType(lat, lng); } catch (err) {
+        console.warn('[PinDrop] WMS query failed:', err);
+      }
     }
 
     if (fuelA) {
