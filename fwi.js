@@ -939,6 +939,10 @@ function _initPinDropMap() {
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 18,
   }).addTo(map);
+  // Esri reference overlay — place names, roads, boundaries on top of satellite
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, opacity: 0.85,
+  }).addTo(map);
 
   // Station marker dots
   ALBERTA_STATIONS.forEach(s => {
