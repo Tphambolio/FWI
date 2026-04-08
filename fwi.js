@@ -852,11 +852,14 @@ const ALBERTA_STATIONS = [
 
 // ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
 
-/** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null. */
+/** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null.
+ *  Handles "O-1a Matted Grass" → "O1a", "C-2" → "C2", etc. */
 function _normalizeFuelCode(raw) {
   if (!raw) return null;
-  const s = raw.trim().toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
-  return FUEL_TYPES[s] ? s : null;
+  const token = raw.trim().split(/\s/)[0]; // take code only, strip description
+  const s = token.toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
+  // Case-insensitive match (O1A → O1a)
+  return Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s) || null;
 }
 
 /** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
@@ -874,8 +877,8 @@ async function _queryWMSFuelType(lat, lng) {
   if (!resp.ok) throw new Error(`WMS ${resp.status}`);
   const data = await resp.json();
   const props = data.features?.[0]?.properties || {};
-  const raw = props.FUELTYPE || props.fuel_type || props.fueltype ||
-              props.FuelType || props.CFFDRS_FuelType || null;
+  const raw = props.Label_CFFDRS_FBP_Fuel_Type ||
+              props.FUELTYPE || props.fuel_type || props.fueltype || null;
   return _normalizeFuelCode(raw);
 }
 
