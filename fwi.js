@@ -1039,7 +1039,7 @@ function buildStationPicker() {
     if (save) localStorage.setItem('fwi-station', sel.value);
     const frame = document.getElementById('fwi-map-frame');
     if (frame?._leafletMap) {
-      frame._leafletMap.setView([lat, lng], 8);
+      frame._leafletMap.panTo([lat, lng]);
     }
     const coords = document.getElementById('fwi-map-coords');
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
