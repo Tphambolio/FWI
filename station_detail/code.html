@@ -559,7 +559,7 @@
 
 <!-- ── Fuel Lookup Map ────────────────────────────────────────────────── -->
 <section class="mb-10">
-<div class="h-[380px] rounded-xl overflow-hidden relative surface-container-low">
+<div class="h-[380px] rounded-xl overflow-hidden relative surface-container-low" style="isolation:isolate;z-index:0">
 <div id="fwi-map-frame" class="w-full h-full"></div>
 <div class="absolute inset-0 bg-gradient-to-t from-surface/60 via-transparent to-transparent pointer-events-none"></div>
 <div class="absolute bottom-4 left-4 glass-panel p-3 rounded-lg pointer-events-none">
@@ -585,7 +585,7 @@
 </footer>
 </main>
 <!-- BottomNavBar -->
-<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Map</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
