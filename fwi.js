@@ -429,6 +429,20 @@ function refreshFBP() {
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
 }
 
+/**
+ * Elliptical fire growth area at 60 min (ha) — CFFDRS FBP System.
+ * LB = 1 + 8.729 × (1 − e^{−0.030 × WSE})^{2.155}  [length-to-breadth ratio]
+ * A60 = π × (ROS × 60 × 1.05)² / (4 × LB × 10000)
+ * The 1.05 factor approximates 5% back-spread contribution, calibrated to match
+ * Alberta FSB reference values (C2, ROS=28 m/min, W20 → ~96 ha).
+ */
+function _calcFireArea60(ros, windSpeed) {
+  if (!ros || ros <= 0) return 0;
+  const lb = 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * (windSpeed || 0)), 2.155);
+  const d  = ros * 60 * 1.05;
+  return (Math.PI * d * d) / (4 * lb * 10000);
+}
+
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
 const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
 
@@ -801,6 +815,30 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
     console.warn('[FWI] Load failed:', err);
     document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Data unavailable');
   }
+}
+
+/**
+ * Fetch weather + calculate FWI for a single station object {name, lat, lng}.
+ * Sets module-level _stationLat/_stationLng/_stationName so that subsequent
+ * calculateFBP() calls use the correct seasonal FMC for that station's latitude.
+ * Returns {station, weather, fwi} — no DOM side effects.
+ * Used by the Fire Safety Briefing builder (briefing/index.html).
+ */
+async function fetchStationData(station) {
+  _stationLat  = station.lat;
+  _stationLng  = station.lng;
+  _stationName = station.name;
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+  const weather = await fetchWeatherPrimary(station.lat, station.lng);
+  let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
+  if (!weather.fwiFromCWFIS) {
+    const p = _cwfisPrev?.stations?.[station.name];
+    if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
+      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+    }
+  }
+  const fwi = calculateFWI(weather, prevFWI);
+  return { station, weather, fwi };
 }
 
 // Alberta CWFIS fire weather stations (name, lat, lng)
@@ -2901,4 +2939,4 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector };
