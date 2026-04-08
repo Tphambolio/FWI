@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../fwi-theme.js"></script>
 <style>
     .material-symbols-outlined {
@@ -552,18 +554,18 @@
 </div>
 </section>
 
-<!-- ── Station Map ────────────────────────────────────────────────────── -->
+<!-- ── Fuel Lookup Map ────────────────────────────────────────────────── -->
 <section class="mb-10">
-<div class="h-[320px] rounded-xl overflow-hidden relative surface-container-low">
-<iframe id="fwi-map-frame" class="w-full h-full border-0" src="https://www.openstreetmap.org/export/embed.html?bbox=-115.267,54.783,-114.267,55.783&layer=mapnik&marker=55.283,-114.767" allowfullscreen></iframe>
+<div class="h-[380px] rounded-xl overflow-hidden relative surface-container-low">
+<div id="fwi-map-frame" class="w-full h-full"></div>
 <div class="absolute inset-0 bg-gradient-to-t from-surface/60 via-transparent to-transparent pointer-events-none"></div>
 <div class="absolute bottom-4 left-4 glass-panel p-3 rounded-lg pointer-events-none">
   <div class="flex items-center gap-2 mb-1">
     <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Station Location</span>
+    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Click map · Set fuel + station</span>
   </div>
-  <div class="font-headline text-sm font-bold" id="fwi-map-coords">55.2833° N, 114.7667° W</div>
-  <div class="text-[10px] text-on-surface-variant font-label" id="fwi-map-station">Slave Lake</div>
+  <div class="font-headline text-sm font-bold" id="fwi-map-coords">—</div>
+  <div class="text-[10px] text-on-surface-variant font-label mt-0.5" id="fwi-map-status">Drop a pin to query fuel type</div>
 </div>
 </div>
 </section>

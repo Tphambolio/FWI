@@ -253,6 +253,15 @@ const STATION_FUEL_TYPES = {
   'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
 };
 
+// Ecologically associated fuel pair for pin-drop auto-selection (Fuel A → Fuel B complement)
+const FUEL_PAIR_COMPLEMENT = {
+  C1:'C2',  C2:'M1',  C3:'C2',  C4:'C3',  C5:'C4',  C6:'C5',  C7:'D1',
+  D1:'D2',  D2:'D1',
+  M1:'C2',  M2:'M1',
+  S1:'S2',  S2:'S3',  S3:'S2',
+  O1a:'O1b', O1b:'O1a',
+};
+
 /**
  * Calculate FBP fire behaviour from FWI codes + wind speed.
  * Equations: ST-X-3 (Forestry Canada 1992), Van Wagner 1977 (crown fire).
@@ -413,6 +422,7 @@ function wireFBP(weather, fwi) {
 let _lastWeather = null;
 let _lastFWI     = null;
 let _lastVWCalc  = null; // Van Wagner cold-start result for compare panel
+let _selectNearestStation = null; // set by buildStationPicker; used by pin-drop map
 
 function refreshFBP() {
   if (_lastWeather && _lastFWI) wireFBP(_lastWeather, _lastFWI);
@@ -840,6 +850,120 @@ const ALBERTA_STATIONS = [
   { name: 'Cardston',          lat: 49.200, lng: -113.300 },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
+// ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
+
+/** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null. */
+function _normalizeFuelCode(raw) {
+  if (!raw) return null;
+  const s = raw.trim().toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
+  return FUEL_TYPES[s] ? s : null;
+}
+
+/** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
+async function _queryWMSFuelType(lat, lng) {
+  const layer = 'public:cffdrs_fbp_fuel_types';
+  const d = 0.001;
+  const url =
+    `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wms?` +
+    `SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo` +
+    `&LAYERS=${layer}&QUERY_LAYERS=${layer}` +
+    `&BBOX=${lng - d},${lat - d},${lng + d},${lat + d}` +
+    `&WIDTH=3&HEIGHT=3&SRS=EPSG:4326&X=1&Y=1` +
+    `&INFO_FORMAT=application/json`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`WMS ${resp.status}`);
+  const data = await resp.json();
+  const props = data.features?.[0]?.properties || {};
+  const raw = props.FUELTYPE || props.fuel_type || props.fueltype ||
+              props.FuelType || props.CFFDRS_FuelType || null;
+  return _normalizeFuelCode(raw);
+}
+
+/**
+ * Replace the station-detail OSM iframe with an interactive Leaflet map.
+ * User clicks anywhere → queries WMS fuel type → sets both fuel pickers
+ * → switches to nearest CWFIS weather station.
+ * Requires Leaflet 1.9.x to be loaded in the page <head>.
+ */
+function _initPinDropMap() {
+  const container = document.getElementById('fwi-map-frame');
+  if (!container || typeof L === 'undefined' || container._leaflet_id) return;
+
+  const map = L.map(container, { zoomControl: true, attributionControl: false });
+  container._leafletMap = map;
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png', {
+    maxZoom: 14,
+  }).addTo(map);
+
+  // Station marker dots
+  ALBERTA_STATIONS.forEach(s => {
+    L.circleMarker([s.lat, s.lng], {
+      radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8,
+    }).addTo(map).bindTooltip(s.name, { permanent: false, direction: 'top' });
+  });
+
+  // Initial view — current station picker value
+  const sel = document.getElementById('fwi-station-picker');
+  if (sel?.value) {
+    const [lat, lng] = sel.value.split(',').map(Number);
+    map.setView([lat, lng], 7);
+  } else {
+    map.setView([54.5, -115], 6);
+  }
+
+  let pinMarker = null;
+  const statusEl  = document.getElementById('fwi-map-status');
+  const coordsEl  = document.getElementById('fwi-map-coords');
+
+  map.on('click', async e => {
+    const { lat, lng } = e.latlng;
+
+    // Drop / move pin
+    if (pinMarker) pinMarker.setLatLng([lat, lng]);
+    else           pinMarker = L.marker([lat, lng]).addTo(map);
+
+    // Update coords overlay
+    if (coordsEl) coordsEl.textContent =
+      `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}, ` +
+      `${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
+
+    if (statusEl) statusEl.textContent = 'Querying fuel type…';
+
+    // WMS fuel type query
+    let fuelA = null;
+    try {
+      fuelA = await _queryWMSFuelType(lat, lng);
+    } catch (err) {
+      console.warn('[PinDrop] WMS query failed:', err);
+    }
+
+    if (fuelA) {
+      const fuelB = FUEL_PAIR_COMPLEMENT[fuelA] || 'D1';
+      ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = fuelA;
+      });
+      ['fwi-fuel-picker-2', 'fwi-fuel-picker-mobile-2'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = fuelB;
+      });
+      localStorage.setItem('fwi-fuel-type',   fuelA);
+      localStorage.setItem('fwi-fuel-type-2', fuelB);
+      if (statusEl) statusEl.textContent =
+        `${FUEL_TYPES[fuelA]?.name || fuelA}  ·  ${FUEL_TYPES[fuelB]?.name || fuelB}`;
+
+      // Sync conditional rows
+      if (typeof _syncCuringVisibility === 'function') _syncCuringVisibility();
+      if (typeof _syncPSVisibility     === 'function') _syncPSVisibility();
+      refreshFBP();
+    } else {
+      if (statusEl) statusEl.textContent = 'Fuel type unavailable — using nearest station default';
+    }
+
+    // Switch weather to nearest CWFIS station
+    if (_selectNearestStation) _selectNearestStation(lat, lng);
+  });
+}
+
 /** Populate a <select id="fwi-station-picker"> and wire change events. */
 function buildStationPicker() {
   const sel = document.getElementById('fwi-station-picker');
@@ -858,11 +982,8 @@ function buildStationPicker() {
     const name = sel.options[sel.selectedIndex].textContent;
     if (save) localStorage.setItem('fwi-station', sel.value);
     const frame = document.getElementById('fwi-map-frame');
-    if (frame) {
-      const pad = 0.5;
-      frame.src = `https://www.openstreetmap.org/export/embed.html` +
-        `?bbox=${(lng-pad).toFixed(4)},${(lat-pad).toFixed(4)},${(lng+pad).toFixed(4)},${(lat+pad).toFixed(4)}` +
-        `&layer=mapnik&marker=${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if (frame?._leafletMap) {
+      frame._leafletMap.setView([lat, lng], 8);
     }
     const coords = document.getElementById('fwi-map-coords');
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
@@ -899,6 +1020,7 @@ function buildStationPicker() {
       loadStation(false);
     }
   }
+  _selectNearestStation = selectNearest; // expose for pin-drop map
 
   sel.addEventListener('change', () => loadStation(true));
 
@@ -921,6 +1043,8 @@ function buildStationPicker() {
     if (edm) sel.value = edm.value;
     loadStation(true);
   }
+
+  _initPinDropMap();
 }
 
 // ─── Regional Summary ────────────────────────────────────────────────────────
