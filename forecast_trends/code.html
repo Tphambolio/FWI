@@ -39,6 +39,32 @@
 <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
 </header>
 <main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
+<!-- ── Reports ─────────────────────────────────────────────────────────── -->
+<section>
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface mb-4">Reports</h2>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  <button id="rpt-regional-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl">my_location</span>
+    <span class="font-label text-[11px] uppercase tracking-widest">Regional</span>
+    <span class="text-[9px] text-outline text-center leading-tight">Current station summary · all Alberta</span>
+  </button>
+  <button id="rpt-provincial-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl">print</span>
+    <span class="font-label text-[11px] uppercase tracking-widest">Provincial</span>
+    <span class="text-[9px] text-outline text-center leading-tight">All-station FWI briefing printout</span>
+  </button>
+  <button id="rpt-compare-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl">compare_arrows</span>
+    <span class="font-label text-[11px] uppercase tracking-widest">Compare</span>
+    <span class="text-[9px] text-outline text-center leading-tight">CWFIS vs. Van Wagner cold-start</span>
+  </button>
+  <a href="../briefing/" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-[#e05030]/30 hover:bg-[#e05030]/10 active:scale-95 transition-all text-[#e05030]">
+    <span class="material-symbols-outlined text-2xl">assignment</span>
+    <span class="font-label text-[11px] uppercase tracking-widest">FSB Briefing</span>
+    <span class="text-[9px] text-[#e05030]/60 text-center leading-tight">Alberta Fire Safety Briefing generator</span>
+  </a>
+</div>
+</section>
 <!-- D+1 Peak Burn Prediction — FBAN operational product — TOP OF PAGE -->
 <section class="bg-surface-container rounded-lg p-6 border border-[#7bd0ff]/20">
 <div class="flex items-center gap-3 mb-4">
@@ -226,8 +252,8 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <!-- BottomNavBar -->
 <nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Map</span></a>
-<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Forecast</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
@@ -244,6 +270,13 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
   FWI.buildForecastTrends(_lat, _lng, _name);
   FWI.initFWI(_lat, _lng, _name); // populate _lastFWI/_lastWeather so print briefing works from this page
   document.getElementById('fwi-report-btn').addEventListener('click', FWI.printStationBriefing);
+
+  // ── Reports section buttons ───────────────────────────────────────────
+  document.getElementById('rpt-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
+  document.getElementById('rpt-provincial-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
+  document.getElementById('rpt-compare-btn').addEventListener('click', () => {
+    window.location.href = '../station_detail/code.html#compare';
+  });
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>
