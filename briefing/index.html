@@ -311,6 +311,45 @@ function buildConfigUI() {
     stationsEl.appendChild(group);
   });
 
+  // ── Auto-fill from current station context (fwi-station = "lat,lng") ──────
+  const savedStation = localStorage.getItem('fwi-station');
+  if (savedStation) {
+    const [lat, lng] = savedStation.split(',').map(Number);
+    const station = FWI.ALBERTA_STATIONS.find(s =>
+      Math.abs(s.lat - lat) < 0.05 && Math.abs(s.lng - lng) < 0.05
+    );
+    if (station) {
+      const sector = FWI._stationSector(station.lat);
+      document.getElementById('bf-zone-name').value = station.name + ' Area';
+      // Pre-check all stations in the same sector
+      document.querySelectorAll('[name="bf-station"]').forEach(cb => {
+        const s = FWI.ALBERTA_STATIONS.find(st => st.name === cb.value);
+        if (s && FWI._stationSector(s.lat) === sector) cb.checked = true;
+      });
+    }
+  }
+
+  // ── Auto-fill fuel types from current station's active picks + complements ──
+  const fuelA = localStorage.getItem('fwi-fuel-type')   || 'C2';
+  const fuelB = localStorage.getItem('fwi-fuel-type-2') || 'D1';
+  const compA = FWI.FUEL_PAIR_COMPLEMENT[fuelA] || 'C3';
+  const compB = FWI.FUEL_PAIR_COMPLEMENT[fuelB] || 'M1';
+  // Avoid duplicates: if compA === fuelB, pick a fallback
+  const fuelC = compA !== fuelB ? compA : (compA !== fuelA ? compA : 'C3');
+  const fuelD = compB !== fuelA && compB !== fuelB && compB !== fuelC ? compB : 'M1';
+  [fuelA, fuelB, fuelC, fuelD].forEach((fc, i) => {
+    const sel = document.getElementById(`bf-fuel-${i + 1}`);
+    if (sel && FWI.FUEL_TYPES[fc]) sel.value = fc;
+  });
+
+  // ── Auto-fill PS% and curing% ──────────────────────────────────────────────
+  const ps     = localStorage.getItem('fwi-ps-percent')   || '50';
+  const curing = localStorage.getItem('fwi-grass-curing') || '80';
+  document.getElementById('bf-ps').value             = ps;
+  document.getElementById('bf-ps-val').textContent   = ps + '%';
+  document.getElementById('bf-curing').value         = curing;
+  document.getElementById('bf-curing-val').textContent = curing + '%';
+
   // Restore persisted preparer info
   const preparer = localStorage.getItem('bf-preparer') || '';
   const position = localStorage.getItem('bf-position') || '';
