@@ -53,36 +53,16 @@
       </div>
     </div>
 
-    <!-- Forecast Zone Metadata -->
+    <!-- Trend (only manual zone header field — all others auto-derived) -->
     <div class="mb-4 p-3 bg-[#0f1829] rounded border border-[#1e2740]">
-      <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Zone Header <span class="text-slate-700">(auto-filled · editable)</span></p>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Wind</label>
-          <input id="bf-wind-label" type="text" placeholder="auto"
-            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
-        </div>
-        <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Precipitation</label>
-          <input id="bf-precip" type="text" placeholder="auto"
-            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
-        </div>
-        <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Lightning <span id="bf-lightning-src" class="text-slate-700 text-[8px]"></span></label>
-          <input id="bf-lightning" type="text" placeholder="fetching…"
-            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
-        </div>
-        <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Trend</label>
-          <select id="bf-trend"
-            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white focus:outline-none">
-            <option value="—">—</option>
-            <option value="UP">UP</option>
-            <option value="DN">DN</option>
-            <option value="STEADY">STEADY</option>
-          </select>
-        </div>
-      </div>
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Trend <span class="text-slate-700">(wind · precip · lightning auto-derived on generate)</span></p>
+      <select id="bf-trend"
+        class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white focus:outline-none">
+        <option value="—">—</option>
+        <option value="UP">UP</option>
+        <option value="DN">DN</option>
+        <option value="STEADY">STEADY</option>
+      </select>
     </div>
 
     <!-- Fuel Types -->
@@ -474,17 +454,6 @@ function buildConfigUI() {
   const position = localStorage.getItem('bf-position') || '';
   if (preparer) document.getElementById('bf-preparer').value = preparer;
   if (position) document.getElementById('bf-position').value = position;
-  const savedWind      = localStorage.getItem('bf-wind-label');
-  const savedPrecip    = localStorage.getItem('bf-precip');
-  const savedLightning = localStorage.getItem('bf-lightning');
-  if (savedWind)      document.getElementById('bf-wind-label').value = savedWind;
-  if (savedPrecip)    document.getElementById('bf-precip').value     = savedPrecip;
-  if (savedLightning) {
-    document.getElementById('bf-lightning').value = savedLightning;
-    const src = localStorage.getItem('bf-lightning-src') || '';
-    const el  = document.getElementById('bf-lightning-src');
-    if (el && src) el.textContent = `· ${src}`;
-  }
 
   // Slider labels
   document.getElementById('bf-ps').addEventListener('input', e => {
@@ -567,28 +536,16 @@ async function generateBriefing() {
   document.getElementById('bf-progress-pct').textContent = '100%';
   document.getElementById('bf-progress-label').textContent = 'Done.';
 
-  // ── Auto-fill wind + precip from fetched data ──────────────────────────────
+  // ── Auto-derive zone header from fetched data ─────────────────────────────
   const autoHeader = _autoZoneHeader(rows);
-  const windEl   = document.getElementById('bf-wind-label');
-  const precipEl = document.getElementById('bf-precip');
-  windEl.value   = autoHeader.wind;
-  precipEl.value = autoHeader.precip;
-  localStorage.setItem('bf-wind-label', autoHeader.wind);
-  localStorage.setItem('bf-precip',     autoHeader.precip);
 
-  // ── Fetch lightning (async — update UI + re-render when ready) ────────────
-  const lightningEl  = document.getElementById('bf-lightning');
-  const lightingSrc  = document.getElementById('bf-lightning-src');
-  lightningEl.value  = 'Fetching…';
-  lightningEl.disabled = true;
-
-  // Initial render with placeholder
+  // Initial render — lightning placeholder until async fetch resolves
   _briefingData = {
     rows, fuels, ps, curing,
     zoneName:    document.getElementById('bf-zone-name').value.trim() || 'Alberta',
     dateLabel:   document.getElementById('bf-date-label').value.trim(),
-    windLabel:   windEl.value   || '—',
-    precip:      precipEl.value || '—',
+    windLabel:   autoHeader.wind,
+    precip:      autoHeader.precip,
     lightning:   '…',
     trend:       document.getElementById('bf-trend').value,
     preparer, position,
@@ -602,12 +559,6 @@ async function generateBriefing() {
 
   // Lightning fetch in background — re-renders when done
   fetchLightningForZone(rows).then(result => {
-    lightningEl.value    = result.display;
-    lightningEl.disabled = false;
-    if (lightingSrc) lightingSrc.textContent = result.source ? `· ${result.source}` : '';
-    localStorage.setItem('bf-lightning',     result.display);
-    localStorage.setItem('bf-lightning-src', result.source || '');
-    // Update stored data + re-render preview + print doc with final value
     _briefingData.lightning = result.display;
     renderPreview(_briefingData);
   });
