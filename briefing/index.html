@@ -179,7 +179,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center bg-[#e05030]/10 text-[#e05030] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=80"></script>
+<script src="../fwi.js?v=81"></script>
 <script>
 // ─── State ─────────────────────────────────────────────────────────────────
 let _briefingData = null; // last generated data
@@ -519,7 +519,7 @@ async function generateBriefing() {
     document.getElementById('bf-progress-label').textContent = `Fetching ${s.name}…`;
 
     try {
-      const data = await FWI.fetchStationData(s);
+      const data = await FWI.fetchStationDataForecast(s);
       // FBP per fuel — _stationLat is now set to s.lat by fetchStationData
       const fbpResults = fuels.map(fc =>
         FWI.calculateFBP(fc, data.fwi.ffmc, data.fwi.dmc, data.fwi.dc,
@@ -803,7 +803,12 @@ function printBriefing() {
 <style>
   @page { size: A4 landscape; margin: 10mm 12mm; }
   body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; background: #fff; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    table { page-break-inside: auto; break-inside: auto; }
+  }
   table { border-collapse: collapse; width: 100%; }
   th { background: #dce8f0; }
   .no-print { display: none; }

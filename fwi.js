@@ -842,6 +842,49 @@ async function fetchStationData(station) {
   return { station, weather, fwi };
 }
 
+/**
+ * Fetch D+1 forecast weather for a station using ECMWF IFS via Open-Meteo.
+ * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
+ * FBP wind uses hour-14 (peak burn ~14:00 MDT) — matches the D+1 peak prediction
+ * shown on the station detail page.
+ * Used by the Fire Safety Briefing builder for PM Forecast mode.
+ */
+async function fetchStationDataForecast(station) {
+  _stationLat  = station.lat;
+  _stationLng  = station.lng;
+  _stationName = station.name;
+
+  const days = await fetchForecast(station.lat, station.lng);
+
+  // D+1: first day strictly after today's local midnight
+  const tomorrowMid = new Date(); tomorrowMid.setHours(24, 0, 0, 0);
+  let day = days.find(d => d._ts >= tomorrowMid.getTime()) || days[1] || days[0];
+
+  // Weather: noon (hour 12) for FWI chain; peak wind (hour 14) for FBP
+  const weather = {
+    temp:             day.temp,
+    rh:               day.rh,
+    wind:             day.peak.wind,  // peak burn hour — used by calculateFBP
+    wdir:             day.peak.wdir,
+    rain:             day.rain,
+    thunderstormProb: null,
+    month:            new Date().getMonth() + 1,
+    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~14:00 MDT`,
+    fwiFromCWFIS:     false,
+  };
+
+  // FWI carry-over: use CWFIS yesterday values as starting state
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+  let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
+  const p = _cwfisPrev?.stations?.[station.name];
+  if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
+    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+  }
+
+  const fwi = calculateFWI(weather, prevFWI);
+  return { station, weather, fwi, forecastDay: day };
+}
+
 // Alberta CWFIS fire weather stations (name, lat, lng)
 const ALBERTA_STATIONS = [
   // Northern
@@ -1997,6 +2040,9 @@ function printProvincialBriefing(mode = 'provincial') {
     .no-print { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     #print-map { height: 295px !important; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    table { page-break-inside: auto; break-inside: auto; }
   }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 10px 12px; }
@@ -2940,4 +2986,4 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector };
