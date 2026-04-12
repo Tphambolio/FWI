@@ -623,7 +623,7 @@ async function fetchWeatherPrimary(lat, lng) {
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&forecast_days=1&timezone=UTC`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
@@ -644,7 +644,8 @@ async function fetchWeather(lat, lng) {
     rh:    d.hourly.relative_humidity_2m[i],
     wind:  d.hourly.wind_speed_10m[i],
     wdir:  d.hourly.wind_direction_10m[i] ?? null,
-    rain:  d.hourly.precipitation[i],
+    rain:             d.hourly.precipitation[i],
+    thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
     month: new Date().getMonth() + 1,
     source: sourceNote,
     fwiFromCWFIS: false,

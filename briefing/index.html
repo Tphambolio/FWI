@@ -53,29 +53,24 @@
       </div>
     </div>
 
-    <!-- Forecast Zone Metadata (manual) -->
+    <!-- Forecast Zone Metadata -->
     <div class="mb-4 p-3 bg-[#0f1829] rounded border border-[#1e2740]">
-      <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Zone Header Inputs (manual)</p>
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Zone Header <span class="text-slate-700">(auto-filled · editable)</span></p>
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Wind (e.g. W20)</label>
-          <input id="bf-wind-label" type="text" placeholder="W20"
+          <label class="block text-[9px] text-slate-500 mb-0.5">Wind</label>
+          <input id="bf-wind-label" type="text" placeholder="auto"
             class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
         </div>
         <div>
           <label class="block text-[9px] text-slate-500 mb-0.5">Precipitation</label>
-          <input id="bf-precip" type="text" placeholder="—"
+          <input id="bf-precip" type="text" placeholder="auto"
             class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
         </div>
         <div>
-          <label class="block text-[9px] text-slate-500 mb-0.5">Lightning</label>
-          <select id="bf-lightning"
-            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white focus:outline-none">
-            <option value="—">—</option>
-            <option value="L">L (Low)</option>
-            <option value="M">M (Medium)</option>
-            <option value="H">H (High)</option>
-          </select>
+          <label class="block text-[9px] text-slate-500 mb-0.5">Lightning <span id="bf-lightning-src" class="text-slate-700 text-[8px]"></span></label>
+          <input id="bf-lightning" type="text" placeholder="fetching…"
+            class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white placeholder-slate-700 focus:outline-none"/>
         </div>
         <div>
           <label class="block text-[9px] text-slate-500 mb-0.5">Trend</label>
@@ -210,6 +205,130 @@
 let _briefingData = null; // last generated data
 
 const SECTOR_ORDER = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+
+// ─── Script loader ──────────────────────────────────────────────────────────
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ─── Wind direction: degrees → cardinal ─────────────────────────────────────
+function _toCardinal(deg) {
+  const cards = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return cards[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
+
+// ─── Auto-derive zone header values from fetched rows ───────────────────────
+function _autoZoneHeader(rows) {
+  const valid = rows.filter(r => r.weather);
+  if (!valid.length) return { wind: '—', precip: '—' };
+
+  const speeds = valid.map(r => r.weather.wind).filter(v => v != null);
+  const dirs   = valid.map(r => r.weather.wdir).filter(v => v != null);
+  const rains  = valid.map(r => r.weather.rain ?? 0);
+
+  const avgSpeed = speeds.length ? Math.round(speeds.reduce((a,b)=>a+b,0)/speeds.length) : null;
+  const avgDir   = dirs.length   ? dirs.reduce((a,b)=>a+b,0)/dirs.length : null;
+  const maxRain  = Math.max(...rains);
+
+  const windStr = avgSpeed != null
+    ? (avgDir != null ? `${_toCardinal(avgDir)} ${avgSpeed}` : `${avgSpeed} km/h`)
+    : '—';
+  const precipStr = maxRain > 0 ? `${maxRain.toFixed(1)} mm` : 'Nil';
+
+  return { wind: windStr, precip: precipStr };
+}
+
+// ─── ECCC MSC lightning GeoTIFF URL (10-min updates) ────────────────────────
+function _lightningTifUrl(minutesBack = 0) {
+  const d = new Date(Date.now() - minutesBack * 60 * 1000);
+  const mins = Math.floor(d.getUTCMinutes() / 10) * 10;
+  const pad  = n => String(n).padStart(2, '0');
+  const date = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}`;
+  const time = `${pad(d.getUTCHours())}${pad(mins)}`;
+  return `https://dd.weather.gc.ca/today/lightning/${date}T${time}Z_MSC_Lightning_2.5km.tif`;
+}
+
+// ─── Fetch lightning for zone: ECCC GeoTIFF → Open-Meteo fallback ────────────
+async function fetchLightningForZone(rows) {
+  // ── Primary: ECCC MSC observed strikes (GeoTIFF, 2.5km, 10-min) ───────────
+  try {
+    await _loadScript('https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist/geotiff.browser.min.js');
+    await _loadScript('https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js');
+
+    // Register EPSG:3978 (Statistics Canada Lambert — MSC Canada-wide grids)
+    if (!proj4.defs('EPSG:3978')) {
+      proj4.defs('EPSG:3978',
+        '+proj=lcc +lat_1=49 +lat_2=77 +lat_0=49 +lon_0=-95 +x_0=0 +y_0=0 ' +
+        '+ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+    }
+
+    // Try last 3 × 10-min intervals (account for processing lag)
+    let image = null;
+    for (let lag = 0; lag <= 2 && !image; lag++) {
+      try {
+        const tiff = await GeoTIFF.fromUrl(_lightningTifUrl(lag * 10), { allowFullFile: true });
+        image = await tiff.getImage();
+      } catch(e) { /* try older file */ }
+    }
+    if (!image) throw new Error('No ECCC lightning file available');
+
+    const bbox   = image.getBoundingBox(); // native CRS units
+    const width  = image.getWidth();
+    const height = image.getHeight();
+    const geoKeys = image.getGeoKeys();
+
+    // Determine if geographic (GTModelTypeGeoKey=2) or projected (=1)
+    const isGeo  = geoKeys.GTModelTypeGeoKey === 2;
+    const epsgCode = geoKeys.ProjectedCSTypeGeoKey ?? geoKeys.GeographicTypeGeoKey ?? 3978;
+
+    let maxDensity = 0;
+    for (const r of rows) {
+      if (!r.station) continue;
+      let x = r.station.lng, y = r.station.lat;
+
+      if (!isGeo) {
+        // Project WGS84 → native CRS
+        const fromCrs = 'EPSG:4326';
+        const toCrs   = proj4.defs(`EPSG:${epsgCode}`) ? `EPSG:${epsgCode}` : 'EPSG:3978';
+        [x, y] = proj4(fromCrs, toCrs, [r.station.lng, r.station.lat]);
+      }
+
+      const px = Math.floor((x - bbox[0]) / (bbox[2] - bbox[0]) * width);
+      const py = Math.floor((bbox[3] - y) / (bbox[3] - bbox[1]) * height);
+      if (px < 0 || px >= width || py < 0 || py >= height) continue;
+
+      try {
+        const data = await image.readRasters({ window: [px, py, px+1, py+1] });
+        const val  = data[0][0];
+        if (val && isFinite(val) && val > 0 && val > maxDensity) maxDensity = val;
+      } catch(e) { /* skip station */ }
+    }
+
+    const display = maxDensity > 0
+      ? `${maxDensity.toFixed(3)} fl/km²·min`
+      : 'Nil';
+    return { display, source: 'ECCC' };
+
+  } catch(err) {
+    console.warn('[Lightning] ECCC GeoTIFF failed:', err.message);
+  }
+
+  // ── Fallback: Open-Meteo thunderstorm_probability ─────────────────────────
+  const probs = rows
+    .map(r => r.weather?.thunderstormProb)
+    .filter(v => v != null && isFinite(v));
+  if (probs.length) {
+    const maxProb = Math.max(...probs);
+    return { display: `${maxProb}%`, source: 'Open-Meteo forecast' };
+  }
+
+  return { display: '—', source: '' };
+}
 
 // HFI intensity class colours — print-safe pastels
 const HFI_PRINT_BG = [null, '#c8f0d8', '#b8dcf8', '#e0c8f0', '#f8d8b0', '#f8b0b0', '#d0607a'];
@@ -437,25 +556,46 @@ async function generateBriefing() {
   document.getElementById('bf-progress-pct').textContent = '100%';
   document.getElementById('bf-progress-label').textContent = 'Done.';
 
-  // Store for print
+  // ── Auto-fill wind + precip from fetched data ──────────────────────────────
+  const autoHeader = _autoZoneHeader(rows);
+  const windEl   = document.getElementById('bf-wind-label');
+  const precipEl = document.getElementById('bf-precip');
+  if (!windEl.value.trim())   windEl.value   = autoHeader.wind;
+  if (!precipEl.value.trim()) precipEl.value = autoHeader.precip;
+
+  // ── Fetch lightning (async — update UI + re-render when ready) ────────────
+  const lightningEl  = document.getElementById('bf-lightning');
+  const lightingSrc  = document.getElementById('bf-lightning-src');
+  lightningEl.value  = 'Fetching…';
+  lightningEl.disabled = true;
+
+  // Initial render with placeholder
   _briefingData = {
     rows, fuels, ps, curing,
     zoneName:    document.getElementById('bf-zone-name').value.trim() || 'Alberta',
     dateLabel:   document.getElementById('bf-date-label').value.trim(),
-    windLabel:   document.getElementById('bf-wind-label').value.trim() || '—',
-    precip:      document.getElementById('bf-precip').value.trim()     || '—',
-    lightning:   document.getElementById('bf-lightning').value,
+    windLabel:   windEl.value   || '—',
+    precip:      precipEl.value || '—',
+    lightning:   '…',
     trend:       document.getElementById('bf-trend').value,
     preparer, position,
     generatedAt: new Date().toLocaleString('en-CA', { hour12: false, timeZoneName: 'short' }),
   };
-
   renderPreview(_briefingData);
-
   document.getElementById('bf-output').classList.remove('hidden');
   document.getElementById('bf-generate').disabled = false;
   document.getElementById('bf-generate').innerHTML = '<span class="material-symbols-outlined text-base">play_arrow</span> Generate Briefing';
   document.getElementById('bf-progress-wrap').classList.add('hidden');
+
+  // Lightning fetch in background — re-renders when done
+  fetchLightningForZone(rows).then(result => {
+    lightningEl.value    = result.display;
+    lightningEl.disabled = false;
+    if (lightingSrc) lightingSrc.textContent = result.source ? `· ${result.source}` : '';
+    // Update stored data + re-render preview + print doc with final value
+    _briefingData.lightning = result.display;
+    renderPreview(_briefingData);
+  });
 }
 
 // ─── Preview ───────────────────────────────────────────────────────────────
