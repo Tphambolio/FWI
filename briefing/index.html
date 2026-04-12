@@ -199,7 +199,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center bg-[#e05030]/10 text-[#e05030] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=79"></script>
+<script src="../fwi.js?v=80"></script>
 <script>
 // ─── State ─────────────────────────────────────────────────────────────────
 let _briefingData = null; // last generated data
@@ -469,11 +469,22 @@ function buildConfigUI() {
   document.getElementById('bf-curing').value         = curing;
   document.getElementById('bf-curing-val').textContent = curing + '%';
 
-  // Restore persisted preparer info
+  // Restore persisted preparer info + auto-filled zone header from last run
   const preparer = localStorage.getItem('bf-preparer') || '';
   const position = localStorage.getItem('bf-position') || '';
   if (preparer) document.getElementById('bf-preparer').value = preparer;
   if (position) document.getElementById('bf-position').value = position;
+  const savedWind      = localStorage.getItem('bf-wind-label');
+  const savedPrecip    = localStorage.getItem('bf-precip');
+  const savedLightning = localStorage.getItem('bf-lightning');
+  if (savedWind)      document.getElementById('bf-wind-label').value = savedWind;
+  if (savedPrecip)    document.getElementById('bf-precip').value     = savedPrecip;
+  if (savedLightning) {
+    document.getElementById('bf-lightning').value = savedLightning;
+    const src = localStorage.getItem('bf-lightning-src') || '';
+    const el  = document.getElementById('bf-lightning-src');
+    if (el && src) el.textContent = `· ${src}`;
+  }
 
   // Slider labels
   document.getElementById('bf-ps').addEventListener('input', e => {
@@ -560,8 +571,10 @@ async function generateBriefing() {
   const autoHeader = _autoZoneHeader(rows);
   const windEl   = document.getElementById('bf-wind-label');
   const precipEl = document.getElementById('bf-precip');
-  if (!windEl.value.trim())   windEl.value   = autoHeader.wind;
-  if (!precipEl.value.trim()) precipEl.value = autoHeader.precip;
+  windEl.value   = autoHeader.wind;
+  precipEl.value = autoHeader.precip;
+  localStorage.setItem('bf-wind-label', autoHeader.wind);
+  localStorage.setItem('bf-precip',     autoHeader.precip);
 
   // ── Fetch lightning (async — update UI + re-render when ready) ────────────
   const lightningEl  = document.getElementById('bf-lightning');
@@ -592,6 +605,8 @@ async function generateBriefing() {
     lightningEl.value    = result.display;
     lightningEl.disabled = false;
     if (lightingSrc) lightingSrc.textContent = result.source ? `· ${result.source}` : '';
+    localStorage.setItem('bf-lightning',     result.display);
+    localStorage.setItem('bf-lightning-src', result.source || '');
     // Update stored data + re-render preview + print doc with final value
     _briefingData.lightning = result.display;
     renderPreview(_briefingData);
