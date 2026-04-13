@@ -499,6 +499,7 @@ async function fetchCWFIS(lat, lng) {
       if (d < minDist) { minDist = d; nearest = p; }
     }
     if (!nearest) return null;
+    if (minDist > 60) return null; // too far — let SWOB find a closer airport station
 
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
     // CWFIS WFS encodes spaces as '+' in station name strings
