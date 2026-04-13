@@ -856,9 +856,8 @@ async function fetchStationDataForecast(station) {
 
   const days = await fetchForecast(station.lat, station.lng);
 
-  // D+1: first day strictly after today's local midnight
-  const tomorrowMid = new Date(); tomorrowMid.setHours(24, 0, 0, 0);
-  let day = days.find(d => d._ts >= tomorrowMid.getTime()) || days[1] || days[0];
+  // D+1: next operationally relevant peak burn day (today if before 14:00 MDT, tomorrow if after)
+  let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
 
   // Weather: noon (hour 12) for FWI chain; peak wind (hour 14) for FBP
   const weather = {
@@ -1643,6 +1642,19 @@ function _savedPS() {
   return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-ps-percent')) || '50', 10);
 }
 
+/**
+ * Index of the next operationally relevant peak burn day in a `days` array.
+ * Returns today's index if 14:00 MDT (20:00 UTC) has not yet passed;
+ * tomorrow's index otherwise. Falls back to index 0.
+ */
+function _nextPeakDayIdx(days) {
+  const peakPassed = new Date().getUTCHours() >= 20;
+  const cutoff = new Date();
+  peakPassed ? cutoff.setHours(24, 0, 0, 0) : cutoff.setHours(0, 0, 0, 0);
+  const idx = days.findIndex(d => d._ts && d._ts >= cutoff.getTime());
+  return idx >= 0 ? idx : 0;
+}
+
 /** Chain Van Wagner + FBP per day. FBP uses each day's peak (14:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
 function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50) {
@@ -1749,12 +1761,11 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elMR) elMR.textContent = fmt(minRH, 0) + '%';
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
-    // D+1 Peak Burn section — first forecast day that is strictly after today
-    // NAEFS can include past days; find the first day with _ts >= tomorrow midnight
-    const _todayMid = new Date(); _todayMid.setHours(0,0,0,0);
-    const _tomorrowMid = new Date(_todayMid); _tomorrowMid.setDate(_tomorrowMid.getDate() + 1);
-    const d1Idx = days.findIndex(d => d._ts && d._ts >= _tomorrowMid.getTime());
-    const d1SafeIdx = d1Idx >= 0 ? d1Idx : 0;
+    // D+1 Peak Burn section — next operationally relevant peak burn day
+    // (today if before 14:00 MDT / 20:00 UTC, tomorrow if after)
+    const d1SafeIdx = _nextPeakDayIdx(days);
+    const d1HeadEl = document.getElementById('fwi-d1-heading');
+    if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
     if (results.length > 0) {
       const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
@@ -2934,10 +2945,9 @@ async function buildD1Card() {
     return;
   }
 
-  const todayMid = new Date(); todayMid.setHours(0,0,0,0);
-  const tomMid   = new Date(todayMid); tomMid.setDate(tomMid.getDate() + 1);
-  const d1Idx    = days.findIndex(d => d._ts && d._ts >= tomMid.getTime());
-  const idx      = d1Idx >= 0 ? d1Idx : 0;
+  const idx = _nextPeakDayIdx(days);
+  const labelEl = document.getElementById('fwi-d1-peak-label');
+  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 MDT';
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
