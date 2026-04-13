@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-12T20:11:21.707Z",
+  "generated": "2026-04-13T20:22:45.749Z",
   "stations": {
     "High Level": null,
     "Fort Chipewyan": null,
@@ -16,29 +16,148 @@
     "Athabasca": null,
     "Bonnyville": null,
     "Cold Lake": null,
-    "Fox Creek": null,
+    "Fox Creek": {
+      "ffmc": 82.6,
+      "dmc": 8.3,
+      "dc": 119.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 183
+    },
     "Whitecourt": null,
-    "Edson": null,
-    "Hinton": null,
-    "Jasper": null,
-    "Grande Cache": null,
+    "Edson": {
+      "ffmc": 82.6,
+      "dmc": 8.3,
+      "dc": 119.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 129
+    },
+    "Hinton": {
+      "ffmc": 82.6,
+      "dmc": 8.3,
+      "dc": 119.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 61
+    },
+    "Jasper": {
+      "ffmc": 82.6,
+      "dmc": 8.3,
+      "dc": 119.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 8
+    },
+    "Grande Cache": {
+      "ffmc": 82.6,
+      "dmc": 8.3,
+      "dc": 119.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 110
+    },
     "Edmonton": null,
-    "Drayton Valley": null,
-    "Rocky Mtn House": null,
+    "Drayton Valley": {
+      "ffmc": 85.1,
+      "dmc": 15.4,
+      "dc": 33.6,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "GOLDEN AIRPORT",
+      "distKm": 253
+    },
+    "Rocky Mtn House": {
+      "ffmc": 59.9,
+      "dmc": 6.5,
+      "dc": 16.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "BANFF CS",
+      "distKm": 137
+    },
     "Vegreville": null,
     "Camrose": null,
     "Lloydminster": null,
     "Wetaskiwin": null,
     "Stettler": null,
-    "Red Deer": null,
-    "Drumheller": null,
-    "Calgary": null,
-    "Banff": null,
-    "Claresholm": null,
-    "Brooks": null,
-    "Medicine Hat": null,
-    "Pincher Creek": null,
-    "Lethbridge": null,
-    "Cardston": null
+    "Red Deer": {
+      "ffmc": 69.2,
+      "dmc": 3.4,
+      "dc": 91.3,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "Azure AGCM",
+      "distKm": 196
+    },
+    "Drumheller": {
+      "ffmc": 69.2,
+      "dmc": 3.4,
+      "dc": 91.3,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "Azure AGCM",
+      "distKm": 140
+    },
+    "Calgary": {
+      "ffmc": 62.3,
+      "dmc": 3,
+      "dc": 290.1,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "CALGARY SPRINGBANK A",
+      "distKm": 22
+    },
+    "Banff": {
+      "ffmc": 59.9,
+      "dmc": 6.5,
+      "dc": 16.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "BANFF CS",
+      "distKm": 2
+    },
+    "Claresholm": {
+      "ffmc": 73.1,
+      "dmc": 11.5,
+      "dc": 387.6,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "CLARESHOLM",
+      "distKm": 4
+    },
+    "Brooks": {
+      "ffmc": 77.2,
+      "dmc": 9.3,
+      "dc": 382,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "BROOKS",
+      "distKm": 4
+    },
+    "Medicine Hat": {
+      "ffmc": 81.3,
+      "dmc": 13.2,
+      "dc": 444.4,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "MEDICINE HAT RCS",
+      "distKm": 2
+    },
+    "Pincher Creek": {
+      "ffmc": 85,
+      "dmc": 9.8,
+      "dc": 202.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "PINCHER CREEK",
+      "distKm": 5
+    },
+    "Lethbridge": {
+      "ffmc": 83.2,
+      "dmc": 13.3,
+      "dc": 409.3,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "LETHBRIDGE CDA",
+      "distKm": 5
+    },
+    "Cardston": {
+      "ffmc": 83.6,
+      "dmc": 15.7,
+      "dc": 440.7,
+      "repDate": "2026-04-13T12:00:00Z",
+      "stationName": "CARDSTON",
+      "distKm": 1
+    }
   }
 }
