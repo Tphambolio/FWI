@@ -193,6 +193,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Day</th>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Temp</th>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">RH</th>
+<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Wind</th>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">FWI</th>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">ROS m/min</th>
 <th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">HFI kW/m</th>
@@ -200,7 +201,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </tr>
 </thead>
 <tbody id="fwi-forecast-fbp-tbody" class="divide-y divide-outline-variant/10">
-<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr>
+<tr><td colspan="8" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr>
 </tbody>
 </table>
 </div>
@@ -229,12 +230,13 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <tr class="border-b border-outline-variant/30">
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Station Identifier</th>
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Current</th>
+<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Wind</th>
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">24H Delta</th>
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">FWI Index</th>
 <th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Trend Visualization</th>
 </tr>
 </thead>
-<tbody id="fwi-trend-tbody" class="divide-y divide-outline-variant/10"><tr><td colspan="5" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr></tbody>
+<tbody id="fwi-trend-tbody" class="divide-y divide-outline-variant/10"><tr><td colspan="6" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr></tbody>
 </table>
 </div>
 </section>
@@ -257,7 +259,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=84"></script>
+<script src="../fwi.js?v=85"></script>
 <script>
   const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];
