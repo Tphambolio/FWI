@@ -676,8 +676,8 @@ async function fetchWeather(lat, lng) {
   const d = await res.json();
   const times = d.hourly.time; // ISO strings, UTC
 
-  // Noon LST = 19:00 UTC (Alberta is UTC−7 standard time year-round for CFFDRS)
-  const noonUTC = 19;
+  // Noon LST = 20:00 UTC (BC is UTC−8 PST; CFFDRS uses fixed standard time year-round)
+  const noonUTC = 20;
   const nowUTC  = new Date().getUTCHours();
   // Use noon if it has passed; otherwise use the most recent available hour
   const targetHour = nowUTC >= noonUTC ? noonUTC : nowUTC;
@@ -1140,7 +1140,7 @@ function _initPinDropMap() {
     const [lat, lng] = sel.value.split(',').map(Number);
     map.setView([lat, lng], 7);
   } else {
-    map.setView([54.5, -115], 6);
+    map.setView([52.5, -122.5], 6);
   }
 
   // Pre-load Edmonton raster in background
@@ -1228,12 +1228,14 @@ function buildStationPicker() {
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
     const stLabel = document.getElementById('fwi-map-station');
     if (stLabel) stLabel.textContent = name;
-    // Auto-set fuel type from station lookup; sync both pickers
-    const derivedFuel = STATION_FUEL_TYPES[name] || 'C2';
-    ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
-      const fp = document.getElementById(id);
-      if (fp) fp.value = derivedFuel;
-    });
+    // Auto-set fuel type from station lookup — AB only; BC respects user selection
+    if (_province === 'AB') {
+      const derivedFuel = STATION_FUEL_TYPES[name] || 'C2';
+      ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+        const fp = document.getElementById(id);
+        if (fp) fp.value = derivedFuel;
+      });
+    }
     initFWI(lat, lng, name);
     buildHourlyChart(lat, lng, name);
   }
@@ -2134,8 +2136,9 @@ function printProvincialBriefing(mode = 'provincial') {
   const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
 
-  // Print-safe danger colours
+  // Print-safe danger colours (BC 5-class — Very Low replaces Very High)
   const PRINT_COLORS = {
+    'Very Low':  { bg: '#d0f4e4', text: '#0a4a2a' },
     'Low':       { bg: '#d4edda', text: '#155724' },
     'Moderate':  { bg: '#cce5ff', text: '#004085' },
     'High':      { bg: '#fff3cd', text: '#856404' },
@@ -2143,6 +2146,7 @@ function printProvincialBriefing(mode = 'provincial') {
     'Extreme':   { bg: '#f8d7da', text: '#721c24' },
   };
   const SVG_COLORS = {
+    'Very Low':  '#a7f3d0',
     'Low':       '#2d9e5f',
     'Moderate':  '#2980b9',
     'High':      '#f5c518',
@@ -2181,7 +2185,7 @@ function printProvincialBriefing(mode = 'provincial') {
   }
 
   // Tally danger counts
-  const tally = { Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
+  const tally = { 'Very Low': 0, Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
   // ── Selected station (for regional mode) ─────────────────────────────────
@@ -2191,11 +2195,11 @@ function printProvincialBriefing(mode = 'provincial') {
 
   const briefingTitle = mode === 'regional'
     ? `Pyra · Fire Weather — Regional Briefing · ${selName} Area`
-    : 'Pyra · Alberta Fire Weather Index — Provincial Briefing';
+    : 'Pyra · BC Wildfire FWI — Provincial Briefing';
 
   const mapInitScript = mode === 'regional'
     ? `map.setView([${selLat}, ${selLng}], 8);`
-    : `map.fitBounds([[49.0, -120.0], [60.0, -110.0]]);`;
+    : `map.fitBounds([[48.0, -140.0], [60.0, -114.0]]);`;
 
   // ── All station data serialised for dynamic table + Leaflet markers ───────
   const allStationData = JSON.stringify(rows.map(r => ({
@@ -2439,7 +2443,7 @@ async function printStationBriefing() {
   const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
 
-  const stationDisplayName = _stationName || 'Alberta Station';
+  const stationDisplayName = _stationName || 'BC Station';
   const lat = _stationLat;
   const lng = _stationLng;
   const fuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
@@ -2844,7 +2848,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
         }
       }
       const r        = calculateFWI(w, prevFWI);
-      const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
+      const fuelCode = STATION_FUEL_TYPES[s.name] || 'C3';
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
       const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
 
