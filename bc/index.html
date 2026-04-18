@@ -108,8 +108,14 @@
 
   <!-- Data sources note -->
   <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-6">
-    <h2 class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-2">Data Sources</h2>
-    <p class="text-[11px] text-slate-500">Weather: SWOB (Environment Canada surface observations) → Open-Meteo NWP fallback. CWFIS fire weather station network covers Alberta and east — BC weather uses SWOB/NWP. NAEFS 14-day ensemble via CWFIS for 35 BC stations. FWI/FBP math: CFFDRS national standard (Van Wagner 1987, Forestry Canada ST-X-3).</p>
+    <h2 class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-3">Data &amp; Science</h2>
+    <div class="space-y-2 text-[11px] text-slate-500">
+      <p><span class="text-slate-400 font-semibold">Stations:</span> 170+ BCWS Datamart stations (pre-computed FFMC/DMC/DC/ISI/BUI/FWI from BC Wildfire Service) · CWFIS border stations · SWOB fallback · Open-Meteo NWP last resort.</p>
+      <p><span class="text-slate-400 font-semibold">FWI System:</span> Full CFFDRS stack — Fire Weather Indices (FFMC, DMC, DC, ISI, BUI, FWI, DSR) + Fire Behaviour Prediction for all 16 fuel types (C1–C7, D1, M1–M4, O1a/O1b, S1–S3). Van Wagner 1987; Forestry Canada ST-X-3.</p>
+      <p><span class="text-slate-400 font-semibold">Spring startup:</span> Van Wagner (1985) overwinter DC carry-over algorithm by Fire Centre — maritime precip recharge applied to coastal and northwest zones.</p>
+      <p><span class="text-slate-400 font-semibold">14-day forecast:</span> NAEFS ensemble (CWFIS WFS) for 35 BC stations. FBP fire behaviour calculated for each forecast day at peak burn hour (~14:00 PDT).</p>
+      <p><span class="text-slate-400 font-semibold">Danger scale:</span> BCWS 5-class (Very Low / Low / Moderate / High / Extreme). Thresholds per BCWS CFFDRS Implementation Guide (2022).</p>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -124,5 +130,6 @@
   </footer>
 
 </main>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
