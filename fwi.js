@@ -2355,7 +2355,7 @@ async function printStationBriefing() {
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
 <div class="section">
-  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 MDT)</div>
+  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 MDT) &nbsp;·&nbsp; ${fuelCode} — ${fuelName}</div>
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (~14:00 MDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
@@ -2459,7 +2459,7 @@ async function printStationBriefing() {
 <p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})${(fuelCode==='O1a'||fuelCode==='O1b') ? ` &nbsp;·&nbsp; Curing: ${_savedCuring()}% (CF=${(0.005*(Math.exp(0.061*_savedCuring())-1)).toFixed(3)})` : ''}</p>
 
 <div class="section">
-  <div class="section-title">Current Fire Behaviour · Today · ${today}</div>
+  <div class="section-title">Current Fire Behaviour · ${fuelCode} — ${fuelName} · Today · ${today}</div>
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (Noon LST)</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
@@ -2478,7 +2478,7 @@ async function printStationBriefing() {
 ${d1Section}
 
 <div class="section">
-  <div class="section-title">Forecast Outlook — Fire Behaviour by Day (Peak ~14:00 MDT)</div>
+  <div class="section-title">Forecast Outlook — Fire Behaviour by Day · ${fuelCode} — ${fuelName} · Peak ~14:00 MDT</div>
   <div class="section-body" style="padding:0">
     <table>
       <thead>
