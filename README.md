@@ -47,7 +47,7 @@ The FBP/FWI math is identical in both apps — only data tables, danger threshol
 |---|---|
 | Danger scale | **Very Low / Low / Moderate / High / Extreme** (BCWS 5-class — no "Very High") |
 | Thresholds | Very Low <5 · Low <12 · Moderate <21 · High <34 · Extreme ≥34 |
-| Stations | SWOB (Environment Canada MSC surface observations) → Open-Meteo NWP fallback. *CWFIS `firewx_stns_current` does not cover BC (west of −114°W).* |
+| Stations | **BCWS Datamart** (primary — 200+ BC fire weather stations, pre-computed FWI) → CWFIS `firewx_stns_current` (~11 BC border stations) → SWOB → Open-Meteo NWP |
 | Spring DC startup | 50–175 by Fire Centre (maritime precip recharge via Van Wagner 1985 overwinter algorithm) |
 | Sectors | 6 BC Fire Centres: Coastal · Kamloops · Cariboo · Prince George · Northwest · Southeast |
 | Default fuels | C3 (Mature Lodgepole Pine) · C7 (Ponderosa Pine/Douglas-fir) |
@@ -63,14 +63,14 @@ Cold-start fallback values by Fire Centre are hardcoded in `bc/fwi.js`.
 
 ## BC Fire Centres
 
-| Fire Centre | HQ | Stations |
+| Fire Centre | HQ | Sample Stations (170+ total in app) |
 |---|---|---|
-| Coastal | Victoria | Campbell River, Comox, Nanaimo, Port Hardy, Powell River, Squamish, Tofino, Victoria |
-| Kamloops | Kamloops | Chase, Kamloops, Lillooet, Merritt, Penticton, Princeton, Revelstoke, Vernon |
-| Cariboo | Williams Lake | 100 Mile House, Alexis Creek, Horsefly, Quesnel, Williams Lake |
-| Prince George | Prince George | Fort St. James, Mackenzie, McBride, Prince George, Vanderhoof |
-| Northwest | Smithers | Burns Lake, Dease Lake, Prince Rupert, Smithers, Terrace |
-| Southeast | Castlegar | Castlegar, Cranbrook, Fernie, Golden, Invermere, Nelson |
+| Coastal | Victoria | Summit, Cedar, Toba Camp, Quinsam Base, Menzies Camp, Woss Camp, Homathko |
+| Kamloops | Kamloops | Penticton RS, Lillooet, Revelstoke, Aspen Grove, Sparks Lake, Afton, McCuddy |
+| Cariboo | Williams Lake | Alexis Creek, Horsefly, Riske Creek, Tatla Lake, Wells Gray, Churn Creek |
+| Prince George | Prince George | Vanderhoof Hub, Mackenzie FS, Fort St James, Bear Lake, McBride, Bednesti |
+| Northwest | Smithers | Burns Lake 850m, Dease Lake FS, Terrace, Bob Quinn Lake, Sustut, Kitpark |
+| Southeast | Castlegar | Cranbrook, Elko, Grand Forks, Palliser, Revelstoke, Darkwoods, Koocanusa |
 
 ---
 
@@ -101,10 +101,12 @@ The BC engine (`bc/fwi.js`) is a fully self-contained copy. `_province` is hardc
 
 | Source | Used for |
 |---|---|
-| Environment Canada SWOB | BC live weather (primary) |
-| CWFIS `firewx_stns_current` WFS | Alberta carry-over / live fire weather |
-| Open-Meteo NWP (HRRR/GFS) | Fallback weather when SWOB unavailable |
-| CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — both provinces |
+| **BCWS Weather Datamart** | BC FWI (Tier 0) — pre-computed FFMC/DMC/DC/BUI/ISI/FWI for 200+ BC stations. Daily CSV at `for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/YYYY/YYYY-MM-DD.csv` |
+| **openmaps.gov.bc.ca** `PROT_WEATHER_STATIONS_SP` | BC station lat/lng registry (260 stations, `STATION_CODE` key for Datamart join) |
+| CWFIS `firewx_stns_current` WFS | Alberta live fire weather (Tier 1 AB); limited BC coverage (~11 border stations) |
+| Environment Canada SWOB | Tier 2 obs for BC stations not in BCWS Datamart or CWFIS |
+| Open-Meteo NWP (HRRR/GFS) | Tier 3 fallback weather — last resort |
+| CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
 | CFFDRS (Van Wagner 1987, ST-X-3) | FWI/FBP calculation — national standard |
 | BCWS 2022 Implementation Guide | BC danger class thresholds |
 | Van Wagner (1985) Appendix | BC spring DC overwinter algorithm |
