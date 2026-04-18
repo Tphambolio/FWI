@@ -16,6 +16,11 @@ const DC_LL  = [0,-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5.0,2.4,0.4,-1.6,-1.6];
 // Spring startup defaults — FFMC and DMC are uniform; DC varies by Alberta fuel zone.
 const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
 
+// Standalone BC app — province is hardcoded. No localStorage, no province switching.
+const _province = 'BC';
+function setProvince(p) {} // no-op in standalone BC build
+function getProvince() { return 'BC'; }
+
 // P1: Per-station spring startup DC by Alberta fuel/climate zone.
 // Boreal North (high precip, good snowpack) → low carry-over.
 // Southern AB (dry winters, low snowpack) → high carry-over.
@@ -34,7 +39,35 @@ const STATION_STARTUP_DC = {
   'Calgary': 375, 'Lethbridge': 425, 'Medicine Hat': 450, 'Brooks': 425,
   'Cardston': 400, 'Claresholm': 375, 'Drumheller': 425, 'Pincher Creek': 375,
 };
-function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 300; }
+// BC spring DC startup — lower than Alberta due to higher precip and snowpack recharge.
+// Provincial overwinter DC calc (Van Wagner 1985 App.) requires fall DC + winter precip;
+// these are practical cold-start defaults by Fire Centre for browser fallback.
+const BC_STATION_STARTUP_DC = {
+  // Coastal Fire Centre — very high winter precip, near-zero carry-over
+  'Campbell River': 50, 'Comox': 50, 'Nanaimo': 50, 'Port Hardy': 50,
+  'Powell River': 50, 'Squamish': 50, 'Tofino': 50, 'Victoria': 50,
+  'Abbotsford': 50, 'Port Alberni': 50, 'Hope': 50, 'Estevan Point': 50,
+  // Kamloops Fire Centre — rain-shadow interior, moderate carry-over
+  'Chase': 100, 'Kamloops': 125, 'Lillooet': 125, 'Merritt': 100,
+  'Penticton': 100, 'Princeton': 100, 'Revelstoke': 75, 'Vernon': 100,
+  'Kelowna': 100, 'Lytton': 125, 'Clinton': 100,
+  // Cariboo Fire Centre
+  '100 Mile House': 100, 'Alexis Creek': 100, 'Horsefly': 100,
+  'Quesnel': 100, 'Williams Lake': 125, 'Puntzi Mountain': 100, 'Blue River': 75,
+  // Prince George Fire Centre
+  'Fort St. James': 100, 'Mackenzie': 100, 'McBride': 75,
+  'Prince George': 100, 'Vanderhoof': 100, 'Fort St. John': 100, 'Fort Nelson': 75,
+  // Northwest Fire Centre — high precip, low carry-over
+  'Burns Lake': 75, 'Dease Lake': 75, 'Prince Rupert': 50,
+  'Smithers': 75, 'Terrace': 50, 'Cape St. James': 50, 'Sandspit': 50,
+  // Southeast Fire Centre — interior dry, higher carry-over
+  'Castlegar': 150, 'Cranbrook': 175, 'Fernie': 150,
+  'Golden': 100, 'Invermere': 175, 'Nelson': 125,
+};
+function getStartupDC(stationName) {
+  if (_province === 'BC') return BC_STATION_STARTUP_DC[stationName] ?? 100;
+  return STATION_STARTUP_DC[stationName] ?? 300;
+}
 
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
@@ -110,13 +143,26 @@ function windCompass(deg) {
   return `${arrows[i]} ${dirs[i]} (${Math.round(deg)}°)`;
 }
 
-// FWI danger thresholds (NRCan CWFIS operational scale)
+// FWI danger thresholds (NRCan CWFIS operational scale — Alberta)
 function dangerRating(fwi) {
   if (fwi <  9) return 'Low';
   if (fwi < 18) return 'Moderate';
   if (fwi < 33) return 'High';
   if (fwi < 50) return 'Very High';
   return 'Extreme';
+}
+// BC Wildfire Service danger classes — 5 classes, no "Very High", adds "Very Low"
+// Source: BCWS CFFDRS Implementation (B.C. Ministry of Forests, Lands & NRO)
+function dangerRatingBC(fwi) {
+  if (fwi <  5) return 'Very Low';
+  if (fwi < 12) return 'Low';
+  if (fwi < 21) return 'Moderate';
+  if (fwi < 34) return 'High';
+  return 'Extreme';
+}
+// Province-aware danger rating — used throughout for display; AB math unchanged
+function dangerRatingProv(fwi) {
+  return _province === 'BC' ? dangerRatingBC(fwi) : dangerRating(fwi);
 }
 
 // Alberta Wildfire danger class 1–6 (CIFFC operational scale)
@@ -664,7 +710,7 @@ function calculateFWI(w, prev = STARTUP) {
     const isi = w.isi ?? _isi(w.ffmc, w.wind ?? 0);
     const bui = w.bui ?? _bui(w.dmc ?? 0, w.dc ?? 0);
     const fwi = w.fwi ?? _fwi(isi, bui);
-    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRating(fwi), weather: w };
+    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
   }
   // Van Wagner equations — spring startup constants when no carry-over available
   const ffmc = _ffmc(w.temp, w.rh, w.wind, w.rain, prev.ffmc);
@@ -673,7 +719,7 @@ function calculateFWI(w, prev = STARTUP) {
   const isi  = _isi(ffmc, w.wind);
   const bui  = _bui(dmc, dc);
   const fwi  = _fwi(isi, bui);
-  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRating(fwi), weather: w };
+  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */
@@ -931,6 +977,62 @@ const ALBERTA_STATIONS = [
   { name: 'Cardston',          lat: 49.200, lng: -113.300 },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
+// BC CWFIS-area fire weather stations grouped by Fire Centre
+// Note: CWFIS firewx_stns_current covers only east of -114°W; BC weather uses SWOB/Open-Meteo.
+// Coordinates sourced from NAEFS WFS + operational knowledge. Dominant fuel: C3 (lodgepole).
+const BC_STATIONS = [
+  // Coastal Fire Centre (HQ: Victoria)
+  { name: 'Abbotsford',      lat: 49.03, lng: -122.37 },
+  { name: 'Campbell River',  lat: 50.02, lng: -125.27 },
+  { name: 'Comox',           lat: 49.72, lng: -124.90 },
+  { name: 'Estevan Point',   lat: 49.38, lng: -126.55 },
+  { name: 'Hope',            lat: 49.37, lng: -121.48 },
+  { name: 'Nanaimo',         lat: 49.05, lng: -123.87 },
+  { name: 'Port Alberni',    lat: 49.25, lng: -124.83 },
+  { name: 'Port Hardy',      lat: 50.68, lng: -127.37 },
+  { name: 'Squamish',        lat: 49.70, lng: -123.15 },
+  { name: 'Tofino',          lat: 49.08, lng: -125.77 },
+  { name: 'Victoria Intl',   lat: 48.65, lng: -123.43 },
+  // Kamloops Fire Centre
+  { name: 'Clinton',         lat: 51.15, lng: -121.50 },
+  { name: 'Kamloops',        lat: 50.70, lng: -120.45 },
+  { name: 'Kelowna',         lat: 49.97, lng: -119.38 },
+  { name: 'Lillooet',        lat: 50.68, lng: -121.93 },
+  { name: 'Lytton',          lat: 50.23, lng: -121.58 },
+  { name: 'Merritt',         lat: 50.12, lng: -120.78 },
+  { name: 'Penticton',       lat: 49.47, lng: -119.60 },
+  { name: 'Princeton',       lat: 49.47, lng: -120.50 },
+  { name: 'Revelstoke',      lat: 50.97, lng: -118.18 },
+  // Cariboo Fire Centre (HQ: Williams Lake)
+  { name: 'Blue River',      lat: 52.13, lng: -119.28 },
+  { name: 'Puntzi Mountain', lat: 52.12, lng: -124.13 },
+  { name: 'Quesnel',         lat: 53.03, lng: -122.52 },
+  { name: 'Williams Lake',   lat: 52.18, lng: -122.05 },
+  // Prince George Fire Centre
+  { name: 'Fort Nelson',     lat: 58.83, lng: -122.58 },
+  { name: 'Fort St. John',   lat: 56.23, lng: -120.73 },
+  { name: 'Mackenzie',       lat: 55.33, lng: -123.10 },
+  { name: 'Prince George',   lat: 53.88, lng: -122.68 },
+  { name: 'Vanderhoof',      lat: 54.02, lng: -124.02 },
+  // Northwest Fire Centre (HQ: Smithers)
+  { name: 'Cape St. James',  lat: 51.93, lng: -131.02 },
+  { name: 'Dease Lake',      lat: 58.42, lng: -130.02 },
+  { name: 'Prince Rupert',   lat: 54.30, lng: -130.43 },
+  { name: 'Sandspit',        lat: 53.25, lng: -131.82 },
+  { name: 'Smithers',        lat: 54.82, lng: -127.18 },
+  { name: 'Terrace',         lat: 54.47, lng: -128.58 },
+  // Southeast Fire Centre (HQ: Castlegar)
+  { name: 'Castlegar',       lat: 49.30, lng: -117.63 },
+  { name: 'Cranbrook',       lat: 49.60, lng: -115.78 },
+  { name: 'Fernie',          lat: 49.50, lng: -115.07 },
+  { name: 'Golden',          lat: 51.30, lng: -116.97 },
+  { name: 'Invermere',       lat: 50.52, lng: -116.03 },
+  { name: 'Nelson',          lat: 49.50, lng: -117.28 },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+/** Province-aware station list for UI pickers. */
+function getStationList() { return _province === 'BC' ? BC_STATIONS : ALBERTA_STATIONS; }
+
 // ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
 
 /** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null.
@@ -1026,7 +1128,7 @@ function _initPinDropMap() {
   }).addTo(map);
 
   // Station marker dots
-  ALBERTA_STATIONS.forEach(s => {
+  getStationList().forEach(s => {
     L.circleMarker([s.lat, s.lng], {
       radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8,
     }).addTo(map).bindTooltip(s.name, { permanent: false, direction: 'top' });
@@ -1107,7 +1209,7 @@ function buildStationPicker() {
   if (!sel) return;
 
   sel.innerHTML = '';
-  ALBERTA_STATIONS.forEach(s => {
+  getStationList().forEach(s => {
     const opt = document.createElement('option');
     opt.value = `${s.lat},${s.lng}`;
     opt.textContent = s.name;
@@ -1146,7 +1248,7 @@ function buildStationPicker() {
 
   function selectNearest(userLat, userLng) {
     let nearest = null, minDist = Infinity;
-    ALBERTA_STATIONS.forEach(s => {
+    getStationList().forEach(s => {
       const d = _haversineKm(userLat, userLng, s.lat, s.lng);
       if (d < minDist) { minDist = d; nearest = s; }
     });
@@ -1166,9 +1268,10 @@ function buildStationPicker() {
     // Returning user — load saved station immediately, no geo prompt
     loadStation(false);
   } else if (navigator.geolocation) {
-    // First visit — show Edmonton as placeholder, then auto-detect
-    const edm = Array.from(sel.options).find(o => o.textContent === 'Edmonton') || sel.options[0];
-    if (edm) sel.value = edm.value;
+    // First visit — show default station as placeholder, then auto-detect
+    const defaultName = _province === 'BC' ? 'Kamloops' : 'Edmonton';
+    const dflt = Array.from(sel.options).find(o => o.textContent === defaultName) || sel.options[0];
+    if (dflt) sel.value = dflt.value;
     loadStation(false);
     navigator.geolocation.getCurrentPosition(
       pos => selectNearest(pos.coords.latitude, pos.coords.longitude),
@@ -1176,8 +1279,9 @@ function buildStationPicker() {
       { timeout: 8000, maximumAge: 300000 }
     );
   } else {
-    const edm = Array.from(sel.options).find(o => o.textContent === 'Edmonton') || sel.options[0];
-    if (edm) sel.value = edm.value;
+    const defaultName = _province === 'BC' ? 'Kamloops' : 'Edmonton';
+    const dflt = Array.from(sel.options).find(o => o.textContent === defaultName) || sel.options[0];
+    if (dflt) sel.value = dflt.value;
     loadStation(true);
   }
 
@@ -1193,6 +1297,22 @@ function _stationSector(lat) {
   if (lat >= 53.0) return 'Central';
   if (lat >= 51.5) return 'Central-South';
   return 'South';
+}
+/** Map (lat, lng) to BC Fire Centre name. */
+function _stationFireCentre(lat, lng) {
+  if (lat >= 57.0) return 'Northwest';                        // Far NW / Dease Lake corridor
+  if (lat >= 54.0 && lng < -124.0) return 'Northwest';       // Smithers / Terrace / Prince Rupert
+  if (lat >= 52.0 && lng < -127.0) return 'Northwest';       // Coastal north
+  if (lat < 51.5 && lng > -118.5) return 'Southeast';        // Kootenays / Crowsnest
+  if (lng < -122.5 && lat < 52.0) return 'Coastal';          // SW coast, Vancouver Island
+  if (lng < -125.5) return 'Coastal';                        // Haida Gwaii, mid-coast
+  if (lat >= 53.0) return 'Prince George';                   // North-central interior
+  if (lat >= 51.5) return 'Cariboo';                         // Central plateau
+  return 'Kamloops';                                         // Southern interior default
+}
+/** Province-aware sector/region label. */
+function stationSector(lat, lng) {
+  return _province === 'BC' ? _stationFireCentre(lat, lng) : _stationSector(lat);
 }
 
 /** Byram HFI intensity class label (1–6) from kW/m value. */
@@ -1222,13 +1342,13 @@ function _updateStationTableRow(entry) {
   }[srcBadge] || 'background:#1c191740;color:#78716c;border:1px solid #44403c';
   const dangerColor = {
     'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#f5c518',
-    'Very High': '#f97316', 'Extreme': '#ef4444',
+    'Very Low': '#a7f3d0', 'Very High': '#f97316', 'Extreme': '#ef4444',
   }[r.danger] || '#7bd0ff';
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
   const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
   tr.innerHTML =
     `<td class="py-2 pl-3 pr-2 font-semibold text-[#dae2fd] text-xs">${entry.name}</td>` +
-    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(entry.lat)}</td>` +
+    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(entry.lat, entry.lng)}</td>` +
     `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
@@ -1252,7 +1372,7 @@ function _sortStationTable(col, asc) {
   const tbody = document.getElementById('fwi-station-tbody');
   if (!tbody) return;
   const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
-  const dangerOrder = ['Low', 'Moderate', 'High', 'Very High', 'Extreme'];
+  const dangerOrder = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'];
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a, b) => {
     const na = a.id.replace('srow-', '').replace(/-/g, ' ');
@@ -1264,7 +1384,7 @@ function _sortStationTable(col, asc) {
     if (!eb) return -1;
     let va, vb;
     switch (col) {
-      case 'sector':  va = sectorOrder.indexOf(_stationSector(ea.lat)); vb = sectorOrder.indexOf(_stationSector(eb.lat)); break;
+      case 'sector':  va = sectorOrder.indexOf(stationSector(ea.lat, ea.lng)); vb = sectorOrder.indexOf(stationSector(eb.lat, eb.lng)); break;
       case 'name':    va = ea.name; vb = eb.name; break;
       case 'temp':    va = ea.result?.weather?.temp ?? -999; vb = eb.result?.weather?.temp ?? -999; break;
       case 'rh':      va = ea.result?.weather?.rh ?? -1;   vb = eb.result?.weather?.rh ?? -1; break;
@@ -1281,7 +1401,7 @@ function _sortStationTable(col, asc) {
   rows.forEach(r => tbody.appendChild(r));
 }
 
-const REGIONS = [
+const AB_REGIONS = [
   { name: 'Fort McMurray',  sector: 'Northeast Boreal',  lat: 56.650, lng: -111.217 },
   { name: 'Peace River',    sector: 'Northwest Sector',  lat: 56.233, lng: -117.283 },
   { name: 'Slave Lake',     sector: 'Lesser Slave Zone', lat: 55.283, lng: -114.767 },
@@ -1289,6 +1409,16 @@ const REGIONS = [
   { name: 'Edmonton',       sector: 'Central Alberta',   lat: 53.534, lng: -113.490 },
   { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
 ];
+const BC_REGIONS = [
+  { name: 'Terrace',        sector: 'Northwest Fire Centre',      lat: 54.47, lng: -128.58 },
+  { name: 'Prince George',  sector: 'Prince George Fire Centre',  lat: 53.88, lng: -122.68 },
+  { name: 'Williams Lake',  sector: 'Cariboo Fire Centre',        lat: 52.18, lng: -122.05 },
+  { name: 'Kamloops',       sector: 'Kamloops Fire Centre',       lat: 50.70, lng: -120.45 },
+  { name: 'Cranbrook',      sector: 'Southeast Fire Centre',      lat: 49.60, lng: -115.78 },
+  { name: 'Campbell River', sector: 'Coastal Fire Centre',        lat: 50.02, lng: -125.27 },
+];
+/** Province-aware regional representative stations for trend/summary displays. */
+function getRegions() { return _province === 'BC' ? BC_REGIONS : AB_REGIONS; }
 
 // Cache populated by buildRegionalSummary — used by exportRegionalDataset
 let _regionalCache = [];
@@ -1319,6 +1449,7 @@ async function loadCWFISPrev() {
 }
 
 const DANGER_COLORS = {
+  'Very Low':  { bar: 'bg-[#a7f3d0]',  badge: 'bg-[#a7f3d0]/20 text-[#a7f3d0]',   dot: 'bg-[#a7f3d0] shadow-[0_0_8px_#a7f3d0]' },
   'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
   'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
   'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
@@ -1371,10 +1502,12 @@ async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
   if (!list) return;
 
-  const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
-  const sorted = [...ALBERTA_STATIONS].sort((a, b) => {
-    const sa = sectorOrder.indexOf(_stationSector(a.lat));
-    const sb = sectorOrder.indexOf(_stationSector(b.lat));
+  const sectorOrder = _province === 'BC'
+    ? ['Coastal', 'Kamloops', 'Cariboo', 'Prince George', 'Northwest', 'Southeast']
+    : ['Far North', 'North', 'Central', 'Central-South', 'South'];
+  const sorted = [...getStationList()].sort((a, b) => {
+    const sa = sectorOrder.indexOf(stationSector(a.lat, a.lng));
+    const sb = sectorOrder.indexOf(stationSector(b.lat, b.lng));
     if (sa !== sb) return sa - sb;
     return a.name.localeCompare(b.name);
   });
@@ -1401,7 +1534,7 @@ async function buildRegionalSummary() {
           ${sorted.map(s =>
             `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
               <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
-              <td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(s.lat)}</td>
+              <td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(s.lat, s.lng)}</td>
               <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
             </tr>`
           ).join('')}
@@ -1454,10 +1587,50 @@ const NAEFS_AB_STATIONS = [
   { code: 10182, name: 'Whitecourt',           lat: 54.15, lng: -115.78 },
 ];
 
+// BC NAEFS stations — codes discovered from CWFIS firewx_naefs WFS (province_state='BC')
+const NAEFS_BC_STATIONS = [
+  { code: 10183, name: 'Abbotsford',        lat: 49.03, lng: -122.37 },
+  { code: 10184, name: 'Blue River',         lat: 52.13, lng: -119.28 },
+  { code: 10185, name: 'Cape St. James',     lat: 51.93, lng: -131.02 },
+  { code: 10186, name: 'Castlegar',          lat: 49.30, lng: -117.63 },
+  { code: 10187, name: 'Clinton',            lat: 51.15, lng: -121.50 },
+  { code: 10188, name: 'Comox',             lat: 49.72, lng: -124.90 },
+  { code: 10189, name: 'Cranbrook',          lat: 49.60, lng: -115.78 },
+  { code: 10190, name: 'Dease Lake',         lat: 58.42, lng: -130.02 },
+  { code: 10191, name: 'Estevan Point',      lat: 49.38, lng: -126.55 },
+  { code: 10192, name: 'Fort Nelson',        lat: 58.83, lng: -122.58 },
+  { code: 10193, name: 'Fort St. John',      lat: 56.23, lng: -120.73 },
+  { code: 10194, name: 'Hope',              lat: 49.37, lng: -121.48 },
+  { code: 10195, name: 'Kamloops',           lat: 50.70, lng: -120.45 },
+  { code: 10196, name: 'Kelowna',            lat: 49.97, lng: -119.38 },
+  { code: 10197, name: 'Lytton',             lat: 50.23, lng: -121.58 },
+  { code: 10198, name: 'Nanaimo',            lat: 49.05, lng: -123.87 },
+  { code: 10199, name: 'Penticton',          lat: 49.47, lng: -119.60 },
+  { code: 10200, name: 'Port Alberni',       lat: 49.25, lng: -124.83 },
+  { code: 10201, name: 'Port Hardy',         lat: 50.68, lng: -127.37 },
+  { code: 10202, name: 'Prince George',      lat: 53.88, lng: -122.68 },
+  { code: 10203, name: 'Prince Rupert',      lat: 54.30, lng: -130.43 },
+  { code: 10204, name: 'Puntzi Mountain',    lat: 52.12, lng: -124.13 },
+  { code: 10205, name: 'Quesnel',            lat: 53.03, lng: -122.52 },
+  { code: 10206, name: 'Revelstoke',         lat: 50.97, lng: -118.18 },
+  { code: 10207, name: 'Sandspit',           lat: 53.25, lng: -131.82 },
+  { code: 10208, name: 'Smithers',           lat: 54.82, lng: -127.18 },
+  { code: 10209, name: 'Terrace',            lat: 54.47, lng: -128.58 },
+  { code: 10210, name: 'Tofino',             lat: 49.08, lng: -125.77 },
+  { code: 10211, name: 'Vancouver Intl',     lat: 49.18, lng: -123.17 },
+  { code: 10212, name: 'Victoria Intl',      lat: 48.65, lng: -123.43 },
+  { code: 10213, name: 'Williams Lake',      lat: 52.18, lng: -122.05 },
+  { code: 10266, name: 'Callaghan Valley',   lat: 50.13, lng: -123.10 },
+  { code: 10267, name: 'West Vancouver',     lat: 49.33, lng: -123.18 },
+  { code: 10268, name: 'Whistler',           lat: 50.13, lng: -122.95 },
+  { code: 10269, name: 'Whistler Mountain',  lat: 50.07, lng: -122.93 },
+];
+
 /** Return nearest NAEFS station within 150 km, or null. */
 function findNearestNAEFS(lat, lng) {
+  const list = _province === 'BC' ? NAEFS_BC_STATIONS : NAEFS_AB_STATIONS;
   let best = null, bestDist = Infinity;
-  for (const st of NAEFS_AB_STATIONS) {
+  for (const st of list) {
     const d = _haversineKm(lat, lng, st.lat, st.lng);
     if (d < bestDist) { bestDist = d; best = st; }
   }
@@ -1845,7 +2018,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // Trend table — top 5 stations, loaded sequentially to avoid rate-limiting
     const tbody = document.getElementById('fwi-trend-tbody');
     if (tbody) {
-      const tableStations = REGIONS.slice(0, 5);
+      const tableStations = getRegions();
       let tableHTML = '';
       for (const reg of tableStations) {
         try {
@@ -1980,17 +2153,12 @@ function printProvincialBriefing(mode = 'provincial') {
   // Build station rows — sort by FWI descending within each sector grouping
   let rows;
   if (useMap) {
-    // Assign sector from ALBERTA_STATIONS lookup
+    // Assign sector from station list lookup
     const sectorMap = {};
-    ALBERTA_STATIONS.forEach(s => {
-      // Derive sector from lat bands
-      if (s.lat >= 56.5) sectorMap[s.name] = 'Far North';
-      else if (s.lat >= 54.5) sectorMap[s.name] = 'North';
-      else if (s.lat >= 53.0) sectorMap[s.name] = 'Central';
-      else if (s.lat >= 51.5) sectorMap[s.name] = 'Central-South';
-      else sectorMap[s.name] = 'South';
-    });
-    const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+    getStationList().forEach(s => { sectorMap[s.name] = stationSector(s.lat, s.lng); });
+    const sectorOrder = _province === 'BC'
+      ? ['Coastal', 'Kamloops', 'Cariboo', 'Prince George', 'Northwest', 'Southeast']
+      : ['Far North', 'North', 'Central', 'Central-South', 'South'];
     rows = [..._mapStationCache].sort((a, b) => {
       const sa = sectorOrder.indexOf(sectorMap[a.name]);
       const sb = sectorOrder.indexOf(sectorMap[b.name]);
@@ -2558,7 +2726,7 @@ const MARKER_COLORS = {
  * Custom divIcon markers show FWI value + HFI class text, coloured by danger.
  * Active fires and hotspot overlay toggles preserved.
  */
-async function buildStationMap(containerId) {
+async function buildStationMap(containerId, mapOpts = {}) {
   const container = document.getElementById(containerId);
   if (!container || typeof L === 'undefined') return;
   _mapStationCache = [];
@@ -2620,7 +2788,8 @@ async function buildStationMap(containerId) {
 
   // Initialise Leaflet map — CartoDB Voyager tiles (clean, no API key)
   const map = L.map(containerId, {
-    center: [54.5, -114.5], zoom: 5,
+    center: mapOpts.center || (_province === 'BC' ? [52.5, -122.5] : [54.5, -114.5]),
+    zoom:   mapOpts.zoom   || 5,
     zoomControl: true, attributionControl: true,
   });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -2652,7 +2821,7 @@ async function buildStationMap(containerId) {
 
   // Place all loading markers immediately at nominal coords
   const markers = {};
-  for (const s of ALBERTA_STATIONS) {
+  for (const s of getStationList()) {
     const m = L.marker([s.lat, s.lng], { icon: _makeLoadingIcon(_zoomScale(map.getZoom())) })
       .bindPopup(`<b style="font-family:'Space Grotesk',sans-serif">${s.name}</b><br><small style="color:#9ca3af">Loading…</small>`, { maxWidth: 260 });
     markers[s.name] = m;
@@ -2660,7 +2829,7 @@ async function buildStationMap(containerId) {
   }
 
   // Fetch data and update each marker as it arrives
-  for (const s of ALBERTA_STATIONS) {
+  for (const s of getStationList()) {
     try {
       const w = await fetchWeatherPrimary(s.lat, s.lng);
 
@@ -2859,7 +3028,7 @@ function renderSCRIBE(scribe) {
   grid.innerHTML = scribe.records.map(r => {
     const dt = new Date(r.rep_date);
     const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
-    const danger = dangerRating(r.fwi);
+    const danger = dangerRatingProv(r.fwi);
     const c = DANGER_COLORS[danger] || DANGER_COLORS['Moderate'];
     return `<div class="bg-surface-container-lowest rounded-lg p-4">
       <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">${label}</p>
@@ -2998,4 +3167,4 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, dangerRatingBC, dangerRatingProv, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, BC_STATIONS, getStationList, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, stationSector, getRegions, setProvince, getProvince };
