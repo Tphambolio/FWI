@@ -587,6 +587,8 @@ function _haversineKm(lat1, lon1, lat2, lon2) {
  */
 let _bcwsCache = null;
 let _bcwsCacheDate = '';
+let _bcwsFetchPromise = null; // deduplicates concurrent requests
+let _bcwsCORSFailed = false;  // true if CORS blocked — skip all future attempts this session
 
 // BCWS station coordinates — from openmaps.gov.bc.ca PROT_WEATHER_STATIONS_SP WFS.
 // Used to match a selected station lat/lng to the nearest BCWS STATION_CODE.
@@ -724,6 +726,8 @@ const BCWS_STATION_COORDS = {
 };
 
 async function fetchBCWSDatamart() {
+  // Fast exits — avoid repeated fetch attempts
+  if (_bcwsCORSFailed) return null;
   const today = new Date();
   const yyyy  = today.getFullYear();
   const mm    = String(today.getMonth() + 1).padStart(2, '0');
@@ -732,9 +736,13 @@ async function fetchBCWSDatamart() {
 
   if (_bcwsCache && _bcwsCacheDate === dateStr) return _bcwsCache;
 
+  // Deduplicate concurrent requests — all callers await the same in-flight promise
+  if (_bcwsFetchPromise) return _bcwsFetchPromise;
+
   const url = `https://www.for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/${yyyy}/${dateStr}.csv`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20000);
+  _bcwsFetchPromise = (async () => {
   try {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
@@ -825,8 +833,16 @@ async function fetchBCWSDatamart() {
     return latestByCode;
   } catch (e) {
     clearTimeout(timer);
+    // Mark CORS failure so subsequent calls skip immediately without fetching
+    if (e instanceof TypeError && e.message?.toLowerCase().includes('failed to fetch')) {
+      _bcwsCORSFailed = true;
+    }
     return null;
+  } finally {
+    _bcwsFetchPromise = null; // release after completion so next-day calls work
   }
+  })();
+  return _bcwsFetchPromise;
 }
 
 /**
