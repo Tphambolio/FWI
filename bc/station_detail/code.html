@@ -595,7 +595,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=88"></script>
+<script src="../fwi.js?v=89"></script>
 <script>
   FWI.buildStationPicker();
 
@@ -612,6 +612,7 @@
 
   // ── Fuel A picker ────────────────────────────────────────────────────
   document.getElementById('fwi-fuel-picker').addEventListener('change', e => {
+    localStorage.setItem('fwi-bc-fuel-type', e.target.value);
     _syncCuringVisibility();
     _syncPSVisibility();
     FWI.refreshFBP();
@@ -620,6 +621,7 @@
   const _mfp = document.getElementById('fwi-fuel-picker-mobile');
   if (_mfp) _mfp.addEventListener('change', () => {
     document.getElementById('fwi-fuel-picker').value = _mfp.value;
+    localStorage.setItem('fwi-bc-fuel-type', _mfp.value);
     _syncCuringVisibility();
     _syncPSVisibility();
     FWI.refreshFBP();
@@ -627,7 +629,7 @@
 
   // ── Fuel B picker ────────────────────────────────────────────────────
   document.getElementById('fwi-fuel-picker-2').addEventListener('change', e => {
-    localStorage.setItem('fwi-fuel-type-2', e.target.value);
+    localStorage.setItem('fwi-bc-fuel-type-2', e.target.value);
     _syncCuringVisibility();
     _syncPSVisibility();
     FWI.refreshFBP();
@@ -635,7 +637,7 @@
   const _mfp2 = document.getElementById('fwi-fuel-picker-mobile-2');
   if (_mfp2) _mfp2.addEventListener('change', () => {
     document.getElementById('fwi-fuel-picker-2').value = _mfp2.value;
-    localStorage.setItem('fwi-fuel-type-2', _mfp2.value);
+    localStorage.setItem('fwi-bc-fuel-type-2', _mfp2.value);
     _syncCuringVisibility();
     _syncPSVisibility();
     FWI.refreshFBP();
@@ -686,8 +688,8 @@
   document.getElementById('fwi-ps-slider').addEventListener('input', e => _setPS(parseInt(e.target.value, 10)));
 
   // ── Initialise on load from saved state — BC defaults C3/C7 ──────────
-  const _savedFuel  = localStorage.getItem('fwi-fuel-type')   || 'C3';
-  const _savedFuel2 = localStorage.getItem('fwi-fuel-type-2') || 'C7';
+  const _savedFuel  = localStorage.getItem('fwi-bc-fuel-type')   || 'C3';
+  const _savedFuel2 = localStorage.getItem('fwi-bc-fuel-type-2') || 'C7';
   const _savedPC    = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
   const _savedPS_   = parseInt(localStorage.getItem('fwi-ps-percent')   || '50', 10);
   // Sync all pickers to saved values

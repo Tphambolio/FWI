@@ -1705,8 +1705,8 @@ function _initPinDropMap() {
     map.setView([52.5, -122.5], 6);
   }
 
-  // Pre-load Edmonton raster in background
-  _loadEdmontonFuelRaster().catch(() => {});
+  // Pre-load Edmonton raster in background (AB only — BC has no Edmonton LiDAR data)
+  if (_province === 'AB') _loadEdmontonFuelRaster().catch(() => {});
 
   let pinMarker = null;
   const statusEl  = document.getElementById('fwi-map-status');
