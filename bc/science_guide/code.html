@@ -33,8 +33,9 @@
 <span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
 <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">BC Science &amp; FWI Guide</h1>
 </div>
-<div class="flex items-center gap-2">
+<div class="flex items-center gap-3">
   <span class="font-['Space_Grotesk'] font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30">BC</span>
+  <a href="../../science_guide/code.html" class="text-[9px] text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest">Alberta →</a>
 </div>
 </header>
 <main class="pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto min-h-screen overflow-x-hidden">
@@ -528,38 +529,93 @@
 </div>
 </div>
 
-<!-- BC Dominant Fuel Types -->
+<!-- All 16 CFFDRS FBP Fuel Types -->
 <div class="bg-surface-container rounded-2xl p-8 mb-8">
 <div class="flex items-start gap-4 mb-4">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">forest</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">BC Dominant FBP Fuel Types by Fire Centre</h4>
-<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Operational defaults · User-overridable via fuel picker</p>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">All 16 CFFDRS FBP Fuel Types — ST-X-3 Parameters</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Forestry Canada ST-X-3 (1992) · National Standard · User-selectable via fuel picker</p>
 </div>
 </div>
-<p class="text-sm text-on-surface-variant mb-4 leading-relaxed">BC has far greater fuel type diversity than Alberta. The correct fuel type significantly changes ROS and HFI predictions — C7 Ponderosa Pine produces much faster surface fire spread than C3 lodgepole under the same FWI conditions. Default fuels in this app (C3/C7) are conservative interior choices; always verify against local fuel mapping or BCWS fuel type layers before operational use.</p>
-<div class="overflow-x-auto">
+<p class="text-sm text-on-surface-variant mb-4 leading-relaxed">The FBP System defines 16 fuel types. Selecting the correct fuel type is the single most impactful decision in a fire behaviour prediction — the same FWI can produce HFI values that differ by 10× across fuel types. Defaults for this app are <strong class="text-on-surface">C3 — Mature Jack/Lodgepole Pine</strong> (Fuel A) and <strong class="text-on-surface">C7 — Ponderosa Pine/Douglas-fir</strong> (Fuel B). Parameters below are sourced directly from <code class="text-primary text-xs">bc/fwi.js → FUEL_TYPES{}</code>.</p>
+
+<!-- Parameter reference table -->
+<div class="overflow-x-auto mb-6">
 <table class="w-full text-xs border-collapse">
-<thead><tr class="border-b border-outline-variant/30">
-<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Fuel</th>
-<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Type Name</th>
-<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Where in BC</th>
-<th class="py-2 text-left font-label uppercase tracking-wider text-on-surface-variant">App Default</th>
-</tr></thead>
+<thead>
+<tr class="border-b border-outline-variant/30 bg-surface-container-lowest">
+<th class="py-2 px-2 text-left font-label uppercase tracking-wider text-on-surface-variant">Code</th>
+<th class="py-2 px-2 text-left font-label uppercase tracking-wider text-on-surface-variant">Name</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="ROS maximum rate coefficient">a</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="ROS shape coefficient">b</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="ROS shape exponent">c</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="BUI effect multiplier at BUI₀">q</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="Reference BUI for 50% max ROS">BUI₀</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="Crown base height (m)">CBH m</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="Crown fuel load (kg/m²)">CFL kg/m²</th>
+<th class="py-2 px-2 text-center font-label uppercase tracking-wider text-on-surface-variant" title="Surface fuel consumption (kg/m²)">SFC kg/m²</th>
+<th class="py-2 px-2 text-left font-label uppercase tracking-wider text-on-surface-variant">BC Occurrence</th>
+</tr>
+</thead>
 <tbody class="divide-y divide-outline-variant/10 text-on-surface-variant">
-<tr><td class="py-2 pr-4 font-bold text-primary">C3</td><td class="pr-4">Mature Jack/Lodgepole Pine</td><td class="pr-4">Interior BC: Kamloops, Cariboo, Prince George, Southeast</td><td class="text-[#7bd0ff] font-bold">Fuel A default</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-primary">C7</td><td class="pr-4">Ponderosa Pine / Douglas-fir</td><td class="pr-4">South interior: Okanagan, Boundary, South Kamloops, East Kootenay</td><td class="text-[#7bd0ff] font-bold">Fuel B default</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-on-surface">C1</td><td class="pr-4">Spruce-Lichen Woodland</td><td class="pr-4">Northern BC (NW, PG centres) — sub-boreal spruce types</td><td class="text-slate-500">Selectable</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-on-surface">C2</td><td class="pr-4">Boreal Spruce</td><td class="pr-4">NE BC Peace Country, high-elevation spruce zones</td><td class="text-slate-500">Selectable</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-on-surface">C4</td><td class="pr-4">Immature Jack/Lodgepole Pine</td><td class="pr-4">Post-MPB salvage cutblocks, regenerating stands</td><td class="text-slate-500">Selectable</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-on-surface">S3</td><td class="pr-4">Cedar / Hemlock / DF Slash</td><td class="pr-4">Coastal wet belt, interior cedar-hemlock zone</td><td class="text-slate-500">Selectable</td></tr>
-<tr><td class="py-2 pr-4 font-bold text-on-surface">O1b</td><td class="pr-4">Standing Grass</td><td class="pr-4">South Okanagan, Thompson Grasslands, Peace Country</td><td class="text-slate-500">Selectable</td></tr>
+<tr class="bg-surface-container-lowest/30"><td colspan="11" class="py-1 px-2 text-[9px] font-bold uppercase tracking-widest text-primary/70">Conifer Types</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">C1</td><td class="px-2">Spruce-Lichen Woodland</td><td class="px-2 text-center font-mono">90</td><td class="px-2 text-center font-mono">0.0649</td><td class="px-2 text-center font-mono">4.5</td><td class="px-2 text-center font-mono">0.90</td><td class="px-2 text-center font-mono">72</td><td class="px-2 text-center font-mono">2</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-xs">Northern BC, sub-boreal spruce/lichen; NW &amp; PG Fire Centres</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">C2</td><td class="px-2">Boreal Spruce</td><td class="px-2 text-center font-mono">110</td><td class="px-2 text-center font-mono">0.0282</td><td class="px-2 text-center font-mono">1.5</td><td class="px-2 text-center font-mono">0.70</td><td class="px-2 text-center font-mono">64</td><td class="px-2 text-center font-mono">3</td><td class="px-2 text-center font-mono">0.80</td><td class="px-2 text-center font-mono">0.80</td><td class="px-2 text-xs">NE BC Peace Country, high-elevation spruce; NW lower elevations</td></tr>
+<tr class="bg-[#7bd0ff]/5"><td class="py-1.5 px-2 font-bold text-[#7bd0ff]">C3 ★</td><td class="px-2 font-semibold text-on-surface">Mature Jack/Lodgepole Pine</td><td class="px-2 text-center font-mono">110</td><td class="px-2 text-center font-mono">0.0444</td><td class="px-2 text-center font-mono">3.0</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">62</td><td class="px-2 text-center font-mono">8</td><td class="px-2 text-center font-mono">1.15</td><td class="px-2 text-center font-mono">1.15</td><td class="px-2 text-xs font-semibold text-[#7bd0ff]">★ Fuel A default — dominant interior BC fuel: Kamloops, Cariboo, PG, SE</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">C4</td><td class="px-2">Immature Jack/Lodgepole Pine</td><td class="px-2 text-center font-mono">110</td><td class="px-2 text-center font-mono">0.0293</td><td class="px-2 text-center font-mono">1.5</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">66</td><td class="px-2 text-center font-mono">4</td><td class="px-2 text-center font-mono">1.20</td><td class="px-2 text-center font-mono">1.20</td><td class="px-2 text-xs">Post-MPB salvage cutblocks, regenerating lodgepole, post-fire stands</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">C5</td><td class="px-2">Red and White Pine</td><td class="px-2 text-center font-mono">30</td><td class="px-2 text-center font-mono">0.0697</td><td class="px-2 text-center font-mono">4.0</td><td class="px-2 text-center font-mono">0.80</td><td class="px-2 text-center font-mono">56</td><td class="px-2 text-center font-mono">18</td><td class="px-2 text-center font-mono">1.20</td><td class="px-2 text-center font-mono">1.20</td><td class="px-2 text-xs">Rare in BC; eastern ON/QC type. High CBH = crown fire resistant at lower intensities</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">C6</td><td class="px-2">Conifer Plantation</td><td class="px-2 text-center font-mono">30</td><td class="px-2 text-center font-mono">0.0800</td><td class="px-2 text-center font-mono">3.0</td><td class="px-2 text-center font-mono">0.80</td><td class="px-2 text-center font-mono">62</td><td class="px-2 text-center font-mono">7</td><td class="px-2 text-center font-mono">1.80</td><td class="px-2 text-center font-mono">1.80</td><td class="px-2 text-xs">Dense planted stands; highest CFL of all types — extreme crown fire fuel load</td></tr>
+<tr class="bg-[#7bd0ff]/5"><td class="py-1.5 px-2 font-bold text-[#7bd0ff]">C7 ★</td><td class="px-2 font-semibold text-on-surface">Ponderosa Pine / Douglas-fir</td><td class="px-2 text-center font-mono">45</td><td class="px-2 text-center font-mono">0.0305</td><td class="px-2 text-center font-mono">2.0</td><td class="px-2 text-center font-mono">0.85</td><td class="px-2 text-center font-mono">106</td><td class="px-2 text-center font-mono">10</td><td class="px-2 text-center font-mono">0.50</td><td class="px-2 text-center font-mono">0.50</td><td class="px-2 text-xs font-semibold text-[#7bd0ff]">★ Fuel B default — South Okanagan, Boundary, East Kootenay, S. Kamloops</td></tr>
+<tr class="bg-surface-container-lowest/30"><td colspan="11" class="py-1 px-2 text-[9px] font-bold uppercase tracking-widest text-secondary/70">Deciduous Types</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">D1</td><td class="px-2">Leafless Aspen</td><td class="px-2 text-center font-mono">30</td><td class="px-2 text-center font-mono">0.0232</td><td class="px-2 text-center font-mono">1.6</td><td class="px-2 text-center font-mono">0.90</td><td class="px-2 text-center font-mono">32</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">0.35</td><td class="px-2 text-xs">Peace Country, NE BC aspen groves; surface fire only (CBH=0, CFL=0)</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">D2</td><td class="px-2">Green Aspen</td><td class="px-2 text-center font-mono">6</td><td class="px-2 text-center font-mono">0.0232</td><td class="px-2 text-center font-mono">1.6</td><td class="px-2 text-center font-mono">0.90</td><td class="px-2 text-center font-mono">32</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">0.35</td><td class="px-2 text-xs">Very low spread (a=6); green leaf moisture suppresses fire. Summer aspen.</td></tr>
+<tr class="bg-surface-container-lowest/30"><td colspan="11" class="py-1 px-2 text-[9px] font-bold uppercase tracking-widest text-amber-400/70">Mixedwood Types (Blended ROS)</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">M1</td><td class="px-2">Boreal Mixedwood — Leafless</td><td class="px-2 text-center text-on-surface-variant" colspan="8">ROS = PS% × C2_ROS + (1−PS%) × D1_ROS</td><td class="px-2 text-xs">NE BC Peace Country mixed boreal; spruce-aspen blends</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">M2</td><td class="px-2">Boreal Mixedwood — Green</td><td class="px-2 text-center text-on-surface-variant" colspan="8">ROS = PS% × C2_ROS + (1−PS%) × D2_ROS</td><td class="px-2 text-xs">Same stand as M1 in summer (green hardwood suppresses spread)</td></tr>
+<tr class="bg-surface-container-lowest/30"><td colspan="11" class="py-1 px-2 text-[9px] font-bold uppercase tracking-widest text-orange-400/70">Grass Types (Curing-Dependent)</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">O1a</td><td class="px-2">Matted Grass</td><td class="px-2 text-center font-mono">190</td><td class="px-2 text-center font-mono">0.031</td><td class="px-2 text-center font-mono">1.4</td><td class="px-2 text-center font-mono">1.00</td><td class="px-2 text-center font-mono">1</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">0.35</td><td class="px-2 text-xs">Thompson/Nicola grasslands, Peace Country; curing % required — see below</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">O1b</td><td class="px-2">Standing Grass</td><td class="px-2 text-center font-mono">250</td><td class="px-2 text-center font-mono">0.035</td><td class="px-2 text-center font-mono">1.7</td><td class="px-2 text-center font-mono">1.00</td><td class="px-2 text-center font-mono">1</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">0.35</td><td class="px-2 text-xs">South Okanagan, Boundary; faster spread than O1a; extreme rates at 100% curing</td></tr>
+<tr class="bg-surface-container-lowest/30"><td colspan="11" class="py-1 px-2 text-[9px] font-bold uppercase tracking-widest text-yellow-400/70">Slash Types (Surface Fire — No Crown)</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">S1</td><td class="px-2">Jack/Lodgepole Pine Slash</td><td class="px-2 text-center font-mono">75</td><td class="px-2 text-center font-mono">0.0297</td><td class="px-2 text-center font-mono">1.3</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">38</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">4.50</td><td class="px-2 text-xs">Post-harvest lodgepole cutblocks; extremely high SFC — intense surface fire</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">S2</td><td class="px-2">White Spruce / Balsam Slash</td><td class="px-2 text-center font-mono">40</td><td class="px-2 text-center font-mono">0.0438</td><td class="px-2 text-center font-mono">1.7</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">63</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">4.50</td><td class="px-2 text-xs">Post-harvest spruce/fir cutblocks; same high SFC; slower spread than S1</td></tr>
+<tr><td class="py-1.5 px-2 font-bold text-on-surface">S3</td><td class="px-2">Cedar / Hemlock / DF Slash</td><td class="px-2 text-center font-mono">55</td><td class="px-2 text-center font-mono">0.0829</td><td class="px-2 text-center font-mono">3.2</td><td class="px-2 text-center font-mono">0.75</td><td class="px-2 text-center font-mono">31</td><td class="px-2 text-center font-mono">0</td><td class="px-2 text-center font-mono">0.00</td><td class="px-2 text-center font-mono">4.50</td><td class="px-2 text-xs">Coastal wet belt and interior cedar-hemlock zone post-harvest; very rapid spread at low BUI</td></tr>
 </tbody>
 </table>
 </div>
-<div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 mt-4">
-  <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Mountain Pine Beetle Context</p>
-  <p class="text-xs text-on-surface-variant leading-relaxed">Large areas of interior BC lodgepole forest were killed by mountain pine beetle (MPB) between 1999–2015, creating an unprecedented standing dead-fuel mosaic. Red-attack (recently dead, needles still on) and grey-attack (dead, needles fallen) stands have significantly different fire behaviour than the C3 green-canopy model predicts. For post-MPB stands, consult BCWS fuel type updates — C4 (immature/sparse canopy) or M1/M2 (mixed) may better represent the remaining fuel structure.</p>
+
+<!-- Parameter legend -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 text-xs">
+  <div class="bg-surface-container-lowest rounded-lg p-3"><span class="font-bold text-primary block">a</span><span class="text-on-surface-variant">Maximum spread rate coefficient. Higher = faster maximum fire spread.</span></div>
+  <div class="bg-surface-container-lowest rounded-lg p-3"><span class="font-bold text-primary block">b, c</span><span class="text-on-surface-variant">Shape of the ROS–ISI response curve. Higher c = more sensitive to wind/FFMC.</span></div>
+  <div class="bg-surface-container-lowest rounded-lg p-3"><span class="font-bold text-primary block">q / BUI₀</span><span class="text-on-surface-variant">BUI effect: q = fraction of max ROS at BUI=BUI₀. Low BUI₀ = BUI effect kicks in early.</span></div>
+  <div class="bg-surface-container-lowest rounded-lg p-3"><span class="font-bold text-primary block">CBH (m)</span><span class="text-on-surface-variant">Crown base height. Low CBH = crown fire initiates at lower surface intensity. C6 at 7m, C3 at 8m, C7 at 10m.</span></div>
+  <div class="bg-surface-container-lowest rounded-lg p-3"><span class="font-bold text-primary block">SFC (kg/m²)</span><span class="text-on-surface-variant">Surface fuel consumption. Slash types (S1–S3) have SFC 4.5 — 6× higher than forest types. Drives HFI.</span></div>
+</div>
+
+<!-- Operational notes -->
+<div class="space-y-3 mb-6">
+<div class="bg-surface-container-lowest rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-[#7bd0ff] mb-2">C3 vs C7 — The Two BC Default Fuels</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">C3 (lodgepole, a=110) and C7 (ponderosa/Douglas-fir, a=45) have very different spread characteristics. C3 reaches near-maximum spread at moderate ISI and has lower CBH (8m vs 10m) — more prone to crown involvement. C7 spreads slower on the surface but has higher BUI₀ (106 vs 62), meaning BUI has a larger effect at high values. In the south Okanagan under Extreme conditions (FWI ≥ 34), C7 with high BUI can produce extreme HFI through fuel quantity rather than spread rate.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-2">M1/M2 — Mixedwood Blending (PS% Parameter)</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">M1/M2 do not have their own a/b/c coefficients. ROS is a weighted blend: <code class="text-primary">ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2</code>, where PS% is the percent softwood by crown volume (set via the slope/PS picker). At PS=100%, M1 behaves identically to C2. At PS=0%, M1 behaves like D1. The practical range for BC mixed boreal is PS=40–70%. M2 uses D2 (green aspen) for the hardwood component — significantly slower in summer.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-orange-400 mb-2">O1a/O1b — Grass Curing Controls Spread Rate</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">For grass types, curing percent is the dominant driver — more influential than wind or FFMC. The FBP system applies a <em>Curing Factor (CF)</em> to modify ISI before evaluating ROS: <code class="text-primary">CF = 0.005 × (e^(0.061×PC) − 1)</code>. At 60% curing, CF≈0.19 (marginal spread); at 80%, CF≈0.51; at 100%, CF≈2.22 (ISI amplified 2.2× — extreme rates). O1b (standing grass, a=250) produces faster spread than O1a (matted, a=190). Use the curing slider on the station detail page. South Okanagan grasslands can reach 90–100% curing by August.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-yellow-400 mb-2">S1–S3 — Slash Types Are Surface-Fire Only</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">All slash types have CBH=0 and CFL=0 — they cannot initiate crown fire. However, SFC=4.50 kg/m² (vs 0.35–1.80 for forest types) means slash fires produce extremely high surface fire intensity and HFI even at moderate spread rates. S3 (cedar/hemlock slash) has the highest spread rate (a=55, c=3.2) and lowest BUI₀ (31) of the slash types — it responds rapidly to even moderate ISI conditions and is particularly dangerous in BC's coastal and interior cedar-hemlock logging areas.</p>
+</div>
+</div>
+
+<div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Mountain Pine Beetle — C3 Limitations</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">Large areas of interior BC lodgepole were killed by MPB (1999–2015), creating standing dead-fuel mosaics. Red-attack stands (recently dead, needles still on) carry far more fine fuel than the C3 green-canopy model assumes. Grey-attack stands (needles fallen) may behave more like C4 or D1. For post-MPB stands, consult BCWS fuel type updates — C4 or M1/M2 may better represent current structure. C3 predictions in heavily affected stands should be treated as conservative estimates for green-canopy conditions.</p>
 </div>
 </div>
 
