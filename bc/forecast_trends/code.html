@@ -3,11 +3,11 @@
 <html class="dark" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Pyra · Forecast &amp; Trends</title>
+<title>Pyra · BC Forecast &amp; Trends</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="../fwi-theme.js"></script>
+<script src="../../fwi-theme.js"></script>
 <style>
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -32,11 +32,14 @@
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
 <div>
-  <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">Forecast &amp; Risk Trends</h1>
+  <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">BC Forecast &amp; Risk Trends</h1>
   <p class="text-[10px] text-slate-400 font-label uppercase tracking-widest" id="forecast-station-label">—</p>
 </div>
 </div>
-<span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
+<div class="flex items-center gap-3">
+  <span class="font-label text-[10px] uppercase tracking-widest text-[#e05030] font-bold">BC</span>
+  <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
+</div>
 </header>
 <main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
 <!-- ── Reports ─────────────────────────────────────────────────────────── -->
@@ -46,7 +49,7 @@
   <button id="rpt-regional-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
     <span class="material-symbols-outlined text-2xl">my_location</span>
     <span class="font-label text-[11px] uppercase tracking-widest">Regional</span>
-    <span class="text-[9px] text-outline text-center leading-tight">Current station summary · all Alberta</span>
+    <span class="text-[9px] text-outline text-center leading-tight">Current station summary · all BC</span>
   </button>
   <button id="rpt-provincial-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
     <span class="material-symbols-outlined text-2xl">print</span>
@@ -58,19 +61,19 @@
     <span class="font-label text-[11px] uppercase tracking-widest">Compare</span>
     <span class="text-[9px] text-outline text-center leading-tight">CWFIS vs. Van Wagner cold-start</span>
   </button>
-  <a href="../briefing/" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-[#e05030]/30 hover:bg-[#e05030]/10 active:scale-95 transition-all text-[#e05030]">
-    <span class="material-symbols-outlined text-2xl">assignment</span>
-    <span class="font-label text-[11px] uppercase tracking-widest">FSB Briefing</span>
-    <span class="text-[9px] text-[#e05030]/60 text-center leading-tight">Alberta Fire Safety Briefing generator</span>
+  <a href="../../forecast_trends/code.html" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-slate-500 hover:text-slate-300">
+    <span class="material-symbols-outlined text-2xl">swap_horiz</span>
+    <span class="font-label text-[11px] uppercase tracking-widest">AB Version</span>
+    <span class="text-[9px] text-outline text-center leading-tight">Switch to Alberta FWI app</span>
   </a>
 </div>
 </section>
-<!-- D+1 Peak Burn Prediction — FBAN operational product — TOP OF PAGE -->
+<!-- D+1 Peak Burn Prediction -->
 <section class="bg-surface-container rounded-lg p-6 border border-[#7bd0ff]/20">
 <div class="flex items-center gap-3 mb-4">
 <span class="material-symbols-outlined text-tertiary" style="font-variation-settings:'FILL' 1">local_fire_department</span>
 <h3 class="font-headline text-xl font-bold text-white" id="fwi-d1-heading">Next Peak Burn Prediction</h3>
-<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~14:00 MDT · <span id="fwi-d1-label">D+1</span></span>
+<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~14:00 PDT · <span id="fwi-d1-label">D+1</span></span>
 </div>
 <div class="flex flex-wrap gap-4 text-sm text-on-surface-variant mb-4">
 <span>Temp: <b id="fwi-d1-temp" class="text-white">—</b></span>
@@ -105,7 +108,7 @@
 </div>
 <p id="fwi-d1-escape-warn" class="hidden mt-4 p-3 bg-tertiary-container/30 border border-tertiary/50 rounded text-tertiary text-sm font-bold">⚠ HFI ≥ 4,000 kW/m — potential for escaped fire during peak burn period tomorrow</p>
 <div class="flex items-center justify-between mt-4 pt-4 border-t border-outline-variant/20">
-<p class="text-[10px] text-outline/50">Fuel: <span id="fwi-d1-fuel">C2 — Boreal Spruce</span> · FBP ST-X-3</p>
+<p class="text-[10px] text-outline/50">Fuel: <span id="fwi-d1-fuel">C3 — Mature Jack/Lodgepole Pine</span> · FBP ST-X-3</p>
 <button id="fwi-report-btn" class="gradient-primary text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity flex items-center gap-2">
 <span class="material-symbols-outlined text-sm">print</span>Print ICS Station Briefing
 </button>
@@ -114,10 +117,6 @@
 <!-- Hero Section: Critical Window -->
 <section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
 <div class="lg:col-span-8 order-2 lg:order-1 bg-surface-container-high rounded-lg p-8 relative overflow-hidden flex flex-col justify-between">
-<!-- Data Visualization Background Concept -->
-<div class="absolute inset-0 opacity-10 pointer-events-none">
-<img class="w-full h-full object-cover" data-alt="high-resolution topographic contour map of Alberta mountains and plains with subtle neon data overlay and scientific grid lines" data-location="Alberta, Canada" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbfK8HzoMEO8Ki0vT3_ILkp4HZSEacas4UYBuk2hsTa1S5CNpoHk-UyXu2_4oeuoVQ_-9Fe5YVaGw-ZRw1Sif3UNYj0XTllXAwqELWUInjUOv8WBUEA7QPpGWVK4xtybjE14SRjq7Zxb5LPFqUto8puSaiDRn0nojWs3kb15dLCeaBnxbAZRxcscbTmy7WMakIG9JxKFxUiL9Xk2SfG9W958S4e0L1LRacVuM1guEqTOD9qbi0tikt5VVDxkO1cJS5kTI_xoskf_0"/>
-</div>
 <div class="relative z-10">
 <div class="flex items-center gap-2 mb-4">
 <span class="material-symbols-outlined text-tertiary" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
@@ -154,23 +153,20 @@
 <h3 class="font-headline text-2xl font-bold tracking-tight text-white">Outlook Summary</h3>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<!-- Peak Danger Window -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-primary/60">
 <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Peak Danger Window</p>
 <p class="font-headline text-4xl font-black text-white mb-1" id="fwi-peak-window-fwi">—</p>
 <p class="text-sm text-on-surface-variant mb-3" id="fwi-peak-window-dates">—</p>
 <span id="fwi-peak-window-rating" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-surface-container-highest text-outline">—</span>
 </div>
-<!-- Days at Elevated Risk -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-tertiary/60">
 <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Days at Elevated Risk</p>
 <p class="font-headline font-black text-white mb-1">
 <span class="text-4xl" id="fwi-days-at-risk">—</span>
 <span class="text-on-surface-variant text-xl font-normal"> / <span id="fwi-total-days">—</span></span>
 </p>
-<p class="text-sm text-on-surface-variant mt-3">FWI ≥ 20 (Very High or above)</p>
+<p class="text-sm text-on-surface-variant mt-3">FWI ≥ 21 (High or above — BC scale)</p>
 </div>
-<!-- Outlook Trend -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-secondary/60">
 <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Outlook Trend</p>
 <p class="font-headline text-2xl font-black text-white mb-3" id="fwi-outlook-trend-label">—</p>
@@ -185,7 +181,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <!-- Forecast Days — Fire Behaviour Outlook table -->
 <section class="bg-surface-container-low rounded-lg p-6">
 <h3 class="font-headline text-xl font-bold text-white mb-4">Fire Behaviour Outlook — All Forecast Days</h3>
-<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~14:00 MDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 14. FBP chains forward from today's observed FFMC/DMC/DC.</p>
+<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~14:00 PDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 14. FBP chains forward from today's observed FFMC/DMC/DC. Default fuel: C3 lodgepole pine.</p>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
@@ -206,12 +202,12 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </table>
 </div>
 </section>
-<!-- Provincial Trends Analysis -->
+<!-- Regional Trend Matrix — BC Fire Centres -->
 <section class="bg-surface-container-low rounded-lg p-8">
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
 <div>
-<h3 class="font-headline text-2xl font-bold text-white mb-2">Regional Trend Matrix</h3>
-<p class="text-on-surface-variant text-sm">Comparative analysis of temperature and relative humidity across key observing stations.</p>
+<h3 class="font-headline text-2xl font-bold text-white mb-2">BC Fire Centre Trend Matrix</h3>
+<p class="text-on-surface-variant text-sm">Comparative analysis across BC's 6 Fire Centres — one representative station per centre.</p>
 </div>
 <div class="flex items-center gap-4">
 <div class="flex items-center gap-2">
@@ -242,11 +238,11 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </section>
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
 <footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
-  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · Alberta FWI System</span>
+  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · BC Wildfire FWI</span>
   <div class="flex gap-4 text-[9px] text-slate-600">
     <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
     <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
-    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+    <a href="../../forecast_trends/code.html" class="hover:text-slate-400 transition-colors">AB Version</a>
   </div>
   <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
 </footer>
@@ -256,29 +252,28 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../index.html"><span class="material-symbols-outlined mb-1">home</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">BC Home</span></a>
 </nav>
-<script src="../fwi.js?v=86"></script>
+<script src="../../fwi.js?v=86"></script>
 <script>
-  const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
+  FWI.setProvince('BC');
+  // Default station: Kamloops (Kamloops Fire Centre)
+  const _savedStation = localStorage.getItem('fwi-bc-station');
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];
-  const _st = _sLat && FWI.ALBERTA_STATIONS.find(s => Math.abs(s.lat - _sLat) < 0.01 && Math.abs(s.lng - _sLng) < 0.01);
-  const _lat = _st ? _st.lat : 53.5344;
-  const _lng = _st ? _st.lng : -113.4903;
-  const _name = _st ? _st.name : 'Edmonton';
-  const _lbl = document.getElementById('forecast-station-label');
-  if (_lbl) _lbl.textContent = _name + ' Station';
+  const _st = _sLat && FWI.BC_STATIONS.find(s => Math.abs(s.lat - _sLat) < 0.05 && Math.abs(s.lng - _sLng) < 0.05);
+  const _lat  = _st ? _st.lat  : 50.70;
+  const _lng  = _st ? _st.lng  : -120.45;
+  const _name = _st ? _st.name : 'Kamloops';
+  const _lbl  = document.getElementById('forecast-station-label');
+  if (_lbl) _lbl.textContent = _name + ' Station · BC';
   FWI.buildForecastTrends(_lat, _lng, _name);
-  FWI.initFWI(_lat, _lng, _name); // populate _lastFWI/_lastWeather so print briefing works from this page
+  FWI.initFWI(_lat, _lng, _name);
   document.getElementById('fwi-report-btn').addEventListener('click', FWI.printStationBriefing);
-
-  // ── Reports section buttons ───────────────────────────────────────────
   document.getElementById('rpt-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
   document.getElementById('rpt-provincial-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
   document.getElementById('rpt-compare-btn').addEventListener('click', () => {
     window.location.href = '../station_detail/code.html#compare';
   });
 </script>
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>

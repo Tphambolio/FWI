@@ -3,7 +3,7 @@
 <html class="dark" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Pyra · Alberta FWI System</title>
+<title>Pyra · BC FWI System</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="../fwi-theme.js"></script>
+<script src="../../fwi-theme.js"></script>
 <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -50,9 +50,9 @@
 <div class="hidden md:flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
 <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel A</label>
 <select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded">
-  <option value="C2" selected>C2 — Boreal Spruce</option>
+  <option value="C2">C2 — Boreal Spruce</option>
   <option value="C1">C1 — Spruce-Lichen Woodland</option>
-  <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+  <option value="C3" selected>C3 — Mature Jack/Lodgepole Pine</option>
   <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
   <option value="C5">C5 — Red and White Pine</option>
   <option value="C6">C6 — Conifer Plantation</option>
@@ -77,8 +77,8 @@
   <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
   <option value="C5">C5 — Red and White Pine</option>
   <option value="C6">C6 — Conifer Plantation</option>
-  <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
-  <option value="D1" selected>D1 — Leafless Aspen</option>
+  <option value="C7" selected>C7 — Ponderosa Pine/Douglas-fir</option>
+  <option value="D1">D1 — Leafless Aspen</option>
   <option value="D2">D2 — Green Aspen</option>
   <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
   <option value="M2">M2 — Boreal Mixedwood (Green)</option>
@@ -91,7 +91,10 @@
 </div>
 </div>
 <div class="flex flex-col items-end gap-0.5">
-  <span class="font-['Space_Grotesk'] font-bold text-sm tracking-wide text-[#7bd0ff]">Pyra</span>
+  <div class="flex items-center gap-2">
+    <span class="font-['Space_Grotesk'] font-bold text-sm tracking-wide text-[#7bd0ff]">Pyra</span>
+    <span class="font-['Space_Grotesk'] font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30">BC</span>
+  </div>
   <span class="font-label text-[9px] text-slate-500" data-fwi="updated">—</span>
 </div>
 </header>
@@ -103,8 +106,11 @@
   <!-- Brand header -->
   <div class="flex items-center justify-between gap-4">
     <div class="flex flex-col gap-0.5">
-      <span class="font-['Space_Grotesk'] font-bold text-lg text-[#7bd0ff]">Pyra</span>
-      <span class="text-[11px] text-slate-500">Built by Travis Kennedy · Claude · Glenn (WhatsApp) · Free · Open · No login · <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-300 transition-colors">DM on X</a> · <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="hover:text-slate-300 transition-colors">GitHub issues</a></span>
+      <div class="flex items-center gap-2">
+        <span class="font-['Space_Grotesk'] font-bold text-lg text-[#7bd0ff]">Pyra BC Wildfire FWI</span>
+      </div>
+      <span class="text-[11px] text-slate-500">Built by Travis Kennedy · Claude · Glenn (WhatsApp) · Free · Open · No login · <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-300 transition-colors">DM on X</a> · <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub issues</a></span>
+      <span class="text-[10px] text-slate-600">BC Wildfire Service · CFFDRS danger scale: Very Low / Low / Moderate / High / Extreme · Weather: SWOB + Open-Meteo NWP</span>
     </div>
     <div class="flex items-center gap-1.5 shrink-0">
       <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -121,9 +127,9 @@
   <div class="flex flex-col flex-1">
     <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
     <select id="fwi-fuel-picker-mobile" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full">
-      <option value="C2" selected>C2 — Boreal Spruce</option>
+      <option value="C2">C2 — Boreal Spruce</option>
       <option value="C1">C1 — Spruce-Lichen Woodland</option>
-      <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
+      <option value="C3" selected>C3 — Mature Jack/Lodgepole Pine</option>
       <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
       <option value="C5">C5 — Red and White Pine</option>
       <option value="C6">C6 — Conifer Plantation</option>
@@ -153,8 +159,8 @@
       <option value="C4">C4 — Immature Jack/Lodgepole Pine</option>
       <option value="C5">C5 — Red and White Pine</option>
       <option value="C6">C6 — Conifer Plantation</option>
-      <option value="C7">C7 — Ponderosa Pine/Douglas-fir</option>
-      <option value="D1" selected>D1 — Leafless Aspen</option>
+      <option value="C7" selected>C7 — Ponderosa Pine/Douglas-fir</option>
+      <option value="D1">D1 — Leafless Aspen</option>
       <option value="D2">D2 — Green Aspen</option>
       <option value="M1">M1 — Boreal Mixedwood (Leafless)</option>
       <option value="M2">M2 — Boreal Mixedwood (Green)</option>
@@ -309,7 +315,7 @@
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-2">
-    <span id="fwi-d1-peak-label" class="text-xs font-bold uppercase tracking-widest opacity-80">Next Peak Burn · ~14:00 MDT</span>
+    <span id="fwi-d1-peak-label" class="text-xs font-bold uppercase tracking-widest opacity-80">Next Peak Burn · ~14:00 PDT</span>
     <span class="text-[10px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
   </div>
 
@@ -466,9 +472,6 @@
 <button id="fwi-print-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
   <span class="material-symbols-outlined text-[13px]">print</span>Provincial
 </button>
-<a href="../briefing/" target="_blank" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-[#e05030]/50 text-[#e05030] hover:bg-[#e05030]/10 transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">assignment</span>Briefing
-</a>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 <div class="surface-container-high p-4 rounded-lg">
@@ -502,7 +505,7 @@
 <!-- Compare panel — Van Wagner cold-start vs primary source, hidden by default -->
 <div id="fwi-compare-panel" class="hidden mt-4 rounded-lg border border-[#7bd0ff]/20 p-4" style="background:#1e2740">
   <div class="flex items-center justify-between mb-3">
-    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Van Wagner cold-start — regional startup DC, our equations</span>
+    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Van Wagner cold-start — BC startup DC, our equations</span>
     <span class="text-[9px] font-label text-outline italic" id="fwi-compare-note">—</span>
   </div>
   <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
@@ -575,13 +578,14 @@
 
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
 <footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
-  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · Alberta FWI System</span>
+  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · BC Wildfire FWI</span>
   <div class="flex gap-4 text-[9px] text-slate-600">
     <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
     <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
     <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+    <a href="../../station_detail/code.html" class="hover:text-slate-400 transition-colors">Alberta</a>
   </div>
-  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty · BC Wildfire Service CFFDRS danger scale</span>
 </footer>
 </main>
 <!-- BottomNavBar -->
@@ -589,11 +593,11 @@
 <a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=86"></script>
+<script src="../../fwi.js?v=86"></script>
 <script>
+  FWI.setProvince('BC');
   FWI.buildStationPicker();
 
   // ── Print + compare buttons ───────────────────────────────────────────
@@ -682,9 +686,9 @@
   document.getElementById('fwi-ps-inc').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('fwi-ps-percent')||'50',10)) + 5));
   document.getElementById('fwi-ps-slider').addEventListener('input', e => _setPS(parseInt(e.target.value, 10)));
 
-  // ── Initialise on load from saved state ──────────────────────────────
-  const _savedFuel  = localStorage.getItem('fwi-fuel-type')   || 'C2';
-  const _savedFuel2 = localStorage.getItem('fwi-fuel-type-2') || 'D1';
+  // ── Initialise on load from saved state — BC defaults C3/C7 ──────────
+  const _savedFuel  = localStorage.getItem('fwi-fuel-type')   || 'C3';
+  const _savedFuel2 = localStorage.getItem('fwi-fuel-type-2') || 'C7';
   const _savedPC    = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
   const _savedPS_   = parseInt(localStorage.getItem('fwi-ps-percent')   || '50', 10);
   // Sync all pickers to saved values
