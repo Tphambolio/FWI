@@ -1,5 +1,5 @@
 /**
- * Alberta FWI Dashboard — Live Data Engine
+ * BC Wildfire FWI Dashboard — Live Data Engine (standalone BC build)
  *
  * Van Wagner FWI System ported to JavaScript.
  * Reference: Van Wagner & Pickett (1985), Forestry Canada (1992).
@@ -397,9 +397,9 @@ function calcFMC(lat, doy) {
   return Math.min(120, Math.max(85, 85 + 0.0189 * Math.pow(doy - D0, 2)));
 }
 
-let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
-let _stationLng = -113.5; // module-level; set by initFWI
-let _stationName = 'Edmonton'; // module-level; set by initFWI
+let _stationLat = 50.70; // module-level; set by initFWI for FMC calculation (default: Kamloops)
+let _stationLng = -120.45; // module-level; set by initFWI
+let _stationName = 'Kamloops'; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
 function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100, ps = 50) {
@@ -1163,9 +1163,9 @@ function wireDOM(r, lat, lng) {
       let lastStr = '';
       if (lastValid) {
         const d = new Date(lastValid);
-        lastStr = ` · CWFIS last: ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Edmonton' })} MDT`;
+        lastStr = ` · CWFIS last: ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Vancouver' })} PDT`;
       } else {
-        lastStr = ' · CWFIS available ~14:00 MDT';
+        lastStr = ' · CWFIS available ~14:00 PDT';
       }
       dcBadge.textContent = 'Regional estimate' + lastStr;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
@@ -1208,7 +1208,7 @@ function wireDOM(r, lat, lng) {
  * @param {number} lng       Longitude (default: Edmonton)
  * @param {string} station   Station label for [data-fwi="station"] elements
  */
-async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area') {
+async function initFWI(lat = 50.70, lng = -120.45, station = 'Kamloops') {
   _stationLat  = lat; // P5: update for seasonal FMC calculation
   _stationLng  = lng;
   _stationName = station;
@@ -1265,7 +1265,7 @@ async function fetchStationData(station) {
 /**
  * Fetch D+1 forecast weather for a station using ECMWF IFS via Open-Meteo.
  * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
- * FBP wind uses hour-14 (peak burn ~14:00 MDT) — matches the D+1 peak prediction
+ * FBP wind uses hour-14 (peak burn ~14:00 PDT) — matches the D+1 peak prediction
  * shown on the station detail page.
  * Used by the Fire Safety Briefing builder for PM Forecast mode.
  */
@@ -1276,7 +1276,7 @@ async function fetchStationDataForecast(station) {
 
   const days = await fetchForecast(station.lat, station.lng);
 
-  // D+1: next operationally relevant peak burn day (today if before 14:00 MDT, tomorrow if after)
+  // D+1: next operationally relevant peak burn day (today if before 14:00 PDT, tomorrow if after)
   let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
 
   // Weather: noon (hour 12) for FWI chain; peak wind (hour 14) for FBP
@@ -1288,7 +1288,7 @@ async function fetchStationDataForecast(station) {
     rain:             day.rain,
     thunderstormProb: null,
     month:            new Date().getMonth() + 1,
-    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~14:00 MDT`,
+    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~14:00 PDT`,
     fwiFromCWFIS:     false,
   };
 
@@ -1915,6 +1915,7 @@ function _updateStationTableRow(entry) {
   const fbp = entry.fbp;
   const srcBadge = entry.srcBadge || 'NWP';
   const srcStyle = {
+    'BCWS':  'background:#0c304040;color:#7bd0ff;border:1px solid #1e5a7a',
     'CWFIS': 'background:#14532d40;color:#4ade80;border:1px solid #166534',
     'SWOB':  'background:#17255440;color:#93c5fd;border:1px solid #1e40af',
     'NWP':   'background:#451a0340;color:#fcd34d;border:1px solid #92400e',
@@ -1951,7 +1952,7 @@ function _updateStationTableRow(entry) {
 function _sortStationTable(col, asc) {
   const tbody = document.getElementById('fwi-station-tbody');
   if (!tbody) return;
-  const sectorOrder = ['Far North', 'North', 'Central', 'Central-South', 'South'];
+  const sectorOrder = ['Coastal', 'Kamloops', 'Cariboo', 'Prince George', 'Northwest', 'Southeast'];
   const dangerOrder = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'];
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a, b) => {
@@ -2397,7 +2398,7 @@ function _savedPS() {
 
 /**
  * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 14:00 MDT (20:00 UTC) has not yet passed;
+ * Returns today's index if 14:00 PDT (20:00 UTC) has not yet passed;
  * tomorrow's index otherwise. Falls back to index 0.
  */
 function _nextPeakDayIdx(days) {
@@ -2450,7 +2451,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     const fuelCode = _savedFuelCode();
     const curing   = _savedCuring();
     const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, curing);
-    _forecastCache = { days, results, fuelCode, curing };
+    _forecastCache = { days, results, fuelCode, curing, lat: _stationLat, lng: _stationLng };
     const maxFWI = Math.max(...results.map(r => r.fwi), 1);
 
     // Peak danger window — 3-day block centred on the highest FWI day
@@ -2474,8 +2475,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       elPWR.className   = `text-[10px] font-bold uppercase px-2 py-1 rounded-full ${c.badge}`;
     }
 
-    // Days at elevated risk (FWI ≥ 19 = High)
-    const daysAtRisk = results.filter(r => r.fwi >= 20).length;
+    // Days at elevated risk (FWI ≥ 21 = High on BC scale)
+    const daysAtRisk = results.filter(r => r.fwi >= 21).length;
     const elDAR = document.getElementById('fwi-days-at-risk');
     const elTD  = document.getElementById('fwi-total-days');
     if (elDAR) elDAR.textContent = daysAtRisk;
@@ -2515,7 +2516,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
     // D+1 Peak Burn section — next operationally relevant peak burn day
-    // (today if before 14:00 MDT / 20:00 UTC, tomorrow if after)
+    // (today if before 14:00 PDT / 20:00 UTC, tomorrow if after)
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
     if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
@@ -2665,7 +2666,7 @@ function exportRegionalDataset() {
       r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
     ]);
   }
-  _triggerCSVDownload(rows, `fwi-alberta-${new Date().toISOString().slice(0,10)}.csv`);
+  _triggerCSVDownload(rows, `fwi-bc-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 function exportForecastReport() {
@@ -2762,8 +2763,8 @@ function printProvincialBriefing(mode = 'provincial') {
     rows.sort((a, b) => b.fwi - a.fwi);
   }
 
-  // Tally danger counts
-  const tally = { 'Very Low': 0, Low: 0, Moderate: 0, High: 0, 'Very High': 0, Extreme: 0 };
+  // Tally danger counts (BC 5-class: Very Low / Low / Moderate / High / Extreme)
+  const tally = { 'Very Low': 0, Low: 0, Moderate: 0, High: 0, Extreme: 0 };
   rows.forEach(r => { if (tally[r.danger] !== undefined) tally[r.danger]++; });
 
   // ── Selected station (for regional mode) ─────────────────────────────────
@@ -2830,7 +2831,7 @@ function printProvincialBriefing(mode = 'provincial') {
 <div class="hdr">
   <div class="hdr-title">${briefingTitle}</div>
   <div class="hdr-meta">
-    ${today} · 0600–1800 MDT<br>
+    ${today} · 0600–1800 PDT<br>
     Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP
   </div>
 </div>
@@ -2840,9 +2841,9 @@ function printProvincialBriefing(mode = 'provincial') {
 <script>
 setTimeout(function() {
 (function() {
-  const FWI_COLORS = { Low:'#2d9e5f', Moderate:'#2980b9', High:'#f5c518', 'Very High':'#e67e22', Extreme:'#c0392b' };
+  const FWI_COLORS = { 'Very Low':'#a7f3d0', Low:'#2d9e5f', Moderate:'#2980b9', High:'#f5c518', Extreme:'#c0392b' };
   const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
-  const PRINT_COLORS = { Low:{bg:'#d4edda',text:'#155724'}, Moderate:{bg:'#cce5ff',text:'#004085'}, High:{bg:'#fff3cd',text:'#856404'}, 'Very High':{bg:'#ffe5cc',text:'#7d3200'}, Extreme:{bg:'#f8d7da',text:'#721c24'} };
+  const PRINT_COLORS = { 'Very Low':{bg:'#d0f4e4',text:'#0a4a2a'}, Low:{bg:'#d4edda',text:'#155724'}, Moderate:{bg:'#cce5ff',text:'#004085'}, High:{bg:'#fff3cd',text:'#856404'}, Extreme:{bg:'#f8d7da',text:'#721c24'} };
   const allStations = ${allStationData};
 
   const map = L.map('print-map', { zoomControl: true });
@@ -2856,7 +2857,7 @@ setTimeout(function() {
   allStations.forEach(s => {
     const fc = FWI_COLORS[s.danger] || '#2980b9';
     const hc = HFI_COLORS[s.hfiClass] || '#9e9e9e';
-    const r = ['Extreme','Very High'].includes(s.danger) ? 20 : 17;
+    const r = s.danger === 'Extreme' ? 20 : 17;
     const label = s.fwi != null ? (+s.fwi).toFixed(1) : '—';
     const [hn] = (s.hfiClass || '—').split('-');
     const d = r * 2;
@@ -2912,9 +2913,9 @@ setTimeout(function() {
     const cols = [visible.slice(0, third), visible.slice(third, third * 2), visible.slice(third * 2)];
     document.getElementById('station-grid').innerHTML =
       cols.map(col => '<table><thead>' + colHeader + '</thead><tbody>' + col.map(buildRow).join('') + '</tbody></table>').join('');
-    const tally = {Low:0, Moderate:0, High:0, 'Very High':0, Extreme:0};
+    const tally = {'Very Low':0, Low:0, Moderate:0, High:0, Extreme:0};
     visible.forEach(s => { if (tally[s.danger] !== undefined) tally[s.danger]++; });
-    const parts = ['Extreme','Very High','High','Moderate','Low'].filter(d => tally[d] > 0).map(d => tally[d] + ' ' + d).join(' · ');
+    const parts = ['Extreme','High','Moderate','Low','Very Low'].filter(d => tally[d] > 0).map(d => tally[d] + ' ' + d).join(' · ');
     document.getElementById('zone-bar').innerHTML = '<strong>Zone Summary (' + visible.length + ' stations · pan/zoom to adjust):</strong> ' + (parts || 'No data');
   }
   map.on('moveend zoomend', updateTable);
@@ -2940,11 +2941,11 @@ setTimeout(function() {
       <th style="padding:2px 5px;text-align:left">Fire Behaviour</th>
     </tr></thead>
     <tbody>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2d9e5f;margin-right:3px;vertical-align:middle"></span><b>Low</b></td><td style="padding:2px 4px;text-align:center">0–8</td><td style="padding:2px 5px;color:#555">Isolated fires; initial attack effective</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2980b9;margin-right:3px;vertical-align:middle"></span><b>Moderate</b></td><td style="padding:2px 4px;text-align:center">9–17</td><td style="padding:2px 5px;color:#555">Fires start easily; control feasible</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c518;margin-right:3px;vertical-align:middle"></span><b>High</b></td><td style="padding:2px 4px;text-align:center">18–32</td><td style="padding:2px 5px;color:#555">Intense surface fire; difficult to control</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin-right:3px;vertical-align:middle"></span><b>Very High</b></td><td style="padding:2px 4px;text-align:center">33–49</td><td style="padding:2px 5px;color:#555">Spotting likely; indirect attack only</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span><b>Extreme</b></td><td style="padding:2px 4px;text-align:center">≥ 50</td><td style="padding:2px 5px;color:#555">Crown fire conditions; evacuate</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#a7f3d0;margin-right:3px;vertical-align:middle"></span><b>Very Low</b></td><td style="padding:2px 4px;text-align:center">0–4</td><td style="padding:2px 5px;color:#555">Fuels wet; spread very unlikely</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2d9e5f;margin-right:3px;vertical-align:middle"></span><b>Low</b></td><td style="padding:2px 4px;text-align:center">5–11</td><td style="padding:2px 5px;color:#555">Isolated fires; initial attack effective</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2980b9;margin-right:3px;vertical-align:middle"></span><b>Moderate</b></td><td style="padding:2px 4px;text-align:center">12–20</td><td style="padding:2px 5px;color:#555">Fires start easily; control feasible</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c518;margin-right:3px;vertical-align:middle"></span><b>High</b></td><td style="padding:2px 4px;text-align:center">21–33</td><td style="padding:2px 5px;color:#555">Rapid spread; spotting; control difficult</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c0392b;margin-right:3px;vertical-align:middle"></span><b>Extreme</b></td><td style="padding:2px 4px;text-align:center">≥ 34</td><td style="padding:2px 5px;color:#555">Crown fire conditions; evacuate structure zone</td></tr>
     </tbody>
   </table>
   <table style="border-collapse:collapse;width:100%;font-size:6.5pt">
@@ -3037,19 +3038,21 @@ async function printStationBriefing() {
 
   // Danger colour for print
   const PRINT_BG = {
+    'Very Low':  { bg: '#d0f4e4', text: '#0a4a2a' },
     'Low':       { bg: '#d4edda', text: '#155724' },
     'Moderate':  { bg: '#cce5ff', text: '#004085' },
     'High':      { bg: '#fff3cd', text: '#856404' },
-    'Very High': { bg: '#ffe5cc', text: '#7d3200' },
     'Extreme':   { bg: '#f8d7da', text: '#721c24' },
   };
   const dc = PRINT_BG[r.danger] || PRINT_BG['Moderate'];
 
-  // Alberta danger class helper — inline badge HTML (abbreviated labels for table fit)
+  // BC danger class helper — inline badge HTML (BC 5-class scale)
   const classBadge = (fwi) => {
-    const cl = dangerClassNum(fwi);
-    const short = cl.label === 'Moderate' ? 'Mod' : cl.label === 'Very High' ? 'V. High' : cl.label;
-    return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${cl.num}</span> ${short}`;
+    const label = dangerRatingBC(fwi);
+    const cl = PRINT_BG[label] || PRINT_BG['Moderate'];
+    const num = ['Very Low','Low','Moderate','High','Extreme'].indexOf(label) + 1;
+    const short = label === 'Moderate' ? 'Mod' : label;
+    return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${num}</span> ${short}`;
   };
   // HFI class badge — number + plain-language label + operational descriptor
   const hfiBadge = (hfi) => {
@@ -3105,10 +3108,10 @@ async function printStationBriefing() {
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
 <div class="section">
-  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 MDT)</div>
+  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 PDT)</div>
   <div class="section-body">
     <div class="grid-2">
-      <p class="kv"><span class="label">Weather (~14:00 MDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
+      <p class="kv"><span class="label">Weather (~14:00 PDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
       <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${Math.round(d1r.fwi)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
@@ -3117,7 +3120,7 @@ async function printStationBriefing() {
     </div>
     ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
     ${d1EscapeNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 MDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 PDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
 </div>` : '';
 
@@ -3168,7 +3171,7 @@ async function printStationBriefing() {
   <p class="header-title">Fire Weather — Station Briefing</p>
   <p class="header-meta">
     Station: <strong>${stationDisplayName}</strong> &nbsp;·&nbsp; ${Math.abs(lat).toFixed(4)}°N ${Math.abs(lng).toFixed(4)}°W<br>
-    Operational Period: ${today} 0600–1800 MDT<br>
+    Operational Period: ${today} 0600–1800 PDT<br>
     Prepared: ${prepared} &nbsp;·&nbsp; Source: ${srcLabel}
   </p>
 </div>
@@ -3228,7 +3231,7 @@ async function printStationBriefing() {
 ${d1Section}
 
 <div class="section">
-  <div class="section-title">Forecast Outlook — Fire Behaviour by Day (Peak ~14:00 MDT)</div>
+  <div class="section-title">Forecast Outlook — Fire Behaviour by Day (Peak ~14:00 PDT)</div>
   <div class="section-body" style="padding:0">
     <table>
       <thead>
@@ -3428,7 +3431,9 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const r        = calculateFWI(w, prevFWI);
       const fuelCode = STATION_FUEL_TYPES[s.name] || 'C3';
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
-      const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
+      const srcBadge = w.fwiFromCWFIS ? 'CWFIS'
+                     : (w.source?.startsWith('BCWS') ? 'BCWS'
+                     : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP'));
 
       // Use actual station coords from data response if available; otherwise keep nominal
       const stnLat = w.stationLat ?? s.lat;
@@ -3461,8 +3466,8 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // Observation/report timestamp — use CWFIS repDate, SWOB obsTime, or current time for NWP
       const rawTs = w.repDate || w.obsTime || null;
       const obsTs = rawTs
-        ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT'
-        : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT (calc)';
+        ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Vancouver' }) + ' PDT'
+        : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Vancouver' }) + ' PDT (calc)';
       const sourceStnLine = w.stationName
         ? `<div style="font-size:9px;color:#64748b;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
         : '';
@@ -3660,6 +3665,8 @@ async function buildD1Card() {
     const curing    = _savedCuring();
     const ps        = _savedPS();
     const cacheHit  = _forecastCache.results?.length &&
+                      _forecastCache.lat       === _stationLat &&
+                      _forecastCache.lng       === _stationLng &&
                       _forecastCache.fuelCode  === fuelCode  &&
                       _forecastCache.fuelCodeB === fuelCodeB &&
                       _forecastCache.curing    === curing    &&
@@ -3667,7 +3674,10 @@ async function buildD1Card() {
     if (cacheHit) {
       ({ days, results, resultsB } = _forecastCache);
     } else {
-      if (!_forecastCache.days?.length) {
+      const cachedDaysAreForThisStation = _forecastCache.days?.length &&
+                                          _forecastCache.lat === _stationLat &&
+                                          _forecastCache.lng === _stationLng;
+      if (!cachedDaysAreForThisStation) {
         const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
         if (naefsSt) {
           try { days = await fetchForecastNAEFS(naefsSt.code); }
@@ -3679,14 +3689,14 @@ async function buildD1Card() {
           days = await fetchForecast(_stationLat, _stationLng);
         }
       } else {
-        days = _forecastCache.days; // reuse weather; only recalc FBP
+        days = _forecastCache.days; // reuse weather for same station; only recalc FBP
       }
       if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
       const startupDC  = getStartupDC(_stationName);
       results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
       resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps);
-      _forecastCache = { days, results, resultsB, fuelCode, fuelCodeB, curing, ps };
+      _forecastCache = { days, results, resultsB, fuelCode, fuelCodeB, curing, ps, lat: _stationLat, lng: _stationLng };
     }
   } catch(e) {
     console.error('[D+1] Forecast fetch failed:', e);
@@ -3700,7 +3710,7 @@ async function buildD1Card() {
 
   const idx = _nextPeakDayIdx(days);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 MDT';
+  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 PDT';
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
