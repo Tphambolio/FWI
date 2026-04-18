@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pyra · BC Science Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../../fwi-theme.js"></script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        background-color: #0b1326;
+        color: #dae2fd;
+        font-family: 'Inter', sans-serif;
+      }
+      .glass-card {
+        background: rgba(45, 52, 73, 0.6);
+        backdrop-filter: blur(20px);
+      }
+      .custom-scroll::-webkit-scrollbar { width: 4px; }
+      .custom-scroll::-webkit-scrollbar-track { background: #0b1326; }
+      .custom-scroll::-webkit-scrollbar-thumb { background: #45464d; }
+    </style>
+<style>body { min-height: max(884px, 100dvh); }</style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-gradient-to-b from-[#161f35] to-[#0b1326] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
+<h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">BC Science &amp; FWI Guide</h1>
+</div>
+<div class="flex items-center gap-2">
+  <span class="font-['Space_Grotesk'] font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30">BC</span>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-12 max-w-7xl mx-auto min-h-screen overflow-x-hidden">
+
+<!-- Hero -->
+<section class="mb-20">
+<div class="flex flex-col md:flex-row gap-12 items-end justify-between border-b border-outline-variant/20 pb-12">
+<div class="max-w-2xl">
+<span class="font-headline text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4 block">BC Wildfire Service · CFFDRS Reference</span>
+<h2 class="font-headline text-5xl md:text-6xl font-bold text-on-surface leading-none mb-6">Fire Weather Index — BC Wildfire Edition</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed font-body">The Canadian Forest Fire Weather Index (FWI) System applied to British Columbia. Same CFFDRS equations as Alberta — different danger thresholds, fuel types, fire centre regions, and data sources. BC uses a 5-class danger scale without "Very High"; thresholds calibrated to BC's wetter climate and lodgepole-pine-dominated landscape.</p>
+</div>
+<div class="text-right hidden md:block">
+<div class="font-headline text-4xl text-primary font-light">50.70° N</div>
+<div class="font-label text-on-surface-variant/60 uppercase tracking-widest text-[10px]">Kamloops Reference</div>
+</div>
+</div>
+</section>
+
+<!-- Bento Grid: The Components (identical science — same six sub-indices) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-20">
+<!-- FFMC -->
+<div class="md:col-span-8 glass-card rounded-lg p-5 md:p-8 relative overflow-hidden group border border-primary/5">
+<div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-9xl">grass</span>
+</div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary font-label text-[10px] tracking-widest mb-4">MOISTURE CODE</span>
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-2">FFMC</h3>
+<p class="text-on-surface-variant font-body mb-8 max-w-lg leading-relaxed">Fine Fuel Moisture Code. Numerical rating of the moisture content of litter and other cured fine fuels. Critical indicator of ease of ignition and flammability. In BC's coastal forests, high humidity suppresses FFMC; interior valleys dry rapidly under Chinook-like inflow.</p>
+<div class="grid grid-cols-3 gap-2 md:gap-6">
+<div class="bg-surface-container-lowest p-4 rounded border-b border-primary">
+<span class="material-symbols-outlined text-primary mb-2">device_thermostat</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Temperature</div>
+<div class="text-sm font-bold text-on-surface">DRYING RATE</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b border-primary">
+<span class="material-symbols-outlined text-primary mb-2">air</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Wind</div>
+<div class="text-sm font-bold text-on-surface">RAPID EXCHANGE</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded border-b border-secondary">
+<span class="material-symbols-outlined text-secondary mb-2">rainy</span>
+<div class="text-xs font-label text-on-surface-variant uppercase mb-1">Rain</div>
+<div class="text-sm font-bold text-on-surface">RECOVERY</div>
+</div>
+</div>
+</div>
+</div>
+<!-- DMC -->
+<div class="md:col-span-4 bg-surface-container-high rounded-lg p-8 flex flex-col justify-between">
+<div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">DMC</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed mb-6">Duff Moisture Code. Moisture content of loosely compacted organic layers. In BC's rain-shadow interior, DMC rises sharply in summer; coastal stations rarely exceed moderate DMC even in peak season.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-1 bg-primary w-24"></div>
+<span class="text-xs font-label tracking-widest text-on-surface-variant">LITTER LAYER</span>
+</div>
+</div>
+<!-- DC -->
+<div class="md:col-span-4 bg-surface-container-low rounded-lg p-8 border border-outline-variant/10">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">DC</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed">Drought Code. Deep organic layer moisture and smoldering potential. BC's high winter precipitation produces significantly lower spring startup DC values than Alberta — particularly on the coast (DC≈50) and interior-wet belt (DC≈75). The Southeast Fire Centre, with dry winters, starts near DC 150–175.</p>
+</div>
+<!-- ISI -->
+<div class="md:col-span-8 glass-card rounded-lg p-5 md:p-8 flex flex-col sm:flex-row gap-5 md:gap-8 items-center border border-primary/10">
+<div class="w-36 sm:w-1/3 flex-shrink-0 aspect-square rounded-full border-[12px] border-surface-container-lowest flex items-center justify-center relative">
+<div class="absolute inset-0 rounded-full border-t-[12px] border-primary rotate-45"></div>
+<div class="text-center">
+<div class="font-headline text-4xl font-bold text-primary">ISI</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase tracking-widest">Rate of Spread</div>
+</div>
+</div>
+<div class="min-w-0 flex-1">
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-4">Initial Spread Index</h3>
+<p class="text-on-surface-variant font-body mb-6">Calculated from FFMC and Wind Speed. Represents potential rate of fire spread independent of fuel quantity. BC's complex terrain creates strong local wind amplification — valley exits, ridgelines, and outflow winds can produce ISI spikes far exceeding ambient conditions.</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-xs font-label">
+<span class="text-on-surface-variant">FFMC IMPACT</span>
+<span class="text-primary">HIGH</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-1 rounded-full">
+<div class="bg-primary h-full w-[85%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- BUI -->
+<div class="md:col-span-6 bg-surface-container-highest rounded-lg p-8 relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-2">BUI</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed mb-6">Buildup Index. Total available fuel for combustion — a combination of DMC and DC. The most meaningful predictor of fire size and duration in BC's C3 lodgepole pine landscape, where BUI &gt; 80 combined with ISI &gt; 15 historically precedes large-fire days.</p>
+<div class="flex gap-4">
+<div class="px-4 py-2 bg-surface-container-lowest rounded text-on-surface text-xs font-bold">DMC</div>
+<span class="text-primary self-center">+</span>
+<div class="px-4 py-2 bg-surface-container-lowest rounded text-on-surface text-xs font-bold">DC</div>
+</div>
+</div>
+</div>
+<!-- FWI -->
+<div class="md:col-span-6 bg-gradient-to-br from-tertiary-container to-surface-container-highest rounded-lg p-8 border border-tertiary/20">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline text-3xl font-bold text-tertiary mb-1">FWI</h3>
+<div class="text-[10px] font-label text-tertiary/60 uppercase tracking-widest">Primary Metric</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-4xl">warning</span>
+</div>
+<p class="text-on-surface font-body mb-6">Final numerical rating of fire intensity potential. Combines ISI and BUI. Evaluated against the BC Wildfire Service 5-class danger scale — thresholds are lower than Alberta's to reflect BC's generally wetter conditions and the hazard significance of each class in operational fire management.</p>
+<div class="p-4 bg-surface-container-lowest/50 rounded-lg flex items-center gap-4">
+<span class="material-symbols-outlined text-tertiary">science</span>
+<span class="text-xs font-label text-on-surface-variant">General indicator of fire control difficulty.</span>
+</div>
+</div>
+</div>
+
+<!-- Atmospheric Dependencies -->
+<section class="mb-20">
+<h4 class="font-headline text-xl font-bold text-on-surface mb-8 border-l-4 border-primary pl-4 uppercase tracking-widest">Atmospheric Dependencies</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">thermostat</span>
+<div class="font-headline font-bold text-on-surface">Temperature</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Primary Drying Agent</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">humidity_low</span>
+<div class="font-headline font-bold text-on-surface">Rel. Humidity</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Fuel Equilibrium</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">air</span>
+<div class="font-headline font-bold text-on-surface">Wind Speed</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Oxygen &amp; Transport</div>
+</div>
+<div class="p-6 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl">rainy</span>
+<div class="font-headline font-bold text-on-surface">Precipitation</div>
+<div class="text-[10px] font-label text-on-surface-variant uppercase mt-1">Moisture Recharge</div>
+</div>
+</div>
+</section>
+
+<!-- BC FWI Classification Scale — 5 classes, no Very High -->
+<section class="mb-16">
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">BC Wildfire Service Danger Scale — 5 Classes</h3>
+<p class="text-sm text-on-surface-variant mb-6">BC uses five danger classes. "Very High" does not exist in the BC scale — "High" transitions directly to "Extreme" at FWI 34. Thresholds are calibrated to BC climate; the same FWI value implies different operational significance than in Alberta. Source: BC Wildfire Service CFFDRS Implementation Guide (BCWS, 2022).</p>
+<div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+  <div class="bg-surface-container rounded-lg p-5 border-t-2" style="border-top-color:#a7f3d0">
+    <div class="font-headline text-2xl font-bold mb-1" style="color:#a7f3d0">Very Low</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI &lt; 5</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Fuels are moist. Ignition is very difficult; fires will not spread or can be extinguished with hand tools. BC coastal conditions frequently produce this class year-round.</p>
+  </div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-secondary">
+    <div class="font-headline text-2xl font-bold text-secondary mb-1">Low</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 5–11</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Fuels do not ignite readily. Fires spread slowly and are easily controlled. Coastal and interior-wet belt stations commonly sit here through June.</p>
+  </div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-primary">
+    <div class="font-headline text-2xl font-bold text-primary mb-1">Moderate</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 12–20</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Fires start easily from sparks; moderate spread. Control is feasible with initial attack. Interior valleys and the Cariboo typically cross this threshold in late June.</p>
+  </div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2" style="border-top-color:#f5c518">
+    <div class="font-headline text-2xl font-bold mb-1" style="color:#f5c518">High</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI 21–33</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Fire starts readily. Rapid spread in C3/C7 fuels; spotting common. Requires increased initial attack resources. Southeast BC and Kamloops regularly exceed this in July–August.</p>
+  </div>
+  <div class="bg-surface-container rounded-lg p-5 border-t-2 border-tertiary shadow-[0_0_20px_rgba(251,171,255,0.15)]">
+    <div class="font-headline text-2xl font-bold text-tertiary mb-1">Extreme</div>
+    <div class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest mb-3">FWI ≥ 34</div>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Blow-up potential. Erratic fire behaviour in C3 lodgepole. Long-range spotting. Direct attack not recommended. The 2017, 2018, and 2023 mega-fire seasons were characterized by sustained Extreme class across multiple Fire Centres.</p>
+  </div>
+</div>
+<div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">BC vs Alberta — Why Thresholds Differ</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">Alberta's scale has six classes including "Very High" (FWI 33–49), with Extreme beginning at FWI 50. BC's Extreme begins at FWI 34 — a critical operational difference. The same FWI reading of 40 is "Very High" in Alberta but "Extreme" in BC. Do not apply Alberta thresholds to BC operational decisions.</p>
+  <div class="grid grid-cols-2 gap-4 mt-3 text-xs">
+    <div>
+      <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-2">BC Scale (this app)</p>
+      <div class="space-y-1 font-mono text-on-surface-variant">
+        <div><span class="text-[#a7f3d0]">Very Low</span>: FWI &lt; 5</div>
+        <div><span class="text-secondary">Low</span>: FWI 5–11</div>
+        <div><span class="text-primary">Moderate</span>: FWI 12–20</div>
+        <div><span style="color:#f5c518">High</span>: FWI 21–33</div>
+        <div><span class="text-tertiary">Extreme</span>: FWI ≥ 34</div>
+      </div>
+    </div>
+    <div>
+      <p class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Alberta Scale (AB app)</p>
+      <div class="space-y-1 font-mono text-on-surface-variant">
+        <div><span class="text-secondary">Low</span>: FWI &lt; 9</div>
+        <div><span class="text-primary">Moderate</span>: FWI 9–17</div>
+        <div><span style="color:#f5c518">High</span>: FWI 18–32</div>
+        <div><span class="text-orange-400">Very High</span>: FWI 33–49</div>
+        <div><span class="text-tertiary">Extreme</span>: FWI ≥ 50</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-4">Source: BC Wildfire Service CFFDRS Implementation Guide (BCWS, 2022); van Wagner, C.E. (1987). <em>Development and Structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35.</p>
+</section>
+
+<!-- FBP System -->
+<section class="mb-16">
+<div class="flex items-baseline justify-between mb-8">
+<h3 class="font-headline text-2xl font-bold tracking-tight">Fire Behavior Prediction System</h3>
+<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
+<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">ST-X-3 · 1992</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed mb-6 max-w-2xl">The FBP System translates FWI outputs and fuel type into operational fire behaviour: Rate of Spread (ROS), Head Fire Intensity (HFI), Crown Fraction Burned (CFB), and flame length. The equations are identical across provinces — only the dominant fuel types differ. In BC, C3 Mature Lodgepole Pine is the default interior fuel; C7 Ponderosa Pine/Douglas-fir dominates the south interior; S3 Cedar/Hemlock/DF Slash is critical in the coastal wet belt post-harvest areas.</p>
+
+<div class="bg-amber-500/5 border border-amber-500/30 rounded-xl p-5 mb-8 flex items-start gap-4">
+  <span class="material-symbols-outlined text-amber-400 text-xl mt-0.5 shrink-0">warning</span>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Operational Caution — Taylor, Pike &amp; Alexander (1997)</p>
+    <p class="text-sm text-on-surface-variant leading-relaxed">"Fire behavior predictions are intended to assist in decision making, and are not a substitute for experience, sound judgment, or observation of actual fire behavior." ROS predictions are accurate to approximately ±20% for rates &gt; 3 m/min; accuracy decreases for slow-moving fires. Predictions assume flat terrain, open-canopy wind, and homogeneous fuel — adjust for slope, sheltering, and fuel patchiness. BC's complex terrain (valley winds, slope channelling, marine inflow) can produce fire behaviour that significantly exceeds flat-terrain FBP predictions. CFB thresholds: &lt;10% surface fire; 10–89% intermittent crown fire; ≥90% continuous crown fire.</p>
+  </div>
+</div>
+
+<!-- Core equations -->
+<div class="glass-panel rounded-2xl p-8 border border-outline-variant/10 mb-8">
+<h4 class="font-headline text-lg font-bold mb-6 text-primary">Core Equations (National Standard — identical to Alberta)</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Rate of Spread (m/min)</p>
+<p class="text-on-surface">ROS = a × (1 − e<sup>−b·ISI</sup>)<sup>c</sup> × BE</p>
+<p class="text-[10px] text-on-surface-variant mt-1">where BE = exp(50 · ln(q) · (1/BUI − 1/BUI₀))</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Head Fire Intensity (kW/m)</p>
+<p class="text-on-surface">HFI = (H × TFC × ROS) / 60</p>
+<p class="text-[10px] text-on-surface-variant mt-1">H = 18,000 kJ/kg; TFC = SFC + (CFB × CFL)</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Flame Length (m)</p>
+<p class="text-on-surface">L = 0.0775 × HFI<sup>0.46</sup></p>
+<p class="text-[10px] text-on-surface-variant mt-1">Byram (1959)</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Crown Fraction Burned</p>
+<p class="text-on-surface">CFB = 1 − e<sup>−0.23(ROS−RSO)</sup></p>
+<p class="text-[10px] text-on-surface-variant mt-1">Van Wagner (1977); RSO = CSI / (H × SFC)</p>
+</div>
+</div>
+</div>
+
+<!-- HFI Classes — national standard, same in BC -->
+<h4 class="font-headline text-lg font-bold mb-2">FBP System HFI Intensity Class 1–6 (National Standard)</h4>
+<p class="text-sm text-on-surface-variant mb-4">HFI intensity classes are a national FBP standard — identical for BC and Alberta. Source: Taylor, Pike &amp; Alexander (1997), Special Report 11.</p>
+<div class="overflow-x-auto mb-4">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b border-outline-variant/20">
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Class</th>
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">HFI (kW/m)</th>
+<th class="text-left py-2 pr-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Flame Length</th>
+<th class="text-left py-2 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Attack Mode</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr><td class="py-2 pr-4 text-secondary font-bold">1 — Low</td><td class="py-2 pr-4">&lt; 10</td><td class="py-2 pr-4">&lt; 0.2 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#7bd0ff">2 — Moderate</td><td class="py-2 pr-4">10 – 500</td><td class="py-2 pr-4">0.2 – 1.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with hand tools · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-yellow-400 font-bold">3 — High</td><td class="py-2 pr-4">500 – 2,000</td><td class="py-2 pr-4">1.5 – 2.5 m</td><td class="py-2 text-on-surface-variant">Direct attack with pump and hose · <em>Should anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-orange-400 font-bold">4 — Very High</td><td class="py-2 pr-4">2,000 – 4,000</td><td class="py-2 pr-4">2.5 – 3.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack; direct attack on less intense area · <em>Must anchor</em></td></tr>
+<tr><td class="py-2 pr-4 text-tertiary font-bold">5 — Extreme</td><td class="py-2 pr-4">4,000 – 10,000</td><td class="py-2 pr-4">3.5 – 5.5 m</td><td class="py-2 text-on-surface-variant">Indirect attack; direct attack on less intense area · <em>Must anchor</em></td></tr>
+<tr><td class="py-2 pr-4 font-bold" style="color:#ff88aa">6 — Catastrophic</td><td class="py-2 pr-4">&gt; 10,000</td><td class="py-2 pr-4">&gt; 5.5 m</td><td class="py-2 text-on-surface-variant">No direct attack — evacuate structure zone</td></tr>
+</tbody>
+</table>
+</div>
+<p class="text-[10px] text-on-surface-variant">Sources: Taylor, Pike &amp; Alexander (1997), Special Report 11 [8]; Forestry Canada Fire Danger Group (1992), ST-X-3 [3].</p>
+</section>
+
+<!-- BC-Specific: DC Startup & Overwinter Carry-over -->
+<section class="mb-16">
+<div class="flex items-baseline justify-between mb-8">
+<h3 class="font-headline text-2xl font-bold tracking-tight">BC Spring DC Startup &amp; Overwinter Carry-over</h3>
+<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
+<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">BC-Specific · Van Wagner 1985</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed mb-6 max-w-2xl">BC spring DC startup values are substantially lower than Alberta's because of higher winter precipitation and snowpack recharge — particularly on the coast and in the interior-wet belt. Alberta's standard startup (DC 300) would overestimate drought severity in coastal and northern BC stations. BC Wildfire Service formally implements Van Wagner's (1985) overwinter DC carry-over algorithm for operational use; this app uses the practical cold-start defaults below as a browser-side fallback.</p>
+
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<h4 class="font-headline text-lg font-bold mb-4 text-primary">DC Startup Defaults by Fire Centre — This App</h4>
+<p class="text-xs text-on-surface-variant mb-5 leading-relaxed">These values are used as cold-start DC when no CWFIS carry-over chain is available. They are moot during fire season when SWOB/NWP provides observed weather and the Van Wagner chain runs forward. Exact station values are in <code class="text-primary">bc/fwi.js → BC_STATION_STARTUP_DC</code>.</p>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Coastal Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-[#7bd0ff] mb-1">DC 50</div>
+    <p class="text-xs text-on-surface-variant">Very high winter precip; minimal carry-over. Stations: Campbell River, Comox, Nanaimo, Port Hardy, Tofino, Victoria.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Northwest Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-[#7bd0ff] mb-1">DC 50–75</div>
+    <p class="text-xs text-on-surface-variant">High maritime precip. Coastal stations (Terrace, Prince Rupert) at 50; transitional stations (Smithers, Burns Lake) at 75.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Prince George Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-secondary mb-1">DC 75–100</div>
+    <p class="text-xs text-on-surface-variant">Moderate boreal snowpack; moderate precip. Most stations at DC 100; McBride (wet Columbia trench) at 75.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Cariboo Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-secondary mb-1">DC 100–125</div>
+    <p class="text-xs text-on-surface-variant">Interior plateau with moderate precip. 100 Mile House, Horsefly at 100; Williams Lake (drier leeward) at 125.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Kamloops Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-secondary mb-1">DC 100–125</div>
+    <p class="text-xs text-on-surface-variant">Rain shadow interior. Revelstoke (wet Columbia) at 75; Kamloops, Lillooet, Williams Lake at 125; others at 100.</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl p-4">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Southeast Fire Centre</div>
+    <div class="font-headline text-3xl font-bold text-yellow-400 mb-1">DC 125–175</div>
+    <p class="text-xs text-on-surface-variant">Drier inland valleys with lower precipitation. Cranbrook, Invermere at 175; Fernie, Castlegar at 150; Nelson at 125.</p>
+  </div>
+</div>
+<div class="bg-[#0f1829] border border-[#7bd0ff]/20 rounded-xl p-4 mt-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-[#7bd0ff] mb-2">Overwinter DC Algorithm — Van Wagner (1985)</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">BC Wildfire Service operationally applies Van Wagner's overwinter carry-over formula: <code class="text-primary font-mono">DC_spring = DC_fall × e<sup>(-rw/a)</sup> + b</code>, where rw is the total overwinter precipitation (Nov–Mar in mm), and constants a=99.0, b=−91.5 calibrated to BC conditions. This produces a biologically meaningful spring startup from the autumn fire season's final DC value — accounting for wetting from fall and winter precipitation. This app uses simplified regional defaults (above) as a practical browser-side substitute. For operational precision, use BCWS-supplied startup values at the start of each fire season.</p>
+</div>
+</div>
+</section>
+
+<!-- Data Sources — BC-specific -->
+<section class="mb-16">
+<div class="flex items-baseline justify-between mb-8">
+<h3 class="font-headline text-2xl font-bold tracking-tight">Data Sources &amp; Methodology — BC</h3>
+<div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
+<span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Full Provenance</span>
+</div>
+
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — BC Two-Tier Hierarchy</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">MSC SWOB Realtime (Primary) · Open-Meteo NWP (Fallback) · No API Key</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6"><strong class="text-on-surface">Important:</strong> The NRCan CWFIS fire weather station network (<code class="text-primary">firewx_stns_current</code> WFS layer) covers stations east of approximately −114°W — the Alberta boreal and parkland zones. <strong class="text-on-surface">BC is entirely west of −114°W and receives no CWFIS station coverage.</strong> BC current conditions therefore use a two-tier hierarchy without a CWFIS primary tier. <strong class="text-on-surface">Tier 1 — MSC SWOB Realtime:</strong> real sensor observations from Environment Canada's automated weather station network, available year-round from airports and climate reference stations. <strong class="text-on-surface">Tier 2 — Open-Meteo NWP:</strong> ECMWF IFS 0.25° model output at exact station coordinates when SWOB has no coverage within 150 km.</p>
+
+<div class="space-y-4">
+<!-- SWOB primary for BC -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-primary/10 text-primary font-label text-[10px] font-bold rounded uppercase tracking-wider">Current Conditions — Primary</span>
+<span class="text-[10px] text-on-surface-variant font-label">MSC SWOB Realtime · Environment Canada · Used for all BC stations</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.weather.gc.ca/collections/swob-realtime/items
+  ?bbox={lng-1.5},{lat-1.5},{lng+1.5},{lat+1.5}
+  &amp;limit=50&amp;f=json</code>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">air_temp</span><span class="text-on-surface-variant">°C at 2m AGL</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">rel_hum</span><span class="text-on-surface-variant">% relative humidity</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">avg_wnd_spd_10m_pst1hr</span><span class="text-on-surface-variant">km/h 1-hr avg at 10m</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">pcpn_amt_pst1hr</span><span class="text-on-surface-variant">mm precipitation</span></div>
+</div>
+<p class="text-xs text-on-surface-variant mt-3">CFFDRS specifies <strong class="text-on-surface">noon Local Standard Time (LST)</strong> as the standard daily observation time. For BC (Pacific Standard Time = UTC−8), this is <strong class="text-on-surface">20:00 UTC year-round</strong>. The app targets the 20:00 UTC SWOB observation; if no obs within ±1 hour is found, the most recent observation is used and labelled accordingly. FWI codes are <em>not</em> pre-computed from SWOB — Van Wagner equations are applied live against BC spring startup constants or the last known carry-over.</p>
+</div>
+
+<!-- NWP fallback for BC -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">Fallback — NWP</span>
+<span class="text-[10px] text-on-surface-variant font-label">Open-Meteo ECMWF IFS 0.25° · Used when no SWOB station found within range</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
+  ?latitude={lat}&amp;longitude={lng}
+  &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation
+  &amp;forecast_days=1&amp;timezone=UTC
+  → select index where UTC hour = 20 (noon PST)</code>
+<p class="text-xs text-on-surface-variant mt-3">NWP interpolates model grid-point output to the exact station coordinate. Captures synoptic patterns but misses valley inversions, terrain channelling, sea-breeze modulation, and marine influence. Mountain and coastal stations in BC are most affected by NWP limitations. Stations in the Coast Mountains and deep fjords are particularly prone to NWP errors in wind direction and humidity.</p>
+</div>
+
+<!-- NAEFS BC -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">14-Day Forecast — Primary</span>
+<span class="text-[10px] text-on-surface-variant font-label">CWFIS NAEFS WFS · 35 BC stations · Codes 10183–10269</span>
+</div>
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs
+  ?service=WFS&amp;version=2.0.0&amp;request=GetFeature
+  &amp;typeNames=public:firewx_naefs
+  &amp;outputFormat=application/json
+  &amp;CQL_FILTER=code={station_code}&amp;count=20</code>
+<p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Returns up to 16 daily forecast records: <code class="text-primary">max_temp</code>, <code class="text-primary">min_rh</code>, <code class="text-primary">median_ws</code>, <code class="text-primary">median_pcp</code>. FWI computed client-side via Van Wagner carry-forward chain from current observed values.</p>
+</div>
+
+<!-- ECMWF fallback forecast -->
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<div class="flex items-center gap-3 mb-3">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[10px] font-bold rounded uppercase tracking-wider">7-Day Forecast — Fallback</span>
+<span class="text-[10px] text-on-surface-variant font-label">ECMWF IFS 0.25° via Open-Meteo · Used when no NAEFS station within 150 km</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
+<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon PST)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
+<div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 14 (14:00 PST)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
+<div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 12Z</span><span class="text-on-surface-variant">12Z available ~12:00 PST</span></div>
+<div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">0.25° (~25 km)</span><span class="text-on-surface-variant">Interpolated to point</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- D+1 Peak Burn — FBAN -->
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-tertiary text-2xl mt-0.5" style="font-variation-settings:'FILL' 1">local_fire_department</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">D+1 Peak Burn Prediction — FBAN Operational Product</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Fire Behaviour Analyst · 15:00 PDT Planning Window · FBP ST-X-3</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">The operational FBAN workflow: at approximately <strong class="text-on-surface">15:00 PDT</strong>, the analyst predicts fire behaviour during the next day's <strong class="text-on-surface">peak burn period (~14:00 PDT)</strong>. This app generates that product automatically on the Forecast page.</p>
+<div class="bg-surface-container-lowest rounded-xl p-5">
+<p class="text-xs font-bold text-on-surface uppercase tracking-wider mb-3">Calculation Chain</p>
+<div class="space-y-2 text-xs text-on-surface-variant font-mono">
+<p><span class="text-primary">Step 1</span> — Today's observed conditions (SWOB or NWP, noon LST) → Van Wagner → FFMC / DMC / DC chain state</p>
+<p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or ECMWF hour 12) → carry-forward → D+1 FFMC / DMC / DC</p>
+<p><span class="text-primary">Step 3</span> — Tomorrow's 14:00 forecast + D+1 FWI codes → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_14h)</code></p>
+<p><span class="text-primary">Step 4</span> — Outputs: Head ROS (m/min), HFI (kW/m), Flame Length (m), Fire Type, CFB (%)</p>
+</div>
+</div>
+</div>
+
+<!-- Station Network -->
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">sensors</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Network — 41 BC Locations by Fire Centre</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Search Origins · SWOB + NWP Data Hierarchy · All 6 Fire Centres</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-4">Stations in <code class="text-primary text-xs">bc/fwi.js → BC_STATIONS[]</code> are nominal search coordinates used to query SWOB and NAEFS. They correspond to established BC Wildfire Service fire weather monitoring locations. Coverage spans 48°N (Victoria) to 58°N (Dease Lake) and the full provincial east–west extent.</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Coastal Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">Campbell River, Comox, Nanaimo, Port Hardy, Powell River, Squamish, Tofino, Victoria</p>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Kamloops Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">Chase, Kamloops, Lillooet, Merritt, Penticton, Princeton, Revelstoke, Vernon</p>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Cariboo Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">100 Mile House, Alexis Creek, Horsefly, Quesnel, Williams Lake</p>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Prince George Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">Fort St. James, Mackenzie, McBride, Prince George, Vanderhoof</p>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Northwest Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">Burns Lake, Dease Lake, Prince Rupert, Smithers, Terrace</p>
+  </div>
+  <div class="bg-surface-container-lowest p-4 rounded-lg">
+    <div class="text-[10px] font-label uppercase text-on-surface-variant mb-2">Southeast Fire Centre</div>
+    <p class="text-on-surface-variant text-xs">Castlegar, Cranbrook, Fernie, Golden, Invermere, Nelson</p>
+  </div>
+</div>
+</div>
+
+<!-- Calculation pipeline -->
+<div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-6">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">calculate</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Calculation Pipeline — bc/fwi.js</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Standalone BC engine · Province hardcoded · No shared state with AB app</p>
+</div>
+</div>
+<div class="space-y-5">
+<div class="border-l-2 border-primary pl-5">
+<div class="text-[10px] font-label uppercase tracking-widest text-primary mb-1">FWI System — Van Wagner &amp; Pickett (1985)</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Weather inputs (T, RH, W, r) → FFMC → DMC → DC → ISI → BUI → FWI. All six equations implemented verbatim from the Forestry Canada publication. Day-length adjustment factors applied by calendar month.</p>
+<p class="text-sm text-on-surface-variant mt-2">Spring startup defaults: <span class="font-bold text-on-surface">FFMC = 85, DMC = 6</span>. DC startup is station-specific by Fire Centre — see the DC Startup table above. These cold-start values are used during the off-season or when no SWOB carry-over is available. Danger rating uses the <span class="font-bold text-on-surface">BC 5-class scale</span> — BC scale is hardcoded in <code class="text-primary">bc/fwi.js</code>.</p>
+</div>
+<div class="border-l-2 border-secondary pl-5">
+<div class="text-[10px] font-label uppercase tracking-widest text-secondary mb-1">FBP System — Forestry Canada ST-X-3 (1992)</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Identical to Alberta implementation — same equations, same fuel type parameters. Default fuel is <strong class="text-on-surface">C3 — Mature Jack/Lodgepole Pine</strong> (BC interior dominant) and <strong class="text-on-surface">C7 — Ponderosa Pine/Douglas-fir</strong> (BC south interior), replacing Alberta's C2/D1 defaults. Foliar moisture content (FMC) computed seasonally by latitude and DOY per Van Wagner (1987).</p>
+</div>
+<div class="border-l-2 border-outline pl-5">
+<div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Standalone Architecture</div>
+<p class="text-sm text-on-surface-variant leading-relaxed"><code class="text-primary">bc/fwi.js</code> is a self-contained BC engine. <code class="text-primary">_province</code> is hardcoded to <code class="text-primary">'BC'</code> — no localStorage province switching, no Alberta code paths. The Alberta app (<code class="text-primary">fwi.js</code> in root) is completely independent. Changes to either engine do not affect the other.</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- BC Dominant Fuel Types -->
+<div class="bg-surface-container rounded-2xl p-8 mb-8">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">forest</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">BC Dominant FBP Fuel Types by Fire Centre</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Operational defaults · User-overridable via fuel picker</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant mb-4 leading-relaxed">BC has far greater fuel type diversity than Alberta. The correct fuel type significantly changes ROS and HFI predictions — C7 Ponderosa Pine produces much faster surface fire spread than C3 lodgepole under the same FWI conditions. Default fuels in this app (C3/C7) are conservative interior choices; always verify against local fuel mapping or BCWS fuel type layers before operational use.</p>
+<div class="overflow-x-auto">
+<table class="w-full text-xs border-collapse">
+<thead><tr class="border-b border-outline-variant/30">
+<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Fuel</th>
+<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Type Name</th>
+<th class="py-2 pr-4 text-left font-label uppercase tracking-wider text-on-surface-variant">Where in BC</th>
+<th class="py-2 text-left font-label uppercase tracking-wider text-on-surface-variant">App Default</th>
+</tr></thead>
+<tbody class="divide-y divide-outline-variant/10 text-on-surface-variant">
+<tr><td class="py-2 pr-4 font-bold text-primary">C3</td><td class="pr-4">Mature Jack/Lodgepole Pine</td><td class="pr-4">Interior BC: Kamloops, Cariboo, Prince George, Southeast</td><td class="text-[#7bd0ff] font-bold">Fuel A default</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-primary">C7</td><td class="pr-4">Ponderosa Pine / Douglas-fir</td><td class="pr-4">South interior: Okanagan, Boundary, South Kamloops, East Kootenay</td><td class="text-[#7bd0ff] font-bold">Fuel B default</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-on-surface">C1</td><td class="pr-4">Spruce-Lichen Woodland</td><td class="pr-4">Northern BC (NW, PG centres) — sub-boreal spruce types</td><td class="text-slate-500">Selectable</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-on-surface">C2</td><td class="pr-4">Boreal Spruce</td><td class="pr-4">NE BC Peace Country, high-elevation spruce zones</td><td class="text-slate-500">Selectable</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-on-surface">C4</td><td class="pr-4">Immature Jack/Lodgepole Pine</td><td class="pr-4">Post-MPB salvage cutblocks, regenerating stands</td><td class="text-slate-500">Selectable</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-on-surface">S3</td><td class="pr-4">Cedar / Hemlock / DF Slash</td><td class="pr-4">Coastal wet belt, interior cedar-hemlock zone</td><td class="text-slate-500">Selectable</td></tr>
+<tr><td class="py-2 pr-4 font-bold text-on-surface">O1b</td><td class="pr-4">Standing Grass</td><td class="pr-4">South Okanagan, Thompson Grasslands, Peace Country</td><td class="text-slate-500">Selectable</td></tr>
+</tbody>
+</table>
+</div>
+<div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 mt-4">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Mountain Pine Beetle Context</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">Large areas of interior BC lodgepole forest were killed by mountain pine beetle (MPB) between 1999–2015, creating an unprecedented standing dead-fuel mosaic. Red-attack (recently dead, needles still on) and grey-attack (dead, needles fallen) stands have significantly different fire behaviour than the C3 green-canopy model predicts. For post-MPB stands, consult BCWS fuel type updates — C4 (immature/sparse canopy) or M1/M2 (mixed) may better represent the remaining fuel structure.</p>
+</div>
+</div>
+
+<!-- References -->
+<div class="bg-surface-container rounded-2xl p-8 border border-outline-variant/10 mb-6">
+<div class="flex items-start gap-4 mb-5">
+<span class="material-symbols-outlined text-primary text-2xl mt-0.5">menu_book</span>
+<h4 class="font-headline text-lg font-bold text-on-surface">Primary References</h4>
+</div>
+<ul class="space-y-3 text-xs text-on-surface-variant leading-relaxed font-mono">
+<li class="flex gap-3"><span class="text-primary shrink-0">[1]</span><span>Van Wagner, C.E. &amp; Pickett, T.L. (1985). <em>Equations and FORTRAN program for the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 33. Canadian Forestry Service, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[2]</span><span>Van Wagner, C.E. (1987). <em>Development and structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35. Canadian Forestry Service, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[3]</span><span>Forestry Canada Fire Danger Group (1992). <em>Development and structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3. Forestry Canada, Ottawa.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Van Wagner, C.E. (1985). <em>Drought, timelag and fire danger rating.</em> In Proceedings 8th Conference on Fire and Forest Meteorology. pp. 178–185. Society of American Foresters, Bethesda, MD. — Overwinter DC carry-over algorithm used by BCWS.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>BC Wildfire Service (2022). <em>CFFDRS Implementation Guide — BC Danger Scale and Operational Application.</em> BC Ministry of Forests. — Defines BC 5-class danger scale (Very Low/Low/Moderate/High/Extreme) and FWI thresholds.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[7]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[8]</span><span>Taylor, S.W.; Pike, R.G.; Alexander, M.E. (1997). <em>Field Guide to the Canadian Forest Fire Behavior Prediction (FBP) System.</em> Special Report 11. Natural Resources Canada, Northern Forestry Centre, Edmonton, AB.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[9]</span><span>Environment and Climate Change Canada / NOAA (2003–present). North American Ensemble Forecast System (NAEFS). Distributed via NRCan CWFIS WFS layer <em>public:firewx_naefs</em>. BC stations: codes 10183–10269 (35 stations, discovered via WFS query province_state='BC').</span></li>
+</ul>
+</div>
+
+<!-- Limitations — BC-specific -->
+<div class="bg-surface-container rounded-2xl p-8 border border-yellow-400/20">
+<div class="flex items-start gap-4 mb-4">
+<span class="material-symbols-outlined text-yellow-400 text-2xl mt-0.5">warning</span>
+<div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Operational Limitations — BC</h4>
+<p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Read Before Use in Operations</p>
+</div>
+</div>
+<ul class="space-y-3 text-sm text-on-surface-variant">
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No CWFIS fire weather station coverage:</strong> BC is west of −114°W; the NRCan <code class="text-primary">firewx_stns_current</code> WFS layer does not return BC stations. All BC current conditions come from SWOB or NWP — the pre-computed NRCan FWI carry-over chain is not available for BC stations in this app.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">SWOB — no pre-computed FWI:</strong> Unlike CWFIS in Alberta, SWOB returns raw weather observations only. Van Wagner equations are applied client-side using BC spring startup constants. Off-season DC may be systematically underestimated.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Terrain effects — BC is complex:</strong> Chinook-like valley outflow, sea breezes, mountain gaps, and strong diurnal cycles in BC's coastal and interior terrain produce fire weather that NWP models poorly resolve at 0.25°. For stations in the Coast Range, Columbia Mountains, and Cascade foothills, treat NWP-sourced FWI values with greater caution than equivalent Alberta results.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">BC danger scale — do not apply Alberta thresholds:</strong> An FWI of 35 is "Extreme" in BC but "Very High" in Alberta. Always confirm which province's scale is in use. This app hardcodes the BC scale in <code class="text-primary">bc/fwi.js</code>.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Mountain Pine Beetle fuel modification:</strong> Large areas of interior lodgepole have been structurally altered by MPB. C3 default may overpredict canopy fire intensity in grey-attack (defoliated) stands or underpredict in red-attack (fully loaded) stands. Use local BCWS fuel type mapping when available.</span></li>
+<li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No slope aspect:</strong> FBP slope factor = 0% for all stations. Mountain terrain in BC (Coast Mountains, Rockies, Columbia/Purcell/Selkirk ranges) is particularly affected. Actual HFI on steep slopes may be 2× or more above the flat-terrain prediction.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Situational awareness only:</strong> Suppression resource decisions require certified BCWS weather station observations and interpretation by a qualified Fire Behaviour Analyst (FBA) holding a BC Wildfire Service credential.</span></li>
+</ul>
+</div>
+</section>
+
+<!-- Footer decoration -->
+<div class="relative h-[300px] w-full rounded-xl overflow-hidden mb-20">
+<div class="absolute inset-0 bg-gradient-to-br from-[#0f1829] to-[#161f35]"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
+<div class="absolute bottom-10 left-12">
+<div class="font-headline text-6xl font-bold text-primary/20 leading-none">BC WILDFIRE<br/>STANDARDS</div>
+</div>
+</div>
+
+<!-- Footer -->
+<footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
+  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · BC Wildfire FWI</span>
+  <div class="flex gap-4 text-[9px] text-slate-600">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
+    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
+    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+    <a href="../../science_guide/code.html" class="hover:text-slate-400 transition-colors">Alberta Science Guide</a>
+  </div>
+  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty · BC Wildfire Service CFFDRS danger scale</span>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
+<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
+</nav>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
+</body></html>
