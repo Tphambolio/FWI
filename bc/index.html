@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pyra · BC Wildfire FWI</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../fwi-theme.js"></script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen">
+
+<!-- Header -->
+<header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] px-6 py-5 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <span class="font-['Space_Grotesk'] font-bold text-xl text-[#7bd0ff]">Pyra</span>
+    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30">BC</span>
+  </div>
+  <a href="../station_detail/code.html" class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest">Alberta →</a>
+</header>
+
+<main class="max-w-2xl mx-auto px-4 py-10">
+
+  <!-- Hero -->
+  <div class="mb-10 text-center">
+    <div class="inline-flex items-center gap-2 mb-4">
+      <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+      <span class="text-[10px] uppercase tracking-widest text-green-400 font-bold">Live Data</span>
+    </div>
+    <h1 class="font-['Space_Grotesk'] font-bold text-3xl text-white mb-2">BC Wildfire FWI</h1>
+    <p class="text-slate-400 text-sm max-w-md mx-auto">Canadian Forest Fire Weather Index System for British Columbia — 6 Fire Centres · BCWS danger scale · C3 lodgepole pine default</p>
+  </div>
+
+  <!-- Danger scale legend -->
+  <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-6">
+    <h2 class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-3">BC Wildfire Service · CFFDRS Danger Classes</h2>
+    <div class="flex gap-2 flex-wrap">
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#a7f3d0]/20 text-[#a7f3d0] border border-[#a7f3d0]/30">Very Low &lt;5</span>
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#2d9e58]/20 text-[#2d9e58] border border-[#2d9e58]/30">Low &lt;12</span>
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#7bd0ff]/20 text-[#7bd0ff] border border-[#7bd0ff]/30">Moderate &lt;21</span>
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#f5c518]/20 text-[#f5c518] border border-[#f5c518]/30">High &lt;34</span>
+      <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30">Extreme ≥34</span>
+    </div>
+    <p class="text-[10px] text-slate-600 mt-2">BC uses 5 classes — no "Very High". Thresholds differ from Alberta (BCWS, 2022).</p>
+  </div>
+
+  <!-- App links -->
+  <div class="flex flex-col gap-3 mb-8">
+
+    <a href="station_detail/code.html"
+       class="bg-[#0f1829] border border-[#1e2740] hover:border-[#7bd0ff]/40 rounded-2xl px-5 py-4 flex items-center gap-4 transition-all group">
+      <div class="w-10 h-10 rounded-xl bg-[#7bd0ff]/10 flex items-center justify-center shrink-0 group-hover:bg-[#7bd0ff]/20 transition-colors">
+        <span class="material-symbols-outlined text-[#7bd0ff]">local_fire_department</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-['Space_Grotesk'] font-bold text-white">Station Detail</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">Live FWI + FBP behaviour · today &amp; tomorrow · 24-hr trend · fuel map</p>
+      </div>
+      <span class="material-symbols-outlined text-slate-600 group-hover:text-[#7bd0ff] transition-colors">chevron_right</span>
+    </a>
+
+    <a href="regional_summary/code.html"
+       class="bg-[#0f1829] border border-[#1e2740] hover:border-[#7bd0ff]/40 rounded-2xl px-5 py-4 flex items-center gap-4 transition-all group">
+      <div class="w-10 h-10 rounded-xl bg-[#7bd0ff]/10 flex items-center justify-center shrink-0 group-hover:bg-[#7bd0ff]/20 transition-colors">
+        <span class="material-symbols-outlined text-[#7bd0ff]">map</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-['Space_Grotesk'] font-bold text-white">Regional Summary</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">All 6 Fire Centres at a glance · danger overview · station map</p>
+      </div>
+      <span class="material-symbols-outlined text-slate-600 group-hover:text-[#7bd0ff] transition-colors">chevron_right</span>
+    </a>
+
+    <a href="forecast_trends/code.html"
+       class="bg-[#0f1829] border border-[#1e2740] hover:border-[#7bd0ff]/40 rounded-2xl px-5 py-4 flex items-center gap-4 transition-all group">
+      <div class="w-10 h-10 rounded-xl bg-[#7bd0ff]/10 flex items-center justify-center shrink-0 group-hover:bg-[#7bd0ff]/20 transition-colors">
+        <span class="material-symbols-outlined text-[#7bd0ff]">trending_up</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-['Space_Grotesk'] font-bold text-white">14-Day Forecast Trends</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">NAEFS ensemble · Fire Centre trend matrix · days at elevated risk</p>
+      </div>
+      <span class="material-symbols-outlined text-slate-600 group-hover:text-[#7bd0ff] transition-colors">chevron_right</span>
+    </a>
+
+  </div>
+
+  <!-- Fire Centres -->
+  <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-6">
+    <h2 class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-3">BC Fire Centres</h2>
+    <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Coastal (Victoria)</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Kamloops</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Cariboo (Williams Lake)</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Prince George</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Northwest (Smithers)</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#7bd0ff]/60"></span>Southeast (Castlegar)</div>
+    </div>
+  </div>
+
+  <!-- Data sources note -->
+  <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-6">
+    <h2 class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-2">Data Sources</h2>
+    <p class="text-[11px] text-slate-500">Weather: SWOB (Environment Canada surface observations) → Open-Meteo NWP fallback. CWFIS fire weather station network covers Alberta and east — BC weather uses SWOB/NWP. NAEFS 14-day ensemble via CWFIS for 35 BC stations. FWI/FBP math: CFFDRS national standard (Van Wagner 1987, Forestry Canada ST-X-3).</p>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center pt-4 border-t border-[#1e2740]">
+    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · BC Wildfire FWI</span>
+    <div class="flex justify-center gap-4 mt-1 text-[9px] text-slate-600">
+      <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
+      <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+      <a href="../station_detail/code.html" class="hover:text-slate-400 transition-colors">Alberta version</a>
+    </div>
+    <span class="block mt-1 text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  </footer>
+
+</main>
+</body>
+</html>
