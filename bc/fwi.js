@@ -497,8 +497,8 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
 function wireFBP(weather, fwi) {
   const fuelA = document.getElementById('fwi-fuel-picker')?.value   || 'C2';
   const fuelB = document.getElementById('fwi-fuel-picker-2')?.value || 'D1';
-  localStorage.setItem('fwi-fuel-type',   fuelA);
-  localStorage.setItem('fwi-fuel-type-2', fuelB);
+  localStorage.setItem('fwi-bc-fuel-type',   fuelA);
+  localStorage.setItem('fwi-bc-fuel-type-2', fuelB);
   const curing = _savedCuring();
   const ps     = _savedPS();
 
@@ -1154,12 +1154,12 @@ function wireDOM(r, lat, lng) {
   if (dcBadge) {
     if (r.weather.fwiFromCWFIS) {
       // Store the CWFIS rep_date so we can show it when falling back later
-      if (r.weather.repDate) localStorage.setItem('fwi-cwfis-last-valid', r.weather.repDate);
+      if (r.weather.repDate) localStorage.setItem('bc-fwi-cwfis-last-valid', r.weather.repDate);
       dcBadge.textContent = 'CWFIS carry-over';
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else {
       // Show when CWFIS was last valid so users know it will return after noon obs are processed
-      const lastValid = localStorage.getItem('fwi-cwfis-last-valid');
+      const lastValid = localStorage.getItem('bc-fwi-cwfis-last-valid');
       let lastStr = '';
       if (lastValid) {
         const d = new Date(lastValid);
@@ -1763,8 +1763,8 @@ function _initPinDropMap() {
       ['fwi-fuel-picker-2', 'fwi-fuel-picker-mobile-2'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = fuelB;
       });
-      localStorage.setItem('fwi-fuel-type',   fuelA);
-      localStorage.setItem('fwi-fuel-type-2', fuelB);
+      localStorage.setItem('fwi-bc-fuel-type',   fuelA);
+      localStorage.setItem('fwi-bc-fuel-type-2', fuelB);
       if (statusEl) statusEl.textContent =
         `${FUEL_TYPES[fuelA]?.name || fuelA}  ·  ${FUEL_TYPES[fuelB]?.name || fuelB}`;
 
@@ -1797,7 +1797,7 @@ function buildStationPicker() {
   function loadStation(save = true) {
     const [lat, lng] = sel.value.split(',').map(Number);
     const name = sel.options[sel.selectedIndex].textContent;
-    if (save) localStorage.setItem('fwi-station', sel.value);
+    if (save) localStorage.setItem('bc-fwi-station', sel.value);
     const frame = document.getElementById('fwi-map-frame');
     if (frame?._leafletMap) {
       frame._leafletMap.panTo([lat, lng]);
@@ -1835,7 +1835,7 @@ function buildStationPicker() {
     if (nearest) {
       const val = `${nearest.lat},${nearest.lng}`;
       sel.value = val;
-      localStorage.setItem('fwi-station', val);
+      localStorage.setItem('bc-fwi-station', val);
       loadStation(false);
     }
   }
@@ -1843,7 +1843,7 @@ function buildStationPicker() {
 
   sel.addEventListener('change', () => loadStation(true));
 
-  const saved = localStorage.getItem('fwi-station');
+  const saved = localStorage.getItem('bc-fwi-station');
   if (selectByValue(saved)) {
     // Returning user — load saved station immediately, no geo prompt
     loadStation(false);
@@ -2114,7 +2114,7 @@ async function buildRegionalSummary() {
         <tbody id="fwi-station-tbody" class="divide-y divide-[#1e2740]">
           ${sorted.map(s =>
             `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
-              <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
+              <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('bc-fwi-station','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
               <td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(s.lat, s.lng)}</td>
               <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
             </tr>`
@@ -2382,18 +2382,18 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
   });
 }
 
-/** Read persisted fuel type (set by station_detail fuel picker), default C2. */
+/** Read persisted fuel type (set by station_detail fuel picker), default C3/C7 (BC defaults). */
 function _savedFuelCode() {
-  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type'))  || 'C2';
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type'))  || 'C3';
 }
 function _savedFuelCode2() {
-  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type-2')) || 'D1';
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type-2')) || 'C7';
 }
 function _savedCuring() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-grass-curing')) || '80', 10);
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('bc-fwi-grass-curing')) || '80', 10);
 }
 function _savedPS() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-ps-percent')) || '50', 10);
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('bc-fwi-ps-percent')) || '50', 10);
 }
 
 /**
@@ -3009,8 +3009,11 @@ async function printStationBriefing() {
         days = await fetchForecast(_stationLat, _stationLng);
       }
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
-      const results = calcMultiDay(days, getStartupDC(_stationName), chainStart);
-      _forecastCache = { days, results };
+      const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C3';
+      const printCuring = _savedCuring ? _savedCuring() : 100;
+      const printPS = _savedPS ? _savedPS() : 50;
+      const results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, printFuelCode, printCuring, printPS);
+      _forecastCache = { days, results, fuelCode: printFuelCode, curing: printCuring, ps: printPS };
     } catch (e) {
       console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
     }

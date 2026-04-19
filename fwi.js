@@ -2258,8 +2258,11 @@ async function printStationBriefing() {
         days = await fetchForecast(_stationLat, _stationLng);
       }
       const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
-      const results = calcMultiDay(days, getStartupDC(_stationName), chainStart);
-      _forecastCache = { days, results };
+      const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
+      const printCuring = _savedCuring ? _savedCuring() : 100;
+      const printPS = _savedPS ? _savedPS() : 50;
+      const results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, printFuelCode, printCuring, printPS);
+      _forecastCache = { days, results, fuelCode: printFuelCode, curing: printCuring, ps: printPS };
     } catch (e) {
       console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
     }
@@ -2336,7 +2339,7 @@ async function printStationBriefing() {
       </tr>`;
     }).join('\n');
   } else {
-    forecastRows = '<tr><td colspan="8" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
+    forecastRows = '<tr><td colspan="9" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
   }
 
   // D+1 peak burn block — find first day strictly after today
@@ -2949,7 +2952,8 @@ async function buildD1Card() {
 
   const idx = _nextPeakDayIdx(days);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 MDT';
+  const _tzAbbr = new Date().toLocaleTimeString('en-CA', { timeZone: 'America/Edmonton', timeZoneName: 'short' }).split(' ').pop();
+  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ` · Peak Burn · ~14:00 ${_tzAbbr}`;
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 

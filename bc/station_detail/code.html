@@ -595,7 +595,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 </nav>
-<script src="../fwi.js?v=93"></script>
+<script src="../fwi.js?v=94"></script>
 <script>
   FWI.buildStationPicker();
 
@@ -658,12 +658,12 @@
   }
   function _setCuring(pc) {
     pc = Math.max(0, Math.min(100, Math.round(pc / 5) * 5));
-    localStorage.setItem('fwi-grass-curing', pc);
+    localStorage.setItem('bc-fwi-grass-curing', pc);
     _updateCuringDisplay(pc);
     FWI.refreshFBP();
   }
-  document.getElementById('fwi-curing-dec').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('fwi-grass-curing')||'80',10)) - 5));
-  document.getElementById('fwi-curing-inc').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('fwi-grass-curing')||'80',10)) + 5));
+  document.getElementById('fwi-curing-dec').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('bc-fwi-grass-curing')||'80',10)) - 5));
+  document.getElementById('fwi-curing-inc').addEventListener('click', () => _setCuring((parseInt(localStorage.getItem('bc-fwi-grass-curing')||'80',10)) + 5));
   document.getElementById('fwi-curing-slider').addEventListener('input', e => _setCuring(parseInt(e.target.value, 10)));
 
   // ── % Softwood (PS) controls ─────────────────────────────────────────
@@ -679,19 +679,19 @@
   }
   function _setPS(ps) {
     ps = Math.max(0, Math.min(100, Math.round(ps / 5) * 5));
-    localStorage.setItem('fwi-ps-percent', ps);
+    localStorage.setItem('bc-fwi-ps-percent', ps);
     _updatePSDisplay(ps);
     FWI.refreshFBP();
   }
-  document.getElementById('fwi-ps-dec').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('fwi-ps-percent')||'50',10)) - 5));
-  document.getElementById('fwi-ps-inc').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('fwi-ps-percent')||'50',10)) + 5));
+  document.getElementById('fwi-ps-dec').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('bc-fwi-ps-percent')||'50',10)) - 5));
+  document.getElementById('fwi-ps-inc').addEventListener('click', () => _setPS((parseInt(localStorage.getItem('bc-fwi-ps-percent')||'50',10)) + 5));
   document.getElementById('fwi-ps-slider').addEventListener('input', e => _setPS(parseInt(e.target.value, 10)));
 
   // ── Initialise on load from saved state — BC defaults C3/C7 ──────────
   const _savedFuel  = localStorage.getItem('fwi-bc-fuel-type')   || 'C3';
   const _savedFuel2 = localStorage.getItem('fwi-bc-fuel-type-2') || 'C7';
-  const _savedPC    = parseInt(localStorage.getItem('fwi-grass-curing') || '80', 10);
-  const _savedPS_   = parseInt(localStorage.getItem('fwi-ps-percent')   || '50', 10);
+  const _savedPC    = parseInt(localStorage.getItem('bc-fwi-grass-curing') || '80', 10);
+  const _savedPS_   = parseInt(localStorage.getItem('bc-fwi-ps-percent')   || '50', 10);
   // Sync all pickers to saved values
   ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = _savedFuel;
