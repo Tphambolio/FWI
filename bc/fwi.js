@@ -2401,11 +2401,18 @@ function _savedPS() {
  * Returns today's index if 14:00 PDT (21:00 UTC) has not yet passed;
  * tomorrow's index otherwise. Falls back to index 0.
  * BC uses PDT (UTC-7) for peak burn window, unlike AB which uses MDT (UTC-6).
+ *
+ * Uses UTC date arithmetic — NAEFS records carry UTC-midnight timestamps so
+ * local-midnight cutoffs would skip today's record for UTC-offset timezones.
  */
 function _nextPeakDayIdx(days) {
-  const peakPassed = new Date().getUTCHours() >= 21;
-  const cutoff = new Date();
-  peakPassed ? cutoff.setHours(24, 0, 0, 0) : cutoff.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const peakPassed = now.getUTCHours() >= 21; // 14:00 PDT = 21:00 UTC
+  // UTC-based cutoff so NAEFS midnight-UTC records align correctly
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const cutoff = peakPassed
+    ? new Date(todayUTC.getTime() + 86400000) // tomorrow UTC midnight
+    : todayUTC;                               // today UTC midnight
   const idx = days.findIndex(d => d._ts && d._ts >= cutoff.getTime());
   return idx >= 0 ? idx : 0;
 }
@@ -2520,7 +2527,12 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // (today if before 14:00 PDT / 20:00 UTC, tomorrow if after)
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
-    if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 21 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
+    if (d1HeadEl) {
+      const _ft_todayStr = new Date().toISOString().slice(0, 10);
+      const _ft_dayStr   = days[d1SafeIdx]?._ts ? new Date(days[d1SafeIdx]._ts).toISOString().slice(0, 10) : null;
+      const _ft_lbl      = _ft_dayStr && _ft_dayStr > _ft_todayStr ? 'Tomorrow' : 'Today';
+      d1HeadEl.textContent = _ft_lbl + ' — Peak Burn Prediction';
+    }
     if (results.length > 0) {
       const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
@@ -3714,9 +3726,15 @@ async function buildD1Card() {
 
   const idx = _nextPeakDayIdx(days);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 21 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 PDT';
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
+
+  // Derive Today/Tomorrow from the actual day's UTC date — not from clock time —
+  // so NAEFS midnight-UTC records don't cause label/data mismatch.
+  const _todayUTCStr = new Date().toISOString().slice(0, 10);
+  const _dayUTCStr   = d1d?._ts ? new Date(d1d._ts).toISOString().slice(0, 10) : null;
+  const _dayLabel    = _dayUTCStr && _dayUTCStr > _todayUTCStr ? 'Tomorrow' : 'Today';
+  if (labelEl) labelEl.textContent = _dayLabel + ' · Peak Burn · ~14:00 PDT';
 
   const d1pw = d1d?.peak || d1d || {};
 
