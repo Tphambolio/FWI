@@ -1265,7 +1265,7 @@ async function fetchStationData(station) {
 /**
  * Fetch D+1 forecast weather for a station using ECMWF IFS via Open-Meteo.
  * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
- * FBP wind uses hour-14 (peak burn ~14:00 PDT) — matches the D+1 peak prediction
+ * FBP wind uses hour-16 (peak burn ~16:00 PDT) — matches the D+1 peak prediction
  * shown on the station detail page.
  * Used by the Fire Safety Briefing builder for PM Forecast mode.
  */
@@ -1276,10 +1276,10 @@ async function fetchStationDataForecast(station) {
 
   const days = await fetchForecast(station.lat, station.lng);
 
-  // D+1: next operationally relevant peak burn day (today if before 14:00 PDT, tomorrow if after)
+  // D+1: next operationally relevant peak burn day (today if before 16:00 PDT, tomorrow if after)
   let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
 
-  // Weather: noon (hour 12) for FWI chain; peak wind (hour 14) for FBP
+  // Weather: noon (hour 12) for FWI chain; peak wind (hour 16) for FBP
   const weather = {
     temp:             day.temp,
     rh:               day.rh,
@@ -1288,7 +1288,7 @@ async function fetchStationDataForecast(station) {
     rain:             day.rain,
     thunderstormProb: null,
     month:            new Date().getMonth() + 1,
-    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~14:00 PDT`,
+    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~16:00 PDT`,
     fwiFromCWFIS:     false,
   };
 
@@ -2263,10 +2263,10 @@ async function fetchForecast(lat, lng) {
   const d = await res.json();
   const h = d.hourly;
   const days = [];
-  // Pick hour index 12 (noon) for FWI chain (CFFDRS standard) and hour 14 for peak burn FBP
+  // Pick hour index 12 (noon) for FWI chain (CFFDRS standard) and hour 16 for peak burn FBP
   for (let day = 0; day < 7; day++) {
     const i12 = day * 24 + 12;
-    const i14 = day * 24 + 14;
+    const i16 = day * 24 + 16;
     if (i12 >= (h.time?.length ?? 0)) continue;
     const date = new Date(h.time[i12]);
     days.push({
@@ -2278,10 +2278,10 @@ async function fetchForecast(lat, lng) {
       label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
       _ts: date.getTime(),
       peak: {
-        temp: h.temperature_2m[i14]        ?? h.temperature_2m[i12]        ?? 15,
-        rh:   h.relative_humidity_2m[i14]  ?? h.relative_humidity_2m[i12]  ?? 40,
-        wind: h.wind_speed_10m[i14]        ?? h.wind_speed_10m[i12]        ?? 10,
-        wdir: h.wind_direction_10m?.[i14]  ?? h.wind_direction_10m?.[i12]  ?? null,
+        temp: h.temperature_2m[i16]        ?? h.temperature_2m[i12]        ?? 15,
+        rh:   h.relative_humidity_2m[i16]  ?? h.relative_humidity_2m[i12]  ?? 40,
+        wind: h.wind_speed_10m[i16]        ?? h.wind_speed_10m[i12]        ?? 10,
+        wdir: h.wind_direction_10m?.[i16]  ?? h.wind_direction_10m?.[i12]  ?? null,
       },
     });
   }
@@ -2408,7 +2408,7 @@ function _pdtDateStr(ts) {
 
 /**
  * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 14:00 PDT has not yet passed; tomorrow's otherwise.
+ * Returns today's index if 16:00 PDT has not yet passed; tomorrow's otherwise.
  * Falls back to index 0.
  *
  * All date comparisons use PDT (UTC-7) to match BC fire weather convention.
@@ -2417,7 +2417,7 @@ function _pdtDateStr(ts) {
 function _nextPeakDayIdx(days) {
   // PDT hour: (UTC hour - 7 + 24) mod 24
   const pdtHour = ((new Date().getUTCHours() - 7) + 24) % 24;
-  const peakPassed = pdtHour >= 14; // BC peak burn at 14:00 PDT
+  const peakPassed = pdtHour >= 16; // BC peak burn at 16:00 PDT
   const todayPDT = _pdtDateStr();
   const idx = days.findIndex(d => {
     if (!d._ts) return false;
@@ -2427,12 +2427,12 @@ function _nextPeakDayIdx(days) {
   return idx >= 0 ? idx : 0;
 }
 
-/** Chain Van Wagner + FBP per day. FBP uses each day's peak (14:00) conditions.
+/** Chain Van Wagner + FBP per day. FBP uses each day's peak (16:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
 function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50) {
   const results = calcMultiDay(days, startupDC, startState);
   return results.map((r, i) => {
-    const pw = days[i]?.peak || days[i]; // peak = 14:00; fallback to noon
+    const pw = days[i]?.peak || days[i]; // peak = 16:00; fallback to noon
     const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing, ps);
     return { ...r, fbp, peakWeather: pw };
   });
@@ -2534,7 +2534,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elMW) elMW.textContent = fmt(maxWind, 0) + ' km/h';
 
     // D+1 Peak Burn section — next operationally relevant peak burn day
-    // (today if before 14:00 PDT / 20:00 UTC, tomorrow if after)
+    // (today if before 16:00 PDT / 23:00 UTC, tomorrow if after)
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
     if (d1HeadEl) {
@@ -3098,7 +3098,7 @@ async function printStationBriefing() {
     const _tomorrowPDT_p = _pdtDateStr(Date.now() + 86400000);
     forecastRows = fResults.map((fr, i) => {
       const fd  = fDays[i] || {};
-      const fpw = fd.peak || fd; // peak (14:00) conditions for FBP
+      const fpw = fd.peak || fd; // peak (16:00) conditions for FBP
       const fdc = PRINT_BG[fr.danger] || PRINT_BG['Moderate'];
       const ffbp = fr.fbp;
       const hfiTxt = ffbp ? Math.round(ffbp.hfi).toLocaleString() : '—';
@@ -3138,10 +3138,10 @@ async function printStationBriefing() {
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
 <div class="section">
-  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~14:00 PDT) &nbsp;·&nbsp; ${fuelCode} — ${fuelName}</div>
+  <div class="section-title" style="background:#1a3a5c">Next Operational Period · ${tomorrowDate} · Predicted Peak Burn (~16:00 PDT) &nbsp;·&nbsp; ${fuelCode} — ${fuelName}</div>
   <div class="section-body">
     <div class="grid-2">
-      <p class="kv"><span class="label">Weather (~14:00 PDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
+      <p class="kv"><span class="label">Weather (~16:00 PDT)</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
       <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${Math.round(d1r.fwi)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
@@ -3150,7 +3150,7 @@ async function printStationBriefing() {
     </div>
     ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
     ${d1EscapeNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 14 (14:00 PDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 16 (16:00 PDT) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
 </div>` : '';
 
@@ -3261,7 +3261,7 @@ async function printStationBriefing() {
 ${d1Section}
 
 <div class="section">
-  <div class="section-title">Forecast Outlook — Fire Behaviour by Day · ${fuelCode} — ${fuelName} · Peak ~14:00 PDT</div>
+  <div class="section-title">Forecast Outlook — Fire Behaviour by Day · ${fuelCode} — ${fuelName} · Peak ~16:00 PDT</div>
   <div class="section-body" style="padding:0">
     <table>
       <thead>
@@ -3738,16 +3738,58 @@ async function buildD1Card() {
     return;
   }
 
-  const idx = _nextPeakDayIdx(days);
+  // Find today and tomorrow indices using PDT dates
+  const _nowPDT     = _pdtDateStr();
+  const todayIdx    = days.findIndex(d => d._ts && _pdtDateStr(d._ts) === _nowPDT);
+  const tomorrowIdx = days.findIndex(d => d._ts && _pdtDateStr(d._ts) > _nowPDT);
+
+  // Populate LEFT card (today peak burn) — overwrites the CWFIS noon data set by wireFBP
+  if (todayIdx >= 0) {
+    const t0pw = days[todayIdx]?.peak || days[todayIdx] || {};
+    const setW = (attr, val) => { const el = document.querySelector(`[data-fwi="${attr}"]`); if (el) el.textContent = val; };
+    setW('temp', `${(+t0pw.temp||0).toFixed(1)}°C`);
+    setW('rh',   `${Math.round(t0pw.rh||0)}%`);
+    setW('wind', `${Math.round(t0pw.wind||0)} km/h`);
+    setW('wdir', t0pw.wdir != null ? windCompass(t0pw.wdir) : '—');
+    setW('rain', '—');
+
+    const setEl2 = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const fuelA0 = _savedFuelCode();
+    const fuelB0 = _savedFuelCode2();
+    setEl2('fwi-fbp-fuel-name-a', FUEL_TYPES[fuelA0]?.name || fuelA0);
+    setEl2('fwi-fbp-fuel-name-b', FUEL_TYPES[fuelB0]?.name || fuelB0);
+
+    const populateTodaySection = (suffix, r) => {
+      const fbp = r?.fbp;
+      if (!fbp) { setEl2('fwi-fbp-hfi-label' + suffix, 'N/A'); return; }
+      const cl = hfiClassInfo(fbp.hfi);
+      const numEl = document.getElementById('fwi-fbp-hfi-rating' + suffix);
+      const lblEl = document.getElementById('fwi-fbp-hfi-label'  + suffix);
+      const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
+      const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
+      if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
+      if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+      if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+      if (dscEl) { dscEl.textContent = cl.desc; }
+      setEl2('fwi-fbp-hfi'   + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
+      setEl2('fwi-fbp-ros'   + suffix, `${fbp.ros.toFixed(1)} m/min`);
+      setEl2('fwi-fbp-flame' + suffix, `${fbp.flameLength.toFixed(1)} m`);
+      setEl2('fwi-fbp-type'  + suffix, fbp.fireType);
+      setEl2('fwi-fbp-cfb'   + suffix, `${(fbp.cfb*100).toFixed(0)}%`);
+      const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
+      if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
+    };
+    populateTodaySection('-a', results[todayIdx]);
+    populateTodaySection('-b', resultsB?.[todayIdx]);
+  }
+
+  // RIGHT card — always tomorrow
+  const idx = tomorrowIdx >= 0 ? tomorrowIdx : (todayIdx >= 0 ? todayIdx + 1 : 0);
   const labelEl = document.getElementById('fwi-d1-peak-label');
+  if (labelEl) labelEl.textContent = 'Tomorrow · Peak Burn · ~16:00 PDT';
+
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
-
-  // Derive Today/Tomorrow by comparing PDT dates — avoids MDT vs UTC rollover issues.
-  const _todayPDT = _pdtDateStr();
-  const _dayPDT   = d1d?._ts ? _pdtDateStr(d1d._ts) : null;
-  const _d1Label  = _dayPDT && _dayPDT > _todayPDT ? 'Tomorrow' : 'Today';
-  if (labelEl) labelEl.textContent = _d1Label + ' · Peak Burn · ~14:00 PDT';
 
   const d1pw = d1d?.peak || d1d || {};
 
