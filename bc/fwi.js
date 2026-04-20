@@ -2398,11 +2398,12 @@ function _savedPS() {
 
 /**
  * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 14:00 PDT (20:00 UTC) has not yet passed;
+ * Returns today's index if 14:00 PDT (21:00 UTC) has not yet passed;
  * tomorrow's index otherwise. Falls back to index 0.
+ * BC uses PDT (UTC-7) for peak burn window, unlike AB which uses MDT (UTC-6).
  */
 function _nextPeakDayIdx(days) {
-  const peakPassed = new Date().getUTCHours() >= 20;
+  const peakPassed = new Date().getUTCHours() >= 21;
   const cutoff = new Date();
   peakPassed ? cutoff.setHours(24, 0, 0, 0) : cutoff.setHours(0, 0, 0, 0);
   const idx = days.findIndex(d => d._ts && d._ts >= cutoff.getTime());
@@ -2519,7 +2520,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // (today if before 14:00 PDT / 20:00 UTC, tomorrow if after)
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
-    if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
+    if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 21 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
     if (results.length > 0) {
       const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
@@ -3713,7 +3714,7 @@ async function buildD1Card() {
 
   const idx = _nextPeakDayIdx(days);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 20 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 PDT';
+  if (labelEl) labelEl.textContent = (new Date().getUTCHours() >= 21 ? 'Tomorrow' : 'Today') + ' · Peak Burn · ~14:00 PDT';
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
