@@ -1153,21 +1153,25 @@ function wireDOM(r, lat, lng) {
   const dcBadge = document.getElementById('fwi-dc-source');
   if (dcBadge) {
     if (r.weather.fwiFromCWFIS) {
-      // Store the CWFIS rep_date so we can show it when falling back later
-      if (r.weather.repDate) localStorage.setItem('bc-fwi-cwfis-last-valid', r.weather.repDate);
-      dcBadge.textContent = 'CWFIS carry-over';
+      // Store the CWFIS rep_date and station name so we can show them when falling back later
+      if (r.weather.repDate)    localStorage.setItem('bc-fwi-cwfis-last-valid',   r.weather.repDate);
+      if (r.weather.stationName) localStorage.setItem('bc-fwi-cwfis-last-station', r.weather.stationName);
+      const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
+      dcBadge.textContent = 'CWFIS carry-over' + stn;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else {
       // Show when CWFIS was last valid so users know it will return after noon obs are processed
-      const lastValid = localStorage.getItem('bc-fwi-cwfis-last-valid');
+      const lastValid   = localStorage.getItem('bc-fwi-cwfis-last-valid');
+      const lastStation = localStorage.getItem('bc-fwi-cwfis-last-station');
+      const stnStr = lastStation ? ` · ${lastStation}` : '';
       let lastStr = '';
       if (lastValid) {
         const d = new Date(lastValid);
         lastStr = ` · CWFIS last: ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Vancouver' })} PDT`;
       } else {
-        lastStr = ' · CWFIS available ~14:00 PDT';
+        lastStr = ' · CWFIS available ~16:00 PDT';
       }
-      dcBadge.textContent = 'Regional estimate' + lastStr;
+      dcBadge.textContent = 'Regional estimate' + stnStr + lastStr;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
     }
   }
