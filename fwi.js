@@ -693,17 +693,28 @@ function wireDOM(r, lat, lng) {
   set('wdir',  r.weather.wdir != null ? `${compassDir(r.weather.wdir)} (${Math.round(r.weather.wdir)}°)` : '—');
   set('rain',  fmt(r.weather.rain) + ' mm');
 
-  // FWI components
-  set('ffmc',  r.ffmc.toFixed(1));
-  set('dmc',   r.dmc.toFixed(1));
-  set('dc',    r.dc.toFixed(1));
-  set('isi',   r.isi.toFixed(1));
-  set('bui',   r.bui.toFixed(1));
-  set('fwi',   r.fwi.toFixed(1));
+  // FWI components — null means season-start / no data yet
+  if (r.ffmc != null) {
+    set('ffmc', r.ffmc.toFixed(1));
+    set('dmc',  r.dmc.toFixed(1));
+    set('dc',   r.dc.toFixed(1));
+    set('isi',  r.isi.toFixed(1));
+    set('bui',  r.bui.toFixed(1));
+    set('fwi',  r.fwi.toFixed(1));
+    pct('ffmc', r.ffmc, 101);
+    pct('dmc',  r.dmc,  200);
+    pct('dc',   r.dc,   800);
+    pct('isi',  r.isi,  25);
+    pct('bui',  r.bui,  200);
+    pct('fwi',  r.fwi,  50);
+  } else {
+    ['ffmc','dmc','dc','isi','bui','fwi'].forEach(k => set(k, '—'));
+  }
 
   // Danger labels
-  set('danger',       r.danger.toUpperCase() + ' RISK');
-  set('danger-label', r.danger + ' Risk Level');
+  const dangerText = r.danger || 'Pending';
+  set('danger',       dangerText.toUpperCase() + (r.danger ? ' RISK' : ''));
+  set('danger-label', r.danger ? r.danger + ' Risk Level' : 'Season not started');
 
   // Hero card colour driven by individual fuel section gradients; outer card stays neutral
 
@@ -711,16 +722,8 @@ function wireDOM(r, lat, lng) {
   document.querySelectorAll('[data-fwi-rating]').forEach(el => {
     const key = el.dataset.fwiRating;
     const val = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc, isi: r.isi, bui: r.bui, fwi: r.fwi }[key];
-    el.textContent = (val != null ? componentRating(key, val) : r.danger).toUpperCase();
+    el.textContent = val != null ? componentRating(key, val).toUpperCase() : '—';
   });
-
-  // Progress bars — typical operating ranges
-  pct('ffmc', r.ffmc, 101);   // 0-101 scale
-  pct('dmc',  r.dmc,  200);   // 0-200 typical
-  pct('dc',   r.dc,   800);   // 0-800 typical
-  pct('isi',  r.isi,  25);    // 0-25 typical
-  pct('bui',  r.bui,  200);   // 0-200 typical
-  pct('fwi',  r.fwi,  50);    // 0-50 typical
 
   // Timestamp (line 1) + source label (line 2, station_detail only)
   set('updated', `Live · ${new Date().toLocaleTimeString()}`);
@@ -733,26 +736,26 @@ function wireDOM(r, lat, lng) {
   const dcBadge = document.getElementById('fwi-dc-source');
   if (dcBadge) {
     if (r.weather.fwiFromCWFIS) {
-      // Store the CWFIS rep_date and station name so we can show them when falling back later
-      if (r.weather.repDate)    localStorage.setItem('fwi-cwfis-last-valid',   r.weather.repDate);
-      if (r.weather.stationName) localStorage.setItem('fwi-cwfis-last-station', r.weather.stationName);
       const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
-      dcBadge.textContent = 'CWFIS carry-over' + stn;
+      dcBadge.textContent = 'CWFIS' + stn;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
-    } else {
-      // Show when CWFIS was last valid so users know it will return after noon obs are processed
-      const lastValid   = localStorage.getItem('fwi-cwfis-last-valid');
-      const lastStation = localStorage.getItem('fwi-cwfis-last-station');
-      const stnStr = r.weather.stationName ? ` · ${r.weather.stationName}` : (lastStation ? ` · ${lastStation}` : '');
-      let lastStr = '';
-      if (lastValid) {
-        const d = new Date(lastValid);
-        lastStr = ` · CWFIS last: ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Edmonton' })} MDT`;
-      } else {
-        lastStr = ' · CWFIS available ~16:00 MDT';
+    } else if (r._cachedFWI) {
+      const cached = r._cachedFWI;
+      const stn = r.weather.stationName || cached.stationName;
+      const stnStr = stn ? ` · ${stn}` : '';
+      let dateStr = '';
+      if (cached.repDate) {
+        const d = new Date(cached.repDate);
+        dateStr = ` · ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Edmonton' })} MDT`;
+      } else if (cached.cachedAt) {
+        const d = new Date(cached.cachedAt);
+        dateStr = ` · ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })}`;
       }
-      dcBadge.textContent = 'Regional estimate' + stnStr + lastStr;
+      dcBadge.textContent = 'CWFIS (holding)' + stnStr + dateStr;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
+    } else {
+      dcBadge.textContent = 'Season start pending · CWFIS inactive';
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-500/15 text-slate-400';
     }
   }
 
@@ -775,8 +778,8 @@ function wireDOM(r, lat, lng) {
   cmpSet('fwi-cmp-fwi',  _lastVWCalc.fwi.toFixed(1));
   cmpSet('fwi-compare-note', `startup DC ${_startupDC} · ${r.weather.fwiFromCWFIS ? 'CWFIS chain is primary above' : 'same source as above'}`);
 
-  // FBP fire behaviour (station_detail only — silently no-ops on other pages)
-  wireFBP(r.weather, r);
+  // FBP fire behaviour (station_detail only — skip if no FWI data yet)
+  if (r.ffmc != null) wireFBP(r.weather, r);
 
   // D+1 tomorrow card (station_detail only — silently no-ops on other pages)
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
@@ -804,15 +807,46 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
     if (!_cwfisPrev.stations) await loadCWFISPrev();
     const weather = await fetchWeatherPrimary(lat, lng);
     if (gen !== _initGeneration) return; // a newer initFWI started; discard stale result
-    // Use cached CWFIS carry-over as prev when Van Wagner is needed (SWOB/NWP tier)
-    let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station) };
-    if (!weather.fwiFromCWFIS) {
-      const p = _cwfisPrev?.stations?.[station];
-      if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-        prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+
+    let result;
+    if (weather.fwiFromCWFIS) {
+      // CWFIS has today's operational FWI chain — use directly and cache for later
+      result = calculateFWI(weather);
+      try {
+        localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
+          ffmc: result.ffmc, dmc: result.dmc, dc: result.dc,
+          isi: result.isi, bui: result.bui, fwi: result.fwi,
+          danger: result.danger,
+          stationName: weather.stationName,
+          repDate: weather.repDate,
+          cachedAt: new Date().toISOString(),
+        }));
+      } catch (_) {}
+    } else {
+      // CWFIS has weather obs but no FWI codes yet (pre-obs / processing lag / early season).
+      // Use last cached real CWFIS values instead of synthesising from startup constants.
+      let cachedFWI = null;
+      try { cachedFWI = JSON.parse(localStorage.getItem('fwi-cached-cwfis')); } catch (_) {}
+
+      if (cachedFWI?.ffmc != null && cachedFWI?.dc != null) {
+        // Show yesterday's real indices; ISI/BUI/FWI recalculated with today's wind
+        // so spread potential reflects current conditions against real moisture codes
+        const isi = _isi(cachedFWI.ffmc, weather.wind ?? 0);
+        const bui = _bui(cachedFWI.dmc, cachedFWI.dc);
+        const fwi = _fwi(isi, bui);
+        result = {
+          ffmc: cachedFWI.ffmc, dmc: cachedFWI.dmc, dc: cachedFWI.dc,
+          isi, bui, fwi,
+          danger: dangerRating(fwi),
+          weather,
+          _cachedFWI: cachedFWI,
+        };
+      } else {
+        // No real carry-over available — season start or genuinely first load
+        result = { ffmc: null, dmc: null, dc: null, isi: null, bui: null, fwi: null,
+                   danger: null, weather, _inactive: true };
       }
     }
-    const result  = calculateFWI(weather, prevFWI);
     wireDOM(result, lat, lng);
     console.log('[FWI]', result);
   } catch (err) {
