@@ -743,7 +743,7 @@ function wireDOM(r, lat, lng) {
       // Show when CWFIS was last valid so users know it will return after noon obs are processed
       const lastValid   = localStorage.getItem('fwi-cwfis-last-valid');
       const lastStation = localStorage.getItem('fwi-cwfis-last-station');
-      const stnStr = lastStation ? ` · ${lastStation}` : '';
+      const stnStr = r.weather.stationName ? ` · ${r.weather.stationName}` : (lastStation ? ` · ${lastStation}` : '');
       let lastStr = '';
       if (lastValid) {
         const d = new Date(lastValid);
