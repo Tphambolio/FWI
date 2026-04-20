@@ -247,12 +247,12 @@ function dangerClassNum(fwi) {
 // Source: Alberta WUI Pocket Guide (Gov. of Alberta, Forestry & Parks);
 // Cole & Alexander (1995), CFS Northern Forestry Centre, Edmonton.
 function hfiClassInfo(hfi) {
-  if (hfi <   10) return { num: 1, label: 'Low',        size: 'Flame length < 0.2 m · Short firefighter',      desc: 'Direct attack with hand tools · Should anchor',             bg: '#d4edda', text: '#155724' };
-  if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m · Tallest firefighter', desc: 'Direct attack with hand tools · Should anchor',             bg: '#cce5ff', text: '#004085' };
-  if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m · Tallest firefighter', desc: 'Direct attack with pump and hose · Should anchor',          bg: '#fff3cd', text: '#856404' };
-  if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m · Fire engine',        desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#ffe5cc', text: '#7d3200' };
-  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#f8d7da', text: '#721c24' };
-  return           { num: 6, label: 'Catastrophic', size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'No direct attack — evacuate structure zone',               bg: '#4a0010', text: '#ffccdd' };
+  if (hfi <   10) return { num: 1, label: 'Low',        size: 'Flame length < 0.2 m · Short firefighter',      desc: 'Direct attack with hand tools · Should anchor',             bg: '#1a3a7a', text: '#ffffff' };
+  if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m · Tallest firefighter', desc: 'Direct attack with hand tools · Should anchor',             bg: '#5bb8d4', text: '#0a2a50' };
+  if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m · Tallest firefighter', desc: 'Direct attack with pump and hose · Should anchor',          bg: '#1e6b35', text: '#ffffff' };
+  if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m · Fire engine',        desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#f5c518', text: '#2a1a00' };
+  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#e07820', text: '#ffffff' };
+  return           { num: 6, label: 'Catastrophic', size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'No direct attack — evacuate structure zone',               bg: '#cc2200', text: '#ffffff' };
 }
 
 // Behaviour card gradient per danger level — used on full-height cards so keep tones rich, not neon
@@ -267,12 +267,12 @@ const DANGER_GRADIENTS = {
 // HFI class gradients for independent fuel section colouring (class 1–6)
 const HFI_GRADIENTS = [
   null,
-  'linear-gradient(135deg, #2d9e58 0%, #175c30 100%)',  // 1 Low       — green
-  'linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)',  // 2 Moderate  — blue
-  'linear-gradient(135deg, #c97ae0 0%, #7a28a8 100%)',  // 3 High      — purple
-  'linear-gradient(135deg, #f07030 0%, #9e3800 100%)',  // 4 Very High — orange
-  'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',  // 5 Extreme   — red
-  'linear-gradient(135deg, #8c0a0a 0%, #4a0010 100%)',  // 6 Catastrophic — dark red
+  'linear-gradient(135deg, #2952a3 0%, #1a3a7a 100%)',  // 1 Low          — navy blue (GoA official)
+  'linear-gradient(135deg, #7bd4f0 0%, #3a9ccc 100%)',  // 2 Moderate     — sky blue  (GoA official)
+  'linear-gradient(135deg, #2d8b48 0%, #1a5428 100%)',  // 3 High         — dark green (GoA official)
+  'linear-gradient(135deg, #c8980a 0%, #8a6200 100%)',  // 4 Very High    — amber/gold (GoA official)
+  'linear-gradient(135deg, #e07820 0%, #9e4800 100%)',  // 5 Extreme      — orange    (GoA official)
+  'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',  // 6 Catastrophic — red       (GoA official)
 ];
 
 // Per-component thresholds (CFFDRS operational scale)
@@ -3168,7 +3168,7 @@ async function printStationBriefing() {
   const d1fbp = d1r?.fbp;
   const tomorrowDate = d1r?.label || 'D+1';
   const d1HfiRating = !d1fbp ? '—' : d1fbp.hfi >= 4000 ? 'EXTREME' : d1fbp.hfi >= 2000 ? 'VERY HIGH' : d1fbp.hfi >= 500 ? 'HIGH' : 'LOW';
-  const d1HfiColor  = !d1fbp ? '#333' : d1fbp.hfi >= 4000 ? '#c0392b' : d1fbp.hfi >= 2000 ? '#d35400' : d1fbp.hfi >= 500 ? '#856404' : '#155724';
+  const d1HfiColor  = !d1fbp ? '#333' : d1fbp.hfi >= 10000 ? '#cc2200' : d1fbp.hfi >= 4000 ? '#c05000' : d1fbp.hfi >= 2000 ? '#a07800' : d1fbp.hfi >= 500 ? '#1e6b35' : d1fbp.hfi >= 10 ? '#1a6a8a' : '#1a3a7a';
   const d1EscapeNote = d1fbp && d1fbp.hfi >= 4000
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
