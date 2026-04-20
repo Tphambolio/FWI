@@ -2397,23 +2397,33 @@ function _savedPS() {
 }
 
 /**
+ * Return "YYYY-MM-DD" in Pacific Daylight Time (UTC-7).
+ * BC fire weather standard — all Today/Tomorrow labels use PDT.
+ * @param {number} [ts] - Unix ms timestamp; defaults to Date.now()
+ */
+function _pdtDateStr(ts) {
+  const d = new Date((ts ?? Date.now()) - 7 * 3600000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/**
  * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 14:00 PDT (21:00 UTC) has not yet passed;
- * tomorrow's index otherwise. Falls back to index 0.
- * BC uses PDT (UTC-7) for peak burn window, unlike AB which uses MDT (UTC-6).
+ * Returns today's index if 14:00 PDT has not yet passed; tomorrow's otherwise.
+ * Falls back to index 0.
  *
- * Uses UTC date arithmetic — NAEFS records carry UTC-midnight timestamps so
- * local-midnight cutoffs would skip today's record for UTC-offset timezones.
+ * All date comparisons use PDT (UTC-7) to match BC fire weather convention.
+ * This avoids MDT vs PDT confusion and handles UTC-date rollovers correctly.
  */
 function _nextPeakDayIdx(days) {
-  const now = new Date();
-  const peakPassed = now.getUTCHours() >= 21; // 14:00 PDT = 21:00 UTC
-  // UTC-based cutoff so NAEFS midnight-UTC records align correctly
-  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const cutoff = peakPassed
-    ? new Date(todayUTC.getTime() + 86400000) // tomorrow UTC midnight
-    : todayUTC;                               // today UTC midnight
-  const idx = days.findIndex(d => d._ts && d._ts >= cutoff.getTime());
+  // PDT hour: (UTC hour - 7 + 24) mod 24
+  const pdtHour = ((new Date().getUTCHours() - 7) + 24) % 24;
+  const peakPassed = pdtHour >= 14; // BC peak burn at 14:00 PDT
+  const todayPDT = _pdtDateStr();
+  const idx = days.findIndex(d => {
+    if (!d._ts) return false;
+    const dayPDT = _pdtDateStr(d._ts);
+    return peakPassed ? dayPDT > todayPDT : dayPDT >= todayPDT;
+  });
   return idx >= 0 ? idx : 0;
 }
 
@@ -2528,9 +2538,9 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
     if (d1HeadEl) {
-      const _ft_todayStr = new Date().toISOString().slice(0, 10);
-      const _ft_dayStr   = days[d1SafeIdx]?._ts ? new Date(days[d1SafeIdx]._ts).toISOString().slice(0, 10) : null;
-      const _ft_lbl      = _ft_dayStr && _ft_dayStr > _ft_todayStr ? 'Tomorrow' : 'Today';
+      const _ft_todayPDT = _pdtDateStr();
+      const _ft_dayPDT   = days[d1SafeIdx]?._ts ? _pdtDateStr(days[d1SafeIdx]._ts) : null;
+      const _ft_lbl      = _ft_dayPDT && _ft_dayPDT > _ft_todayPDT ? 'Tomorrow' : 'Today';
       d1HeadEl.textContent = _ft_lbl + ' — Peak Burn Prediction';
     }
     if (results.length > 0) {
@@ -3084,6 +3094,8 @@ async function printStationBriefing() {
   const fSrcLabel = fDays[0]?.stationName ? 'NAEFS CDA' : 'ECMWF IFS 0.25° · Open-Meteo';
   let forecastRows = '';
   if (fResults.length > 0) {
+    const _todayPDT_p    = _pdtDateStr();
+    const _tomorrowPDT_p = _pdtDateStr(Date.now() + 86400000);
     forecastRows = fResults.map((fr, i) => {
       const fd  = fDays[i] || {};
       const fpw = fd.peak || fd; // peak (14:00) conditions for FBP
@@ -3091,8 +3103,11 @@ async function printStationBriefing() {
       const ffbp = fr.fbp;
       const hfiTxt = ffbp ? Math.round(ffbp.hfi).toLocaleString() : '—';
       const hfiClassTxt = !ffbp ? '—' : (() => { const cl = hfiClassInfo(ffbp.hfi); return `<span style="display:inline-block;min-width:20px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-weight:900;font-size:9pt;text-align:center">${cl.num}</span>`; })();
-      const isD1 = i === 0;
-      return `<tr style="background:${isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9'}">
+      const dayPDT = fd._ts ? _pdtDateStr(fd._ts) : null;
+      if (dayPDT && dayPDT < _todayPDT_p) return ''; // skip past days
+      const isD1 = dayPDT === _tomorrowPDT_p;
+      const rowBg = isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9';
+      return `<tr style="background:${rowBg}">
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.rh != null ? Math.round(fpw.rh) + '%' : '—'}</td>
@@ -3108,10 +3123,9 @@ async function printStationBriefing() {
     forecastRows = '<tr><td colspan="8" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>';
   }
 
-  // D+1 peak burn block — find first day strictly after today
-  const _pTodayMid = new Date(); _pTodayMid.setHours(0,0,0,0);
-  const _pTomMid   = new Date(_pTodayMid); _pTomMid.setDate(_pTomMid.getDate() + 1);
-  const _pd1Idx    = fDays.findIndex(d => d._ts && d._ts >= _pTomMid.getTime());
+  // D+1 peak burn block — find first day strictly after today in PDT
+  const _pTodayPDT = _pdtDateStr();
+  const _pd1Idx    = fDays.findIndex(d => d._ts && _pdtDateStr(d._ts) > _pTodayPDT);
   const _pd1Safe   = _pd1Idx >= 0 ? _pd1Idx : 0;
   const d1r  = fResults[_pd1Safe];
   const d1d  = fDays[_pd1Safe];
@@ -3729,12 +3743,11 @@ async function buildD1Card() {
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
-  // Derive Today/Tomorrow from the actual day's UTC date — not from clock time —
-  // so NAEFS midnight-UTC records don't cause label/data mismatch.
-  const _todayUTCStr = new Date().toISOString().slice(0, 10);
-  const _dayUTCStr   = d1d?._ts ? new Date(d1d._ts).toISOString().slice(0, 10) : null;
-  const _dayLabel    = _dayUTCStr && _dayUTCStr > _todayUTCStr ? 'Tomorrow' : 'Today';
-  if (labelEl) labelEl.textContent = _dayLabel + ' · Peak Burn · ~14:00 PDT';
+  // Derive Today/Tomorrow by comparing PDT dates — avoids MDT vs UTC rollover issues.
+  const _todayPDT = _pdtDateStr();
+  const _dayPDT   = d1d?._ts ? _pdtDateStr(d1d._ts) : null;
+  const _d1Label  = _dayPDT && _dayPDT > _todayPDT ? 'Tomorrow' : 'Today';
+  if (labelEl) labelEl.textContent = _d1Label + ' · Peak Burn · ~14:00 PDT';
 
   const d1pw = d1d?.peak || d1d || {};
 
