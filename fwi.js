@@ -1270,7 +1270,7 @@ function _updateStationTableRow(entry) {
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
   const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
   tr.innerHTML =
-    `<td class="py-2 pl-3 pr-2 font-semibold text-[#dae2fd] text-xs">${entry.name}</td>` +
+    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${entry.lat},${entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
     `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(entry.lat)}</td>` +
     `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
@@ -2637,13 +2637,14 @@ async function buildStationMap(containerId) {
   function _zoomScale(zoom) { return zoom <= 5 ? 'sm' : zoom <= 7 ? 'md' : 'lg'; }
 
   // Bicolor pill: left half = FWI danger color, right half = HFI class color
-  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls, scale) {
+  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls, scale, srcType) {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
     const sz = PILL_SIZES[scale] || PILL_SIZES.md;
     const half = Math.floor(sz.w / 2);
+    const br = (srcType === 'CWFIS' || srcType === 'BCWS') ? 3 : srcType === 'SWOB' ? 8 : sz.r;
     return L.divIcon({
       className: '',
-      html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${sz.r}px;overflow:hidden;display:flex;` +
+      html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
             `box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 1.5px rgba(0,0,0,0.12);` +
             `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
             `<div style="width:${half}px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
@@ -2756,7 +2757,7 @@ async function buildStationMap(containerId) {
       const fwiColor = MARKER_COLORS[r.danger] || '#7bd0ff';
       const hfiCls   = fbp ? _hfiClass(fbp.hfi) : '—';
       const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls, scale));
+      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls, scale, srcBadge));
 
       // Popup — full station detail card
       const hfiNumStr  = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
@@ -2816,7 +2817,7 @@ async function buildStationMap(containerId) {
       const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
       const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, finalScale));
+      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, finalScale, entry.srcBadge));
     }
   }
 
@@ -2828,7 +2829,7 @@ async function buildStationMap(containerId) {
       const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
       const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, scale));
+      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, scale, entry.srcBadge));
     }
   });
 
