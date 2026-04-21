@@ -661,6 +661,76 @@
 </div>
 </section>
 
+<!-- Reading the Live Map -->
+<div class="bg-surface-container rounded-2xl p-8 mb-8 border border-primary/10">
+<div class="flex items-start gap-4 mb-6">
+  <span class="material-symbols-outlined text-primary text-2xl mt-0.5">layers</span>
+  <div>
+    <h4 class="font-headline text-lg font-bold text-on-surface mb-1">Reading the Live Map</h4>
+    <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Bicolor pill markers · Cluster bubbles · Popup detail</p>
+  </div>
+</div>
+
+<!-- Bicolor pill explained -->
+<div class="mb-6">
+  <p class="text-sm font-bold text-on-surface mb-2">Bicolor Pill Markers</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed mb-4">Each station is shown as a split pill. The <strong class="text-on-surface">left half</strong> encodes the FWI Danger class; the <strong class="text-on-surface">right half</strong> encodes the HFI Byram intensity class. Both indices can differ for the same observation — a dry but calm day may have High FWI but only Moderate HFI, while a windy day in dense fuel may show both extreme.</p>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- FWI left half colors -->
+    <div>
+      <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Left Half — FWI Danger</p>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#4ae176"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Low</strong> — FWI 0–8</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#7bd0ff"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Moderate</strong> — FWI 9–17</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#f5c518"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">High</strong> — FWI 18–32</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#ff9d00"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Very High</strong> — FWI 33–49</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#ff3b3b"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Extreme</strong> — FWI ≥ 50</span></div>
+      </div>
+    </div>
+    <!-- HFI right half colors -->
+    <div>
+      <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Right Half — HFI Byram Class</p>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#2952a3"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">1 — Low</strong> — HFI &lt; 10 kW/m</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#7bd4f0"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">2 — Moderate</strong> — HFI 10–500 kW/m</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#2d8b48"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">3 — High</strong> — HFI 500–2,000 kW/m</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#c8980a"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">4 — Very High</strong> — HFI 2,000–4,000 kW/m</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#e07820"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">5 — Extreme</strong> — HFI 4,000–10,000 kW/m</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-r-full flex-shrink-0" style="background:#cc2200"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">6 — Catastrophic</strong> — HFI ≥ 10,000 kW/m</span></div>
+      </div>
+      <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mt-4 mb-2">Marker Shape — Data Source</p>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0" style="background:#4b5563;border-radius:3px"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Square</strong> — BCWS Datamart (primary) / CWFIS fire weather network</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0" style="background:#4b5563;border-radius:8px"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Rounded rect</strong> — MSC SWOB real sensor observations</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0 rounded-full" style="background:#4b5563"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Pill</strong> — Open-Meteo NWP model output</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other marker states -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-surface-variant/30 rounded-xl p-4">
+    <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Cluster Bubble</p>
+    <p class="text-xs text-on-surface-variant leading-relaxed">At provincial zoom (≤ 6), stations too close to display separately collapse into a dark-blue numbered circle. The number is the station count. Click to spiderfy and see individual pills. Clustering dissolves automatically at zoom 7+.</p>
+  </div>
+  <div class="bg-surface-variant/30 rounded-xl p-4">
+    <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Loading State</p>
+    <p class="text-xs text-on-surface-variant leading-relaxed">A gray <code class="text-primary text-xs">…</code> pill means the data fetch for that station is still in progress. All BC stations load concurrently; most resolve within 2–4 seconds. If a station stays gray, it failed silently and its popup will show no data.</p>
+  </div>
+  <div class="bg-surface-variant/30 rounded-xl p-4">
+    <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Zoom &amp; Size</p>
+    <p class="text-xs text-on-surface-variant leading-relaxed">Pills scale with zoom: small at provincial (zoom ≤ 5), medium at regional (zoom 6–7), large at municipal (zoom ≥ 8). Labels for FWI value and HFI class word become readable at medium and large sizes.</p>
+  </div>
+</div>
+
+<!-- Popup -->
+<div>
+  <p class="text-sm font-bold text-on-surface mb-2">Station Popup</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">Click any pill to open a detail popup. It shows: the zone name and the actual source station name, coordinates and km offset from the zone search origin, the data tier badge (BCWS / CWFIS / SWOB / NWP), the observation timestamp, and the full FWI + HFI grid. When FWI was calculated using Van Wagner equations (CWFIS/SWOB/NWP tier), a <strong class="text-on-surface">Carry-over</strong> line shows the BCWS or CWFIS station and date whose FFMC/DMC/DC values seeded the calculation.</p>
+</div>
+</div>
+
 <!-- Footer decoration -->
 <div class="relative h-[300px] w-full rounded-xl overflow-hidden mb-20">
 <div class="absolute inset-0 bg-gradient-to-br from-[#0f1829] to-[#161f35]"></div>
