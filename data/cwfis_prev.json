@@ -1,203 +1,287 @@
 {
-  "generated": "2026-04-20T20:17:26.442Z",
+  "generated": "2026-04-21T20:20:47.492Z",
   "stations": {
     "High Level": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 89.3,
+      "dmc": 11.4,
+      "dc": 100.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "RED EARTH",
       "distKm": 245
     },
     "Fort Chipewyan": null,
     "Peace River": null,
-    "Grande Prairie": null,
+    "Grande Prairie": {
+      "ffmc": 88.1,
+      "dmc": 8.1,
+      "dc": 133.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "BEAVERLODGE RCS",
+      "distKm": 33
+    },
     "Valleyview": null,
     "High Prairie": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 89.3,
+      "dmc": 11.4,
+      "dc": 100.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "RED EARTH",
       "distKm": 145
     },
     "Wabasca": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 89.3,
+      "dmc": 11.4,
+      "dc": 100.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "RED EARTH",
       "distKm": 110
     },
     "Slave Lake": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 89.3,
+      "dmc": 11.4,
+      "dc": 100.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "RED EARTH",
       "distKm": 145
     },
     "Fort McMurray": null,
     "Fort Vermilion": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 89.3,
+      "dmc": 11.4,
+      "dc": 100.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "RED EARTH",
       "distKm": 208
     },
-    "Manning": null,
-    "Lac La Biche": null,
+    "Manning": {
+      "ffmc": 88.1,
+      "dmc": 8.1,
+      "dc": 133.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "BEAVERLODGE RCS",
+      "distKm": 221
+    },
+    "Lac La Biche": {
+      "ffmc": 90.3,
+      "dmc": 8.9,
+      "dc": 194.6,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "RANFURLY AUTO",
+      "distKm": 151
+    },
     "Athabasca": {
-      "ffmc": 87.6,
-      "dmc": 9.4,
-      "dc": 97.3,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "RED EARTH",
-      "distKm": 239
+      "ffmc": 89.4,
+      "dmc": 8.7,
+      "dc": 213.3,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Oliver AGDM",
+      "distKm": 119
     },
-    "Bonnyville": null,
-    "Cold Lake": null,
+    "Bonnyville": {
+      "ffmc": 90.7,
+      "dmc": 9,
+      "dc": 211.5,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Mannville AGCM",
+      "distKm": 96
+    },
+    "Cold Lake": {
+      "ffmc": 90.7,
+      "dmc": 9,
+      "dc": 211.5,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Mannville AGCM",
+      "distKm": 124
+    },
     "Fox Creek": {
-      "ffmc": 85.6,
-      "dmc": 12.6,
-      "dc": 136.8,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "JASPER WARDEN",
-      "distKm": 183
+      "ffmc": 89,
+      "dmc": 8.7,
+      "dc": 172.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Evansburg 2 AGCM",
+      "distKm": 142
     },
-    "Whitecourt": null,
+    "Whitecourt": {
+      "ffmc": 89,
+      "dmc": 8.7,
+      "dc": 172.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Evansburg 2 AGCM",
+      "distKm": 70
+    },
     "Edson": {
-      "ffmc": 85.6,
-      "dmc": 12.6,
-      "dc": 136.8,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "JASPER WARDEN",
-      "distKm": 129
+      "ffmc": 89,
+      "dmc": 8.7,
+      "dc": 172.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Evansburg 2 AGCM",
+      "distKm": 91
     },
     "Hinton": {
-      "ffmc": 85.6,
-      "dmc": 12.6,
-      "dc": 136.8,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 85.2,
+      "dmc": 14.9,
+      "dc": 140.8,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "JASPER WARDEN",
       "distKm": 61
     },
     "Jasper": {
-      "ffmc": 85.6,
-      "dmc": 12.6,
-      "dc": 136.8,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 85.2,
+      "dmc": 14.9,
+      "dc": 140.8,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "JASPER WARDEN",
       "distKm": 8
     },
     "Grande Cache": {
-      "ffmc": 85.6,
-      "dmc": 12.6,
-      "dc": 136.8,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 85.2,
+      "dmc": 14.9,
+      "dc": 140.8,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "JASPER WARDEN",
       "distKm": 110
     },
-    "Edmonton": null,
+    "Edmonton": {
+      "ffmc": 89.7,
+      "dmc": 9,
+      "dc": 160.6,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "EDMONTON BLATCHFORD",
+      "distKm": 4
+    },
     "Drayton Valley": {
-      "ffmc": 88.6,
-      "dmc": 21.9,
-      "dc": 52.8,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "GOLDEN AIRPORT",
-      "distKm": 253
+      "ffmc": 88.3,
+      "dmc": 8.4,
+      "dc": 195.7,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Tomahawk AGDM",
+      "distKm": 30
     },
     "Rocky Mtn House": {
-      "ffmc": 90.6,
-      "dmc": 10.6,
-      "dc": 18.1,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "BANFF CS",
-      "distKm": 137
+      "ffmc": 89.1,
+      "dmc": 8.8,
+      "dc": 272.2,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "ROCKY MTN HOUSE AUT",
+      "distKm": 6
     },
-    "Vegreville": null,
-    "Camrose": null,
-    "Lloydminster": null,
-    "Wetaskiwin": null,
-    "Stettler": null,
+    "Vegreville": {
+      "ffmc": 90.3,
+      "dmc": 8.9,
+      "dc": 194.6,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "RANFURLY AUTO",
+      "distKm": 23
+    },
+    "Camrose": {
+      "ffmc": 90.6,
+      "dmc": 10.4,
+      "dc": 333.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "CAMROSE",
+      "distKm": 4
+    },
+    "Lloydminster": {
+      "ffmc": 91.1,
+      "dmc": 9.3,
+      "dc": 297.5,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Gilt Edge North AGCM",
+      "distKm": 48
+    },
+    "Wetaskiwin": {
+      "ffmc": 90,
+      "dmc": 9,
+      "dc": 268.3,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Wetaskiwin AGCM",
+      "distKm": 5
+    },
+    "Stettler": {
+      "ffmc": 89.6,
+      "dmc": 8.9,
+      "dc": 376.3,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "Stettler AGDM",
+      "distKm": 9
+    },
     "Red Deer": {
-      "ffmc": 90.2,
-      "dmc": 7.7,
-      "dc": 85,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "Azure AGCM",
-      "distKm": 196
+      "ffmc": 88.7,
+      "dmc": 8.6,
+      "dc": 342.7,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "LACOMBE CDA 2",
+      "distKm": 21
     },
     "Drumheller": {
-      "ffmc": 90.2,
-      "dmc": 7.7,
-      "dc": 85,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "Azure AGCM",
-      "distKm": 140
+      "ffmc": 91.7,
+      "dmc": 9.7,
+      "dc": 251.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "DRUMHELLER EAST",
+      "distKm": 3
     },
     "Calgary": {
-      "ffmc": 89.6,
-      "dmc": 8.1,
-      "dc": 280.9,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "CALGARY SPRINGBANK A",
-      "distKm": 22
+      "ffmc": 57.8,
+      "dmc": 7.8,
+      "dc": 190.9,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "CALGARY INT'L CS",
+      "distKm": 9
     },
     "Banff": {
-      "ffmc": 90.6,
-      "dmc": 10.6,
-      "dc": 18.1,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 92.5,
+      "dmc": 13.8,
+      "dc": 22.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "BANFF CS",
       "distKm": 2
     },
     "Claresholm": {
-      "ffmc": 91.2,
-      "dmc": 12.8,
-      "dc": 348.7,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 93.7,
+      "dmc": 16.8,
+      "dc": 353.7,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "CLARESHOLM",
       "distKm": 4
     },
     "Brooks": {
-      "ffmc": 91.1,
-      "dmc": 19.1,
-      "dc": 402.9,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 92.5,
+      "dmc": 22.9,
+      "dc": 408,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "BROOKS",
       "distKm": 4
     },
     "Medicine Hat": {
-      "ffmc": 91.3,
-      "dmc": 25.9,
-      "dc": 464.9,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 93.7,
+      "dmc": 30.1,
+      "dc": 470.2,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "MEDICINE HAT RCS",
       "distKm": 2
     },
     "Pincher Creek": {
-      "ffmc": 92.1,
-      "dmc": 18,
-      "dc": 220,
-      "repDate": "2026-04-20T12:00:00Z",
-      "stationName": "PINCHER CREEK",
+      "ffmc": 93.8,
+      "dmc": 15.9,
+      "dc": 72.5,
+      "repDate": "2026-04-21T12:00:00Z",
+      "stationName": "PINCHER CREEK CLIMATE",
       "distKm": 5
     },
     "Lethbridge": {
-      "ffmc": 93,
-      "dmc": 26.1,
-      "dc": 430.2,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 94.5,
+      "dmc": 30.3,
+      "dc": 435.4,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "LETHBRIDGE CDA",
       "distKm": 5
     },
     "Cardston": {
-      "ffmc": 92.6,
-      "dmc": 23.3,
-      "dc": 459.7,
-      "repDate": "2026-04-20T12:00:00Z",
+      "ffmc": 94.2,
+      "dmc": 27.3,
+      "dc": 464.7,
+      "repDate": "2026-04-21T12:00:00Z",
       "stationName": "CARDSTON",
       "distKm": 1
     }
