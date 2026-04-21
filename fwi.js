@@ -727,8 +727,9 @@ function wireDOM(r, lat, lng) {
 
   // Timestamp (line 1) + source label (line 2, station_detail only)
   set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  const _distStr = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
   const srcLabel = r.weather.stationName
-    ? `CWFIS · ${r.weather.stationName}`
+    ? `CWFIS · ${r.weather.stationName}${_distStr}`
     : (r.weather.source || 'Open-Meteo NWP');
   set('source-station', srcLabel);
 
@@ -737,12 +738,15 @@ function wireDOM(r, lat, lng) {
   if (dcBadge) {
     if (r.weather.fwiFromCWFIS) {
       const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
-      dcBadge.textContent = 'CWFIS' + stn;
+      const dst = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
+      dcBadge.textContent = 'CWFIS' + stn + dst;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else if (r._cachedFWI) {
       const cached = r._cachedFWI;
       const stn = r.weather.stationName || cached.stationName;
       const stnStr = stn ? ` · ${stn}` : '';
+      const distKm = r.weather.distKm ?? cached.distKm;
+      const dstStr = distKm != null ? ` · ${distKm} km` : '';
       let dateStr = '';
       if (cached.repDate) {
         const d = new Date(cached.repDate);
@@ -751,7 +755,7 @@ function wireDOM(r, lat, lng) {
         const d = new Date(cached.cachedAt);
         dateStr = ` · ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })}`;
       }
-      dcBadge.textContent = 'CWFIS (holding)' + stnStr + dateStr;
+      dcBadge.textContent = 'CWFIS (holding)' + stnStr + dstStr + dateStr;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
     } else {
       dcBadge.textContent = 'Season start pending · CWFIS inactive';
@@ -818,6 +822,7 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
           isi: result.isi, bui: result.bui, fwi: result.fwi,
           danger: result.danger,
           stationName: weather.stationName,
+          distKm: weather.distKm ?? null,
           repDate: weather.repDate,
           cachedAt: new Date().toISOString(),
         }));
