@@ -1745,18 +1745,24 @@ function _initPinDropMap() {
     maxZoom: 18, opacity: 0.85,
   }).addTo(map);
 
-  // Station marker dots
+  // Station marker dots — store refs for selection highlighting
+  const _pinMarkers = {};
   getStationList().forEach(s => {
-    L.circleMarker([s.lat, s.lng], {
+    const key = `${s.lat},${s.lng}`;
+    _pinMarkers[key] = L.circleMarker([s.lat, s.lng], {
       radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8,
     }).addTo(map).bindTooltip(s.name, { permanent: false, direction: 'top' });
   });
+  container._pinMarkers = _pinMarkers;
 
   // Initial view — current station picker value
   const sel = document.getElementById('fwi-station-picker');
   if (sel?.value) {
     const [lat, lng] = sel.value.split(',').map(Number);
-    map.setView([lat, lng], 7);
+    map.setView([lat, lng], 8);
+    if (_pinMarkers[sel.value]) {
+      _pinMarkers[sel.value].setStyle({ radius: 8, fillColor: '#e05030', color: '#fff', weight: 2, fillOpacity: 1 });
+    }
   } else {
     map.setView([52.5, -122.5], 6);
   }
@@ -1840,7 +1846,16 @@ function buildStationPicker() {
     if (save) localStorage.setItem('bc-fwi-station', sel.value);
     const frame = document.getElementById('fwi-map-frame');
     if (frame?._leafletMap) {
-      frame._leafletMap.panTo([lat, lng]);
+      frame._leafletMap.setView([lat, lng], 8);
+      if (frame._pinMarkers) {
+        const selKey = sel.value;
+        Object.entries(frame._pinMarkers).forEach(([k, m]) => {
+          m.setStyle(k === selKey
+            ? { radius: 8, fillColor: '#e05030', color: '#fff', weight: 2, fillOpacity: 1 }
+            : { radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8 }
+          );
+        });
+      }
     }
     const coords = document.getElementById('fwi-map-coords');
     if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
