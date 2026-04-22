@@ -404,7 +404,7 @@ function wireFBP(weather, fwi) {
     const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
     const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
     if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
     if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
     if (dscEl) { dscEl.textContent = cl.desc; }
     const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
@@ -3034,7 +3034,7 @@ async function buildD1Card() {
       const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
       const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
       if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-      if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+      if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
       if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
       if (dscEl) { dscEl.textContent = cl.desc; }
       setEl2('fwi-fbp-hfi'   + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
@@ -3080,7 +3080,7 @@ async function buildD1Card() {
     const szEl  = document.getElementById('fwi-d1-preview-hfi-size'  + suffix);
     const dscEl = document.getElementById('fwi-d1-preview-hfi-desc'  + suffix);
     if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-    if (lblEl) { lblEl.textContent = cl.label; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
     if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
     if (dscEl) { dscEl.textContent = cl.desc; }
     set('fwi-d1-preview-hfi-kwm' + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
