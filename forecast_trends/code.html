@@ -127,28 +127,28 @@
 <div class="relative z-10">
 <div class="flex items-center gap-2 mb-4">
 <span class="material-symbols-outlined text-tertiary" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
-<span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">Critical Temporal Window</span>
+<span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">14-Day Danger Outlook</span>
 </div>
-<h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">PEAK: <span class="text-primary" id="fwi-peak-label-hero">—</span></h2>
+<h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">Peak Risk: <span class="text-primary" id="fwi-peak-label-hero">—</span></h2>
 <p class="text-on-surface-variant max-w-xl body-md mb-8" id="fwi-forecast-summary">Loading forecast summary…</p>
 </div>
 <div class="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
 <div class="bg-surface-container-lowest p-4 rounded border-b-2 border-primary">
-<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Peak Temp</span>
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Max Temp</span>
 <span class="block font-headline text-3xl font-bold text-white" id="fwi-peak-temp">—°C</span>
 </div>
 <div class="bg-surface-container-lowest p-4 rounded border-b-2 border-tertiary">
-<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Min Humidity</span>
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Min RH</span>
 <span class="block font-headline text-3xl font-bold text-white" id="fwi-min-rh">—%</span>
 </div>
 <div class="bg-surface-container-lowest p-4 rounded border-b-2 border-secondary">
-<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Wind Velocity</span>
+<span class="block text-outline text-xs font-label uppercase tracking-widest mb-1">Wind Speed</span>
 <span class="block font-headline text-3xl font-bold text-white" id="fwi-max-wind">— km/h</span>
 </div>
 </div>
 </div>
 <div class="lg:col-span-4 order-1 lg:order-2 bg-surface-container-low rounded-lg p-6 border-l border-primary/20 flex flex-col">
-<h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">Risk Vector Trend</h3>
+<h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">FWI Forecast</h3>
 <div class="flex-grow flex items-end gap-1 px-2 h-48" id="fwi-trend-bars"></div>
 <div id="fwi-trend-times" class="flex justify-between text-[10px] text-outline font-label mt-4 px-2"></div>
 <p class="text-[9px] text-outline/50 font-label text-center mt-2 truncate" id="fwi-source-label">—</p>
@@ -160,25 +160,25 @@
 <h3 class="font-headline text-2xl font-bold tracking-tight text-white">Outlook Summary</h3>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<!-- Peak Danger Window -->
+<!-- Peak FWI -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-primary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Peak Danger Window</p>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Peak FWI</p>
 <p class="font-headline text-4xl font-black text-white mb-1" id="fwi-peak-window-fwi">—</p>
 <p class="text-sm text-on-surface-variant mb-3" id="fwi-peak-window-dates">—</p>
 <span id="fwi-peak-window-rating" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-surface-container-highest text-outline">—</span>
 </div>
-<!-- Days at Elevated Risk -->
+<!-- Days High or Above -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-tertiary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Days at Elevated Risk</p>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Days High or Above</p>
 <p class="font-headline font-black text-white mb-1">
 <span class="text-4xl" id="fwi-days-at-risk">—</span>
 <span class="text-on-surface-variant text-xl font-normal"> / <span id="fwi-total-days">—</span></span>
 </p>
 <p class="text-sm text-on-surface-variant mt-3">FWI ≥ 20 (Very High or above)</p>
 </div>
-<!-- Outlook Trend -->
+<!-- 14-Day Trend -->
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-secondary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Outlook Trend</p>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">14-Day Trend</p>
 <p class="font-headline text-2xl font-black text-white mb-3" id="fwi-outlook-trend-label">—</p>
 <p class="text-sm text-on-surface-variant">
 Wk 1 avg <span class="text-white font-bold" id="fwi-w1-avg">—</span>
