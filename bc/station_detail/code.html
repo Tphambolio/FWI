@@ -115,6 +115,7 @@
           class="text-[#e05030] hover:text-white transition-colors">Travis Kennedy</a>
     · <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener"
           class="text-[#e05030] hover:text-white transition-colors">GitHub</a>
+    · Glenn on WhatsApp · Testing by Patrick
   </span>
   <form action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank" style="display:inline">
     <button type="submit"
@@ -256,7 +257,14 @@
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-2">
     <span class="text-xs font-bold uppercase tracking-widest opacity-80">Today · Peak Burn · ~16:00 PDT</span>
-    <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
+    <div class="flex items-center gap-3">
+      <button id="fwi-tomorrow-toggle"
+              class="md:hidden flex items-center gap-0.5 text-[10px] text-slate-400 hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:13px" id="fwi-tomorrow-chevron">expand_more</span>
+        <span>Tomorrow</span>
+      </button>
+      <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
+    </div>
   </div>
 
   <!-- Weather row -->
@@ -346,15 +354,6 @@
   </div>
 
 </div><!-- /today card -->
-
-<!-- TOMORROW toggle — mobile only -->
-<div class="md:hidden flex items-center px-1 mt-1 mb-1">
-  <button id="fwi-tomorrow-toggle"
-          class="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors">
-    <span class="material-symbols-outlined" style="font-size:15px" id="fwi-tomorrow-chevron">expand_more</span>
-    <span>Tomorrow</span>
-  </button>
-</div>
 
 <!-- TOMORROW -->
 <section id="fwi-d1-preview-section" class="hidden md:block">
