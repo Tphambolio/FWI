@@ -101,12 +101,13 @@
       <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
       <span class="text-[9px] uppercase tracking-widest text-green-400 font-bold">Live</span>
     </div>
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" title="About · GitHub" class="text-slate-500 hover:text-[#7bd0ff] transition-colors"><span class="material-symbols-outlined" style="font-size:17px;line-height:1">info</span></a>
   </div>
   <span class="hidden md:block font-['Space_Grotesk'] font-bold text-[10px] text-[#7bd0ff] tracking-wide">Pyra BC Wildfire FWI</span>
   <span class="hidden md:block text-[9px] text-slate-500">Built by Travis Kennedy · Claude · Glenn · Patrick · <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:text-white transition-colors">DM on X</a> · <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:text-white transition-colors">GitHub issues</a></span>
 </div>
 </header>
-<main class="max-w-7xl mx-auto px-4 py-6">
+<main class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:block">
 
 <!-- ── HFI Class Scale Bar ───────────────────────────────────────────────── -->
 <div class="flex rounded-xl overflow-hidden mb-5 text-center text-white" style="min-height:54px">
@@ -229,7 +230,7 @@
 <!-- ══════════════════════════════════════════════════════════════════════
      TODAY + TOMORROW — side-by-side on md+
      ══════════════════════════════════════════════════════════════════════ -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 order-first md:order-none">
 
 <!-- TODAY -->
 <div id="fwi-score-card" class="rounded-2xl p-5 transition-all"
@@ -617,7 +618,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=109"></script>
+<script src="../fwi.js?v=110"></script>
 <script>
   FWI.buildStationPicker();
 
