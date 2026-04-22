@@ -392,7 +392,7 @@ function buildConfigUI() {
   const stationsEl = document.getElementById('bf-stations');
   const byCentre = {};
   FWI.BC_STATIONS.forEach(s => {
-    const ctr = FWI._stationFireCentre(s.lat, s.lng);
+    const ctr = FWI.stationSector(s.lat, s.lng);
     if (!byCentre[ctr]) byCentre[ctr] = [];
     byCentre[ctr].push(s);
   });
@@ -419,12 +419,12 @@ function buildConfigUI() {
       Math.abs(s.lat - lat) < 0.05 && Math.abs(s.lng - lng) < 0.05
     );
     if (station) {
-      const centre = FWI._stationFireCentre(station.lat, station.lng);
+      const centre = FWI.stationSector(station.lat, station.lng);
       document.getElementById('bf-zone-name').value = centre + ' Fire Centre';
       // Pre-check all stations in the same fire centre
       document.querySelectorAll('[name="bf-station"]').forEach(cb => {
         const s = FWI.BC_STATIONS.find(st => st.name === cb.value);
-        if (s && FWI._stationFireCentre(s.lat, s.lng) === centre) cb.checked = true;
+        if (s && FWI.stationSector(s.lat, s.lng) === centre) cb.checked = true;
       });
     }
   }
