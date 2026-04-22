@@ -20,6 +20,30 @@
       background: rgba(45, 52, 73, 0.6);
       backdrop-filter: blur(20px);
     }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .tomorrow-slide-in { animation: slideDown 0.28s ease-out forwards; }
+    #fwi-tomorrow-chevron { transition: transform 0.2s ease; }
+    #fwi-tomorrow-toggle.open #fwi-tomorrow-chevron { transform: rotate(180deg); }
+    /* ── Mobile compact tiles (both fit one screen) ── */
+    @media (max-width: 767px) {
+      #fwi-score-card { padding: 0.75rem !important; }
+      #fwi-fbp-section-a, #fwi-fbp-section-b { padding: 0.6rem 0.75rem !important; margin-top: 0.4rem !important; }
+      #fwi-fbp-section-a p:first-child, #fwi-fbp-section-b p:first-child { display: none; }
+      #fwi-fbp-hfi-rating-a, #fwi-fbp-hfi-rating-b { font-size: 2rem !important; }
+      #fwi-fbp-hfi-label-a, #fwi-fbp-hfi-label-b { font-size: 1.1rem !important; }
+      #fwi-fbp-hfi-a, #fwi-fbp-hfi-b,
+      #fwi-fbp-hfi-size-a, #fwi-fbp-hfi-size-b,
+      #fwi-fbp-hfi-desc-a, #fwi-fbp-hfi-desc-b { font-size: 0.7rem !important; margin-top: 0 !important; }
+      #fwi-fbp-section-a .grid, #fwi-fbp-section-b .grid { gap: 0.35rem; padding-top: 0.4rem; }
+      #fwi-fbp-ros-a, #fwi-fbp-flame-a, #fwi-fbp-ros-b, #fwi-fbp-flame-b,
+      #fwi-fbp-cfb-a, #fwi-fbp-cfb-b { font-size: 0.85rem !important; }
+      #fwi-fbp-type-a, #fwi-fbp-type-b { font-size: 0.75rem !important; }
+      #fwi-score-card .grid.grid-cols-5 { margin-bottom: 0.4rem !important; padding-top: 0.35rem !important; }
+      #fwi-score-card .grid.grid-cols-5 .font-bold { font-size: 0.75rem !important; }
+    }
     .synthetic-gradient {
       background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%);
     }
@@ -259,8 +283,8 @@
     <span class="text-xs font-bold uppercase tracking-widest opacity-80">Today · Peak Burn · ~16:00 PDT</span>
     <div class="flex items-center gap-3">
       <button id="fwi-tomorrow-toggle"
-              class="md:hidden flex items-center gap-0.5 text-[10px] text-slate-400 hover:text-white transition-colors">
-        <span class="material-symbols-outlined" style="font-size:13px" id="fwi-tomorrow-chevron">expand_more</span>
+              class="md:hidden flex items-center gap-0.5 text-[10px] font-bold text-[#e07820] bg-[#e07820]/15 border border-[#e07820]/40 px-2 py-0.5 rounded-full transition-colors hover:bg-[#e07820]/30">
+        <span class="material-symbols-outlined" id="fwi-tomorrow-chevron" style="font-size:13px">expand_more</span>
         <span>Tomorrow</span>
       </button>
       <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
@@ -648,8 +672,15 @@
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
     const sec  = document.getElementById('fwi-d1-preview-section');
+    const btn  = document.getElementById('fwi-tomorrow-toggle');
     const chev = document.getElementById('fwi-tomorrow-chevron');
     const nowHidden = sec.classList.toggle('hidden');
+    btn.classList.toggle('open', !nowHidden);
+    if (!nowHidden) {
+      sec.classList.remove('tomorrow-slide-in');
+      void sec.offsetWidth;
+      sec.classList.add('tomorrow-slide-in');
+    }
     chev.textContent = nowHidden ? 'expand_more' : 'expand_less';
   });
 
