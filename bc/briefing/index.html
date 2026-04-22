@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pyra · BC Fire Safety Briefing</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../../fwi-theme.js"></script>
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  input[type=range] { accent-color: #e05030; }
+  .sector-group { border-left: 2px solid rgba(224,80,48,0.3); }
+  /* Station checkbox grid */
+  .station-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  /* Progress bar */
+  #bf-progress { transition: width 0.3s ease; }
+</style>
+</head>
+<body class="bg-[#060e20] text-white min-h-screen font-['Inter']">
+
+<!-- Top nav -->
+<header class="border-b border-[#1e2740] bg-[#0b1326]/80 backdrop-blur-xl sticky top-0 z-40 px-4 py-2.5 flex items-center gap-3">
+  <a href="../station_detail/code.html" class="text-[#7bd0ff] text-sm flex items-center gap-1 hover:opacity-80">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+  </a>
+  <span class="material-symbols-outlined text-[#e05030] text-xl">assignment</span>
+  <span class="font-['Space_Grotesk'] font-semibold text-sm tracking-tight">Fire Safety Briefing Builder</span>
+  <span class="ml-auto text-[10px] text-slate-500 font-['Space_Grotesk'] uppercase tracking-widest">CFFDRS · FBP System</span>
+</header>
+
+<div class="flex flex-col lg:flex-row gap-0 min-h-[calc(100vh-48px)] pb-24">
+
+  <!-- ── CONFIG SIDEBAR ───────────────────────────────────────────────────── -->
+  <aside class="lg:w-80 xl:w-96 shrink-0 border-r border-[#1e2740] bg-[#0b1326]/60 p-4 lg:overflow-y-auto lg:h-[calc(100vh-48px)] lg:sticky lg:top-[48px]">
+
+    <h2 class="font-['Space_Grotesk'] text-xs uppercase tracking-widest text-[#e05030] mb-4">Briefing Configuration</h2>
+
+    <!-- Zone & Date -->
+    <div class="mb-4 space-y-2">
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">Forecast Zone / Location</label>
+        <input id="bf-zone-name" type="text" placeholder="e.g. Kamloops Fire Centre"
+          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">Based On (date description)</label>
+        <input id="bf-date-label" type="text" placeholder="e.g. PM Forecast for May 30th"
+          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+      </div>
+    </div>
+
+    <!-- Trend (only manual zone header field — all others auto-derived) -->
+    <div class="mb-4 p-3 bg-[#0f1829] rounded border border-[#1e2740]">
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Trend <span class="text-slate-700">(wind · precip · lightning auto-derived on generate)</span></p>
+      <select id="bf-trend"
+        class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white focus:outline-none">
+        <option value="—">—</option>
+        <option value="UP">UP</option>
+        <option value="DN">DN</option>
+        <option value="STEADY">STEADY</option>
+      </select>
+    </div>
+
+    <!-- Fuel Types -->
+    <div class="mb-4">
+      <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-2">FBP Fuel Types (up to 4)</label>
+      <div id="bf-fuels" class="grid grid-cols-2 gap-2">
+        <!-- Populated by JS -->
+      </div>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-[9px] text-slate-500 mb-0.5">M1/M2 Softwood % (PS)</label>
+          <div class="flex items-center gap-2">
+            <input id="bf-ps" type="range" min="0" max="100" value="50" class="flex-1 h-1"/>
+            <span id="bf-ps-val" class="text-[10px] text-slate-400 w-8 text-right">50%</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[9px] text-slate-500 mb-0.5">O1a/O1b Curing %</label>
+          <div class="flex items-center gap-2">
+            <input id="bf-curing" type="range" min="0" max="100" value="80" class="flex-1 h-1"/>
+            <span id="bf-curing-val" class="text-[10px] text-slate-400 w-8 text-right">80%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stations -->
+    <div class="mb-4">
+      <div class="flex items-center justify-between mb-2">
+        <label class="block text-[10px] uppercase tracking-widest text-slate-400">Weather Stations</label>
+        <div class="flex gap-2">
+          <button onclick="selectAllStations()" class="text-[9px] text-[#7bd0ff] hover:underline">All</button>
+          <button onclick="clearAllStations()" class="text-[9px] text-slate-500 hover:underline">None</button>
+        </div>
+      </div>
+      <div id="bf-stations" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Preparer -->
+    <div class="mb-4 space-y-2">
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">Prepared By (Name)</label>
+        <input id="bf-preparer" type="text" placeholder="e.g. McKay, Clifton"
+          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-1">Position</label>
+        <input id="bf-position" type="text" placeholder="e.g. Fire Behaviour Analyst"
+          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+      </div>
+    </div>
+
+    <!-- Generate button -->
+    <button id="bf-generate" onclick="generateBriefing()"
+      class="w-full py-2.5 bg-[#e05030] hover:bg-[#c43820] text-white font-semibold text-sm rounded transition-colors flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">play_arrow</span>
+      Generate Briefing
+    </button>
+
+    <!-- Progress bar (hidden until generating) -->
+    <div id="bf-progress-wrap" class="hidden mt-3">
+      <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+        <span id="bf-progress-label">Fetching station data…</span>
+        <span id="bf-progress-pct">0%</span>
+      </div>
+      <div class="w-full h-1.5 bg-[#1e2740] rounded-full overflow-hidden">
+        <div id="bf-progress" class="h-full bg-[#e05030] rounded-full" style="width:0%"></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── OUTPUT AREA ──────────────────────────────────────────────────────── -->
+  <main class="flex-1 p-4 lg:overflow-y-auto">
+
+    <!-- Empty state -->
+    <div id="bf-empty" class="flex flex-col items-center justify-center h-64 text-slate-600">
+      <span class="material-symbols-outlined text-5xl mb-3 opacity-30">assignment</span>
+      <p class="text-sm">Configure the briefing and click <strong class="text-slate-500">Generate</strong></p>
+      <p class="text-xs mt-1 opacity-60">Fetches live weather for all selected stations</p>
+    </div>
+
+    <!-- Output container (hidden until generated) -->
+    <div id="bf-output" class="hidden">
+      <!-- Action bar -->
+      <div class="flex items-center gap-3 mb-4">
+        <button onclick="printBriefing()"
+          class="flex items-center gap-2 px-4 py-2 bg-[#e05030] hover:bg-[#c43820] text-white font-semibold text-sm rounded transition-colors">
+          <span class="material-symbols-outlined text-base">print</span>
+          Print Briefing
+        </button>
+        <span id="bf-generated-at" class="text-[10px] text-slate-500"></span>
+        <span id="bf-redflag-badge" class="hidden px-2 py-1 bg-red-900/50 border border-red-500/50 text-red-300 text-[10px] font-bold rounded uppercase tracking-wider">
+          ⚑ Red Flag Conditions Present
+        </span>
+      </div>
+
+      <!-- Preview (simplified — full layout in print window) -->
+      <div id="bf-preview" class="bg-[#0f1829] rounded-xl border border-[#1e2740] overflow-x-auto">
+        <!-- Injected by generateBriefing() -->
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- BottomNavBar -->
+<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../index.html"><span class="material-symbols-outlined mb-1">home</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">BC Home</span></a>
+<a class="flex flex-col items-center justify-center bg-[#e05030]/10 text-[#e05030] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+</nav>
+<script src="../fwi.js?v=105"></script>
+<script>
+// ─── State ─────────────────────────────────────────────────────────────────
+let _briefingData = null; // last generated data
+
+const SECTOR_ORDER = ['Coastal', 'Kamloops', 'Cariboo', 'Prince George', 'Northwest', 'Southeast'];
+
+// ─── Script loader ──────────────────────────────────────────────────────────
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ─── Wind direction: degrees → cardinal ─────────────────────────────────────
+function _toCardinal(deg) {
+  const cards = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return cards[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
+
+// ─── Auto-derive zone header values from fetched rows ───────────────────────
+function _autoZoneHeader(rows) {
+  const valid = rows.filter(r => r.weather);
+  if (!valid.length) return { wind: '—', precip: '—' };
+
+  const speeds = valid.map(r => r.weather.wind).filter(v => v != null);
+  const dirs   = valid.map(r => r.weather.wdir).filter(v => v != null);
+  const rains  = valid.map(r => r.weather.rain ?? 0);
+
+  const avgSpeed = speeds.length ? Math.round(speeds.reduce((a,b)=>a+b,0)/speeds.length) : null;
+  const avgDir   = dirs.length   ? dirs.reduce((a,b)=>a+b,0)/dirs.length : null;
+  const maxRain  = Math.max(...rains);
+
+  const windStr = avgSpeed != null
+    ? (avgDir != null ? `${_toCardinal(avgDir)} ${avgSpeed}` : `${avgSpeed} km/h`)
+    : '—';
+  const precipStr = maxRain > 0 ? `${maxRain.toFixed(1)} mm` : 'Nil';
+
+  return { wind: windStr, precip: precipStr };
+}
+
+// ─── ECCC MSC lightning GeoTIFF URL (10-min updates) ────────────────────────
+function _lightningTifUrl(minutesBack = 0) {
+  const d = new Date(Date.now() - minutesBack * 60 * 1000);
+  const mins = Math.floor(d.getUTCMinutes() / 10) * 10;
+  const pad  = n => String(n).padStart(2, '0');
+  const date = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}`;
+  const time = `${pad(d.getUTCHours())}${pad(mins)}`;
+  return `https://dd.weather.gc.ca/today/lightning/${date}T${time}Z_MSC_Lightning_2.5km.tif`;
+}
+
+// ─── Fetch lightning for zone: ECCC GeoTIFF → Open-Meteo fallback ────────────
+async function fetchLightningForZone(rows) {
+  // ── Primary: ECCC MSC observed strikes (GeoTIFF, 2.5km, 10-min) ───────────
+  try {
+    await _loadScript('https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist/geotiff.browser.min.js');
+    await _loadScript('https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js');
+
+    // Register EPSG:3978 (Statistics Canada Lambert — MSC Canada-wide grids)
+    if (!proj4.defs('EPSG:3978')) {
+      proj4.defs('EPSG:3978',
+        '+proj=lcc +lat_1=49 +lat_2=77 +lat_0=49 +lon_0=-95 +x_0=0 +y_0=0 ' +
+        '+ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+    }
+
+    // Try last 3 × 10-min intervals (account for processing lag)
+    let image = null;
+    for (let lag = 0; lag <= 2 && !image; lag++) {
+      try {
+        const tiff = await GeoTIFF.fromUrl(_lightningTifUrl(lag * 10), { allowFullFile: true });
+        image = await tiff.getImage();
+      } catch(e) { /* try older file */ }
+    }
+    if (!image) throw new Error('No ECCC lightning file available');
+
+    const bbox   = image.getBoundingBox(); // native CRS units
+    const width  = image.getWidth();
+    const height = image.getHeight();
+    const geoKeys = image.getGeoKeys();
+
+    // Determine if geographic (GTModelTypeGeoKey=2) or projected (=1)
+    const isGeo  = geoKeys.GTModelTypeGeoKey === 2;
+    const epsgCode = geoKeys.ProjectedCSTypeGeoKey ?? geoKeys.GeographicTypeGeoKey ?? 3978;
+
+    let maxDensity = 0;
+    for (const r of rows) {
+      if (!r.station) continue;
+      let x = r.station.lng, y = r.station.lat;
+
+      if (!isGeo) {
+        // Project WGS84 → native CRS
+        const fromCrs = 'EPSG:4326';
+        const toCrs   = proj4.defs(`EPSG:${epsgCode}`) ? `EPSG:${epsgCode}` : 'EPSG:3978';
+        [x, y] = proj4(fromCrs, toCrs, [r.station.lng, r.station.lat]);
+      }
+
+      const px = Math.floor((x - bbox[0]) / (bbox[2] - bbox[0]) * width);
+      const py = Math.floor((bbox[3] - y) / (bbox[3] - bbox[1]) * height);
+      if (px < 0 || px >= width || py < 0 || py >= height) continue;
+
+      try {
+        const data = await image.readRasters({ window: [px, py, px+1, py+1] });
+        const val  = data[0][0];
+        if (val && isFinite(val) && val > 0 && val > maxDensity) maxDensity = val;
+      } catch(e) { /* skip station */ }
+    }
+
+    const display = maxDensity > 0
+      ? `${maxDensity.toFixed(3)} fl/km²·min`
+      : 'Nil';
+    return { display, source: 'ECCC' };
+
+  } catch(err) {
+    console.warn('[Lightning] ECCC GeoTIFF failed:', err.message);
+  }
+
+  // ── Fallback: Open-Meteo thunderstorm_probability ─────────────────────────
+  const probs = rows
+    .map(r => r.weather?.thunderstormProb)
+    .filter(v => v != null && isFinite(v));
+  if (probs.length) {
+    const maxProb = Math.max(...probs);
+    return { display: `${maxProb}%`, source: 'Open-Meteo forecast' };
+  }
+
+  return { display: '—', source: '' };
+}
+
+// HFI intensity class colours — print-safe pastels
+const HFI_PRINT_BG = [null, '#c8f0d8', '#b8dcf8', '#e0c8f0', '#f8d8b0', '#f8b0b0', '#d0607a'];
+const HFI_PRINT_TX = [null, '#0d4a20', '#003570', '#4a1070', '#7d3200', '#6a0000', '#fff0f4'];
+
+// FWI cell colours
+function fwiCellStyle(col, val) {
+  if (val == null || isNaN(val)) return '';
+  const v = +val;
+  if (col === 'ffmc') {
+    if (v >= 92) return 'background:#f8d7da;color:#721c24;';
+    if (v >= 88) return 'background:#ffe5cc;color:#7d3200;';
+    if (v >= 84) return 'background:#fff3cd;color:#856404;';
+    return '';
+  }
+  if (col === 'isi') {
+    if (v >= 20) return 'background:#f8d7da;color:#721c24;';
+    if (v >= 12) return 'background:#ffe5cc;color:#7d3200;';
+    if (v >= 6)  return 'background:#fff3cd;color:#856404;';
+    return '';
+  }
+  if (col === 'bui') {
+    if (v > 80)  return 'background:#f8d7da;color:#721c24;';
+    if (v > 50)  return 'background:#ffe5cc;color:#7d3200;';
+    if (v > 20)  return 'background:#fff3cd;color:#856404;';
+    return '';
+  }
+  if (col === 'fwi') {
+    if (v >= 50) return 'background:#f8d7da;color:#721c24;';
+    if (v >= 33) return 'background:#ffe5cc;color:#7d3200;';
+    if (v >= 18) return 'background:#fff3cd;color:#856404;';
+    if (v >= 9)  return 'background:#cce5ff;color:#004085;';
+    return 'background:#d4edda;color:#155724;';
+  }
+  return '';
+}
+
+function stationCode(name) {
+  // First 3 chars of first word, uppercase
+  return name.trim().split(/\s/)[0].substring(0, 3).toUpperCase();
+}
+
+function fireTypeAbbr(ft) {
+  if (!ft) return '—';
+  if (ft === 'Active Crown')   return 'C';
+  if (ft === 'Passive Crown')  return 'IC';
+  if (ft === 'Torching')       return 'T';
+  return 'S';
+}
+
+function isRedFlag(weather, fwi) {
+  if (!weather || !fwi) return false;
+  const crossover = (weather.temp ?? 0) > (weather.rh ?? 100);
+  return fwi.ffmc >= 92 || (weather.wind >= 30 && crossover) || fwi.bui > 80;
+}
+
+function isCrossover(weather) {
+  return (weather?.temp ?? 0) > (weather?.rh ?? 100);
+}
+
+// ─── Build Config UI ──────────────────────────────────────────────────────
+function buildConfigUI() {
+  // Fuel pickers
+  const fuelsEl = document.getElementById('bf-fuels');
+  const defaults = ['C2', 'C3', 'M2', 'M1'];
+  const fuelCodes = Object.keys(FWI.FUEL_TYPES);
+  for (let i = 1; i <= 4; i++) {
+    const sel = document.createElement('select');
+    sel.id = `bf-fuel-${i}`;
+    sel.className = 'w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1.5 text-xs text-white focus:outline-none';
+    sel.innerHTML = `<option value="">— off —</option>` +
+      fuelCodes.map(c => `<option value="${c}"${c === defaults[i-1] ? ' selected' : ''}>${c} – ${FWI.FUEL_TYPES[c].name}</option>`).join('');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<label class="block text-[9px] text-slate-500 mb-0.5">Fuel ${i}</label>`;
+    wrap.appendChild(sel);
+    fuelsEl.appendChild(wrap);
+  }
+
+  // Station checkboxes grouped by BC Fire Centre
+  const stationsEl = document.getElementById('bf-stations');
+  const byCentre = {};
+  FWI.BC_STATIONS.forEach(s => {
+    const ctr = FWI._stationFireCentre(s.lat, s.lng);
+    if (!byCentre[ctr]) byCentre[ctr] = [];
+    byCentre[ctr].push(s);
+  });
+  SECTOR_ORDER.forEach(ctr => {
+    if (!byCentre[ctr]) return;
+    const group = document.createElement('div');
+    group.className = 'sector-group pl-2';
+    group.innerHTML = `<p class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">${ctr}</p>
+      <div class="station-grid">
+        ${byCentre[ctr].map(s => `
+          <label class="flex items-center gap-1.5 cursor-pointer py-0.5">
+            <input type="checkbox" name="bf-station" value="${s.name}" class="accent-[#e05030] w-3 h-3"/>
+            <span class="text-[11px] text-slate-300 truncate">${s.name}</span>
+          </label>`).join('')}
+      </div>`;
+    stationsEl.appendChild(group);
+  });
+
+  // ── Auto-fill from current station context (fwi-station = "lat,lng") ──────
+  const savedStation = localStorage.getItem('fwi-station');
+  if (savedStation) {
+    const [lat, lng] = savedStation.split(',').map(Number);
+    const station = FWI.BC_STATIONS.find(s =>
+      Math.abs(s.lat - lat) < 0.05 && Math.abs(s.lng - lng) < 0.05
+    );
+    if (station) {
+      const centre = FWI._stationFireCentre(station.lat, station.lng);
+      document.getElementById('bf-zone-name').value = centre + ' Fire Centre';
+      // Pre-check all stations in the same fire centre
+      document.querySelectorAll('[name="bf-station"]').forEach(cb => {
+        const s = FWI.BC_STATIONS.find(st => st.name === cb.value);
+        if (s && FWI._stationFireCentre(s.lat, s.lng) === centre) cb.checked = true;
+      });
+    }
+  }
+
+  // ── Auto-fill fuel types from current station's active picks + complements ──
+  const fuelA = localStorage.getItem('fwi-fuel-type')   || 'C2';
+  const fuelB = localStorage.getItem('fwi-fuel-type-2') || 'D1';
+  const compA = FWI.FUEL_PAIR_COMPLEMENT[fuelA] || 'C3';
+  const compB = FWI.FUEL_PAIR_COMPLEMENT[fuelB] || 'M1';
+  // Avoid duplicates: if compA === fuelB, pick a fallback
+  const fuelC = compA !== fuelB ? compA : (compA !== fuelA ? compA : 'C3');
+  const fuelD = compB !== fuelA && compB !== fuelB && compB !== fuelC ? compB : 'M1';
+  [fuelA, fuelB, fuelC, fuelD].forEach((fc, i) => {
+    const sel = document.getElementById(`bf-fuel-${i + 1}`);
+    if (sel && FWI.FUEL_TYPES[fc]) sel.value = fc;
+  });
+
+  // ── Auto-fill PS% and curing% ──────────────────────────────────────────────
+  const ps     = localStorage.getItem('fwi-ps-percent')   || '50';
+  const curing = localStorage.getItem('fwi-grass-curing') || '80';
+  document.getElementById('bf-ps').value             = ps;
+  document.getElementById('bf-ps-val').textContent   = ps + '%';
+  document.getElementById('bf-curing').value         = curing;
+  document.getElementById('bf-curing-val').textContent = curing + '%';
+
+  // Restore persisted preparer info + auto-filled zone header from last run
+  const preparer = localStorage.getItem('bf-preparer') || '';
+  const position = localStorage.getItem('bf-position') || '';
+  if (preparer) document.getElementById('bf-preparer').value = preparer;
+  if (position) document.getElementById('bf-position').value = position;
+
+  // Slider labels
+  document.getElementById('bf-ps').addEventListener('input', e => {
+    document.getElementById('bf-ps-val').textContent = e.target.value + '%';
+  });
+  document.getElementById('bf-curing').addEventListener('input', e => {
+    document.getElementById('bf-curing-val').textContent = e.target.value + '%';
+  });
+
+  // Default date label to today
+  const today = new Date();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('bf-date-label').value = `PM Forecast for ${months[today.getMonth()]} ${today.getDate()}`;
+}
+
+function selectAllStations() {
+  document.querySelectorAll('[name="bf-station"]').forEach(cb => cb.checked = true);
+}
+function clearAllStations() {
+  document.querySelectorAll('[name="bf-station"]').forEach(cb => cb.checked = false);
+}
+
+// ─── Generate ─────────────────────────────────────────────────────────────
+async function generateBriefing() {
+  const selected = Array.from(document.querySelectorAll('[name="bf-station"]:checked'))
+    .map(cb => FWI.BC_STATIONS.find(s => s.name === cb.value))
+    .filter(Boolean);
+
+  if (selected.length === 0) {
+    alert('Select at least one weather station.');
+    return;
+  }
+
+  const fuels = [1,2,3,4]
+    .map(i => document.getElementById(`bf-fuel-${i}`)?.value)
+    .filter(Boolean);
+
+  if (fuels.length === 0) {
+    alert('Select at least one fuel type.');
+    return;
+  }
+
+  const ps     = +document.getElementById('bf-ps').value;
+  const curing = +document.getElementById('bf-curing').value;
+  const preparer = document.getElementById('bf-preparer').value.trim();
+  const position = document.getElementById('bf-position').value.trim();
+  localStorage.setItem('bf-preparer', preparer);
+  localStorage.setItem('bf-position', position);
+
+  // Show progress
+  document.getElementById('bf-generate').disabled = true;
+  document.getElementById('bf-generate').textContent = 'Generating…';
+  document.getElementById('bf-progress-wrap').classList.remove('hidden');
+  document.getElementById('bf-empty').classList.add('hidden');
+  document.getElementById('bf-output').classList.add('hidden');
+
+  const rows = [];
+  for (let i = 0; i < selected.length; i++) {
+    const s = selected[i];
+    const pct = Math.round((i / selected.length) * 100);
+    document.getElementById('bf-progress').style.width = pct + '%';
+    document.getElementById('bf-progress-pct').textContent = pct + '%';
+    document.getElementById('bf-progress-label').textContent = `Fetching ${s.name}…`;
+
+    try {
+      const data = await FWI.fetchStationDataForecast(s);
+      // FBP per fuel
+      const fbpResults = fuels.map(fc =>
+        FWI.calculateFBP(fc, data.fwi.ffmc, data.fwi.dmc, data.fwi.dc,
+          data.weather.wind ?? 10, 0, curing, ps)
+      );
+      rows.push({ station: s, weather: data.weather, fwi: data.fwi, fbp: fbpResults });
+    } catch (err) {
+      console.warn('[Briefing] Failed to fetch', s.name, err);
+      rows.push({ station: s, weather: null, fwi: null, fbp: fuels.map(() => null) });
+    }
+  }
+
+  document.getElementById('bf-progress').style.width = '100%';
+  document.getElementById('bf-progress-pct').textContent = '100%';
+  document.getElementById('bf-progress-label').textContent = 'Done.';
+
+  // ── Auto-derive zone header from fetched data ─────────────────────────────
+  const autoHeader = _autoZoneHeader(rows);
+
+  // Initial render — lightning placeholder until async fetch resolves
+  _briefingData = {
+    rows, fuels, ps, curing,
+    zoneName:    document.getElementById('bf-zone-name').value.trim() || 'British Columbia',
+    dateLabel:   document.getElementById('bf-date-label').value.trim(),
+    windLabel:   autoHeader.wind,
+    precip:      autoHeader.precip,
+    lightning:   '…',
+    trend:       document.getElementById('bf-trend').value,
+    preparer, position,
+    generatedAt: new Date().toLocaleString('en-CA', { hour12: false, timeZoneName: 'short' }),
+  };
+  renderPreview(_briefingData);
+  document.getElementById('bf-output').classList.remove('hidden');
+  document.getElementById('bf-generate').disabled = false;
+  document.getElementById('bf-generate').innerHTML = '<span class="material-symbols-outlined text-base">play_arrow</span> Generate Briefing';
+  document.getElementById('bf-progress-wrap').classList.add('hidden');
+
+  // Lightning fetch in background — re-renders when done
+  fetchLightningForZone(rows).then(result => {
+    _briefingData.lightning = result.display;
+    renderPreview(_briefingData);
+  });
+}
+
+// ─── Preview ───────────────────────────────────────────────────────────────
+function renderPreview(d) {
+  const anyRedFlag = d.rows.some(r => r.weather && r.fwi && isRedFlag(r.weather, r.fwi));
+  const rfBadge = document.getElementById('bf-redflag-badge');
+  if (anyRedFlag) rfBadge.classList.remove('hidden');
+  else rfBadge.classList.add('hidden');
+
+  document.getElementById('bf-generated-at').textContent = 'Generated: ' + d.generatedAt;
+
+  // Zone summary row
+  const temps = d.rows.filter(r => r.weather?.temp != null).map(r => r.weather.temp);
+  const rhs   = d.rows.filter(r => r.weather?.rh   != null).map(r => r.weather.rh);
+  const maxTemp = temps.length ? Math.max(...temps).toFixed(0) : '—';
+  const minRH   = rhs.length   ? Math.min(...rhs).toFixed(0)   : '—';
+  const anyCross = d.rows.some(r => r.weather && isCrossover(r.weather));
+  const crossoverStr = anyCross ? '<span style="color:#e05030;font-weight:700">YES</span>' : 'NO';
+
+  let html = `
+  <div class="p-4">
+    <div class="text-xs text-slate-500 mb-3 font-['Space_Grotesk'] uppercase tracking-widest">
+      Fire Safety Briefing — ${d.zoneName || 'Zone'} · ${d.dateLabel}
+    </div>
+    ${anyRedFlag ? `<div class="mb-3 px-3 py-2 bg-red-900/30 border border-red-500/40 rounded text-red-300 text-xs font-bold">⚑ RED FLAG CONDITIONS PRESENT — ${d.rows.filter(r => r.weather && r.fwi && isRedFlag(r.weather, r.fwi)).length} station(s)</div>` : ''}
+
+    <!-- Zone Summary -->
+    <div class="overflow-x-auto mb-4">
+    <table class="w-full text-[11px] border-collapse">
+      <thead><tr class="bg-[#1a2540]">
+        <th class="border border-[#2a3550] px-2 py-1 text-left font-semibold">Forecast Zone</th>
+        <th class="border border-[#2a3550] px-2 py-1">Max Temp °C</th>
+        <th class="border border-[#2a3550] px-2 py-1">Low RH %</th>
+        <th class="border border-[#2a3550] px-2 py-1">Crossover</th>
+        <th class="border border-[#2a3550] px-2 py-1">Wind</th>
+        <th class="border border-[#2a3550] px-2 py-1">Precipitation</th>
+        <th class="border border-[#2a3550] px-2 py-1">Lightning</th>
+        <th class="border border-[#2a3550] px-2 py-1">Trend</th>
+      </tr></thead>
+      <tbody><tr class="bg-[#0f1829]">
+        <td class="border border-[#2a3550] px-2 py-1 font-semibold">${d.zoneName}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${maxTemp}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${minRH}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${crossoverStr}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${d.windLabel}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${d.precip}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${d.lightning}</td>
+        <td class="border border-[#2a3550] px-2 py-1 text-center">${d.trend}</td>
+      </tr></tbody>
+    </table>
+    </div>
+
+    <!-- FWI Table -->
+    <p class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Fire Weather</p>
+    <div class="overflow-x-auto mb-4">
+    <table class="w-full text-[11px] border-collapse">
+      <thead><tr class="bg-[#1a2540]">
+        <th class="border border-[#2a3550] px-2 py-1">ID</th>
+        <th class="border border-[#2a3550] px-2 py-1 text-left">Station Name</th>
+        <th class="border border-[#2a3550] px-2 py-1">FFMC</th>
+        <th class="border border-[#2a3550] px-2 py-1">DMC</th>
+        <th class="border border-[#2a3550] px-2 py-1">DC</th>
+        <th class="border border-[#2a3550] px-2 py-1">ISI</th>
+        <th class="border border-[#2a3550] px-2 py-1">BUI</th>
+        <th class="border border-[#2a3550] px-2 py-1">FWI</th>
+      </tr></thead>
+      <tbody>
+        ${d.rows.map((r, idx) => {
+          const fwi = r.fwi;
+          const rf  = r.weather && fwi && isRedFlag(r.weather, fwi);
+          const bg  = idx % 2 === 0 ? 'background:#0f1829' : 'background:#0b1020';
+          if (!fwi) return `<tr style="${bg}">
+            <td class="border border-[#2a3550] px-2 py-1 text-slate-500">${stationCode(r.station.name)}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-slate-500">${r.station.name} ${rf?'⚑':''}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center text-slate-600" colspan="6">data unavailable</td>
+          </tr>`;
+          return `<tr style="${bg}">
+            <td class="border border-[#2a3550] px-2 py-1 font-mono font-bold text-[10px]">${stationCode(r.station.name)}</td>
+            <td class="border border-[#2a3550] px-2 py-1">${r.station.name}${rf ? ' <span class="text-red-400 font-bold">⚑</span>' : ''}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center" style="${fwiCellStyle('ffmc', fwi.ffmc)}">${fwi.ffmc?.toFixed(1) ?? '—'}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center">${fwi.dmc?.toFixed(0) ?? '—'}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center">${fwi.dc?.toFixed(0) ?? '—'}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center" style="${fwiCellStyle('isi', fwi.isi)}">${fwi.isi?.toFixed(1) ?? '—'}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center" style="${fwiCellStyle('bui', fwi.bui)}">${fwi.bui?.toFixed(0) ?? '—'}</td>
+            <td class="border border-[#2a3550] px-2 py-1 text-center font-bold" style="${fwiCellStyle('fwi', fwi.fwi)}">${fwi.fwi?.toFixed(0) ?? '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    </div>
+
+    <!-- FBP Table -->
+    <p class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Fire Behaviour</p>
+    <div class="overflow-x-auto mb-4">
+    <table class="w-full text-[10px] border-collapse">
+      <thead>
+        <tr class="bg-[#1a2540]">
+          <th class="border border-[#2a3550] px-2 py-1 text-left" rowspan="2">Station</th>
+          <th class="border border-[#2a3550] px-1 py-1 text-center font-semibold" colspan="${d.fuels.length}">Intensity Class</th>
+          <th class="border border-[#2a3550] px-1 py-1 text-center font-semibold" colspan="${d.fuels.length}">ROS m/min</th>
+          <th class="border border-[#2a3550] px-1 py-1 text-center font-semibold" colspan="${d.fuels.length}">Fire Type</th>
+          <th class="border border-[#2a3550] px-1 py-1 text-center font-semibold" colspan="${d.fuels.length}">60 min ha</th>
+        </tr>
+        <tr class="bg-[#151f38]">
+          ${[...d.fuels, ...d.fuels, ...d.fuels, ...d.fuels].map(fc => {
+            const isM = fc === 'M1' || fc === 'M2';
+            return `<th class="border border-[#2a3550] px-1 py-0.5 text-center text-[9px] font-semibold">${fc}${isM ? ` ${d.ps}%` : ''}</th>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${d.rows.map((r, idx) => {
+          const bg = idx % 2 === 0 ? '#0f1829' : '#0b1020';
+          if (!r.fwi) return `<tr style="background:${bg}">
+            <td class="border border-[#2a3550] px-2 py-1 text-slate-500">${stationCode(r.station.name)} ${r.station.name}</td>
+            <td class="border border-[#2a3550] px-1 py-1 text-center text-slate-600" colspan="${d.fuels.length * 4}">—</td>
+          </tr>`;
+          // Build 4×N data cells
+          const icCells  = r.fbp.map(fb => {
+            if (!fb) return `<td class="border border-[#2a3550] px-1 py-1 text-center text-slate-600">—</td>`;
+            const cl = FWI.hfiClassInfo(fb.hfi);
+            return `<td class="border border-[#2a3550] px-1 py-1 text-center font-bold" style="background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${cl.num}</td>`;
+          }).join('');
+          const rosCells = r.fbp.map(fb =>
+            fb ? `<td class="border border-[#2a3550] px-1 py-1 text-center" style="background:${HFI_PRINT_BG[FWI.hfiClassInfo(fb.hfi).num]};color:${HFI_PRINT_TX[FWI.hfiClassInfo(fb.hfi).num]}">${fb.ros.toFixed(0)}</td>`
+               : `<td class="border border-[#2a3550] px-1 py-1 text-center text-slate-600">—</td>`
+          ).join('');
+          const typeCells = r.fbp.map(fb =>
+            fb ? `<td class="border border-[#2a3550] px-1 py-1 text-center" style="background:${HFI_PRINT_BG[FWI.hfiClassInfo(fb.hfi).num]};color:${HFI_PRINT_TX[FWI.hfiClassInfo(fb.hfi).num]}">${fireTypeAbbr(fb.fireType)}</td>`
+               : `<td class="border border-[#2a3550] px-1 py-1 text-center text-slate-600">—</td>`
+          ).join('');
+          const areaCells = r.fbp.map((fb, fi) => {
+            if (!fb) return `<td class="border border-[#2a3550] px-1 py-1 text-center text-slate-600">—</td>`;
+            const ha = FWI._calcFireArea60(fb.ros, r.weather?.wind ?? 10);
+            const cl = FWI.hfiClassInfo(fb.hfi);
+            return `<td class="border border-[#2a3550] px-1 py-1 text-center" style="background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${ha.toFixed(1)}</td>`;
+          }).join('');
+          return `<tr style="background:${bg}">
+            <td class="border border-[#2a3550] px-2 py-1 font-semibold">${stationCode(r.station.name)} ${r.station.name}</td>
+            ${icCells}${rosCells}${typeCells}${areaCells}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    </div>
+
+    <div class="text-[9px] text-slate-600 mt-2">Fire Behaviour: _____________________________ &nbsp;&nbsp;
+    Prepared By: ${d.preparer || '_______________'} · ${d.position || '_______________'} &nbsp;&nbsp;
+    Generated: ${d.generatedAt}</div>
+    <div class="text-[9px] text-slate-500 mt-1 italic">Proceed to Site-Specific Hazard Assessment</div>
+  </div>`;
+
+  document.getElementById('bf-preview').innerHTML = html;
+}
+
+// ─── Print ─────────────────────────────────────────────────────────────────
+function printBriefing() {
+  if (!_briefingData) return;
+  const d = _briefingData;
+
+  // Zone summary derived values
+  const temps = d.rows.filter(r => r.weather?.temp != null).map(r => r.weather.temp);
+  const rhs   = d.rows.filter(r => r.weather?.rh   != null).map(r => r.weather.rh);
+  const maxTemp = temps.length ? Math.max(...temps).toFixed(0) : '—';
+  const minRH   = rhs.length   ? Math.min(...rhs).toFixed(0)   : '—';
+  const anyCross = d.rows.some(r => r.weather && isCrossover(r.weather));
+  const anyRedFlag = d.rows.some(r => r.weather && r.fwi && isRedFlag(r.weather, r.fwi));
+  const rfCount   = d.rows.filter(r => r.weather && r.fwi && isRedFlag(r.weather, r.fwi)).length;
+
+  // FWI cell colour helper (returns style attribute)
+  const fwiStyle = (col, val) => {
+    const s = fwiCellStyle(col, val);
+    return s ? ` style="${s}"` : '';
+  };
+
+  const fuelHeaders = d.fuels.map(fc => {
+    const isM = fc === 'M1' || fc === 'M2';
+    return `<th style="border:1px solid #ccc;padding:2px 4px;font-size:9pt;text-align:center">${fc}${isM ? ` ${d.ps}%` : ''}</th>`;
+  }).join('');
+
+  const stationRows_fwi = d.rows.map((r, idx) => {
+    const bg  = idx % 2 === 0 ? '#fff' : '#f7f8f9';
+    const rf  = r.weather && r.fwi && isRedFlag(r.weather, r.fwi);
+    if (!r.fwi) return `<tr style="background:${bg}">
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:8pt">${stationCode(r.station.name)}</td>
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:8pt">${r.station.name}</td>
+      <td colspan="6" style="border:1px solid #ccc;padding:2px 5px;font-size:8pt;color:#999">data unavailable</td>
+    </tr>`;
+    const fwi = r.fwi;
+    return `<tr style="background:${bg}">
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:8pt;font-weight:bold">${stationCode(r.station.name)}</td>
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:8pt">${r.station.name}${rf ? ' ⚑' : ''}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center${fwi.ffmc != null ? ';' + fwiCellStyle('ffmc',fwi.ffmc).replace(/;$/,'') : ''}">${fwi.ffmc?.toFixed(1)??'—'}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center">${fwi.dmc?.toFixed(0)??'—'}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center">${fwi.dc?.toFixed(0)??'—'}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center${fwi.isi != null ? ';' + fwiCellStyle('isi',fwi.isi).replace(/;$/,'') : ''}">${fwi.isi?.toFixed(1)??'—'}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center${fwi.bui != null ? ';' + fwiCellStyle('bui',fwi.bui).replace(/;$/,'') : ''}">${fwi.bui?.toFixed(0)??'—'}</td>
+      <td style="border:1px solid #ccc;padding:2px 4px;font-size:8pt;text-align:center;font-weight:bold${fwi.fwi != null ? ';' + fwiCellStyle('fwi',fwi.fwi).replace(/;$/,'') : ''}">${fwi.fwi?.toFixed(0)??'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const stationRows_fbp = d.rows.map((r, idx) => {
+    const bg = idx % 2 === 0 ? '#fff' : '#f7f8f9';
+    if (!r.fwi) return `<tr style="background:${bg}">
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:7.5pt">${stationCode(r.station.name)} ${r.station.name}</td>
+      <td colspan="${d.fuels.length * 4}" style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;color:#999;text-align:center">—</td>
+    </tr>`;
+    const icCells = r.fbp.map(fb => {
+      if (!fb) return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;color:#999">—</td>`;
+      const cl = FWI.hfiClassInfo(fb.hfi);
+      return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;font-weight:bold;background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${cl.num}</td>`;
+    }).join('');
+    const rosCells = r.fbp.map(fb => {
+      if (!fb) return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;color:#999">—</td>`;
+      const cl = FWI.hfiClassInfo(fb.hfi);
+      return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${fb.ros.toFixed(0)}</td>`;
+    }).join('');
+    const typeCells = r.fbp.map(fb => {
+      if (!fb) return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;color:#999">—</td>`;
+      const cl = FWI.hfiClassInfo(fb.hfi);
+      return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${fireTypeAbbr(fb.fireType)}</td>`;
+    }).join('');
+    const areaCells = r.fbp.map(fb => {
+      if (!fb) return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;color:#999">—</td>`;
+      const ha = FWI._calcFireArea60(fb.ros, r.weather?.wind ?? 10);
+      const cl = FWI.hfiClassInfo(fb.hfi);
+      return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}">${ha.toFixed(1)}</td>`;
+    }).join('');
+    return `<tr style="background:${bg}">
+      <td style="border:1px solid #ccc;padding:2px 5px;font-size:7.5pt;font-weight:600">${stationCode(r.station.name)} ${r.station.name}</td>
+      ${icCells}${rosCells}${typeCells}${areaCells}
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<title>Fire Safety Briefing — ${d.zoneName}</title>
+<style>
+  @page { size: landscape; margin: 10mm 12mm; }
+  body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; background: #fff; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    table { page-break-inside: auto; break-inside: auto; }
+  }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #dce8f0; }
+  .no-print { display: none; }
+  h2 { font-size: 11pt; margin: 0; }
+</style>
+</head><body>
+
+<!-- Header -->
+<table style="border:none;margin-bottom:6px">
+  <tr>
+    <td style="border:none;width:60%">
+      <h2>Fire Safety Briefing For: <strong>${d.zoneName}</strong></h2>
+      <div style="font-size:8.5pt;color:#444">Based On: ${d.dateLabel}</div>
+    </td>
+    <td style="border:none;text-align:right;font-size:7pt;color:#666;vertical-align:top">
+      BC Wildfire Service<br>
+      CFFDRS / FBP System · Van Wagner (1987) · Byram (1959)<br>
+      Generated by Pyra · ${d.generatedAt}
+    </td>
+  </tr>
+</table>
+
+${anyRedFlag ? `<div style="background:#ffe0e0;border:2px solid #c00;padding:4px 8px;margin-bottom:6px;font-size:9pt;font-weight:bold;color:#8b0000">
+  ⚑ RED FLAG CONDITIONS PRESENT — ${rfCount} station(s) meet FFMC ≥ 92, Wind ≥ 30 km/h + Crossover, or BUI > 80
+</div>` : ''}
+
+<!-- Forecast Zone Summary -->
+<table style="border:1px solid #999;margin-bottom:6px;font-size:8.5pt">
+  <thead><tr>
+    <th style="border:1px solid #999;padding:2px 8px;text-align:left">Forecast Zone</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Max Temp °C</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Low RH %</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Crossover</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Wind</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Precipitation</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Lightning</th>
+    <th style="border:1px solid #999;padding:2px 6px;text-align:center">Trend</th>
+  </tr></thead>
+  <tbody><tr>
+    <td style="border:1px solid #999;padding:2px 8px;font-weight:600">${d.zoneName}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${maxTemp}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${minRH}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center;font-weight:bold;${anyCross?'color:#cc2200':''}">${anyCross ? 'YES' : 'NO'}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${d.windLabel}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${d.precip}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${d.lightning}</td>
+    <td style="border:1px solid #999;padding:2px 6px;text-align:center">${d.trend}</td>
+  </tr></tbody>
+</table>
+
+<!-- Fire Weather -->
+<div style="font-size:7pt;color:#555;margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Fire Weather</div>
+<table style="border:1px solid #999;margin-bottom:6px;font-size:8.5pt">
+  <thead><tr>
+    <th style="border:1px solid #999;padding:2px 5px;text-align:left">Weather Station ID</th>
+    <th style="border:1px solid #999;padding:2px 5px;text-align:left">Weather Station Name</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">FFMC</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">DMC</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">DC</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">ISI</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">BUI</th>
+    <th style="border:1px solid #999;padding:2px 4px;text-align:center">FWI</th>
+  </tr></thead>
+  <tbody>${stationRows_fwi}</tbody>
+</table>
+
+<!-- FBP Behaviour -->
+<div style="font-size:7pt;color:#555;margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">FBP Fuel Type</div>
+<table style="border:1px solid #999;margin-bottom:8px;font-size:7.5pt">
+  <thead>
+    <tr>
+      <th style="border:1px solid #999;padding:2px 5px;text-align:left" rowspan="2">Weather Station ID/Name</th>
+      <th style="border:1px solid #999;padding:2px 4px;text-align:center;font-weight:bold" colspan="${d.fuels.length}">Intensity Class</th>
+      <th style="border:1px solid #999;padding:2px 4px;text-align:center;font-weight:bold" colspan="${d.fuels.length}">ROS m/min</th>
+      <th style="border:1px solid #999;padding:2px 4px;text-align:center;font-weight:bold" colspan="${d.fuels.length}">Fire Type</th>
+      <th style="border:1px solid #999;padding:2px 4px;text-align:center;font-weight:bold" colspan="${d.fuels.length}">Fire Size in 60 Min<br/>(In Hectares)</th>
+    </tr>
+    <tr>${fuelHeaders}${fuelHeaders}${fuelHeaders}${fuelHeaders}</tr>
+  </thead>
+  <tbody>${stationRows_fbp}</tbody>
+</table>
+
+<!-- Footer -->
+<table style="border:none;width:100%;margin-top:4px">
+  <tr>
+    <td style="border:none;font-size:8.5pt;width:50%">
+      Fire Behaviour: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td style="border:none;font-size:8.5pt;text-align:right">
+      Prepared By: ${d.preparer || '_________________________'} &nbsp;&nbsp; (${d.position || '_________________________'})
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" style="border:none;font-size:8pt;font-style:italic;text-align:center;padding-top:4px">
+      Proceed to Site-Specific Hazard Assessment
+    </td>
+  </tr>
+</table>
+
+<script>setTimeout(() => window.print(), 800);<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=1100,height=800');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildConfigUI();
+</script>
+</body>
+</html>
