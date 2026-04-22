@@ -123,6 +123,40 @@
 
 </div>
 
+<!-- ── HFI Class Scale Bar ───────────────────────────────────────────────── -->
+<div class="flex rounded-xl overflow-hidden mb-5 text-center text-white" style="min-height:54px">
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#2952a3 0%,#1a3a7a 100%)">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">1</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Low</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">&lt;10 kW/m</span>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#7bd4f0 0%,#3a9ccc 100%);color:#0a2a50">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">2</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Moderate</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">10–500</span>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#2d8b48 0%,#1a5428 100%)">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">3</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">High</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">500–2,000</span>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#c8980a 0%,#8a6200 100%)">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">4</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Very High</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">2,000–4,000</span>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#e07820 0%,#9e4800 100%)">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">5</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Extreme</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">4,000–10,000</span>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#e03030 0%,#8c0a0a 100%)">
+    <span class="font-['Space_Grotesk'] font-black text-base leading-none">6</span>
+    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Catastrophic</span>
+    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">&gt;10,000</span>
+  </div>
+</div>
+
 <!-- ── Mobile Fuel Picker ──────────────────────────────────────────────── -->
 <div class="md:hidden flex items-center gap-3 mb-5 bg-[#1e2740] p-3 rounded-xl">
   <span class="material-symbols-outlined text-[#7bd0ff] text-sm">forest</span>
@@ -598,7 +632,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=107"></script>
+<script src="../fwi.js?v=108"></script>
 <script>
   FWI.buildStationPicker();
 
