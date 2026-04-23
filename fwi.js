@@ -56,7 +56,7 @@ function getRegionalDCFloor(lat, lon) {
   if (lat < 51.5 && lon > -112.5) return 360; // Drumheller/Stettler/Oyen corridor
   if (lat < 51.5) return 280;                  // Calgary metro/Strathmore/Claresholm
   if (lat < 52.5) return 290;                  // Red Deer/Lacombe/Wetaskiwin/Camrose
-  if (lat < 54.0) return 250;                  // Edmonton metro and surrounds
+  if (lat < 54.0) return 300;                  // Edmonton metro and surrounds (Emberwise-calibrated Apr 2026)
   if (lat < 56.5) return 180;                  // Slave Lake/Athabasca/Fort McMurray south
   return 120;                                   // Northern boreal
 }
