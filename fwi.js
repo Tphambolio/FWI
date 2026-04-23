@@ -1159,11 +1159,14 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
       if (cachedFWI?.ffmc != null && cachedFWI?.dc != null) {
         // Show yesterday's real indices; ISI/BUI/FWI recalculated with today's wind
         // so spread potential reflects current conditions against real moisture codes
+        // Apply regional DC floor — cached value may predate the floor fix or use DC=15 startup
+        const dcFloor = getRegionalDCFloor(lat, lng);
+        const cachedDC = (dcFloor > 0 && cachedFWI.dc < dcFloor * 0.70) ? dcFloor : cachedFWI.dc;
         const isi = _isi(cachedFWI.ffmc, weather.wind ?? 0);
-        const bui = _bui(cachedFWI.dmc, cachedFWI.dc);
+        const bui = _bui(cachedFWI.dmc, cachedDC);
         const fwi = _fwi(isi, bui);
         result = {
-          ffmc: cachedFWI.ffmc, dmc: cachedFWI.dmc, dc: cachedFWI.dc,
+          ffmc: cachedFWI.ffmc, dmc: cachedFWI.dmc, dc: cachedDC,
           isi, bui, fwi,
           danger: dangerRating(fwi),
           weather,
