@@ -25,6 +25,9 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 - 24-hour trend chart with FWI history
 - Printable station briefing (PDF-ready) — includes fuel type label on all HFI sections
 - Grass curing slider for O1a/O1b fuel types
+- **193 Alberta stations** selectable via picker (CWFIS WFS — full AB fire weather network)
+- **Station selection:** prefers nearest station with active FWI chain (FFMC + DC not null); falls back to nearest weather-only station if no FWI chain within 200 km
+- **DC divergence warning:** flags when ≥2 nearby stations (≤75 km) differ by ≥75 DC units — indicates a localised precipitation event that may affect station representativeness
 
 ### Regional Summary
 - All stations mapped; colour-coded by BC danger class or Alberta danger class
@@ -52,7 +55,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 |---|---|
 | Danger scale | Low / Moderate / High / Very High / Extreme (CIFFC standard — no "Very Low") |
 | Thresholds | Low <9 · Moderate <18 · High <33 · Very High <50 · Extreme ≥50 |
-| Stations | CWFIS `firewx_stns_current` WFS — Alberta fire weather network |
+| Stations | CWFIS `firewx_stns_current` WFS — 193 stations, full AB fire weather network |
 | Spring DC startup | 100–400 by zone (empirical; higher carry-over in dry SE) |
 | Sectors | 6 latitude bands: NE Boreal · NW Sector · Lesser Slave · Central-N · Central · Southern |
 | Default fuels | C2 (Boreal Spruce) · D1 (Leafless Aspen) |

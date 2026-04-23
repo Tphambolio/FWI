@@ -374,7 +374,8 @@
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">isi / bui / fwi</span><span class="text-on-surface-variant">Derived indices from chain</span></div>
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">lat / lon / name</span><span class="text-on-surface-variant">Station coords + label</span></div>
 </div>
-<p class="text-xs text-on-surface-variant mt-3">Nearest station is selected by Haversine great-circle distance. When CWFIS provides FWI codes (fire season, approx. Apr–Oct), they are used directly — incorporating NRCan's daily carry-over chain. Off-season, FWI codes are null and Van Wagner equations are applied to the observed weather.</p>
+<p class="text-xs text-on-surface-variant mt-3">Station selection uses a two-pass algorithm: the app first identifies the nearest station with an active FWI chain (FFMC and DC not null — NRCan carry-over in progress); if no FWI-chain station exists within 200 km of the nearest weather-only station, the weather-only station is used instead. This ensures DC and FFMC continuity during the fire season rather than defaulting to the geographically closest sensor regardless of data quality. When CWFIS provides FWI codes (fire season, approx. Apr–Oct), they are used directly. Off-season, FWI codes are null and Van Wagner equations are applied to observed weather with cold-start DC values.</p>
+<p class="text-xs text-on-surface-variant mt-2"><strong class="text-amber-400">DC Divergence Warning:</strong> DC is a long-memory index (53-day e-folding time) shaped primarily by accumulated precipitation. Unlike temperature or wind, DC cannot be meaningfully interpolated between stations that have experienced different rainfall — a single convective cell can produce 30 mm at one gauge and 2 mm 20 km away. When ≥2 CWFIS stations within 75 km of the selected location differ by ≥75 DC units, the app flags this as a potential representativeness issue: a localised precipitation event likely fell between stations, and the nearest station DC may overestimate (or underestimate) actual fuel moisture. The operator should review nearby station DCs and consider selecting the station whose precipitation history best matches the target fuel complex.</p>
 </div>
 
 <!-- MSC SWOB Realtime -->
@@ -525,7 +526,7 @@
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">sensors</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Network — 39 Alberta CWFIS Locations</h4>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Station Network — 193 Alberta CWFIS Locations</h4>
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Canadian Wildland Fire Information System · Natural Resources Canada</p>
 </div>
 </div>

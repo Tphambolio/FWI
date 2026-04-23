@@ -916,7 +916,24 @@ async function fetchCWFIS(lat, lng) {
       if (p.ffmc != null && p.dc != null && d < fwiDist) { fwiDist = d; fwiNearest = p; }
     }
     const nearest = (fwiNearest && fwiDist <= wxDist + 200) ? fwiNearest : wxNearest;
+    const usedDist = (fwiNearest && fwiDist <= wxDist + 200) ? fwiDist : wxDist;
     if (!nearest) return null;
+
+    // DC divergence: flag when nearby stations (≤75 km) differ by ≥75 DC units.
+    // Indicates a localised precipitation event — station representativeness may be poor.
+    let dcMin = Infinity, dcMax = -Infinity, dcCount = 0;
+    for (const feat of data.features) {
+      const p = feat.properties;
+      if (p.dc == null) continue;
+      const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+      if (d > 75) continue;
+      dcMin = Math.min(dcMin, +p.dc);
+      dcMax = Math.max(dcMax, +p.dc);
+      dcCount++;
+    }
+    const dcDivergence = dcCount >= 2 && (dcMax - dcMin) >= 75
+      ? { spread: Math.round(dcMax - dcMin), min: Math.round(dcMin), max: Math.round(dcMax) }
+      : null;
 
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
     // CWFIS WFS encodes spaces as '+' in station name strings
@@ -944,7 +961,8 @@ async function fetchCWFIS(lat, lng) {
       stationName,
       stationLat: +nearest.lat,
       stationLng: +nearest.lon,
-      distKm: Math.round(minDist),
+      distKm: Math.round(usedDist),
+      dcDivergence,
     };
   } catch (e) {
     clearTimeout(timer);
@@ -1184,6 +1202,19 @@ function wireDOM(r, lat, lng) {
     } else {
       dcBadge.textContent = 'Season start pending · CWFIS inactive';
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-500/15 text-slate-400';
+    }
+  }
+
+  // DC divergence warning
+  const divEl = document.getElementById('fwi-dc-divergence');
+  const div = r.weather?.dcDivergence;
+  if (divEl) {
+    if (div) {
+      divEl.textContent = `⚠ DC varies across nearby stations (${div.min}–${div.max}). Local precip event likely — consider selecting a different station.`;
+      divEl.className = 'mt-2 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2 leading-snug';
+    } else {
+      divEl.textContent = '';
+      divEl.className = 'hidden';
     }
   }
 
