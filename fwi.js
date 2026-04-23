@@ -40,6 +40,27 @@ const STATION_STARTUP_DC = {
 };
 function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 300; }
 
+/**
+ * Regional spring DC floor by coordinate (Alberta only, March–June).
+ * Based on Lawson & Armitage (2008) overwinter carryover expectations for each
+ * climate zone, calibrated against CWFIS April 2026 well-initialized station data.
+ * Stations reporting DC below 70% of their regional floor are considered
+ * underinitialized (spring startup DC=15 default instead of overwinter equation).
+ */
+function getRegionalDCFloor(lat, lon) {
+  const mo = new Date().getMonth() + 1;
+  if (mo < 3 || mo > 6) return 0; // only enforce floor in spring startup window
+  if (lat < 48.8 || lat > 60.5 || lon < -120.5 || lon > -109.5) return 0; // AB only
+  if (lat < 50.5 && lon > -113.5) return 450; // SE prairies: Lethbridge/Medicine Hat/Taber
+  if (lat < 50.5) return 300;                  // SW foothills: Pincher Creek/Crowsnest
+  if (lat < 51.5 && lon > -112.5) return 360; // Drumheller/Stettler/Oyen corridor
+  if (lat < 51.5) return 280;                  // Calgary metro/Strathmore/Claresholm
+  if (lat < 52.5) return 290;                  // Red Deer/Lacombe/Wetaskiwin/Camrose
+  if (lat < 54.0) return 250;                  // Edmonton metro and surrounds
+  if (lat < 56.5) return 180;                  // Slave Lake/Athabasca/Fort McMurray south
+  return 120;                                   // Northern boreal
+}
+
 // Alberta Wildfire fire weather station coordinates.
 // Source: CWFIS allstn2026 (AESRD agency) + station name geocoding.
 // These stations use proper Lawson & Armitage (2008) overwinter DC initialization,
@@ -629,6 +650,14 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
     const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
 
+    // Apply regional DC floor — correct underinitialized spring startup DC
+    let rawDC = hasFWI ? +nearest.dc : null;
+    let dcUnderinit = false;
+    if (rawDC != null) {
+      const floor = getRegionalDCFloor(+nearest.lat, +nearest.lon);
+      if (floor > 0 && rawDC < floor * 0.70) { rawDC = floor; dcUnderinit = true; }
+    }
+
     return {
       temp:  nearest.temp,
       rh:    nearest.rh,
@@ -638,7 +667,7 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       month: new Date().getMonth() + 1,
       ffmc: hasFWI ? nearest.ffmc : null,
       dmc:  hasFWI ? nearest.dmc  : null,
-      dc:   hasFWI ? nearest.dc   : null,
+      dc:   rawDC,
       isi:  hasFWI ? nearest.isi  : null,
       bui:  hasFWI ? nearest.bui  : null,
       fwi:  hasFWI ? nearest.fwi  : null,
@@ -652,6 +681,7 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       stationLng: +nearest.lon,
       distKm: Math.round(fwiNearest ? fwiDist : wxDist),
       dcDivergence,
+      dcUnderinit,
     };
   } catch (e) {
     clearTimeout(timer);
@@ -709,7 +739,7 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
   // FWI chain IDW — chain-active stations only (ffmc + dmc + dc all non-null)
   const chain = used.filter(c => c.p.ffmc != null && c.p.dmc != null && c.p.dc != null);
   let ffmc = null, dmc = null, dc = null, isi = null, bui = null, fwi = null;
-  let fwiFromCWFIS = false;
+  let fwiFromCWFIS = false, dcUnderinit = false;
   let dcDivergence = null;
 
   if (chain.length >= 1) {
@@ -725,18 +755,34 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
     bui  = cidw('bui');
     fwi  = cidw('fwi');
 
-    // DC: IDW only if chain stations agree within 75 units; otherwise use nearest chain station
-    const dcVals = chain.map(c => +c.p.dc);
+    // Apply regional DC floor before blending — corrects stations that used DC=15
+    // spring startup instead of the Lawson & Armitage overwinter equation.
+    const correctedChain = chain.map(c => {
+      const floor = getRegionalDCFloor(+c.p.lat, +c.p.lon);
+      const rawDC = +c.p.dc;
+      if (floor > 0 && rawDC < floor * 0.70) {
+        return { ...c, p: { ...c.p, dc: floor }, _dcCorrected: true };
+      }
+      return c;
+    });
+    if (correctedChain.some(c => c._dcCorrected)) dcUnderinit = true;
+
+    // DC: IDW only if corrected chain stations agree within 75 units
+    const dcVals = correctedChain.map(c => +c.p.dc);
     const dcSpread = Math.max(...dcVals) - Math.min(...dcVals);
     if (chain.length >= 2 && dcSpread >= 75) {
-      dc = dcVals[0]; // nearest chain station
+      // Use the highest corrected DC among chain stations as the fallback
+      // (nearest is likely the underinitialized airport station)
+      dc = Math.max(...dcVals);
       dcDivergence = {
         spread: Math.round(dcSpread),
         min: Math.round(Math.min(...dcVals)),
         max: Math.round(Math.max(...dcVals)),
       };
     } else {
-      dc = cidw('dc');
+      const cwcS = cw.reduce((s, v) => s + v, 0);
+      const cwcN = cw.map(v => v / cwcS);
+      dc = correctedChain.reduce((s, c, i) => s + (+c.p.dc) * cwcN[i], 0);
     }
   } else {
     // No chain — check for DC divergence across all nearby stations anyway
