@@ -40,6 +40,93 @@ const STATION_STARTUP_DC = {
 };
 function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 300; }
 
+// Alberta Wildfire fire weather station coordinates.
+// Source: CWFIS allstn2026 (AESRD agency) + station name geocoding.
+// These stations use proper Lawson & Armitage (2008) overwinter DC initialization,
+// giving significantly higher spring DC than some MSC airport stations in CWFIS.
+// Observations at: https://wildfire.alberta.ca/files/pmwx.csv (1300 MDT daily)
+const AEF_STATION_COORDS = {
+  'B1':   { lat: 50.41, lon: -114.73, name: 'Highwood' },
+  'B8':   { lat: 51.57, lon: -114.86, name: 'North Ghost' },
+  'C1':   { lat: 49.88, lon: -114.38, name: 'Livingston Gap' },
+  'C4':   { lat: 49.61, lon: -114.45, name: 'Blairmore' },
+  'C5':   { lat: 49.64, lon: -110.33, name: 'Cypress Hills' },
+  'BARN': { lat: 49.80, lon: -112.30, name: 'Barnwell' },
+  'BDIA': { lat: 49.87, lon: -111.38, name: 'Bow Island' },
+  'BROO': { lat: 50.56, lon: -111.85, name: 'Brooks' },
+  'CLA':  { lat: 50.00, lon: -113.63, name: 'Claresholm' },
+  'CLAK': { lat: 49.98, lon: -113.61, name: 'Claresholm Lake' },
+  'CNA':  { lat: 52.07, lon: -111.45, name: 'Coronation' },
+  'CONS': { lat: 51.94, lon: -110.71, name: 'Consort' },
+  'FTMC': { lat: 56.65, lon: -111.22, name: 'Fort McMurray' },
+  'GHA':  { lat: 50.93, lon: -112.94, name: 'Gleichen' },
+  'HAND': { lat: 51.45, lon: -112.14, name: 'Hand Hills' },
+  'LODG': { lat: 49.46, lon: -110.34, name: 'Lodge Creek' },
+  'MHAT': { lat: 50.02, lon: -110.72, name: 'Medicine Hat' },
+  'OYEN': { lat: 51.38, lon: -110.36, name: 'Oyen' },
+  'PCI':  { lat: 49.52, lon: -114.00, name: 'Pincher Creek' },
+  'SOCP': { lat: 49.45, lon: -110.68, name: 'South Cypress Prairie' },
+  'STRA': { lat: 51.04, lon: -113.29, name: 'Strathmore' },
+  'VULC': { lat: 50.41, lon: -113.26, name: 'Vulcan' },
+  'WARN': { lat: 49.28, lon: -112.16, name: 'Warner' },
+  'WGM':  { lat: 52.83, lon: -111.10, name: 'Wainwright' },
+  'YQL':  { lat: 49.63, lon: -112.80, name: 'Lethbridge' },
+};
+
+// In-memory cache for pmwx data (30-minute TTL — file updates once daily at ~1500 MDT)
+let _aefCache = null;
+let _aefCacheTs = 0;
+
+/**
+ * Fetch Alberta Wildfire (AEF) fire weather station observations from pmwx.csv.
+ * Returns CWFIS-compatible GeoJSON feature objects for the IDW blend.
+ * Only stations with known coordinates in AEF_STATION_COORDS are included.
+ */
+async function fetchAEFStations() {
+  const now = Date.now();
+  if (_aefCache && (now - _aefCacheTs) < 30 * 60 * 1000) return _aefCache;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch('https://wildfire.alberta.ca/files/pmwx.csv', { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return _aefCache ?? [];
+    const text = await res.text();
+    const lines = text.trim().split('\n');
+    const features = [];
+    for (let i = 1; i < lines.length; i++) {
+      const f = lines[i].split(',');
+      if (f.length < 35) continue;
+      const sid    = f[34]?.trim();
+      const coords = AEF_STATION_COORDS[sid];
+      if (!coords) continue;
+      const temp = parseFloat(f[6]);
+      const rh   = parseFloat(f[10]);
+      const ws   = parseFloat(f[12]);
+      if (isNaN(temp) || isNaN(rh) || isNaN(ws)) continue;
+      const dc   = parseFloat(f[29]);
+      const dmc  = parseFloat(f[27]);
+      const ffmc = parseFloat(f[25]);
+      const isi  = parseFloat(f[26]);
+      const bui  = parseFloat(f[28]);
+      const fwi  = parseFloat(f[31]);
+      features.push({ properties: {
+        lat: String(coords.lat), lon: String(coords.lon), name: coords.name,
+        temp, rh, ws, wdir: null, precip: parseFloat(f[14]) || 0,
+        ffmc: isNaN(ffmc) ? null : ffmc, dmc: isNaN(dmc) ? null : dmc,
+        dc:   isNaN(dc)   ? null : dc,   isi: isNaN(isi) ? null : isi,
+        bui:  isNaN(bui)  ? null : bui,  fwi: isNaN(fwi) ? null : fwi,
+        aef: true,
+      }});
+    }
+    _aefCache = features;
+    _aefCacheTs = now;
+    return features;
+  } catch (e) {
+    return _aefCache ?? [];
+  }
+}
+
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
   if (rain > 0.5) {
@@ -494,7 +581,17 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     const data = await res.json();
     if (!data.features?.length) return null;
 
-    if (idwMode) return _computeIDWBlend(data.features, lat, lng);
+    if (idwMode) {
+      let features = data.features;
+      // Augment with Alberta Wildfire (AEF) stations for Alberta locations.
+      // AEF stations use proper Lawson & Armitage overwinter DC initialization,
+      // correcting systematic underinitialization seen in some MSC airport stations.
+      if (lat >= 48.8 && lat <= 60.5 && lng >= -120.5 && lng <= -109.5) {
+        const aefFeats = await fetchAEFStations();
+        if (aefFeats.length) features = [...features, ...aefFeats];
+      }
+      return _computeIDWBlend(features, lat, lng);
+    }
 
     // Prefer nearest station with active FWI chain (dc+ffmc not null).
     // Fall back to nearest weather-only station if no FWI chain within 200 km.
@@ -649,13 +746,17 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
   }
 
   const avgDist = Math.round(used.reduce((s, c) => s + c.d, 0) / used.length);
+  const aefCount = used.filter(c => c.p.aef).length;
+  const sourceLabel = aefCount
+    ? `IDW · ${used.length} stations (${aefCount} AEF) · avg ${avgDist} km`
+    : `IDW · ${used.length} stations · avg ${avgDist} km`;
 
   return {
     temp, rh, wind, wdir, rain,
     month: new Date().getMonth() + 1,
     ffmc, dmc, dc, isi, bui, fwi,
     fwiFromCWFIS,
-    source: `IDW · ${used.length} stations · avg ${avgDist} km`,
+    source: sourceLabel,
     stationName: null,
     stationLat: null, stationLng: null,
     distKm: Math.round(used[0].d),
