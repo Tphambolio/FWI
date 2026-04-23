@@ -28,6 +28,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 - **193 Alberta stations** selectable via picker (CWFIS WFS — full AB fire weather network)
 - **Station selection:** prefers nearest station with active FWI chain (FFMC + DC not null); falls back to nearest weather-only station if no FWI chain within 200 km
 - **DC divergence warning:** flags when ≥2 nearby stations (≤75 km) differ by ≥75 DC units — indicates a localised precipitation event that may affect station representativeness
+- **Spring DC floor correction:** many CWFIS MSC airport stations use DC=15 at season open (Van Wagner 1985 "no data" fallback) instead of the Lawson & Armitage (2008) overwinter carryover equation, causing systematic spring underinitialization. Pyra applies a coordinate-based regional floor (March–June only, Alberta only) calibrated from April 2026 CWFIS well-initialized station data and the Alberta Wildfire AEF pmwx.csv network. Values below 70% of the zone floor are corrected upward. Edmonton zone: 250 · SE prairies: 450 · Calgary metro: 280 · Red Deer: 290
 
 ### Regional Summary
 - All stations mapped; colour-coded by BC danger class or Alberta danger class
@@ -56,7 +57,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 | Danger scale | Low / Moderate / High / Very High / Extreme (CIFFC standard — no "Very Low") |
 | Thresholds | Low <9 · Moderate <18 · High <33 · Very High <50 · Extreme ≥50 |
 | Stations | CWFIS `firewx_stns_current` WFS — 193 stations, full AB fire weather network |
-| Spring DC startup | 100–400 by zone (empirical; higher carry-over in dry SE) |
+| Spring DC startup | Regional floor correction applied (Mar–Jun): Edmonton 250 · SE prairies 450 · Calgary 280 · Red Deer 290 · Slave Lake 180. Raw CWFIS values below 70% of zone floor are corrected. Based on Lawson & Armitage (2008) overwinter equation + April 2026 AEF pmwx.csv calibration. |
 | Sectors | 6 latitude bands: NE Boreal · NW Sector · Lesser Slave · Central-N · Central · Southern |
 | Default fuels | C2 (Boreal Spruce) · D1 (Leafless Aspen) |
 | Noon LST | 19:00 UTC (MST = UTC−7) |
@@ -154,6 +155,7 @@ The BC engine (`bc/fwi.js`) is fully self-contained. `_province` is hardcoded to
 | **BCWS Weather Datamart** | BC FWI (Tier 0) — pre-computed FFMC/DMC/DC/BUI/ISI/FWI for 170+ BC stations. Daily CSV at `for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/YYYY/YYYY-MM-DD.csv` |
 | **openmaps.gov.bc.ca** `PROT_WEATHER_STATIONS_SP` | BC station lat/lng registry (`STATION_CODE` key for Datamart join) |
 | CWFIS `firewx_stns_current` WFS | Alberta live fire weather (Tier 1 AB); ~11 BC border stations |
+| **Alberta Wildfire pmwx.csv** | AEF fire weather stations (25 stations, southern/central AB) — properly initialized via Lawson & Armitage (2008) overwinter equation. Used in IDW blend to correct DC underinitialization near AEF station coverage. `wildfire.alberta.ca/files/pmwx.csv` |
 | Environment Canada SWOB | BC Tier 2 — raw obs for stations not in BCWS Datamart |
 | Open-Meteo NWP (ECMWF IFS) | Tier 3 fallback weather — last resort |
 | CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
@@ -169,6 +171,7 @@ The BC engine (`bc/fwi.js`) is fully self-contained. `_province` is hardcoded to
 - Van Wagner, C.E. (1987). *Development and structure of the Canadian Forest Fire Weather Index System.* Forestry Technical Report 35. Canadian Forestry Service, Ottawa.
 - Forestry Canada Fire Danger Group (1992). *Development and Structure of the Canadian Forest Fire Behavior Prediction System.* Information Report ST-X-3.
 - Van Wagner, C.E. (1985). *Drought, timelag and fire danger rating.* In: Proc. 8th Natl. Conf. on Fire and Forest Meteorology, pp. 178–185.
+- Lawson, B.D. & Armitage, O.B. (2008). *Weather Guide for the Canadian Forest Fire Danger Rating System.* Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton, Alberta. — overwinter DC carryover equation used for spring startup initialization.
 - Taylor, S.W.; Pike, R.G.; Alexander, M.E. (1997). *Field Guide to the Canadian Forest Fire Behavior Prediction (FBP) System.* Special Report 11. Natural Resources Canada.
 - BC Wildfire Service (2022). *CFFDRS Implementation Guide for BC Operations.* BCWS Fire Weather Program.
 
