@@ -579,19 +579,23 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     clearTimeout(timer);
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data.features?.length) return null;
 
     if (idwMode) {
-      let features = data.features;
+      // Start with CWFIS features (may be empty during morning update window ~0800-1000 MDT)
+      let features = data.features ?? [];
       // Augment with Alberta Wildfire (AEF) stations for Alberta locations.
       // AEF stations use proper Lawson & Armitage overwinter DC initialization,
       // correcting systematic underinitialization seen in some MSC airport stations.
+      // AEF fetch runs regardless of CWFIS availability — pmwx.csv is independent.
       if (lat >= 48.8 && lat <= 60.5 && lng >= -120.5 && lng <= -109.5) {
         const aefFeats = await fetchAEFStations();
         if (aefFeats.length) features = [...features, ...aefFeats];
       }
+      if (!features.length) return null;
       return _computeIDWBlend(features, lat, lng);
     }
+
+    if (!data.features?.length) return null;
 
     // Prefer nearest station with active FWI chain (dc+ffmc not null).
     // Fall back to nearest weather-only station if no FWI chain within 200 km.
