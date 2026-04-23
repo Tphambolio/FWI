@@ -697,8 +697,11 @@
     FWI._idwMode = !FWI._idwMode;
     try { localStorage.setItem('fwi_idw_mode', FWI._idwMode ? '1' : '0'); } catch (_) {}
     const sel = document.getElementById('fwi-station-picker');
-    const opt = sel?.options[sel.selectedIndex];
-    if (opt) FWI.initFWI(+opt.dataset.lat, +opt.dataset.lng, opt.textContent.trim());
+    if (sel?.value) {
+      const [lat, lng] = sel.value.split(',').map(Number);
+      const name = sel.options[sel.selectedIndex]?.textContent?.trim();
+      FWI.initFWI(lat, lng, name);
+    }
   });
   document.getElementById('fwi-compare-btn').addEventListener('click', () => {
     const panel = document.getElementById('fwi-compare-panel');
