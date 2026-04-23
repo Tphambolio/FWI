@@ -494,14 +494,21 @@ async function fetchCWFIS(lat, lng) {
     const data = await res.json();
     if (!data.features?.length) return null;
 
-    // Find nearest station with valid weather observations
-    let nearest = null, minDist = Infinity;
+    // Prefer nearest station with active FWI chain (dc+ffmc not null).
+    // Fall back to nearest weather-only station if no FWI chain within 200 km.
+    // This prevents anomalous stations (e.g. Blatchford DC=160 vs Int'l CS DC=294)
+    // from being selected when a nearby station has a validated FWI carry-over chain.
+    let fwiNearest = null, fwiDist = Infinity;
+    let wxNearest  = null, wxDist  = Infinity;
     for (const feat of data.features) {
       const p = feat.properties;
       if (p.temp == null || p.rh == null || p.ws == null) continue;
       const d = _haversineKm(lat, lng, +p.lat, +p.lon);
-      if (d < minDist) { minDist = d; nearest = p; }
+      if (d < wxDist) { wxDist = d; wxNearest = p; }
+      if (p.ffmc != null && p.dc != null && d < fwiDist) { fwiDist = d; fwiNearest = p; }
     }
+    // Use FWI-chain station if it exists and isn't unreasonably far (>200 km) vs weather-only
+    const nearest = (fwiNearest && fwiDist <= wxDist + 200) ? fwiNearest : wxNearest;
     if (!nearest) return null;
 
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
