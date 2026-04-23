@@ -534,6 +534,9 @@
 <div class="flex items-center justify-between mb-6">
 <h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">FWI Components</h2>
 <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
+<button id="fwi-idw-toggle" title="Toggle between nearest single station and 12-station IDW blend" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-slate-600 text-slate-400 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span class="material-symbols-outlined text-[13px]">blur_on</span><span id="fwi-idw-label">Single Stn</span>
+</button>
 <button id="fwi-compare-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
   <span class="material-symbols-outlined text-[13px]">compare_arrows</span>Compare
 </button>
@@ -690,6 +693,13 @@
   // ── Print + compare buttons ───────────────────────────────────────────
   document.getElementById('fwi-print-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
   document.getElementById('fwi-print-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
+  document.getElementById('fwi-idw-toggle').addEventListener('click', () => {
+    FWI._idwMode = !FWI._idwMode;
+    try { localStorage.setItem('fwi_idw_mode', FWI._idwMode ? '1' : '0'); } catch (_) {}
+    const sel = document.getElementById('fwi-station-picker');
+    const opt = sel?.options[sel.selectedIndex];
+    if (opt) FWI.initFWI(+opt.dataset.lat, +opt.dataset.lng, opt.textContent.trim());
+  });
   document.getElementById('fwi-compare-btn').addEventListener('click', () => {
     const panel = document.getElementById('fwi-compare-panel');
     const btn   = document.getElementById('fwi-compare-btn');

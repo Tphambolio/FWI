@@ -887,7 +887,7 @@ async function fetchBCWSForCoords(lat, lng) {
  * Layer: public:firewx_stns_current (GeoServer WFS 2.0.0)
  * Reference: CWFIS, Natural Resources Canada
  */
-async function fetchCWFIS(lat, lng) {
+async function fetchCWFIS(lat, lng, idwMode = false) {
   const bbox = 2.0; // ±2 degrees ≈ 220 km
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
     `?service=WFS&version=2.0.0&request=GetFeature` +
@@ -903,6 +903,8 @@ async function fetchCWFIS(lat, lng) {
     if (!res.ok) return null;
     const data = await res.json();
     if (!data.features?.length) return null;
+
+    if (idwMode) return _computeIDWBlend(data.features, lat, lng);
 
     // Prefer nearest station with active FWI chain (dc+ffmc not null).
     // Fall back to nearest weather-only station if no FWI chain within 200 km.
@@ -920,7 +922,6 @@ async function fetchCWFIS(lat, lng) {
     if (!nearest) return null;
 
     // DC divergence: flag when nearby stations (≤75 km) differ by ≥75 DC units.
-    // Indicates a localised precipitation event — station representativeness may be poor.
     let dcMin = Infinity, dcMax = -Infinity, dcCount = 0;
     for (const feat of data.features) {
       const p = feat.properties;
@@ -936,7 +937,6 @@ async function fetchCWFIS(lat, lng) {
       : null;
 
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
-    // CWFIS WFS encodes spaces as '+' in station name strings
     const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
 
     return {
@@ -946,7 +946,6 @@ async function fetchCWFIS(lat, lng) {
       wdir:  nearest.wdir ?? null,
       rain:  nearest.precip ?? 0,
       month: new Date().getMonth() + 1,
-      // FWI codes from CWFIS daily carry-over chain (null off-season)
       ffmc: hasFWI ? nearest.ffmc : null,
       dmc:  hasFWI ? nearest.dmc  : null,
       dc:   hasFWI ? nearest.dc   : null,
@@ -968,6 +967,82 @@ async function fetchCWFIS(lat, lng) {
     clearTimeout(timer);
     return null;
   }
+}
+
+/**
+ * IDW blend — shared with AB engine logic; see AB fwi.js _computeIDWBlend for full docs.
+ */
+function _computeIDWBlend(features, lat, lng, maxStations = 12) {
+  const cands = [];
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.temp == null || p.rh == null || p.ws == null) continue;
+    const d = Math.max(_haversineKm(lat, lng, +p.lat, +p.lon), 1);
+    cands.push({ p, d });
+  }
+  if (!cands.length) return null;
+  cands.sort((a, b) => a.d - b.d);
+  const used = cands.slice(0, maxStations);
+
+  const w   = used.map(c => 1 / (c.d * c.d));
+  const wS  = w.reduce((s, v) => s + v, 0);
+  const wN  = w.map(v => v / wS);
+  const idw = key => used.reduce((s, c, i) => s + (+(c.p[key] ?? 0)) * wN[i], 0);
+
+  const temp = idw('temp');
+  const rh   = Math.min(100, Math.max(0, idw('rh')));
+  const wind = idw('ws');
+  const rain = idw('precip');
+
+  let sinSum = 0, cosSum = 0, wdirCount = 0;
+  used.forEach((c, i) => {
+    if (c.p.wdir == null) return;
+    const rad = (+c.p.wdir) * Math.PI / 180;
+    sinSum += Math.sin(rad) * wN[i]; cosSum += Math.cos(rad) * wN[i]; wdirCount++;
+  });
+  const wdir = wdirCount ? Math.round(((Math.atan2(sinSum, cosSum) * 180 / Math.PI) + 360) % 360) : null;
+
+  const chain = used.filter(c => c.p.ffmc != null && c.p.dmc != null && c.p.dc != null);
+  let ffmc = null, dmc = null, dc = null, isi = null, bui = null, fwi = null;
+  let fwiFromCWFIS = false, dcDivergence = null;
+
+  if (chain.length >= 1) {
+    fwiFromCWFIS = true;
+    const cw  = chain.map(c => 1 / (c.d * c.d));
+    const cwS = cw.reduce((s, v) => s + v, 0);
+    const cwN = cw.map(v => v / cwS);
+    const cidw = key => chain.reduce((s, c, i) => s + (+c.p[key]) * cwN[i], 0);
+    ffmc = cidw('ffmc'); dmc = cidw('dmc'); isi = cidw('isi'); bui = cidw('bui'); fwi = cidw('fwi');
+    const dcVals = chain.map(c => +c.p.dc);
+    const dcSpread = Math.max(...dcVals) - Math.min(...dcVals);
+    if (chain.length >= 2 && dcSpread >= 75) {
+      dc = dcVals[0];
+      dcDivergence = { spread: Math.round(dcSpread), min: Math.round(Math.min(...dcVals)), max: Math.round(Math.max(...dcVals)) };
+    } else {
+      dc = cidw('dc');
+    }
+  } else {
+    let dcMin2 = Infinity, dcMax2 = -Infinity, dcCnt = 0;
+    for (const c of cands) {
+      if (c.p.dc == null || c.d > 75) continue;
+      dcMin2 = Math.min(dcMin2, +c.p.dc); dcMax2 = Math.max(dcMax2, +c.p.dc); dcCnt++;
+    }
+    if (dcCnt >= 2 && (dcMax2 - dcMin2) >= 75)
+      dcDivergence = { spread: Math.round(dcMax2 - dcMin2), min: Math.round(dcMin2), max: Math.round(dcMax2) };
+  }
+
+  const avgDist = Math.round(used.reduce((s, c) => s + c.d, 0) / used.length);
+  return {
+    temp, rh, wind, wdir, rain,
+    month: new Date().getMonth() + 1,
+    ffmc, dmc, dc, isi, bui, fwi,
+    fwiFromCWFIS,
+    source: `IDW · ${used.length} stations · avg ${avgDist} km`,
+    stationName: null, stationLat: null, stationLng: null,
+    distKm: Math.round(used[0].d),
+    dcDivergence,
+    idwMode: true, idwCount: used.length, idwAvgDist: avgDist,
+  };
 }
 
 /**
@@ -1038,14 +1113,21 @@ async function fetchSWOB(lat, lng) {
  *   2. MSC SWOB realtime         — real sensor obs, noon LST targeted
  *   3. Open-Meteo NWP            — model output, noon LST targeted, last resort
  */
+// IDW blend mode — persisted across page loads
+let _idwMode = false;
+try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
+
 async function fetchWeatherPrimary(lat, lng) {
   // Tier 0 (BC only): BCWS Weather Datamart — authoritative BC fire weather FWI
+  // IDW mode skips BCWS (single-station authoritative source) and uses CWFIS IDW blend
+  if (!_idwMode) {
+    try {
+      const bcws = await fetchBCWSForCoords(lat, lng);
+      if (bcws) return bcws;
+    } catch (e) { /* fall through */ }
+  }
   try {
-    const bcws = await fetchBCWSForCoords(lat, lng);
-    if (bcws) return bcws;
-  } catch (e) { /* fall through */ }
-  try {
-    const cwfis = await fetchCWFIS(lat, lng);
+    const cwfis = await fetchCWFIS(lat, lng, _idwMode);
     if (cwfis) return cwfis;
   } catch (e) { /* fall through */ }
   try {
@@ -1175,10 +1257,29 @@ function wireDOM(r, lat, lng) {
     : (r.weather.source || 'Open-Meteo NWP');
   set('source-station', srcLabel);
 
+  // IDW toggle button state sync
+  const idwBtn = document.getElementById('fwi-idw-toggle');
+  if (idwBtn) {
+    idwBtn.classList.toggle('bg-primary/20', _idwMode);
+    idwBtn.classList.toggle('text-primary', _idwMode);
+    idwBtn.classList.toggle('border-primary/40', _idwMode);
+    idwBtn.classList.toggle('text-slate-400', !_idwMode);
+    idwBtn.classList.toggle('border-slate-600', !_idwMode);
+    const lbl = idwBtn.querySelector('#fwi-idw-label');
+    if (lbl) lbl.textContent = _idwMode
+      ? `IDW · ${r.weather.idwCount ?? '?'} stn`
+      : 'Single Stn';
+  }
+
   // DC source indicator
   const dcBadge = document.getElementById('fwi-dc-source');
   if (dcBadge) {
-    if (r.weather.fwiFromCWFIS) {
+    if (r.weather.idwMode) {
+      const n = r.weather.idwCount ?? '?';
+      const avg = r.weather.idwAvgDist != null ? ` · avg ${r.weather.idwAvgDist} km` : '';
+      dcBadge.textContent = `IDW blend · ${n} stations${avg}`;
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
+    } else if (r.weather.fwiFromCWFIS) {
       const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
       const dst = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
       dcBadge.textContent = 'CWFIS' + stn + dst;
@@ -3927,4 +4028,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, dangerRatingBC, dangerRatingProv, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, BC_STATIONS, getStationList, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, stationSector, getRegions, setProvince, getProvince };
+window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, dangerRatingBC, dangerRatingProv, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, BC_STATIONS, getStationList, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, stationSector, getRegions, setProvince, getProvince,
+  get _idwMode() { return _idwMode; },
+  set _idwMode(v) { _idwMode = v; },
+};
