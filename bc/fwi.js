@@ -741,7 +741,7 @@ async function fetchBCWSDatamart() {
 
   const url = `https://www.for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/${yyyy}/${dateStr}.csv`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), 8000);
   _bcwsFetchPromise = (async () => {
   try {
     const res = await fetch(url, { signal: controller.signal });
@@ -1118,18 +1118,23 @@ let _idwMode = false;
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 async function fetchWeatherPrimary(lat, lng) {
-  // Tier 0 (BC only): BCWS Weather Datamart — authoritative BC fire weather FWI
-  // IDW mode skips BCWS (single-station authoritative source) and uses CWFIS IDW blend
+  // Tier 0+1 (BC): race BCWS Datamart and CWFIS simultaneously — use whichever returns first.
+  // Sequential cascade was causing 20s+ waits when BCWS was slow/down.
+  // IDW mode skips BCWS (needs multi-station blend) and uses CWFIS IDW-only.
   if (!_idwMode) {
     try {
-      const bcws = await fetchBCWSForCoords(lat, lng);
-      if (bcws) return bcws;
+      const result = await Promise.any([
+        fetchBCWSForCoords(lat, lng).then(r => r ?? Promise.reject('no data')),
+        fetchCWFIS(lat, lng, false).then(r => r ?? Promise.reject('no data')),
+      ]);
+      if (result) return result;
+    } catch (e) { /* all failed, fall through */ }
+  } else {
+    try {
+      const cwfis = await fetchCWFIS(lat, lng, true);
+      if (cwfis) return cwfis;
     } catch (e) { /* fall through */ }
   }
-  try {
-    const cwfis = await fetchCWFIS(lat, lng, _idwMode);
-    if (cwfis) return cwfis;
-  } catch (e) { /* fall through */ }
   try {
     const swob = await fetchSWOB(lat, lng);
     if (swob) return swob;
