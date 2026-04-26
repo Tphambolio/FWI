@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-25T20:14:33.553Z",
+  "generated": "2026-04-26T20:14:49.212Z",
   "stations": {
     "High Level": null,
     "Fort Chipewyan": null,
@@ -37,10 +37,10 @@
     "Claresholm": null,
     "Brooks": null,
     "Medicine Hat": {
-      "ffmc": 16.2,
-      "dmc": 0.6,
-      "dc": 27.4,
-      "repDate": "2026-04-25T12:00:00Z",
+      "ffmc": 24.2,
+      "dmc": 0.1,
+      "dc": 27.8,
+      "repDate": "2026-04-26T12:00:00Z",
       "stationName": "CYPRESS HILLS PARK",
       "distKm": 95
     },
