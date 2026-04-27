@@ -596,7 +596,7 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal, cache: 'no-cache' });
     clearTimeout(timer);
     if (!res.ok) return null;
     const data = await res.json();
@@ -1012,8 +1012,18 @@ function wireDOM(r, lat, lng) {
     el.textContent = val != null ? componentRating(key, val).toUpperCase() : '—';
   });
 
-  // Timestamp (line 1) + source label (line 2, station_detail only)
-  set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  // Timestamp — show actual CWFIS observation time when available; avoids "Live"
+  // labelling yesterday's noon data as current when page is loaded before noon today.
+  if (r.weather.repDate) {
+    const obs   = new Date(r.weather.repDate);
+    const today = new Date();
+    const isToday = obs.toDateString() === today.toDateString();
+    const datePart = isToday ? '' : ` · ${obs.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}`;
+    const timePart = obs.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT';
+    set('updated', `Noon LST${datePart} · ${timePart}`);
+  } else {
+    set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  }
   const _distStr = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
   const srcLabel = r.weather.stationName
     ? `CWFIS · ${r.weather.stationName}${_distStr}`
@@ -1156,7 +1166,9 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
       let cachedFWI = null;
       try { cachedFWI = JSON.parse(localStorage.getItem('fwi-cached-cwfis')); } catch (_) {}
 
-      if (cachedFWI?.ffmc != null && cachedFWI?.dc != null) {
+      // Reject HOLDING cache older than 36 hours — stale data from days ago is worse than startup defaults
+      const cacheAge = cachedFWI?.cachedAt ? (Date.now() - new Date(cachedFWI.cachedAt).getTime()) : Infinity;
+      if (cachedFWI?.ffmc != null && cachedFWI?.dc != null && cacheAge < 36 * 3600 * 1000) {
         // Show yesterday's real indices; ISI/BUI/FWI recalculated with today's wind
         // so spread potential reflects current conditions against real moisture codes
         // Apply regional DC floor — cached value may predate the floor fix or use DC=15 startup
