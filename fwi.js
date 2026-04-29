@@ -939,7 +939,7 @@ async function fetchWeather(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&forecast_days=1&timezone=UTC`;
-  const res = await fetch(url, { cache: 'no-cache' });
+  const res = await fetch(url, { cache: 'reload' });
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const d = await res.json();
   const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
