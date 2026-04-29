@@ -889,14 +889,41 @@ let _idwMode = false;
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 async function fetchWeatherPrimary(lat, lng) {
+  // CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
+  // Before noon, the layer serves yesterday's obs — use chain values for holding cache
+  // init but fall through to peak-burn forecast for today's weather inputs.
+  const nowUTC    = new Date().getUTCHours();
+  const isPreNoon = nowUTC < 19;
+
   try {
     const cwfis = await fetchCWFIS(lat, lng, _idwMode);
-    if (cwfis) return cwfis;
+    if (cwfis) {
+      if (isPreNoon && cwfis.fwiFromCWFIS && !_idwMode) {
+        // Yesterday's chain — pre-populate holding cache so initFWI pairs it with
+        // today's peak burn forecast rather than falling back to startup constants.
+        try {
+          localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
+            ffmc: cwfis.ffmc, dmc: cwfis.dmc, dc: cwfis.dc,
+            isi: cwfis.isi, bui: cwfis.bui, fwi: cwfis.fwi,
+            stationName: cwfis.stationName, distKm: cwfis.distKm,
+            repDate: cwfis.repDate, cachedAt: new Date().toISOString(),
+          }));
+        } catch (_) {}
+        // Fall through — use today's peak burn forecast for weather inputs
+      } else {
+        return cwfis;
+      }
+    }
   } catch (e) { /* fall through */ }
-  try {
-    const swob = await fetchSWOB(lat, lng);
-    if (swob) return swob;
-  } catch (e) { /* fall through */ }
+
+  // Pre-noon: skip SWOB — real-time morning obs are not useful for peak burn prediction
+  if (!isPreNoon) {
+    try {
+      const swob = await fetchSWOB(lat, lng);
+      if (swob) return swob;
+    } catch (e) { /* fall through */ }
+  }
+
   return fetchWeather(lat, lng);
 }
 
@@ -917,15 +944,20 @@ async function fetchWeather(lat, lng) {
   const d = await res.json();
   const times = d.hourly.time; // ISO strings, UTC
 
-  // Noon LST = 19:00 UTC (Alberta is UTC−7 standard time year-round for CFFDRS)
-  const noonUTC = 19;
-  const nowUTC  = new Date().getUTCHours();
-  // Use noon if it has passed; otherwise use the most recent available hour
-  const targetHour = nowUTC >= noonUTC ? noonUTC : nowUTC;
+  // Noon LST = 19:00 UTC (Alberta UTC−7 standard time, year-round for CFFDRS).
+  // Pre-noon: forecast peak burn hour (16:00 MDT = 22:00 UTC) — most useful for
+  // fire behaviour planning when CWFIS noon obs are not yet available.
+  // Post-noon: noon LST obs (19:00 UTC) — standard CFFDRS input time.
+  const noonUTC     = 19;
+  const peakBurnUTC = 22; // 16:00 MDT = 22:00 UTC
+  const nowUTC      = new Date().getUTCHours();
+  const targetHour  = nowUTC >= noonUTC ? noonUTC : peakBurnUTC;
   const idx = times.findIndex(t => new Date(t).getUTCHours() === targetHour);
   const i = idx >= 0 ? idx : times.length - 1;
 
-  const sourceNote = targetHour === noonUTC ? 'Open-Meteo NWP (noon LST)' : 'Open-Meteo NWP (pre-noon — best available)';
+  const sourceNote = nowUTC >= noonUTC
+    ? 'Open-Meteo NWP (noon LST)'
+    : 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)';
   return {
     temp:  d.hourly.temperature_2m[i],
     rh:    d.hourly.relative_humidity_2m[i],
@@ -1021,6 +1053,8 @@ function wireDOM(r, lat, lng) {
     const datePart = isToday ? '' : ` · ${obs.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}`;
     const timePart = obs.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }) + ' MDT';
     set('updated', `Noon LST${datePart} · ${timePart}`);
+  } else if (r.weather.source?.includes('peak burn forecast')) {
+    set('updated', 'Peak Burn Forecast · 16:00 MDT');
   } else {
     set('updated', `Live · ${new Date().toLocaleTimeString()}`);
   }
