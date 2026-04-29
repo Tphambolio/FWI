@@ -939,21 +939,22 @@ async function fetchWeather(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&forecast_days=1&timezone=UTC`;
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const d = await res.json();
-  const times = d.hourly.time; // ISO strings, UTC
+  const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
 
   // Noon LST = 19:00 UTC (Alberta UTC−7 standard time, year-round for CFFDRS).
   // Pre-noon: forecast peak burn hour (16:00 MDT = 22:00 UTC) — most useful for
   // fire behaviour planning when CWFIS noon obs are not yet available.
   // Post-noon: noon LST obs (19:00 UTC) — standard CFFDRS input time.
+  // Use direct array index (= UTC hour) rather than Date parsing to avoid the
+  // JS gotcha where strings without 'Z' are treated as local time, not UTC.
   const noonUTC     = 19;
   const peakBurnUTC = 22; // 16:00 MDT = 22:00 UTC
   const nowUTC      = new Date().getUTCHours();
   const targetHour  = nowUTC >= noonUTC ? noonUTC : peakBurnUTC;
-  const idx = times.findIndex(t => new Date(t).getUTCHours() === targetHour);
-  const i = idx >= 0 ? idx : times.length - 1;
+  const i = Math.min(targetHour, times.length - 1);
 
   const sourceNote = nowUTC >= noonUTC
     ? 'Open-Meteo NWP (noon LST)'
