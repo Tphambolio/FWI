@@ -898,17 +898,20 @@ async function fetchWeatherPrimary(lat, lng) {
   try {
     const cwfis = await fetchCWFIS(lat, lng, _idwMode);
     if (cwfis) {
-      if (isPreNoon && cwfis.fwiFromCWFIS && !_idwMode) {
-        // Yesterday's chain — pre-populate holding cache so initFWI pairs it with
-        // today's peak burn forecast rather than falling back to startup constants.
-        try {
-          localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
-            ffmc: cwfis.ffmc, dmc: cwfis.dmc, dc: cwfis.dc,
-            isi: cwfis.isi, bui: cwfis.bui, fwi: cwfis.fwi,
-            stationName: cwfis.stationName, distKm: cwfis.distKm,
-            repDate: cwfis.repDate, cachedAt: new Date().toISOString(),
-          }));
-        } catch (_) {}
+      if (isPreNoon && !_idwMode) {
+        // CWFIS layer serves yesterday's noon obs until 19:00 UTC — always fall through
+        // to today's peak burn forecast for weather inputs.
+        // Cache FWI chain if present so initFWI uses real carry-over instead of startup constants.
+        if (cwfis.fwiFromCWFIS) {
+          try {
+            localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
+              ffmc: cwfis.ffmc, dmc: cwfis.dmc, dc: cwfis.dc,
+              isi: cwfis.isi, bui: cwfis.bui, fwi: cwfis.fwi,
+              stationName: cwfis.stationName, distKm: cwfis.distKm,
+              repDate: cwfis.repDate, cachedAt: new Date().toISOString(),
+            }));
+          } catch (_) {}
+        }
         // Fall through — use today's peak burn forecast for weather inputs
       } else {
         return cwfis;
