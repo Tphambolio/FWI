@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-09T20:16:53.144Z",
+  "generated": "2026-05-10T20:18:23.971Z",
   "stations": {
     "High Level": null,
     "Fort Chipewyan": null,
@@ -14,22 +14,8 @@
     "Manning": null,
     "Lac La Biche": null,
     "Athabasca": null,
-    "Bonnyville": {
-      "ffmc": 89.4,
-      "dmc": 20.8,
-      "dc": 44.6,
-      "repDate": "2026-05-09T12:00:00Z",
-      "stationName": "LOON LAKE RCS",
-      "distKm": 108
-    },
-    "Cold Lake": {
-      "ffmc": 89.4,
-      "dmc": 20.8,
-      "dc": 44.6,
-      "repDate": "2026-05-09T12:00:00Z",
-      "stationName": "LOON LAKE RCS",
-      "distKm": 87
-    },
+    "Bonnyville": null,
+    "Cold Lake": null,
     "Fox Creek": null,
     "Whitecourt": null,
     "Edson": null,
@@ -41,14 +27,7 @@
     "Rocky Mtn House": null,
     "Vegreville": null,
     "Camrose": null,
-    "Lloydminster": {
-      "ffmc": 91.3,
-      "dmc": 29.9,
-      "dc": 150.3,
-      "repDate": "2026-05-09T12:00:00Z",
-      "stationName": "WASECA RCS",
-      "distKm": 43
-    },
+    "Lloydminster": null,
     "Wetaskiwin": null,
     "Stettler": null,
     "Red Deer": null,
@@ -56,22 +35,8 @@
     "Calgary": null,
     "Banff": null,
     "Claresholm": null,
-    "Brooks": {
-      "ffmc": 89.8,
-      "dmc": 63.6,
-      "dc": 439.6,
-      "repDate": "2026-05-09T12:00:00Z",
-      "stationName": "WEST BLOCK",
-      "distKm": 175
-    },
-    "Medicine Hat": {
-      "ffmc": 89.8,
-      "dmc": 63.6,
-      "dc": 439.6,
-      "repDate": "2026-05-09T12:00:00Z",
-      "stationName": "WEST BLOCK",
-      "distKm": 70
-    },
+    "Brooks": null,
+    "Medicine Hat": null,
     "Pincher Creek": null,
     "Lethbridge": null,
     "Cardston": null
