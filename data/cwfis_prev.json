@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-16T20:18:20.176Z",
+  "generated": "2026-05-17T20:19:45.947Z",
   "stations": {
     "High Level": null,
     "Fort Chipewyan": null,
@@ -15,18 +15,18 @@
     "Lac La Biche": null,
     "Athabasca": null,
     "Bonnyville": {
-      "ffmc": 23.2,
-      "dmc": 4.7,
-      "dc": 228.4,
-      "repDate": "2026-05-16T12:00:00Z",
+      "ffmc": 60.4,
+      "dmc": 7.2,
+      "dc": 233.3,
+      "repDate": "2026-05-17T12:00:00Z",
       "stationName": "TATAKOOSE",
       "distKm": 80
     },
     "Cold Lake": {
-      "ffmc": 23.2,
-      "dmc": 4.7,
-      "dc": 228.4,
-      "repDate": "2026-05-16T12:00:00Z",
+      "ffmc": 60.4,
+      "dmc": 7.2,
+      "dc": 233.3,
+      "repDate": "2026-05-17T12:00:00Z",
       "stationName": "TATAKOOSE",
       "distKm": 47
     },
@@ -42,10 +42,10 @@
     "Vegreville": null,
     "Camrose": null,
     "Lloydminster": {
-      "ffmc": 5.6,
-      "dmc": 5.6,
-      "dc": 98.4,
-      "repDate": "2026-05-16T12:00:00Z",
+      "ffmc": 38,
+      "dmc": 6.6,
+      "dc": 102.2,
+      "repDate": "2026-05-17T12:00:00Z",
       "stationName": "WASECA RCS",
       "distKm": 43
     },
@@ -57,18 +57,18 @@
     "Banff": null,
     "Claresholm": null,
     "Brooks": {
-      "ffmc": 85,
+      "ffmc": 74.5,
       "dmc": 36.8,
-      "dc": 368.9,
-      "repDate": "2026-05-16T12:00:00Z",
+      "dc": 371.4,
+      "repDate": "2026-05-17T12:00:00Z",
       "stationName": "WEST BLOCK",
       "distKm": 175
     },
     "Medicine Hat": {
-      "ffmc": 85,
+      "ffmc": 74.5,
       "dmc": 36.8,
-      "dc": 368.9,
-      "repDate": "2026-05-16T12:00:00Z",
+      "dc": 371.4,
+      "repDate": "2026-05-17T12:00:00Z",
       "stationName": "WEST BLOCK",
       "distKm": 70
     },
