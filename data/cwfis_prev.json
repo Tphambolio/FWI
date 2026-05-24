@@ -1,12 +1,12 @@
 {
-  "generated": "2026-05-23T20:20:23.085Z",
+  "generated": "2026-05-24T20:23:13.863Z",
   "stations": {
     "High Level": null,
     "Fort Chipewyan": {
-      "ffmc": 91.4,
-      "dmc": 25.8,
-      "dc": 404.1,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 83,
+      "dmc": 27.5,
+      "dc": 409.3,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "TOCKER TOWER",
       "distKm": 248
     },
@@ -17,10 +17,10 @@
     "Wabasca": null,
     "Slave Lake": null,
     "Fort McMurray": {
-      "ffmc": 90.5,
-      "dmc": 24,
-      "dc": 341.6,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 85.8,
+      "dmc": 26.6,
+      "dc": 346.9,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "GARSON",
       "distKm": 106
     },
@@ -29,18 +29,18 @@
     "Lac La Biche": null,
     "Athabasca": null,
     "Bonnyville": {
-      "ffmc": 91.9,
-      "dmc": 28.1,
-      "dc": 267.8,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 89.7,
+      "dmc": 31.5,
+      "dc": 273.3,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "TATAKOOSE",
       "distKm": 80
     },
     "Cold Lake": {
-      "ffmc": 91.9,
-      "dmc": 28.1,
-      "dc": 267.8,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 89.7,
+      "dmc": 31.5,
+      "dc": 273.3,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "TATAKOOSE",
       "distKm": 47
     },
@@ -57,9 +57,9 @@
     "Camrose": null,
     "Lloydminster": {
       "ffmc": 91.1,
-      "dmc": 15.5,
-      "dc": 117.1,
-      "repDate": "2026-05-23T12:00:00Z",
+      "dmc": 18.8,
+      "dc": 123,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "WASECA RCS",
       "distKm": 43
     },
@@ -71,18 +71,18 @@
     "Banff": null,
     "Claresholm": null,
     "Brooks": {
-      "ffmc": 84.5,
-      "dmc": 18.9,
-      "dc": 364.9,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 90.5,
+      "dmc": 22.9,
+      "dc": 370.9,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "WEST BLOCK",
       "distKm": 175
     },
     "Medicine Hat": {
-      "ffmc": 84.5,
-      "dmc": 18.9,
-      "dc": 364.9,
-      "repDate": "2026-05-23T12:00:00Z",
+      "ffmc": 90.5,
+      "dmc": 22.9,
+      "dc": 370.9,
+      "repDate": "2026-05-24T12:00:00Z",
       "stationName": "WEST BLOCK",
       "distKm": 70
     },
