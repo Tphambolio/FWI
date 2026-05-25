@@ -1,49 +1,21 @@
 {
-  "generated": "2026-05-24T20:23:13.863Z",
+  "generated": "2026-05-25T20:33:10.089Z",
   "stations": {
     "High Level": null,
-    "Fort Chipewyan": {
-      "ffmc": 83,
-      "dmc": 27.5,
-      "dc": 409.3,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "TOCKER TOWER",
-      "distKm": 248
-    },
+    "Fort Chipewyan": null,
     "Peace River": null,
     "Grande Prairie": null,
     "Valleyview": null,
     "High Prairie": null,
     "Wabasca": null,
     "Slave Lake": null,
-    "Fort McMurray": {
-      "ffmc": 85.8,
-      "dmc": 26.6,
-      "dc": 346.9,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "GARSON",
-      "distKm": 106
-    },
+    "Fort McMurray": null,
     "Fort Vermilion": null,
     "Manning": null,
     "Lac La Biche": null,
     "Athabasca": null,
-    "Bonnyville": {
-      "ffmc": 89.7,
-      "dmc": 31.5,
-      "dc": 273.3,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "TATAKOOSE",
-      "distKm": 80
-    },
-    "Cold Lake": {
-      "ffmc": 89.7,
-      "dmc": 31.5,
-      "dc": 273.3,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "TATAKOOSE",
-      "distKm": 47
-    },
+    "Bonnyville": null,
+    "Cold Lake": null,
     "Fox Creek": null,
     "Whitecourt": null,
     "Edson": null,
@@ -55,14 +27,7 @@
     "Rocky Mtn House": null,
     "Vegreville": null,
     "Camrose": null,
-    "Lloydminster": {
-      "ffmc": 91.1,
-      "dmc": 18.8,
-      "dc": 123,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "WASECA RCS",
-      "distKm": 43
-    },
+    "Lloydminster": null,
     "Wetaskiwin": null,
     "Stettler": null,
     "Red Deer": null,
@@ -70,22 +35,8 @@
     "Calgary": null,
     "Banff": null,
     "Claresholm": null,
-    "Brooks": {
-      "ffmc": 90.5,
-      "dmc": 22.9,
-      "dc": 370.9,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "WEST BLOCK",
-      "distKm": 175
-    },
-    "Medicine Hat": {
-      "ffmc": 90.5,
-      "dmc": 22.9,
-      "dc": 370.9,
-      "repDate": "2026-05-24T12:00:00Z",
-      "stationName": "WEST BLOCK",
-      "distKm": 70
-    },
+    "Brooks": null,
+    "Medicine Hat": null,
     "Pincher Creek": null,
     "Lethbridge": null,
     "Cardston": null
