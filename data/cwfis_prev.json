@@ -1,114 +1,317 @@
 {
-  "generated": "2026-06-09T20:43:39.309Z",
+  "generated": "2026-06-10T20:56:16.572Z",
   "stations": {
-    "High Level": null,
-    "Fort Chipewyan": null,
-    "Peace River": null,
-    "Grande Prairie": null,
-    "Valleyview": null,
-    "High Prairie": null,
+    "High Level": {
+      "ffmc": 86.2,
+      "dmc": 43,
+      "dc": 303.5,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "HIGH LEVEL A",
+      "distKm": 11
+    },
+    "Fort Chipewyan": {
+      "ffmc": 17.9,
+      "dmc": 4.4,
+      "dc": 17,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "FORT CHIPEWYAN",
+      "distKm": 0
+    },
+    "Peace River": {
+      "ffmc": 75.4,
+      "dmc": 17.3,
+      "dc": 375.3,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "PEACE RIVER A",
+      "distKm": 10
+    },
+    "Grande Prairie": {
+      "ffmc": 66.4,
+      "dmc": 34.9,
+      "dc": 247.4,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "GRANDE PRAIRIE A",
+      "distKm": 2
+    },
+    "Valleyview": {
+      "ffmc": 62.9,
+      "dmc": 10.8,
+      "dc": 142.3,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Valleyview AGDM",
+      "distKm": 6
+    },
+    "High Prairie": {
+      "ffmc": 77.5,
+      "dmc": 12.4,
+      "dc": 170.5,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "High Prairie AGDM",
+      "distKm": 4
+    },
     "Wabasca": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 143
+      "ffmc": 83.6,
+      "dmc": 19.9,
+      "dc": 92.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "SLAVE LAKE",
+      "distKm": 95
     },
     "Slave Lake": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 85
+      "ffmc": 83.6,
+      "dmc": 19.9,
+      "dc": 92.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "SLAVE LAKE",
+      "distKm": 2
     },
-    "Fort McMurray": null,
-    "Fort Vermilion": null,
-    "Manning": null,
+    "Fort McMurray": {
+      "ffmc": 61.7,
+      "dmc": 3.8,
+      "dc": 48.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "FORT MCMURRAY CS",
+      "distKm": 0
+    },
+    "Fort Vermilion": {
+      "ffmc": 78.7,
+      "dmc": 66.9,
+      "dc": 324.2,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "FORT VERMILION",
+      "distKm": 1
+    },
+    "Manning": {
+      "ffmc": 82.7,
+      "dmc": 20.3,
+      "dc": 241.4,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Manning AGDM",
+      "distKm": 12
+    },
     "Lac La Biche": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 127
+      "ffmc": 80.8,
+      "dmc": 9.3,
+      "dc": 71.8,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "LAC LA BICHE CLIMATE",
+      "distKm": 3
     },
     "Athabasca": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 42
+      "ffmc": 82.4,
+      "dmc": 11.9,
+      "dc": 125.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Athabasca AGCM",
+      "distKm": 11
     },
-    "Bonnyville": null,
-    "Cold Lake": null,
-    "Fox Creek": null,
+    "Bonnyville": {
+      "ffmc": 78.2,
+      "dmc": 9,
+      "dc": 36.8,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Dupre LITE",
+      "distKm": 14
+    },
+    "Cold Lake": {
+      "ffmc": 75.7,
+      "dmc": 7.9,
+      "dc": 26.5,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "COLD LAKE A",
+      "distKm": 0
+    },
+    "Fox Creek": {
+      "ffmc": 55.5,
+      "dmc": 5.2,
+      "dc": 228,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "WHITECOURT A",
+      "distKm": 72
+    },
     "Whitecourt": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 128
+      "ffmc": 55.5,
+      "dmc": 5.2,
+      "dc": 228,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "WHITECOURT A",
+      "distKm": 7
     },
-    "Edson": null,
-    "Hinton": null,
-    "Jasper": null,
-    "Grande Cache": null,
+    "Edson": {
+      "ffmc": 46.7,
+      "dmc": 12.8,
+      "dc": 254.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "EDSON CLIMATE",
+      "distKm": 1
+    },
+    "Hinton": {
+      "ffmc": 85.4,
+      "dmc": 51.3,
+      "dc": 188.9,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "WILLOW CREEK 1",
+      "distKm": 52
+    },
+    "Jasper": {
+      "ffmc": 46.9,
+      "dmc": 50.3,
+      "dc": 348.2,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "JASPER WARDEN",
+      "distKm": 8
+    },
+    "Grande Cache": {
+      "ffmc": 28.6,
+      "dmc": 7.2,
+      "dc": 82,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "HENDRICKSON CREEK",
+      "distKm": 9
+    },
     "Edmonton": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 131
+      "ffmc": 83.4,
+      "dmc": 15,
+      "dc": 159.5,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "EDMONTON BLATCHFORD",
+      "distKm": 4
     },
     "Drayton Valley": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 177
+      "ffmc": 66.7,
+      "dmc": 7.4,
+      "dc": 201.2,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Tomahawk AGDM",
+      "distKm": 30
     },
-    "Rocky Mtn House": null,
+    "Rocky Mtn House": {
+      "ffmc": 39.8,
+      "dmc": 3.8,
+      "dc": 185.3,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "ROCKY MTN HOUSE AUT",
+      "distKm": 6
+    },
     "Vegreville": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 180
+      "ffmc": 84.4,
+      "dmc": 10.5,
+      "dc": 87.4,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Mundare AGDM",
+      "distKm": 18
     },
     "Camrose": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 199
+      "ffmc": 84.5,
+      "dmc": 14.2,
+      "dc": 244,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "CAMROSE",
+      "distKm": 4
     },
-    "Lloydminster": null,
+    "Lloydminster": {
+      "ffmc": 86.5,
+      "dmc": 17.5,
+      "dc": 359.1,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "LLOYDMINSTER",
+      "distKm": 6
+    },
     "Wetaskiwin": {
-      "ffmc": 69.1,
-      "dmc": 6.6,
-      "dc": 72.8,
-      "repDate": "2026-06-09T12:00:00Z",
-      "stationName": "Duck Lake AGCM",
-      "distKm": 195
+      "ffmc": 82.6,
+      "dmc": 13.7,
+      "dc": 228.2,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Wetaskiwin AGCM",
+      "distKm": 5
     },
-    "Stettler": null,
-    "Red Deer": null,
-    "Drumheller": null,
-    "Calgary": null,
-    "Banff": null,
-    "Claresholm": null,
-    "Brooks": null,
-    "Medicine Hat": null,
-    "Pincher Creek": null,
-    "Lethbridge": null,
-    "Cardston": null
+    "Stettler": {
+      "ffmc": 86.2,
+      "dmc": 13.1,
+      "dc": 286.8,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "Stettler AGDM",
+      "distKm": 9
+    },
+    "Red Deer": {
+      "ffmc": 78.7,
+      "dmc": 12.5,
+      "dc": 349.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "RED DEER A",
+      "distKm": 12
+    },
+    "Drumheller": {
+      "ffmc": 85.6,
+      "dmc": 17.9,
+      "dc": 200.8,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "DRUMHELLER EAST",
+      "distKm": 3
+    },
+    "Calgary": {
+      "ffmc": 81.8,
+      "dmc": 10.6,
+      "dc": 213.4,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "CALGARY INT'L CS",
+      "distKm": 9
+    },
+    "Banff": {
+      "ffmc": 82.9,
+      "dmc": 11.7,
+      "dc": 99.4,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "BANFF CS",
+      "distKm": 2
+    },
+    "Claresholm": {
+      "ffmc": 77.5,
+      "dmc": 24.1,
+      "dc": 296.3,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "CLARESHOLM",
+      "distKm": 4
+    },
+    "Brooks": {
+      "ffmc": 74.5,
+      "dmc": 22.9,
+      "dc": 325.6,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "BROOKS",
+      "distKm": 4
+    },
+    "Medicine Hat": {
+      "ffmc": 86.2,
+      "dmc": 22.7,
+      "dc": 310,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "MEDICINE HAT RCS",
+      "distKm": 2
+    },
+    "Pincher Creek": {
+      "ffmc": 73.5,
+      "dmc": 14.4,
+      "dc": 49,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "PINCHER CREEK",
+      "distKm": 5
+    },
+    "Lethbridge": {
+      "ffmc": 40.5,
+      "dmc": 10,
+      "dc": 144.9,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "LETHBRIDGE CDA",
+      "distKm": 5
+    },
+    "Cardston": {
+      "ffmc": 61.5,
+      "dmc": 13.3,
+      "dc": 200.7,
+      "repDate": "2026-06-10T12:00:00Z",
+      "stationName": "CARDSTON",
+      "distKm": 1
+    }
   }
 }
