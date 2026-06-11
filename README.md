@@ -21,14 +21,14 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 ### Station Detail
 - Live FWI (FFMC · DMC · DC · ISI · BUI · FWI) from observed noon weather
 - Dual FBP fire behaviour cards (Fuel A + Fuel B) — HFI class, ROS, flame length, fire type, CFB
-- D+1 tomorrow cards — peak burn forecast at ~14:00 LST from NAEFS ensemble
+- D+1 tomorrow cards — peak burn forecast at ~16:00 MDT from NAEFS ensemble
 - 24-hour trend chart with FWI history
 - Printable station briefing (PDF-ready) — includes fuel type label on all HFI sections
 - Grass curing slider for O1a/O1b fuel types
 - **193 Alberta stations** selectable via picker (CWFIS WFS — full AB fire weather network)
 - **Station selection:** prefers nearest station with active FWI chain (FFMC + DC not null); falls back to nearest weather-only station if no FWI chain within 200 km
 - **DC divergence warning:** flags when ≥2 nearby stations (≤75 km) differ by ≥75 DC units — indicates a localised precipitation event that may affect station representativeness
-- **Spring DC floor correction:** many CWFIS MSC airport stations use DC=15 at season open (Van Wagner 1985 "no data" fallback) instead of the Lawson & Armitage (2008) overwinter carryover equation, causing systematic spring underinitialization. Pyra applies a coordinate-based regional floor (March–June only, Alberta only) calibrated from April 2026 CWFIS well-initialized station data and the Alberta Wildfire AEF pmwx.csv network. Values below 70% of the zone floor are corrected upward. Edmonton zone: 250 · SE prairies: 450 · Calgary metro: 280 · Red Deer: 290
+- **Spring DC floor correction:** many CWFIS MSC airport stations use DC=15 at season open (Van Wagner 1985 "no data" fallback) instead of the Lawson & Armitage (2008) overwinter carryover equation, causing systematic spring underinitialization. Pyra applies a coordinate-based regional floor (March–June only, Alberta only) calibrated from April 2026 CWFIS well-initialized station data and the Alberta Wildfire AEF pmwx.csv network. Values below 70% of the zone floor are corrected upward. Edmonton zone: 300 · SE prairies: 450 · Calgary metro: 280 · Red Deer: 290
 
 ### Regional Summary
 - All stations mapped; colour-coded by BC danger class or Alberta danger class
@@ -54,8 +54,8 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 
 | Item | Detail |
 |---|---|
-| Danger scale | Low / Moderate / High / Very High / Extreme (CIFFC standard — no "Very Low") |
-| Thresholds | Low <9 · Moderate <18 · High <33 · Very High <50 · Extreme ≥50 |
+| Danger scale | Low / Moderate / High / Very High / Extreme (CWFIS FWI map intervals — verified against the public:fwi raster legend) |
+| Thresholds | Low ≤5 · Moderate 6–15 · High 16–22 · Very High 23–29 · Extreme 30+ (CWFIS FWI map intervals) |
 | Stations | CWFIS `firewx_stns_current` WFS — 193 stations, full AB fire weather network |
 | Spring DC startup | Regional floor correction applied (Mar–Jun): Edmonton 250 · SE prairies 450 · Calgary 280 · Red Deer 290 · Slave Lake 180. Raw CWFIS values below 70% of zone floor are corrected. Based on Lawson & Armitage (2008) overwinter equation + April 2026 AEF pmwx.csv calibration. |
 | Sectors | 6 latitude bands: NE Boreal · NW Sector · Lesser Slave · Central-N · Central · Southern |
@@ -74,7 +74,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 | Sectors | 6 BC Fire Centres: Coastal · Kamloops · Cariboo · Prince George · Northwest · Southeast |
 | Default fuels | C3 (Mature Lodgepole Pine) · C7 (Ponderosa Pine/Douglas-fir) |
 | Noon LST | 20:00 UTC (PST = UTC−8) |
-| Peak burn | ~14:00 PDT |
+| Peak burn | ~16:00 PDT |
 | Engine | `bc/fwi.js` (standalone, independent of root) |
 
 The BC spring DC startup uses the Van Wagner (1985) overwinter carry-over equation:  

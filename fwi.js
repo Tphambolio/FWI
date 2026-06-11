@@ -214,6 +214,36 @@ function _fwi(isi, bui) {
   return b<=1 ? b : Math.exp(2.72*(0.434*Math.log(b))**0.647);
 }
 
+/**
+ * Hourly FFMC — Van Wagner (1977), as implemented in the cffdrs hffmc().
+ * Same equilibrium/wetting structure as the daily code but with the hourly
+ * log-drying coefficient 0.0579 (vs 0.581/day) over a 1-hour step.
+ * Used for the 24-hour trend chart; DMC/DC are held at their daily values.
+ */
+function _hffmc(temp, rh, wind, rain, prevF) {
+  let mo = 147.2 * (101 - prevF) / (59.5 + prevF);
+  if (rain > 0) {
+    let mr = mo + 42.5 * rain * Math.exp(-100 / (251 - mo)) * (1 - Math.exp(-6.93 / rain));
+    if (mo > 150) mr += 0.0015 * (mo - 150) ** 2 * Math.sqrt(rain);
+    mo = Math.min(mr, 250);
+  }
+  const ed = 0.942 * rh**0.679 + 11 * Math.exp((rh-100)/10) + 0.18*(21.1-temp)*(1-Math.exp(-0.115*rh));
+  let m;
+  if (mo > ed) {
+    const ko = 0.424*(1-(rh/100)**1.7) + 0.0694*Math.sqrt(wind)*(1-(rh/100)**8);
+    const kd = ko * 0.0579 * Math.exp(0.0365*temp);
+    m = ed + (mo - ed) * 10**(-kd);
+  } else {
+    const ew = 0.618*rh**0.753 + 10*Math.exp((rh-100)/10) + 0.18*(21.1-temp)*(1-Math.exp(-0.115*rh));
+    if (mo < ew) {
+      const kl = 0.424*(1-((100-rh)/100)**1.7) + 0.0694*Math.sqrt(wind)*(1-((100-rh)/100)**8);
+      const kw = kl * 0.0579 * Math.exp(0.0365*temp);
+      m = ew - (ew - mo) * 10**(-kw);
+    } else m = mo;
+  }
+  return Math.max(0, Math.min(101, 59.5 * (250 - m) / (147.2 + m)));
+}
+
 // ═══ SCIENCE CORE END: FWI daily equations ═══
 
 // Wind degrees → compass direction + arrow
@@ -225,23 +255,29 @@ function windCompass(deg) {
   return `${arrows[i]} ${dirs[i]} (${Math.round(deg)}°)`;
 }
 
-// FWI danger thresholds (NRCan CWFIS operational scale)
+// FWI display classes — aligned to the CWFIS national FWI map intervals
+// (public:fwi raster legend, GeoServer GetLegendGraphic, verified 2026-06-10:
+//  0-5 / 6-15 / 16-22 / 23-29 / 30+). The previous 9/18/33/50 breaks cited
+// "CWFIS/CIFFC operational scale" but matched no published source, and could
+// label FWI 31 "High" where the CWFIS map shows its top class.
+// NOTE: this is an FWI map classification, not an official Fire Danger Rating —
+// provincial danger ratings are issued by Alberta Wildfire / agencies.
 function dangerRating(fwi) {
-  if (fwi <  9) return 'Low';
-  if (fwi < 18) return 'Moderate';
-  if (fwi < 33) return 'High';
-  if (fwi < 50) return 'Very High';
+  if (fwi <  5.5) return 'Low';
+  if (fwi < 15.5) return 'Moderate';
+  if (fwi < 22.5) return 'High';
+  if (fwi < 29.5) return 'Very High';
   return 'Extreme';
 }
 
-// Alberta Wildfire danger class 1–6 (CIFFC operational scale)
+// Same CWFIS FWI map intervals as dangerRating, classes 1-5.
 // Returns { num, label, bg, text } for colour-coded display in briefings
 function dangerClassNum(fwi) {
-  if (fwi <  9) return { num: 1, label: 'Low',       bg: '#d4edda', text: '#155724' };
-  if (fwi < 18) return { num: 2, label: 'Moderate',  bg: '#cce5ff', text: '#004085' };
-  if (fwi < 33) return { num: 3, label: 'High',      bg: '#fff3cd', text: '#856404' };
-  if (fwi < 50) return { num: 4, label: 'Very High', bg: '#ffe5cc', text: '#7d3200' };
-  return           { num: 5, label: 'Extreme',   bg: '#f8d7da', text: '#721c24' };
+  if (fwi <  5.5) return { num: 1, label: 'Low',       bg: '#d4edda', text: '#155724' };
+  if (fwi < 15.5) return { num: 2, label: 'Moderate',  bg: '#cce5ff', text: '#004085' };
+  if (fwi < 22.5) return { num: 3, label: 'High',      bg: '#fff3cd', text: '#856404' };
+  if (fwi < 29.5) return { num: 4, label: 'Very High', bg: '#ffe5cc', text: '#7d3200' };
+  return            { num: 5, label: 'Extreme',   bg: '#f8d7da', text: '#721c24' };
 }
 
 // HFI intensity class 1–6 — operational plain-language scale (Glenn, FBAN)
@@ -952,7 +988,9 @@ async function fetchSWOB(lat, lng) {
   const rh   = p['rel_hum']                     ?? p['avg_rel_hum_pst1hr'];
   const wind = p['avg_wnd_spd_10m_pst1hr']      ?? p['avg_wnd_spd_10m_pst10mts'];
   const wdir = p['avg_wnd_dir_10m_pst1hr']      ?? p['avg_wnd_dir_10m_pst10mts'];
-  const rain = p['pcpn_amt_pst1hr']             ?? 0;
+  // Daily FWI needs 24-h precip accumulated to noon — prefer the synoptic
+  // 24-h field; the 1-h amount alone made rain events nearly invisible.
+  const rain = p['pcpn_amt_pst24hrs'] ?? p['pcpn_amt_pst6hrs'] ?? p['pcpn_amt_pst1hr'] ?? 0;
   if (temp == null || rh == null || wind == null) return null;
 
   const obsTime    = new Date(p['date_tm-value'] || p['obs_date_tm']);
@@ -991,8 +1029,11 @@ async function fetchWeatherPrimary(lat, lng) {
   // CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
   // Before noon, the layer serves yesterday's obs — use chain values for holding cache
   // init but fall through to peak-burn forecast for today's weather inputs.
-  const nowUTC    = new Date().getUTCHours();
-  const isPreNoon = nowUTC < 19;
+  // "Pre-noon" must be evaluated in MST (UTC−7): the old `getUTCHours() < 19`
+  // test wrapped past midnight UTC and treated 18:00 MDT–midnight as pre-noon,
+  // discarding today's real obs every evening.
+  const mstHour   = new Date(Date.now() - 7 * 3600000).getUTCHours();
+  const isPreNoon = mstHour < 12;
 
   try {
     const cwfis = await fetchCWFIS(lat, lng, _idwMode);
@@ -1040,33 +1081,40 @@ async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
-    `&forecast_days=1&timezone=UTC`;
-  const res = await fetch(url, { cache: 'reload' });
+    `&past_days=1&forecast_days=2&timezone=UTC`;
+  const res = await fetch(url, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const d = await res.json();
   const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
 
   // Noon LST = 19:00 UTC (Alberta UTC−7 standard time, year-round for CFFDRS).
-  // Pre-noon: forecast peak burn hour (16:00 MDT = 22:00 UTC) — most useful for
-  // fire behaviour planning when CWFIS noon obs are not yet available.
-  // Post-noon: noon LST obs (19:00 UTC) — standard CFFDRS input time.
-  // Use direct array index (= UTC hour) rather than Date parsing to avoid the
-  // JS gotcha where strings without 'Z' are treated as local time, not UTC.
-  const noonUTC     = 19;
-  const peakBurnUTC = 22; // 16:00 MDT = 22:00 UTC
-  const nowUTC      = new Date().getUTCHours();
-  const targetHour  = nowUTC >= noonUTC ? noonUTC : peakBurnUTC;
-  const i = Math.min(targetHour, times.length - 1);
+  // Pre-noon (MST): forecast peak burn hour (16:00 MDT = 22:00 UTC).
+  // Post-noon: noon LST (19:00 UTC) — standard CFFDRS input time.
+  // Target the hour by explicit MST-date ISO string: the old UTC-hour index
+  // selected tomorrow's forecast between 17:00 MST and midnight (UTC day rolls
+  // over at 17:00 MST) and could never see a 24-h precip window.
+  const mstNow    = new Date(Date.now() - 7 * 3600000);
+  const mstDate   = mstNow.toISOString().slice(0, 10);   // today's calendar date in MST
+  const isPreNoon = mstNow.getUTCHours() < 12;
+  const targetISO = `${mstDate}T${isPreNoon ? '22' : '19'}:00`;
+  let i = times.indexOf(targetISO);
+  if (i === -1) i = times.length - 1;
 
-  const sourceNote = nowUTC >= noonUTC
-    ? 'Open-Meteo NWP (noon LST)'
-    : 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)';
+  // 24-h precipitation accumulated to the target hour (CFFDRS daily rain window).
+  // past_days=1 guarantees the full preceding 24 h is in the array.
+  const rain24 = d.hourly.precipitation
+    .slice(Math.max(0, i - 23), i + 1)
+    .reduce((s, v) => s + (v ?? 0), 0);
+
+  const sourceNote = isPreNoon
+    ? 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)'
+    : 'Open-Meteo NWP (noon LST)';
   return {
     temp:  d.hourly.temperature_2m[i],
     rh:    d.hourly.relative_humidity_2m[i],
     wind:  d.hourly.wind_speed_10m[i],
     wdir:  d.hourly.wind_direction_10m[i] ?? null,
-    rain:             d.hourly.precipitation[i],
+    rain:             rain24,
     thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
     month: new Date().getMonth() + 1,
     source: sourceNote,
@@ -2181,8 +2229,14 @@ async function fetchForecastNAEFS(code) {
     .map(f => {
       const p = f.properties;
       const dt = new Date(p.date_time);
-      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
-      // NAEFS max_temp / min_rh / median_ws already represent peak afternoon conditions
+      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      // KNOWN LIMITATION: the CWFIS firewx_naefs layer publishes only ensemble
+      // aggregates (max_temp, min_rh, median_ws, median_pcp). Feeding daily
+      // max-T/min-RH into the noon-calibrated FWI equations overstates drying,
+      // and median precip of a zero-inflated ensemble understates rain — both
+      // bias the 14-day chain toward higher indices. Treat the NAEFS trend as
+      // a conservative (drier) scenario; no member-level data is available to
+      // do better from this layer.
       const peakTemp = p.max_temp ?? 15;
       const peakRh   = p.min_rh   ?? 40;
       const peakWind = p.median_ws ?? 10;
@@ -2206,31 +2260,40 @@ async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=auto&forecast_days=7`;
+    `&timezone=UTC&past_days=1&forecast_days=8`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
-  // Pick hour index 12 (noon) for FWI chain (CFFDRS standard) and hour 16 for peak burn FBP
+  // The hourly array starts at 00:00 UTC yesterday (past_days=1). For each
+  // forecast day starting today: noon LST = 19:00 UTC (CFFDRS chain input),
+  // peak burn = 22:00 UTC (16:00 MDT, FBP inputs). Daily rain is the CFFDRS
+  // noon-to-noon 24-h accumulation — the old code passed a single hour of
+  // precip, which made forecast rain ≈ 0 and biased the whole chain dry.
+  // (The previous timezone=auto + index-12 selection also sampled 12:00 local
+  // daylight time = 11:00 LST, parsed in the viewer's browser timezone.)
   for (let day = 0; day < 7; day++) {
-    const i12 = day * 24 + 12;
-    const i16 = day * 24 + 16;
-    if (i12 >= (h.time?.length ?? 0)) continue;
-    const date = new Date(h.time[i12]);
+    const iNoon = 24 * (day + 1) + 19;
+    const iPeak = 24 * (day + 1) + 22;
+    if (iNoon >= (h.time?.length ?? 0)) break;
+    const rain24 = h.precipitation
+      .slice(iNoon - 23, iNoon + 1)
+      .reduce((s, v) => s + (v ?? 0), 0);
+    const date = new Date(h.time[iNoon] + ':00Z'); // explicit UTC parse
     days.push({
-      temp:  h.temperature_2m[i12]       ?? 15,
-      rh:    h.relative_humidity_2m[i12]  ?? 40,
-      wind:  h.wind_speed_10m[i12]        ?? 10,
-      rain:  h.precipitation[i12]         ?? 0,
-      month: date.getMonth() + 1,
-      label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }),
+      temp:  h.temperature_2m[iNoon]       ?? 15,
+      rh:    h.relative_humidity_2m[iNoon] ?? 40,
+      wind:  h.wind_speed_10m[iNoon]       ?? 10,
+      rain:  rain24,
+      month: date.getUTCMonth() + 1,
+      label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }),
       _ts: date.getTime(),
       peak: {
-        temp: h.temperature_2m[i16]        ?? h.temperature_2m[i12]        ?? 15,
-        rh:   h.relative_humidity_2m[i16]  ?? h.relative_humidity_2m[i12]  ?? 40,
-        wind: h.wind_speed_10m[i16]        ?? h.wind_speed_10m[i12]        ?? 10,
-        wdir: h.wind_direction_10m?.[i16]  ?? h.wind_direction_10m?.[i12]  ?? null,
+        temp: h.temperature_2m[iPeak]        ?? h.temperature_2m[iNoon]        ?? 15,
+        rh:   h.relative_humidity_2m[iPeak]  ?? h.relative_humidity_2m[iNoon]  ?? 40,
+        wind: h.wind_speed_10m[iPeak]        ?? h.wind_speed_10m[iNoon]        ?? 10,
+        wdir: h.wind_direction_10m?.[iPeak]  ?? h.wind_direction_10m?.[iNoon]  ?? null,
       },
     });
   }
@@ -2262,7 +2325,11 @@ async function fetchHourly(lat, lng) {
 
 /**
  * Render the 24-hour FWI trend chart into <div id="fwi-chart-bars">.
- * Chains Van Wagner hour-by-hour from STARTUP defaults.
+ * Hourly FFMC (Van Wagner 1977) chained through the past 24 h of weather,
+ * with DMC/DC held at today's daily values (standard hourly-FWI practice);
+ * hourly ISI/FWI follow from hourly FFMC + hourly wind.
+ * The previous implementation chained the *daily* equations hour-by-hour —
+ * each bar absorbed a full day's drying, which was dimensionally wrong.
  */
 async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
   const container = document.getElementById('fwi-chart-bars');
@@ -2273,15 +2340,25 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
     hours = await fetchHourly(lat, lng);
   } catch (e) {
     console.warn('[FWI Chart]', e);
+    if (container) container.innerHTML =
+      '<div class="text-xs text-slate-500 p-3">Hourly trend unavailable — weather fetch failed.</div>';
     return;
   }
   if (!hours.length) return;
 
-  let prev = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(stationName) };
+  // Seed from today's daily codes when available; hFFMC equilibrates within
+  // a few hours so a 24-h-old seed converges quickly.
+  const seedFFMC = _lastFWI?.ffmc ?? STARTUP.ffmc;
+  const dmcToday = _lastFWI?.dmc  ?? STARTUP.dmc;
+  const dcToday  = _lastFWI?.dc   ?? getStartupDC(stationName);
+  const buiToday = _bui(dmcToday, dcToday);
+
+  let f = seedFFMC;
   const results = hours.map(w => {
-    const r = calculateFWI(w, prev);
-    prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
-    return { fwi: r.fwi, danger: r.danger, time: w.time };
+    f = _hffmc(w.temp, w.rh, w.wind, w.rain, f);
+    const isi = _isi(f, w.wind);
+    const fwi = _fwi(isi, buiToday);
+    return { fwi, danger: dangerRating(fwi), time: w.time };
   });
 
   const maxFWI = Math.max(...results.map(r => r.fwi), 1);
@@ -2361,10 +2438,15 @@ function _mdtDateStr(ts) {
  * tomorrow's index otherwise. Falls back to index 0.
  */
 function _nextPeakDayIdx(days) {
-  const peakPassed = new Date().getUTCHours() >= 22; // AB peak burn at 16:00 MDT = 22:00 UTC
-  const cutoff = new Date();
-  peakPassed ? cutoff.setHours(24, 0, 0, 0) : cutoff.setHours(0, 0, 0, 0);
-  const idx = days.findIndex(d => d._ts && d._ts >= cutoff.getTime());
+  // Compare MDT calendar dates — the old `getUTCHours() >= 22` test was only
+  // true 16:00–17:59 MDT (UTC wraps at 18:00 MDT), and the cutoff used the
+  // *viewer's* local midnight, so evening visitors saw "Tomorrow" flip back
+  // to a stale "Today".
+  const mdtNow     = new Date(Date.now() - 6 * 3600000);
+  const peakPassed = mdtNow.getUTCHours() >= 16;   // 16:00 MDT peak burn
+  const today      = _mdtDateStr();
+  const idx = days.findIndex(d => d._ts &&
+    (peakPassed ? _mdtDateStr(d._ts) > today : _mdtDateStr(d._ts) >= today));
   return idx >= 0 ? idx : 0;
 }
 
@@ -2434,8 +2516,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       elPWR.className   = `text-[10px] font-bold uppercase px-2 py-1 rounded-full ${c.badge}`;
     }
 
-    // Days at elevated risk (FWI ≥ 19 = High)
-    const daysAtRisk = results.filter(r => r.fwi >= 20).length;
+    // Days at elevated risk — FWI ≥ 15.5 = High on the CWFIS FWI map intervals
+    const daysAtRisk = results.filter(r => r.fwi >= 15.5).length;
     const elDAR = document.getElementById('fwi-days-at-risk');
     const elTD  = document.getElementById('fwi-total-days');
     if (elDAR) elDAR.textContent = daysAtRisk;
@@ -2478,7 +2560,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // (today if before 16:00 MDT / 22:00 UTC, tomorrow if after)
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
-    if (d1HeadEl) d1HeadEl.textContent = (new Date().getUTCHours() >= 22 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
+    if (d1HeadEl) d1HeadEl.textContent =
+      (new Date(Date.now() - 6 * 3600000).getUTCHours() >= 16 ? 'Tomorrow' : 'Today') + ' — Peak Burn Prediction';
     if (results.length > 0) {
       const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
@@ -3761,7 +3844,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, calcFMC, calcSFC, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector,
+window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };

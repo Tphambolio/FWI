@@ -71,6 +71,30 @@ export function refDC(temp, rain, month, prev) {
   return Math.max(0, d);
 }
 
+// hourly_fine_fuel_moisture_code.r (Van Wagner 1977) — t0 = 1 h, with the
+// engine's 147.2 conversion constant
+export function refHFFMC(temp, rh, ws, prec, Fo) {
+  let mo = 147.2 * (101 - Fo) / (59.5 + Fo);
+  if (prec > 0) {
+    let mr = mo + 42.5 * prec * Math.exp(-100 / (251 - mo)) * (1 - Math.exp(-6.93 / prec));
+    if (mo > 150) mr += 0.0015 * (mo - 150) ** 2 * Math.sqrt(prec);
+    mo = Math.min(mr, 250);
+  }
+  const ed = 0.942 * rh ** 0.679 + 11 * Math.exp((rh - 100) / 10)
+           + 0.18 * (21.1 - temp) * (1 - Math.exp(-0.115 * rh));
+  const ew = 0.618 * rh ** 0.753 + 10 * Math.exp((rh - 100) / 10)
+           + 0.18 * (21.1 - temp) * (1 - Math.exp(-0.115 * rh));
+  let m;
+  if (mo > ed) {
+    const ko = 0.424 * (1 - (rh / 100) ** 1.7) + 0.0694 * Math.sqrt(ws) * (1 - (rh / 100) ** 8);
+    m = ed + (mo - ed) * 10 ** (-(ko * 0.0579 * Math.exp(0.0365 * temp)));
+  } else if (mo < ew) {
+    const k1 = 0.424 * (1 - ((100 - rh) / 100) ** 1.7) + 0.0694 * Math.sqrt(ws) * (1 - ((100 - rh) / 100) ** 8);
+    m = ew - (ew - mo) * 10 ** (-(k1 * 0.0579 * Math.exp(0.0365 * temp)));
+  } else m = mo;
+  return Math.max(0, Math.min(101, 59.5 * (250 - m) / (147.2 + m)));
+}
+
 export function refISI(ffmc, wind) {
   const m = 147.2 * (101 - ffmc) / (59.5 + ffmc);
   const fF = 91.9 * Math.exp(-0.1386 * m) * (1 + m ** 5.31 / 4.93e7);

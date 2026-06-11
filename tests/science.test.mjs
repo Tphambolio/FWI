@@ -165,7 +165,34 @@ for (const [label, engine] of [['AB', AB], ['BC', BC]]) {
   });
 }
 
-// ─── 3. AB ↔ BC science-core sync check ─────────────────────────────────────
+// ─── 3. Hourly FFMC (Van Wagner 1977) ────────────────────────────────────────
+
+for (const [label, engine] of [['AB', AB], ['BC', BC]]) {
+  test(`Hourly FFMC matches reference port and converges sensibly (${label})`, () => {
+    let f = 85, rf = 85;
+    const hours = [
+      { temp: 18, rh: 45, wind: 12, rain: 0 },
+      { temp: 22, rh: 32, wind: 18, rain: 0 },
+      { temp: 25, rh: 25, wind: 22, rain: 0 },
+      { temp: 21, rh: 40, wind: 10, rain: 1.2 },
+      { temp: 15, rh: 70, wind: 6, rain: 4.5 },
+      { temp: 12, rh: 85, wind: 4, rain: 0 },
+    ];
+    for (const w of hours) {
+      f = engine._hffmc(w.temp, w.rh, w.wind, w.rain, f);
+      rf = ref.refHFFMC(w.temp, w.rh, w.wind, w.rain, rf);
+      close(f, rf, 1e-9, `hFFMC ${JSON.stringify(w)}`);
+    }
+    // One dry hour must dry far less than one daily step (the old chart bug)
+    const hourly = engine._hffmc(25, 25, 20, 0, 70);
+    const daily = engine.calculateFWI(
+      { temp: 25, rh: 25, wind: 20, rain: 0, month: 6 }, { ffmc: 70, dmc: 6, dc: 15 }).ffmc;
+    assert.ok(hourly - 70 < (daily - 70) / 3,
+      `hourly step (${(hourly - 70).toFixed(2)}) should be much smaller than daily (${(daily - 70).toFixed(2)})`);
+  });
+}
+
+// ─── 4. AB ↔ BC science-core sync check ─────────────────────────────────────
 
 test('AB and BC science cores are identical', () => {
   const ab = extractScienceCore(join(root, 'fwi.js'));
