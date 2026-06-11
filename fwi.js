@@ -1729,7 +1729,7 @@ async function fetchStationData(station) {
   if (!weather.fwiFromCWFIS) {
     const p = _cwfisPrevFor(station.name, station.lat, station.lng);
     if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
     }
   }
   const fwi = calculateFWI(weather, prevFWI);
@@ -1771,7 +1771,7 @@ async function fetchStationDataForecast(station) {
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   const p = _cwfisPrevFor(station.name, station.lat, station.lng);
   if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
   }
 
   const fwi = calculateFWI(weather, prevFWI);
@@ -2871,8 +2871,13 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       days = await fetchForecast(lat, lng);
       forecastSource = 'Open-Meteo NWP';
     }
-    // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
-    const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+    // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start.
+    // Apply DC floor so a cold-start artifact in _lastFWI.dc doesn't suppress the 14-day trend.
+    const chainStart = _lastFWI ? {
+      ffmc: _lastFWI.ffmc,
+      dmc:  _lastFWI.dmc,
+      dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(stationName), lat, lng).dc,
+    } : null;
     const fuelCode = _savedFuelCode();
     const curing   = _savedCuring();
     const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, curing);
@@ -3437,7 +3442,11 @@ async function printStationBriefing() {
       } else {
         days = await fetchForecast(_stationLat, _stationLng);
       }
-      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const chainStart = _lastFWI ? {
+        ffmc: _lastFWI.ffmc,
+        dmc:  _lastFWI.dmc,
+        dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+      } : null;
       const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
       const printCuring = _savedCuring ? _savedCuring() : 100;
       const printPS = _savedPS ? _savedPS() : 50;
@@ -4141,7 +4150,11 @@ async function buildD1Card() {
         days = _forecastCache.days; // reuse weather; only recalc FBP
       }
       if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
-      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const chainStart = _lastFWI ? {
+        ffmc: _lastFWI.ffmc,
+        dmc:  _lastFWI.dmc,
+        dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+      } : null;
       const startupDC  = getStartupDC(_stationName);
       results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
       resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps);

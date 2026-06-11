@@ -135,6 +135,31 @@ function getStartupDC(stationName) {
   return STATION_STARTUP_DC[stationName] ?? 300;
 }
 
+// DC values at or below this threshold are implausibly low for fire season and
+// indicate a CWFIS spring cold-start artifact (Van Wagner 1985 April 1 = DC 15).
+const DC_COLDSTART_CEILING = 60;
+
+/**
+ * Correct a raw CWFIS DC that is the spring cold-start artifact (BC version).
+ * Mirrors the AB applyDCFloor logic with BC-appropriate regional floors.
+ * Only corrects when rawDC ≤ DC_COLDSTART_CEILING and within spring window (Mar–Jul).
+ */
+function applyDCFloor(rawDC, lat, lon) {
+  if (rawDC == null) return { dc: rawDC, corrected: false };
+  const mo = new Date(Date.now() - 8 * 3600000).getUTCMonth() + 1; // PST
+  if (mo < 3 || mo > 7) return { dc: rawDC, corrected: false };
+  if (lat == null || lon == null) return { dc: rawDC, corrected: false };
+  if (lat < 48.0 || lat > 60.5 || lon < -140 || lon > -114) return { dc: rawDC, corrected: false };
+  if (rawDC > DC_COLDSTART_CEILING) return { dc: rawDC, corrected: false };
+  // BC regional startup floors — lower than AB due to higher precip / snowpack recharge.
+  const floor = lat < 50.0 ? 50   // South coast / Okanagan
+              : lat < 52.0 ? 75   // Thompson / Kootenay
+              : lat < 56.0 ? 80   // Cariboo / Skeena
+              : 60;                // NW boreal
+  if (rawDC < floor) return { dc: floor, corrected: true };
+  return { dc: rawDC, corrected: false };
+}
+
 // ═══ SCIENCE CORE BEGIN: FWI daily equations (shared AB/BC — keep identical; CI-checked) ═══
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
@@ -1078,6 +1103,11 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
     const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
 
+    // Correct spring cold-start artifact in CWFIS DC (MSC airport stations use Van Wagner
+    // April 1 fallback = DC 15 instead of the overwinter equation).
+    let rawDC = hasFWI ? +nearest.dc : null;
+    if (rawDC != null) rawDC = applyDCFloor(rawDC, +nearest.lat, +nearest.lon).dc;
+
     return {
       temp:  nearest.temp,
       rh:    nearest.rh,
@@ -1087,7 +1117,7 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       month: new Date().getMonth() + 1,
       ffmc: hasFWI ? nearest.ffmc : null,
       dmc:  hasFWI ? nearest.dmc  : null,
-      dc:   hasFWI ? nearest.dc   : null,
+      dc:   rawDC,
       isi:  hasFWI ? nearest.isi  : null,
       bui:  hasFWI ? nearest.bui  : null,
       fwi:  hasFWI ? nearest.fwi  : null,
@@ -1664,7 +1694,7 @@ async function fetchStationData(station) {
   if (!weather.fwiFromCWFIS) {
     const p = _cwfisPrevFor(station.name, station.lat, station.lng);
     if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
     }
   }
   const fwi = calculateFWI(weather, prevFWI);
@@ -1706,7 +1736,7 @@ async function fetchStationDataForecast(station) {
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   const p = _cwfisPrevFor(station.name, station.lat, station.lng);
   if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
   }
 
   const fwi = calculateFWI(weather, prevFWI);
@@ -2965,8 +2995,13 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       days = await fetchForecast(lat, lng);
       forecastSource = 'Open-Meteo NWP';
     }
-    // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start
-    const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+    // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start.
+    // Apply DC floor so a cold-start artifact in _lastFWI.dc doesn't suppress the 14-day trend.
+    const chainStart = _lastFWI ? {
+      ffmc: _lastFWI.ffmc,
+      dmc:  _lastFWI.dmc,
+      dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(stationName), lat, lng).dc,
+    } : null;
     const fuelCode = _savedFuelCode();
     const curing   = _savedCuring();
     const results = calcMultiDayFBP(days, getStartupDC(stationName), chainStart, fuelCode, curing);
@@ -3532,7 +3567,11 @@ async function printStationBriefing() {
       } else {
         days = await fetchForecast(_stationLat, _stationLng);
       }
-      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const chainStart = _lastFWI ? {
+        ffmc: _lastFWI.ffmc,
+        dmc:  _lastFWI.dmc,
+        dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+      } : null;
       const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C3';
       const printCuring = _savedCuring ? _savedCuring() : 100;
       const printPS = _savedPS ? _savedPS() : 50;
@@ -4222,7 +4261,11 @@ async function buildD1Card() {
         days = _forecastCache.days; // reuse weather for same station; only recalc FBP
       }
       if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
-      const chainStart = _lastFWI ? { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc } : null;
+      const chainStart = _lastFWI ? {
+        ffmc: _lastFWI.ffmc,
+        dmc:  _lastFWI.dmc,
+        dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+      } : null;
       const startupDC  = getStartupDC(_stationName);
       results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
       resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps);
