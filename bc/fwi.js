@@ -1254,6 +1254,12 @@ async function fetchSWOB(lat, lng) {
 let _idwMode = false;
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
+// Per-station holding-cache key — a single shared key would be clobbered during
+// the multi-station map build and replayed under the wrong station.
+function _holdKey(lat, lng) {
+  return `bc-fwi-cached-cwfis:${lat.toFixed(2)},${lng.toFixed(2)}`;
+}
+
 async function fetchWeatherPrimary(lat, lng) {
   // Tier 0+1 (BC): race BCWS Datamart and CWFIS simultaneously — use whichever returns first.
   // Sequential cascade was causing 20s+ waits when BCWS was slow/down.
@@ -1525,22 +1531,29 @@ async function initFWI(lat = 50.70, lng = -120.45, station = 'Kamloops') {
     if (weather.fwiFromCWFIS) {
       // CWFIS has today's operational FWI chain — use directly and cache for later
       result = calculateFWI(weather);
-      try {
-        localStorage.setItem('bc-fwi-cached-cwfis', JSON.stringify({
-          ffmc: result.ffmc, dmc: result.dmc, dc: result.dc,
-          isi: result.isi, bui: result.bui, fwi: result.fwi,
-          danger: result.danger,
-          stationName: weather.stationName,
-          distKm: weather.distKm ?? null,
-          repDate: weather.repDate,
-          cachedAt: new Date().toISOString(),
-        }));
-      } catch (_) {}
+      if (!weather.idwMode) {
+        try {
+          localStorage.setItem(_holdKey(lat, lng), JSON.stringify({
+            ffmc: result.ffmc, dmc: result.dmc, dc: result.dc,
+            isi: result.isi, bui: result.bui, fwi: result.fwi,
+            danger: result.danger,
+            stationName: weather.stationName,
+            distKm: weather.distKm ?? null,
+            repDate: weather.repDate,
+            cachedAt: new Date().toISOString(),
+          }));
+        } catch (_) {}
+      }
     } else {
       // CWFIS has weather obs but no FWI codes yet (pre-obs / processing lag / early season).
       // Use last cached real CWFIS values instead of synthesising from startup constants.
       let cachedFWI = null;
-      try { cachedFWI = JSON.parse(localStorage.getItem('bc-fwi-cached-cwfis')); } catch (_) {}
+      try { cachedFWI = JSON.parse(localStorage.getItem(_holdKey(lat, lng))); } catch (_) {}
+
+      // Reject HOLDING cache older than 36 hours — stale data is worse than
+      // startup defaults. (AB enforced this; BC previously did not.)
+      const cacheAge = cachedFWI?.cachedAt ? (Date.now() - new Date(cachedFWI.cachedAt).getTime()) : Infinity;
+      if (cacheAge >= 36 * 3600 * 1000) cachedFWI = null;
 
       if (cachedFWI?.ffmc != null && cachedFWI?.dc != null) {
         const isi = _isi(cachedFWI.ffmc, weather.wind ?? 0);
@@ -1582,7 +1595,7 @@ async function fetchStationData(station) {
   const weather = await fetchWeatherPrimary(station.lat, station.lng);
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   if (!weather.fwiFromCWFIS) {
-    const p = _cwfisPrev?.stations?.[station.name];
+    const p = _cwfisPrevFor(station.name, station.lat, station.lng);
     if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
       prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
     }
@@ -1624,7 +1637,7 @@ async function fetchStationDataForecast(station) {
   // FWI carry-over: use CWFIS yesterday values as starting state
   if (!_cwfisPrev.stations) await loadCWFISPrev();
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
-  const p = _cwfisPrev?.stations?.[station.name];
+  const p = _cwfisPrevFor(station.name, station.lat, station.lng);
   if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
     prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
   }
@@ -2272,8 +2285,8 @@ function _updateStationTableRow(entry) {
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
   const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
   tr.innerHTML =
-    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${entry.lat},${entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
-    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(entry.lat, entry.lng)}</td>` +
+    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('bc-fwi-station','${entry.navLat ?? entry.lat},${entry.navLng ?? entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
+    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(entry.navLat ?? entry.lat, entry.navLng ?? entry.lng)}</td>` +
     `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
@@ -2369,8 +2382,41 @@ async function loadCWFISPrev() {
     );
     if (!res.ok) return;
     const data = await res.json();
-    if (data?.stations) _cwfisPrev = data;
+    // Reject stale caches: if the daily Action has been broken for 2+ days,
+    // silently replaying week-old codes is worse than a clean cold start.
+    if (data?.generated && (Date.now() - new Date(data.generated).getTime()) > 48 * 3600000) {
+      console.warn(`[FWI] cwfis_prev.json is stale (generated ${data.generated}) — ignoring`);
+      return;
+    }
+    // BC engine reads the bcStations section — the shared `stations` map is
+    // Alberta's. (Previously both engines read `stations`, so BC's "Red Deer"
+    // silently inherited Alberta Red Deer's codes from 600 km away.)
+    if (data?.bcStations) _cwfisPrev = { generated: data.generated, stations: data.bcStations };
   } catch (_) { /* network error — fall through to STARTUP defaults */ }
+}
+
+/**
+ * Carry-over lookup for a station — case-insensitive name match with a
+ * 10 km coordinate fallback. BC_STATIONS use BCWS names, which rarely match
+ * CWFIS names exactly, so the coordinate fallback does most of the work here.
+ */
+function _cwfisPrevFor(name, lat, lng) {
+  const s = _cwfisPrev?.stations;
+  if (!s) return null;
+  if (!_cwfisPrev._upper) {
+    _cwfisPrev._upper = {};
+    for (const [k, v] of Object.entries(s)) _cwfisPrev._upper[k.toUpperCase()] = v;
+  }
+  const byName = _cwfisPrev._upper[(name || '').toUpperCase()];
+  if (byName) return byName;
+  if (lat == null || lng == null) return null;
+  let best = null, bestD = 10;
+  for (const v of Object.values(s)) {
+    if (v?.lat == null || v?.lon == null) continue;
+    const d = _haversineKm(lat, lng, v.lat, v.lon);
+    if (d < bestD) { bestD = d; best = v; }
+  }
+  return best;
 }
 
 const DANGER_COLORS = {
@@ -3817,11 +3863,13 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // Carry-over: use cached CWFIS prev-day values when Van Wagner is needed (SWOB/NWP tier)
       let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(s.name) };
       let usedCachedPrev = false;
+      let cachedPrevEntry = null;
       if (!w.fwiFromCWFIS) {
-        const p = _cwfisPrev?.stations?.[s.name];
+        const p = _cwfisPrevFor(s.name, s.lat, s.lng);
         if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
           prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
           usedCachedPrev = true;
+          cachedPrevEntry = p;
         }
       }
       const r        = calculateFWI(w, prevFWI);
@@ -3835,8 +3883,11 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const stnLat = w.stationLat ?? s.lat;
       const stnLng = w.stationLng ?? s.lng;
 
-      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
-      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
+      // Row link must use NOMINAL picker coords (navLat/navLng), not the
+      // CWFIS-corrected sensor coords, or station_detail resolves to the wrong
+      // station. Marker still moves to the sensor position.
+      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
+      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
 
       // Move marker to actual station position.
       // markerClusterGroup requires remove→setLatLng→add to re-index spatial position.
@@ -3875,7 +3926,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
         `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
         `<div style="font-size:8px;color:#64748b;margin-bottom:${usedCachedPrev ? '2' : '6'}px">Obs: <strong>${obsTs}</strong></div>` +
         (usedCachedPrev ? (() => {
-          const cp = _cwfisPrev.stations[s.name];
+          const cp = cachedPrevEntry;
           const cdStr = cp.repDate
             ? new Date(cp.repDate).toLocaleString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })
             : 'prev day';

@@ -76,7 +76,7 @@
 <div class="flex items-center gap-3 mb-4">
 <span class="material-symbols-outlined text-tertiary" style="font-variation-settings:'FILL' 1">local_fire_department</span>
 <h3 class="font-headline text-xl font-bold text-white" id="fwi-d1-heading">Next Peak Burn Prediction</h3>
-<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~14:00 PDT · <span id="fwi-d1-label">D+1</span></span>
+<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~16:00 PDT · <span id="fwi-d1-label">D+1</span></span>
 </div>
 <div class="flex flex-wrap gap-4 text-sm text-on-surface-variant mb-4">
 <span>Temp: <b id="fwi-d1-temp" class="text-white">—</b></span>
@@ -184,7 +184,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <!-- Forecast Days — Fire Behaviour Outlook table -->
 <section class="bg-surface-container-low rounded-lg p-6">
 <h3 class="font-headline text-xl font-bold text-white mb-4">Fire Behaviour Outlook — All Forecast Days</h3>
-<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~14:00 PDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 14. FBP chains forward from today's observed FFMC/DMC/DC. Default fuel: C3 lodgepole pine.</p>
+<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~16:00 PDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 16. FBP chains forward from today's observed FFMC/DMC/DC. Default fuel: C3 lodgepole pine.</p>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
@@ -261,7 +261,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <script src="../fwi.js?v=121"></script>
 <script>
   // Default station: Kamloops (Kamloops Fire Centre)
-  const _savedStation = localStorage.getItem('fwi-bc-station');
+  const _savedStation = localStorage.getItem('bc-fwi-station');
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];
   const _st = _sLat && FWI.BC_STATIONS.find(s => Math.abs(s.lat - _sLat) < 0.05 && Math.abs(s.lng - _sLng) < 0.05);
   const _lat  = _st ? _st.lat  : 50.70;
@@ -269,8 +269,12 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
   const _name = _st ? _st.name : 'Kamloops';
   const _lbl  = document.getElementById('forecast-station-label');
   if (_lbl) _lbl.textContent = _name + ' Station · BC';
-  FWI.buildForecastTrends(_lat, _lng, _name);
-  FWI.initFWI(_lat, _lng, _name);
+  // Await initFWI BEFORE building the forecast — the 14-day chain starts from
+  // _lastFWI; firing them concurrently made the chain non-deterministic.
+  (async () => {
+    try { await FWI.initFWI(_lat, _lng, _name); } catch (e) { console.warn('[forecast] initFWI failed', e); }
+    FWI.buildForecastTrends(_lat, _lng, _name);
+  })();
   document.getElementById('fwi-report-btn').addEventListener('click', FWI.printStationBriefing);
   document.getElementById('rpt-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
   document.getElementById('rpt-provincial-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));

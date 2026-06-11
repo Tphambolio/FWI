@@ -47,8 +47,17 @@ function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 3
  * Stations reporting DC below 70% of their regional floor are considered
  * underinitialized (spring startup DC=15 default instead of overwinter equation).
  */
+// Absolute DC below which a spring reading can only be the CWFIS cold-start
+// artifact (MSC airport stations enter CWFIS with DC=15 — Van Wagner 1985
+// "no data" fallback — instead of the Lawson & Armitage 2008 overwinter value).
+// A genuinely well-initialized station, even after a wet spring, sits well
+// above this, so the floor never overwrites real moisture state.
+const DC_COLDSTART_CEILING = 60;
+
 function getRegionalDCFloor(lat, lon) {
-  const mo = new Date().getMonth() + 1;
+  // Month in Mountain Standard Time, NOT the viewer's browser clock — a viewer
+  // in another timezone must not flip the correction a day early/late.
+  const mo = new Date(Date.now() - 7 * 3600000).getUTCMonth() + 1;
   if (mo < 3 || mo > 6) return 0; // only enforce floor in spring startup window
   if (lat < 48.8 || lat > 60.5 || lon < -120.5 || lon > -109.5) return 0; // AB only
   if (lat < 50.5 && lon > -113.5) return 450; // SE prairies: Lethbridge/Medicine Hat/Taber
@@ -56,9 +65,31 @@ function getRegionalDCFloor(lat, lon) {
   if (lat < 51.5 && lon > -112.5) return 360; // Drumheller/Stettler/Oyen corridor
   if (lat < 51.5) return 280;                  // Calgary metro/Strathmore/Claresholm
   if (lat < 52.5) return 290;                  // Red Deer/Lacombe/Wetaskiwin/Camrose
-  if (lat < 54.0) return 300;                  // Edmonton metro and surrounds (Emberwise-calibrated Apr 2026)
+  if (lat < 54.0) return 300;                  // Edmonton metro and surrounds (calibrated Apr 2026)
   if (lat < 56.5) return 180;                  // Slave Lake/Athabasca/Fort McMurray south
   return 120;                                   // Northern boreal
+}
+
+/**
+ * Correct a raw CWFIS DC only when it is the spring cold-start artifact.
+ * Provenance-based: requires the value to be implausibly low (≤ the cold-start
+ * ceiling) AND in the spring window AND in Alberta. Returns the (possibly
+ * raised) DC and whether a correction was applied.
+ *
+ * NOTE: this is an estimate, not the published overwinter equation (which
+ * needs fall DC + winter precip, unavailable from this feed). It corrects a
+ * documented CWFIS initialization artifact; it never lowers a value and never
+ * touches a station already reading a plausible DC. There is a step at the
+ * July 1 window edge, but by then real DC is far above these floors so the
+ * correction no longer binds in practice.
+ */
+function applyDCFloor(rawDC, lat, lon) {
+  if (rawDC == null) return { dc: rawDC, corrected: false };
+  const floor = getRegionalDCFloor(lat, lon);
+  if (floor > 0 && rawDC <= DC_COLDSTART_CEILING && rawDC < floor) {
+    return { dc: floor, corrected: true };
+  }
+  return { dc: rawDC, corrected: false };
 }
 
 // Alberta Wildfire fire weather station coordinates.
@@ -109,7 +140,14 @@ async function fetchAEFStations() {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch('https://wildfire.alberta.ca/files/pmwx.csv', { signal: controller.signal });
+    // wildfire.alberta.ca sends no CORS header — browsers can't fetch it
+    // directly, which left this feature silently dead in production. The
+    // daily GitHub Action mirrors pmwx.csv into the repo (data/aef_pmwx.csv);
+    // raw.githubusercontent.com serves it CORS-enabled and fast.
+    const res = await fetch(
+      'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/aef_pmwx.csv',
+      { signal: controller.signal, cache: 'no-cache' }
+    );
     clearTimeout(timer);
     if (!res.ok) return _aefCache ?? [];
     const text = await res.text();
@@ -412,53 +450,219 @@ function calcSFC(fuelCode, ffmc, bui, pc = 50, gfl = 0.35) {
 
 /**
  * Station-level dominant FBP fuel type derived from CWFIS WMS
- * cffdrs_fbp_fuel_types (NRCan 30m national grid), sampled Apr 2026.
- * Method: modal fuel type within 5 km radius of each CWFIS station coordinate.
- * Corrections: M1/M2 (mixedwood) mapped to C2; northern boreal airport stations
- * where sampled pixel was agricultural grass corrected to regional forest type.
+ * cffdrs_fbp_fuel_types (NRCan 30m national grid) — full 199-station table
+ * sampled 2026-06-10 (point sample + 2 km offsets where the centre pixel was
+ * non-fuel). "curated" entries carry forward the original hand-verified table
+ * (including deliberate corrections of airport-grass artifacts). D-1/D-2 grid
+ * cells map to D1 (leafless baseline) — flip to D2 seasonally via the picker.
  * Users can override via the fuel picker at any time.
  */
 const STATION_FUEL_TYPES = {
-  'Athabasca':      'C2',   // boreal — airport grass corrected
-  'Banff':          'C3',   // WMS: Mature Jack/Lodgepole Pine ✓
-  'Bonnyville':     'O1a',  // WMS: agricultural Peace Country
-  'Brooks':         'O1a',  // WMS: SE Alberta grassland ✓
-  'Calgary':        'D1',   // WMS: Aspen parkland ✓
-  'Camrose':        'O1a',  // WMS: agricultural central AB
-  'Cardston':       'O1a',  // WMS: SW Alberta grassland ✓
-  'Claresholm':     'O1a',  // WMS: foothills grassland ✓
-  'Cold Lake':      'C3',   // WMS: Mature Jack Pine ✓
-  'Drayton Valley': 'D1',   // WMS: Aspen parkland ✓
-  'Drumheller':     'O1a',  // WMS: badlands/grassland ✓
-  'Edmonton':            'D2',   // Aspen parkland WUI context
-  'Edson':          'C2',   // M1→C2: mixedwood boreal ✓
-  'Fort Chipewyan': 'C2',   // WMS: Northern Boreal Spruce ✓
-  'Fort McMurray':  'C4',   // WMS: Immature Jack Pine (post-2016 reburn) ✓
-  'Fort Vermilion': 'C2',   // boreal — airport grass corrected
-  'Fox Creek':      'C2',   // WMS: Boreal Spruce ✓
-  'Grande Cache':   'C2',   // WMS: Boreal Spruce ✓
-  'Grande Prairie': 'O1a',  // WMS: Peace Country grass ✓
-  'High Level':     'C2',   // WMS: Northern Boreal Spruce ✓
-  'High Prairie':   'D2',   // boreal transition — corrected from airport grass
-  'Hinton':         'C2',   // WMS: Boreal Spruce ✓
-  'Jasper':         'C3',   // WMS: Rocky Mountain Jack/Lodgepole ✓
-  'Lac La Biche':   'D1',   // WMS: Leafless Aspen ✓
-  'Lethbridge':     'O1a',  // WMS: Grassland ✓
-  'Lloydminster':   'O1a',  // WMS: agricultural boundary ✓
-  'Manning':        'C2',   // boreal — airport grass corrected
-  'Medicine Hat':   'O1a',  // WMS: SE Alberta grassland ✓
-  'Peace River':    'D2',   // Peace Country transition — corrected
-  'Pincher Creek':  'O1a',  // WMS: foothills grassland ✓
-  'Red Deer':       'D1',   // WMS: Aspen parkland ✓
-  'Rocky Mtn House':'C2',   // M1→C2: mixedwood foothills
-  'Slave Lake':     'C2',   // M1→C2: Lesser Slave mixedwood
-  'Stettler':       'O1a',  // WMS: agricultural ✓
-  'Valleyview':     'D1',   // WMS: Peace Country ✓
-  'Vegreville':     'O1a',  // WMS: agricultural ✓
-  'Wabasca':        'C2',   // M1→C2: boreal mixedwood
-  'Wetaskiwin':     'O1a',  // WMS: agricultural ✓
-  'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
+  "Acadia Valley AGCM"            : "O1a" , // WMS: O-1a Matted Grass
+  "Andrew AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Athabasca AGCM"                : "C2"  , // curated (original table)
+  "Atlee AGCM"                    : "D1"  , // WMS: D-1/D-2 Aspen
+  "Atmore AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Azure AGCM"                    : "O1a" , // WMS: O-1a Matted Grass
+  "Banff CS"                      : "C3"  , // curated (original table)
+  "Barnwell AGDM"                 : "D1"  , // WMS: D-1/D-2 Aspen
+  "Barons AGCM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Bassano AGCM"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Beaver Mines"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Beaverlodge RCS"               : "C2"  , // regional default (WMS: Non-fuel)
+  "Beiseker AGCM"                 : "D1"  , // WMS: D-1/D-2 Aspen
+  "Bellshill AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Big Valley AGCM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Black Diamond AGCM"            : "O1a" , // WMS: O-1a Matted Grass
+  "Blood Tribe Ag. Project"       : "D1"  , // WMS: D-1/D-2 Aspen
+  "Bodo AGDM"                     : "O1a" , // WMS: O-1a Matted Grass
+  "Bonnyville"                    : "O1a" , // curated (original table)
+  "Bow Island"                    : "O1a" , // regional default (WMS: Non-fuel)
+  "Bow Valley"                    : "O1a" , // WMS: O-1a Matted Grass
+  "Breton Plots"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Brocket AGDM"                  : "O1a" , // regional default (WMS: Non-fuel)
+  "Brooks"                        : "O1a" , // curated (original table)
+  "Brownvale AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Busby AGCM"                    : "O1a" , // WMS: O-1a Matted Grass
+  "Cadogan AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Calgary Int'l CS"              : "D1"  , // curated (original table)
+  "Calgary Springbank A"          : "D1"  , // curated (original table)
+  "Campsie Auto"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Camrose"                       : "O1a" , // curated (original table)
+  "Cardston"                      : "O1a" , // curated (original table)
+  "Carway"                        : "D1"  , // WMS: D-1/D-2 Aspen
+  "Champion AGDM"                 : "D1"  , // WMS: D-1/D-2 Aspen
+  "Claresholm"                    : "O1a" , // curated (original table)
+  "Cleardale AGDM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Cold Lake A"                   : "C3"  , // curated (original table)
+  "Consort AGDM"                  : "O1a" , // regional default (WMS: Non-fuel)
+  "Coronation Climate"            : "D1"  , // regional default (WMS: Water)
+  "Cowpar Lake Auto"              : "D1"  , // WMS: D-1 Leafless Aspen
+  "Craigmyle AGCM"                : "D1"  , // WMS: D-1/D-2 Aspen
+  "Crestomere AGCM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Crestomere AGCM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Crowsnest"                     : "O1a" , // regional default (WMS: Non-fuel)
+  "Del Bonita AGDM"               : "O1a" , // regional default (WMS: Non-fuel)
+  "Delburne AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Dewberry AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Drayton Valley"                : "D1"  , // curated (original table)
+  "Drumheller East"               : "O1a" , // curated (original table)
+  "Duck Lake AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Dunkirk Auto"                  : "M1"  , // WMS: M-1/M-2 Boreal Mixedwood (75% Conifer)
+  "Dupre LITE"                    : "D1"  , // regional default (WMS: Non-fuel)
+  "Eaglesham AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Edgerton AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Edmonton Blatchford"           : "D2"  , // curated (original table)
+  "Edmonton Int'l A"              : "D2"  , // curated (original table)
+  "Edmonton International CS"     : "D2"  , // curated (original table)
+  "Edmonton Stony Plain CS"       : "D2"  , // curated (original table)
+  "Edmonton Villeneuve"           : "D2"  , // curated (original table)
+  "Edson"                         : "C2"  , // curated (original table)
+  "Edson Climate"                 : "C2"  , // curated (original table)
+  "Egg Island"                    : "C2"  , // regional default (WMS: Water)
+  "Elk Island Nat Park"           : "D1"  , // regional default (WMS: Non-fuel)
+  "Enchant 2 AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Entrance Auto"                 : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "Esther 1"                      : "D1"  , // WMS: D-1/D-2 Aspen
+  "Eta Lake Auto"                 : "D1"  , // WMS: D-1 Leafless Aspen
+  "Etzikom AGCM"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Evansburg 2 AGCM"              : "O1a" , // WMS: O-1a Matted Grass
+  "Fairview AGDM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Ferintosh AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Fincastle IMCIN"               : "O1a" , // WMS: O-1a Matted Grass
+  "Foremost AGDM"                 : "O1a" , // regional default (WMS: Non-fuel)
+  "Forestburg AGCM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Fort Assiniboine AGCM"         : "O1a" , // WMS: O-1a Matted Grass
+  "Fort Chipewyan"                : "C2"  , // curated (original table)
+  "Fort Chipewyan RCS"            : "C2"  , // curated (original table)
+  "Fort Macleod AGCM"             : "O1a" , // WMS: O-1a Matted Grass
+  "Fort McMurray A"               : "C4"  , // curated (original table)
+  "Fort McMurray CS"              : "C4"  , // curated (original table)
+  "Fort Vermilion"                : "C2"  , // curated (original table)
+  "Fox Creek"                     : "C2"  , // curated (original table)
+  "Garden River"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Gleichen AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Glenevis AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Grande Cache"                  : "C2"  , // curated (original table)
+  "Grande Prairie A"              : "O1a" , // curated (original table)
+  "Grassy Lake IMCIN"             : "O1a" , // WMS: O-1a Matted Grass
+  "Ground Zero Auto"              : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "Halkirk AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Hawk Hills AGCM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Heart Lake Auto"               : "D1"  , // WMS: D-1 Leafless Aspen
+  "Hemaruka AGCM"                 : "D1"  , // WMS: D-1/D-2 Aspen
+  "Hendrickson Creek"             : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "Hespero AGCM"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "High Level A"                  : "C2"  , // curated (original table)
+  "High Prairie AGDM"             : "D2"  , // curated (original table)
+  "Highwood Auto"                 : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "Hinton"                        : "C2"  , // curated (original table)
+  "Holden AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Hughendon AGCM"                : "D1"  , // WMS: D-1/D-2 Aspen
+  "Hussar AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Irvine AGCM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Island Lake South"             : "O1a" , // WMS: O-1a Matted Grass
+  "Jasper Warden"                 : "C3"  , // curated (original table)
+  "Jean Cote AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Kessler AGCM"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Killam AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Kitscoty AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "La Crete AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "La Glace AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Lac La Biche Climate"          : "D1"  , // curated (original table)
+  "Lacombe CDA 2"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Leedale AGDM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Legal AGCM"                    : "D1"  , // regional default (WMS: Non-fuel)
+  "Lethbridge"                    : "O1a" , // curated (original table)
+  "Lethbridge CDA"                : "O1a" , // curated (original table)
+  "Lethbridge Demo Farm"          : "O1a" , // curated (original table)
+  "Lindbergh AGDM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Linden AGCM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Livingston Gap Auto"           : "M1"  , // WMS: M-1/M-2 Boreal Mixedwood (75% Conifer)
+  "Lloydminster"                  : "O1a" , // curated (original table)
+  "Manning AGDM"                  : "C2"  , // curated (original table)
+  "Mannville AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Manyberries AGCM"              : "O1a" , // regional default (WMS: Non-fuel)
+  "Masinasin AGDM"                : "O1a" , // regional default (WMS: Non-fuel)
+  "Medicine Hat"                  : "O1a" , // curated (original table)
+  "Medicine Hat RCS"              : "O1a" , // curated (original table)
+  "Mildred Lake"                  : "C2"  , // regional default (WMS: Non-fuel)
+  "Milk River"                    : "D1"  , // WMS: D-1/D-2 Aspen
+  "Morrin AGDM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Mossleigh AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Mundare AGDM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Myrnam LITE"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Nakiska Ridgetop"              : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "New Sarepta AGCM"              : "O1a" , // WMS: O-1a Matted Grass
+  "Nier AGDM"                     : "O1a" , // WMS: O-1a Matted Grass
+  "Nordegg CS"                    : "C3"  , // WMS: C-3 Mature Jack or Lodgepole Pine
+  "North Ghost"                   : "C4"  , // WMS: C-4 Immature Jack or Lodgepole Pine
+  "Olds College AGDM"             : "O1a" , // WMS: O-1a Matted Grass
+  "Oliver AGDM"                   : "D1"  , // regional default (WMS: Non-fuel)
+  "Oyen AGDM"                     : "O1a" , // regional default (WMS: Non-fuel)
+  "Pakowki Lake AGCM"             : "O1a" , // WMS: O-1a Matted Grass
+  "Peace River A"                 : "D2"  , // curated (original table)
+  "Peoria AGDM"                   : "C2"  , // regional default (WMS: Non-fuel)
+  "Pincher Creek"                 : "O1a" , // curated (original table)
+  "Pincher Creek Climate"         : "O1a" , // curated (original table)
+  "Pollockville AGDM"             : "D1"  , // WMS: D-1/D-2 Aspen
+  "Prentiss"                      : "O1a" , // WMS: O-1a Matted Grass
+  "Radway LITE"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Ranfurly Auto"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Raymond IMCIN"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Red Deer A"                    : "D1"  , // curated (original table)
+  "Ribstone South AGCM"           : "O1a" , // WMS: O-1a Matted Grass
+  "Rich Lake AGDM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Rivercourse AGCM"              : "O1a" , // WMS: O-1a Matted Grass
+  "Rocky Mtn House Aut"           : "C2"  , // curated (original table)
+  "Rolling Hills AGCM"            : "D1"  , // WMS: D-1/D-2 Aspen
+  "Roma"                          : "C2"  , // regional default (WMS: Non-fuel)
+  "Rosalind AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Rosemary IMCIN"                : "D1"  , // WMS: D-1/D-2 Aspen
+  "Savanna AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Schuler AGDM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Sedalia AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Seven Persons IMCIN"           : "D1"  , // WMS: D-1/D-2 Aspen
+  "Shonts AGCM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Slave Lake"                    : "C2"  , // curated (original table)
+  "Slave Lake RCS"                : "C2"  , // curated (original table)
+  "Smoky Lake AGDM"               : "O1a" , // WMS: O-1a Matted Grass
+  "Spondin AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "St. Lina AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "St. Paul AGDM"                 : "D1"  , // regional default (WMS: Non-fuel)
+  "Standard AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Stavely AAFC"                  : "D1"  , // WMS: D-1/D-2 Aspen
+  "Stettler"                      : "O1a" , // curated (original table)
+  "Stettler AGDM"                 : "O1a" , // curated (original table)
+  "Strathmore IMCIN"              : "O1a" , // regional default (WMS: Non-fuel)
+  "Sundre A"                      : "O1a" , // regional default (WMS: Non-fuel)
+  "Tawatinaw AGCM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Teepee Creek AGCM"             : "O1a" , // WMS: O-1a Matted Grass
+  "Thorsby AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Three Hills AGCM"              : "O1a" , // WMS: O-1a Matted Grass
+  "Tomahawk AGDM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Travers AGCM"                  : "O1a" , // WMS: O-1a Matted Grass
+  "Tulliby Lake AGCM"             : "O1a" , // WMS: O-1a Matted Grass
+  "Two Hills AGDM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Valleyview AGDM"               : "D1"  , // curated (original table)
+  "Vegreville"                    : "O1a" , // curated (original table)
+  "Vermilion AGDM"                : "O1a" , // WMS: O-1a Matted Grass
+  "Viking AGCM"                   : "O1a" , // WMS: O-1a Matted Grass
+  "Wabasca"                       : "C2"  , // curated (original table)
+  "Wainwright CFB"                : "D1"  , // regional default (WMS: Non-fuel)
+  "Waterton Park Gate"            : "O1a" , // regional default (WMS: Non-fuel)
+  "Wetaskiwin AGCM"               : "O1a" , // curated (original table)
+  "Whitecourt"                    : "C2"  , // curated (original table)
+  "Whitecourt A"                  : "C2"  , // curated (original table)
+  "Willow Creek 1"                : "C2"  , // WMS: C-2 Boreal Spruce
+  "Wimborne AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
+  "Wrentham AGDM"                 : "O1a" , // WMS: O-1a Matted Grass
 };
+
+/** Regional default when a station has no STATION_FUEL_TYPES entry. */
+function _defaultFuelFor(lat) {
+  return lat > 54.5 ? 'C2' : lat > 52 ? 'D1' : 'O1a';
+}
 
 // Ecologically associated fuel pair for pin-drop auto-selection (Fuel A → Fuel B complement)
 const FUEL_PAIR_COMPLEMENT = {
@@ -785,12 +989,12 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
     const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
 
-    // Apply regional DC floor — correct underinitialized spring startup DC
+    // Correct underinitialized spring startup DC (cold-start artifact only)
     let rawDC = hasFWI ? +nearest.dc : null;
     let dcUnderinit = false;
     if (rawDC != null) {
-      const floor = getRegionalDCFloor(+nearest.lat, +nearest.lon);
-      if (floor > 0 && rawDC < floor * 0.70) { rawDC = floor; dcUnderinit = true; }
+      const adj = applyDCFloor(rawDC, +nearest.lat, +nearest.lon);
+      rawDC = adj.dc; dcUnderinit = adj.corrected;
     }
 
     return {
@@ -893,10 +1097,9 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
     // Apply regional DC floor before blending — corrects stations that used DC=15
     // spring startup instead of the Lawson & Armitage overwinter equation.
     const correctedChain = chain.map(c => {
-      const floor = getRegionalDCFloor(+c.p.lat, +c.p.lon);
-      const rawDC = +c.p.dc;
-      if (floor > 0 && rawDC < floor * 0.70) {
-        return { ...c, p: { ...c.p, dc: floor }, _dcCorrected: true };
+      const adj = applyDCFloor(+c.p.dc, +c.p.lat, +c.p.lon);
+      if (adj.corrected) {
+        return { ...c, p: { ...c.p, dc: adj.dc }, _dcCorrected: true };
       }
       return c;
     });
@@ -1025,6 +1228,14 @@ async function fetchSWOB(lat, lng) {
 let _idwMode = false;
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
+// Per-station holding-cache key. A single shared key was overwritten on every
+// call during the 199-station map loop, so the last station processed won wrote
+// the cache, and station_detail then replayed that arbitrary station's chain
+// under whatever station the user selected. Round coords to ~1 km.
+function _holdKey(lat, lng) {
+  return `fwi-cached-cwfis:${lat.toFixed(2)},${lng.toFixed(2)}`;
+}
+
 async function fetchWeatherPrimary(lat, lng) {
   // CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
   // Before noon, the layer serves yesterday's obs — use chain values for holding cache
@@ -1044,7 +1255,7 @@ async function fetchWeatherPrimary(lat, lng) {
         // Cache FWI chain if present so initFWI uses real carry-over instead of startup constants.
         if (cwfis.fwiFromCWFIS) {
           try {
-            localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
+            localStorage.setItem(_holdKey(lat, lng), JSON.stringify({
               ffmc: cwfis.ffmc, dmc: cwfis.dmc, dc: cwfis.dc,
               isi: cwfis.isi, bui: cwfis.bui, fwi: cwfis.fwi,
               stationName: cwfis.stationName, distKm: cwfis.distKm,
@@ -1334,7 +1545,7 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
       // be replayed as authoritative chain values in subsequent page loads
       if (!weather.idwMode) {
         try {
-          localStorage.setItem('fwi-cached-cwfis', JSON.stringify({
+          localStorage.setItem(_holdKey(lat, lng), JSON.stringify({
             ffmc: result.ffmc, dmc: result.dmc, dc: result.dc,
             isi: result.isi, bui: result.bui, fwi: result.fwi,
             danger: result.danger,
@@ -1349,16 +1560,15 @@ async function initFWI(lat = 53.5344, lng = -113.4903, station = 'Edmonton Area'
       // CWFIS has weather obs but no FWI codes yet (pre-obs / processing lag / early season).
       // Use last cached real CWFIS values instead of synthesising from startup constants.
       let cachedFWI = null;
-      try { cachedFWI = JSON.parse(localStorage.getItem('fwi-cached-cwfis')); } catch (_) {}
+      try { cachedFWI = JSON.parse(localStorage.getItem(_holdKey(lat, lng))); } catch (_) {}
 
       // Reject HOLDING cache older than 36 hours — stale data from days ago is worse than startup defaults
       const cacheAge = cachedFWI?.cachedAt ? (Date.now() - new Date(cachedFWI.cachedAt).getTime()) : Infinity;
       if (cachedFWI?.ffmc != null && cachedFWI?.dc != null && cacheAge < 36 * 3600 * 1000) {
         // Show yesterday's real indices; ISI/BUI/FWI recalculated with today's wind
         // so spread potential reflects current conditions against real moisture codes
-        // Apply regional DC floor — cached value may predate the floor fix or use DC=15 startup
-        const dcFloor = getRegionalDCFloor(lat, lng);
-        const cachedDC = (dcFloor > 0 && cachedFWI.dc < dcFloor * 0.70) ? dcFloor : cachedFWI.dc;
+        // Correct cached DC only if it is the spring cold-start artifact
+        const cachedDC = applyDCFloor(cachedFWI.dc, lat, lng).dc;
         const isi = _isi(cachedFWI.ffmc, weather.wind ?? 0);
         const bui = _bui(cachedFWI.dmc, cachedDC);
         const fwi = _fwi(isi, bui);
@@ -1399,7 +1609,7 @@ async function fetchStationData(station) {
   const weather = await fetchWeatherPrimary(station.lat, station.lng);
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   if (!weather.fwiFromCWFIS) {
-    const p = _cwfisPrev?.stations?.[station.name];
+    const p = _cwfisPrevFor(station.name, station.lat, station.lng);
     if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
       prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
     }
@@ -1441,7 +1651,7 @@ async function fetchStationDataForecast(station) {
   // FWI carry-over: use CWFIS yesterday values as starting state
   if (!_cwfisPrev.stations) await loadCWFISPrev();
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
-  const p = _cwfisPrev?.stations?.[station.name];
+  const p = _cwfisPrevFor(station.name, station.lat, station.lng);
   if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
     prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
   }
@@ -1878,7 +2088,7 @@ function buildStationPicker() {
     const stLabel = document.getElementById('fwi-map-station');
     if (stLabel) stLabel.textContent = name;
     // Auto-set fuel type from station lookup; sync both pickers
-    const derivedFuel = STATION_FUEL_TYPES[name] || 'C2';
+    const derivedFuel = STATION_FUEL_TYPES[name] || _defaultFuelFor(lat);
     ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
       const fp = document.getElementById(id);
       if (fp) fp.value = derivedFuel;
@@ -1978,8 +2188,8 @@ function _updateStationTableRow(entry) {
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
   const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
   tr.innerHTML =
-    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${entry.lat},${entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
-    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(entry.lat)}</td>` +
+    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${entry.navLat ?? entry.lat},${entry.navLng ?? entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
+    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(entry.navLat ?? entry.lat)}</td>` +
     `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
@@ -2065,8 +2275,37 @@ async function loadCWFISPrev() {
     );
     if (!res.ok) return;
     const data = await res.json();
+    // Reject stale caches: if the daily Action has been broken for 2+ days,
+    // silently replaying week-old codes is worse than a clean cold start.
+    if (data?.generated && (Date.now() - new Date(data.generated).getTime()) > 48 * 3600000) {
+      console.warn(`[FWI] cwfis_prev.json is stale (generated ${data.generated}) — ignoring`);
+      return;
+    }
     if (data?.stations) _cwfisPrev = data;
   } catch (_) { /* network error — fall through to STARTUP defaults */ }
+}
+
+/**
+ * Carry-over lookup for a station — case-insensitive name match with a
+ * 10 km coordinate fallback (CWFIS renames/uppercases MSC stations over time).
+ */
+function _cwfisPrevFor(name, lat, lng) {
+  const s = _cwfisPrev?.stations;
+  if (!s) return null;
+  if (!_cwfisPrev._upper) {
+    _cwfisPrev._upper = {};
+    for (const [k, v] of Object.entries(s)) _cwfisPrev._upper[k.toUpperCase()] = v;
+  }
+  const byName = _cwfisPrev._upper[(name || '').toUpperCase()];
+  if (byName) return byName;
+  if (lat == null || lng == null) return null;
+  let best = null, bestD = 10;
+  for (const v of Object.values(s)) {
+    if (v?.lat == null || v?.lon == null) continue;
+    const d = _haversineKm(lat, lng, v.lat, v.lon);
+    if (d < bestD) { bestD = d; best = v; }
+  }
+  return best;
 }
 
 const DANGER_COLORS = {
@@ -3467,15 +3706,17 @@ async function buildStationMap(containerId) {
       // Carry-over: use cached CWFIS prev-day values when Van Wagner is needed (SWOB/NWP tier)
       let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(s.name) };
       let usedCachedPrev = false;
+      let cachedPrevEntry = null;
       if (!w.fwiFromCWFIS) {
-        const p = _cwfisPrev?.stations?.[s.name];
+        const p = _cwfisPrevFor(s.name, s.lat, s.lng);
         if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
           prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
           usedCachedPrev = true;
+          cachedPrevEntry = p;
         }
       }
       const r        = calculateFWI(w, prevFWI);
-      const fuelCode = STATION_FUEL_TYPES[s.name] || 'C2';
+      const fuelCode = STATION_FUEL_TYPES[s.name] || _defaultFuelFor(s.lat);
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
       const srcBadge = w.fwiFromCWFIS ? 'CWFIS' : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
 
@@ -3483,8 +3724,12 @@ async function buildStationMap(containerId) {
       const stnLat = w.stationLat ?? s.lat;
       const stnLng = w.stationLng ?? s.lng;
 
-      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
-      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, result: r, fbp, srcBadge });
+      // Map marker moves to the sensor position, but the table row link must use
+      // the NOMINAL picker coords (navLat/navLng) — station_detail resolves the
+      // saved station by matching ALBERTA_STATIONS within 0.01°, which the
+      // CWFIS-corrected sensor coords would miss, landing on the wrong station.
+      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
+      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
 
       // Move marker to actual station position.
       // markerClusterGroup requires remove→setLatLng→add to re-index spatial position.
@@ -3523,7 +3768,7 @@ async function buildStationMap(containerId) {
         `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
         `<div style="font-size:8px;color:#64748b;margin-bottom:${usedCachedPrev ? '2' : '6'}px">Obs: <strong>${obsTs}</strong></div>` +
         (usedCachedPrev ? (() => {
-          const cp = _cwfisPrev.stations[s.name];
+          const cp = cachedPrevEntry;
           const cdStr = cp.repDate
             ? new Date(cp.repDate).toLocaleString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })
             : 'prev day';

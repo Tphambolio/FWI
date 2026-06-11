@@ -713,6 +713,8 @@
     btn.classList.toggle('border-primary/50', !open);
     btn.classList.toggle('text-primary', !open);
   });
+  // Deep link from forecast_trends "Compare" button
+  if (window.location.hash === '#compare') document.getElementById('fwi-compare-btn').click();
 
   // ── Fuel A picker ────────────────────────────────────────────────────
   document.getElementById('fwi-fuel-picker').addEventListener('change', e => {

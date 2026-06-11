@@ -437,7 +437,7 @@
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
 <div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon PST)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
-<div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 14 (14:00 PST)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
+<div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 16 (16:00 PDT)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
 <div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 12Z</span><span class="text-on-surface-variant">12Z available ~12:00 PST</span></div>
 <div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">0.25° (~25 km)</span><span class="text-on-surface-variant">Interpolated to point</span></div>
 </div>
@@ -454,13 +454,13 @@
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Fire Behaviour Analyst · 15:00 PDT Planning Window · FBP ST-X-3</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">The operational FBAN workflow: at approximately <strong class="text-on-surface">15:00 PDT</strong>, the analyst predicts fire behaviour during the next day's <strong class="text-on-surface">peak burn period (~14:00 PDT)</strong>. This app generates that product automatically on the Forecast page.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">The operational FBAN workflow: at approximately <strong class="text-on-surface">15:00 PDT</strong>, the analyst predicts fire behaviour during the next day's <strong class="text-on-surface">peak burn period (~16:00 PDT)</strong>. This app generates that product automatically on the Forecast page.</p>
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <p class="text-xs font-bold text-on-surface uppercase tracking-wider mb-3">Calculation Chain</p>
 <div class="space-y-2 text-xs text-on-surface-variant font-mono">
 <p><span class="text-primary">Step 1</span> — Today's observed conditions (SWOB or NWP, noon LST) → Van Wagner → FFMC / DMC / DC chain state</p>
 <p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or ECMWF hour 12) → carry-forward → D+1 FFMC / DMC / DC</p>
-<p><span class="text-primary">Step 3</span> — Tomorrow's 14:00 forecast + D+1 FWI codes → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_14h)</code></p>
+<p><span class="text-primary">Step 3</span> — Tomorrow's 16:00 forecast + D+1 FWI codes → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_16h)</code></p>
 <p><span class="text-primary">Step 4</span> — Outputs: Head ROS (m/min), HFI (kW/m), Flame Length (m), Fire Type, CFB (%)</p>
 </div>
 </div>

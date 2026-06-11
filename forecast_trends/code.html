@@ -275,8 +275,14 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
   const _name = _st ? _st.name : 'Edmonton';
   const _lbl = document.getElementById('forecast-station-label');
   if (_lbl) _lbl.textContent = _name + ' Station';
-  FWI.buildForecastTrends(_lat, _lng, _name);
-  FWI.initFWI(_lat, _lng, _name); // populate _lastFWI/_lastWeather so print briefing works from this page
+  // Await initFWI BEFORE building the forecast: the 14-day chain starts from
+  // _lastFWI (today's observed codes), which initFWI populates. Firing them
+  // concurrently made the chain non-deterministically cold-start from spring
+  // STARTUP constants depending on which fetch resolved first.
+  (async () => {
+    try { await FWI.initFWI(_lat, _lng, _name); } catch (e) { console.warn('[forecast] initFWI failed', e); }
+    FWI.buildForecastTrends(_lat, _lng, _name);
+  })();
   document.getElementById('fwi-report-btn').addEventListener('click', FWI.printStationBriefing);
 
   // ── Reports section buttons ───────────────────────────────────────────
