@@ -859,6 +859,18 @@ const BCWS_STATION_COORDS = {
   5916: [52.0830, -122.1217],
 };
 
+async function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchBCWSDatamart() {
   // Fast exits — avoid repeated fetch attempts
   if (_bcwsCORSFailed) return null;
@@ -874,12 +886,9 @@ async function fetchBCWSDatamart() {
   if (_bcwsFetchPromise) return _bcwsFetchPromise;
 
   const url = `https://www.for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/${yyyy}/${dateStr}.csv`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
   _bcwsFetchPromise = (async () => {
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetchWithTimeout(url, {}, 8000);
     if (!res.ok) return null;
     const text = await res.text();
 
@@ -967,7 +976,6 @@ async function fetchBCWSDatamart() {
     _bcwsCacheDate = dateStr;
     return latestByCode;
   } catch (e) {
-    clearTimeout(timer);
     // Mark CORS failure so subsequent calls skip immediately without fetching
     if (e instanceof TypeError && e.message?.toLowerCase().includes('failed to fetch')) {
       _bcwsCORSFailed = true;
@@ -1030,12 +1038,8 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     `&CQL_FILTER=lat+BETWEEN+${lat - bbox}+AND+${lat + bbox}` +
     `+AND+lon+BETWEEN+${lng - bbox}+AND+${lng + bbox}`;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
+    const res = await fetchWithTimeout(url, {}, 10000);
     const data = await res.json();
     if (!data.features?.length) return null;
 
@@ -1099,7 +1103,6 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       dcDivergence,
     };
   } catch (e) {
-    clearTimeout(timer);
     return null;
   }
 }
@@ -1196,8 +1199,7 @@ async function fetchSWOB(lat, lng) {
   const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
     `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
     `&datetime=${fmt(past)}/${fmt(now)}&limit=50&f=json`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  let res; try { res = await fetchWithTimeout(url, {}, 8000); } catch (_) { return null; }
   const d = await res.json();
   if (!d.features?.length) return null;
 
@@ -1296,8 +1298,7 @@ async function fetchWeather(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&past_days=1&forecast_days=2&timezone=UTC`;
-  const res = await fetch(url, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+  const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
   const times = d.hourly.time; // ISO strings, UTC
 
@@ -1976,8 +1977,7 @@ async function _queryWMSFuelType(lat, lng) {
     `&BBOX=${lng - d},${lat - d},${lng + d},${lat + d}` +
     `&WIDTH=3&HEIGHT=3&SRS=EPSG:4326&X=1&Y=1` +
     `&INFO_FORMAT=application/json`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`WMS ${resp.status}`);
+  const resp = await fetchWithTimeout(url, {}, 10000);
   const data = await resp.json();
   const props = data.features?.[0]?.properties || {};
   const raw = props.Label_CFFDRS_FBP_Fuel_Type ||
@@ -2376,11 +2376,10 @@ let _forecastCache = { days: [], results: [] };
  */
 async function loadCWFISPrev() {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/cwfis_prev.json',
-      { cache: 'no-cache' }
+      { cache: 'no-cache' }, 15000
     );
-    if (!res.ok) return;
     const data = await res.json();
     // Reject stale caches: if the daily Action has been broken for 2+ days,
     // silently replaying week-old codes is worse than a clean cold start.
@@ -2615,8 +2614,7 @@ async function fetchForecastNAEFS(code) {
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
     `&outputFormat=application/json&CQL_FILTER=code=${code}&count=20`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`NAEFS WFS ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   return d.features
     .map(f => {
@@ -2648,8 +2646,7 @@ async function fetchForecast(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
     `&timezone=UTC&past_days=1&forecast_days=8`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
@@ -2694,8 +2691,7 @@ async function fetchHourly(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
     `&timezone=auto&past_hours=23&forecast_hours=0`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo hourly ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 12000);
   const d = await res.json();
   const h = d.hourly;
   return (h.time || []).map((t, i) => ({
@@ -4026,8 +4022,7 @@ async function fetchSCRIBE(lat, lng) {
       `&outputFormat=application/json` +
       `&CQL_FILTER=latitude+BETWEEN+${(lat-2).toFixed(2)}+AND+${(lat+2).toFixed(2)}` +
       `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=100`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
+    const res = await fetchWithTimeout(url, {}, 12000);
     const d = await res.json();
     // Group valid records by station name
     const byStation = {};
@@ -4082,10 +4077,7 @@ async function fetchActiveFires() {
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:activefires_current` +
     `&outputFormat=application/json&count=200`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const d = await res.json();
-  return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
+  try { const res = await fetchWithTimeout(url, {}, 12000); const d = await res.json(); return d.features.map(f => f.properties).filter(p => p.lat && p.lon); } catch (_) { return []; }
 }
 
 async function fetchHotspots() {
@@ -4094,10 +4086,7 @@ async function fetchHotspots() {
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:hotspots_24h` +
     `&outputFormat=application/json` +
     `&CQL_FILTER=lat+BETWEEN+48+AND+70+AND+lon+BETWEEN+-140+AND+-50&count=500`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const d = await res.json();
-  return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
+  try { const res = await fetchWithTimeout(url, {}, 12000); const d = await res.json(); return d.features.map(f => f.properties).filter(p => p.lat && p.lon); } catch (_) { return []; }
 }
 
 /** Populate the D+1 Tomorrow card on station_detail. Called from initFWI after _lastFWI is set. */

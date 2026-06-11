@@ -915,6 +915,23 @@ function _haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
+/**
+ * fetch() with a hard timeout. Every remote call should use this — a single
+ * hung connection (CWFIS, SWOB, Open-Meteo) otherwise stalls the whole await
+ * chain indefinitely. Throws on timeout or non-OK status.
+ */
+async function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ─── CWFIS WFS fetch ──────────────────────────────────────────────────────────
 /**
  * Fetch live fire weather from CWFIS WFS (NRCan/MSC physical sensors).
@@ -955,77 +972,101 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       return _computeIDWBlend(features, lat, lng);
     }
 
-    if (!data.features?.length) return null;
-
-    // Prefer nearest station with active FWI chain (dc+ffmc not null).
-    // Fall back to nearest weather-only station if no FWI chain within 200 km.
-    let fwiNearest = null, fwiDist = Infinity;
-    let wxNearest  = null, wxDist  = Infinity;
-    for (const feat of data.features) {
-      const p = feat.properties;
-      if (p.temp == null || p.rh == null || p.ws == null) continue;
-      const d = _haversineKm(lat, lng, +p.lat, +p.lon);
-      if (d < wxDist) { wxDist = d; wxNearest = p; }
-      if (p.ffmc != null && p.dc != null && d < fwiDist) { fwiDist = d; fwiNearest = p; }
-    }
-    const nearest = (fwiNearest && fwiDist <= wxDist + 200) ? fwiNearest : wxNearest;
-    if (!nearest) return null;
-
-    // DC divergence check — flag if nearby stations (≤75 km) have DC spread ≥75
-    let dcMin = Infinity, dcMax = -Infinity, dcCount = 0;
-    for (const feat of data.features) {
-      const p = feat.properties;
-      if (p.dc == null) continue;
-      const d = _haversineKm(lat, lng, +p.lat, +p.lon);
-      if (d > 75) continue;
-      dcMin = Math.min(dcMin, +p.dc);
-      dcMax = Math.max(dcMax, +p.dc);
-      dcCount++;
-    }
-    const dcDivergence = dcCount >= 2 && (dcMax - dcMin) >= 75
-      ? { spread: Math.round(dcMax - dcMin), min: Math.round(dcMin), max: Math.round(dcMax) }
-      : null;
-
-    const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
-    const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
-
-    // Correct underinitialized spring startup DC (cold-start artifact only)
-    let rawDC = hasFWI ? +nearest.dc : null;
-    let dcUnderinit = false;
-    if (rawDC != null) {
-      const adj = applyDCFloor(rawDC, +nearest.lat, +nearest.lon);
-      rawDC = adj.dc; dcUnderinit = adj.corrected;
-    }
-
-    return {
-      temp:  nearest.temp,
-      rh:    nearest.rh,
-      wind:  nearest.ws,
-      wdir:  nearest.wdir ?? null,
-      rain:  nearest.precip ?? 0,
-      month: new Date().getMonth() + 1,
-      ffmc: hasFWI ? nearest.ffmc : null,
-      dmc:  hasFWI ? nearest.dmc  : null,
-      dc:   rawDC,
-      isi:  hasFWI ? nearest.isi  : null,
-      bui:  hasFWI ? nearest.bui  : null,
-      fwi:  hasFWI ? nearest.fwi  : null,
-      fwiFromCWFIS: hasFWI,
-      repDate: nearest.rep_date || null,
-      source: hasFWI
-        ? `CWFIS · ${stationName}`
-        : `CWFIS · ${stationName} · FWI calc`,
-      stationName,
-      stationLat: +nearest.lat,
-      stationLng: +nearest.lon,
-      distKm: Math.round(fwiNearest ? fwiDist : wxDist),
-      dcDivergence,
-      dcUnderinit,
-    };
+    return _selectCWFIS(data.features, lat, lng);
   } catch (e) {
     clearTimeout(timer);
     return null;
   }
+}
+
+/**
+ * Select the best CWFIS observation for a point from a feature array.
+ * Shared by fetchCWFIS (per-point query) and buildStationMap (one province
+ * query reused for all stations). Prefers the nearest station with an active
+ * FWI chain; falls back to nearest weather-only within +200 km.
+ */
+function _selectCWFIS(features, lat, lng) {
+  if (!features?.length) return null;
+  let fwiNearest = null, fwiDist = Infinity;
+  let wxNearest  = null, wxDist  = Infinity;
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.temp == null || p.rh == null || p.ws == null) continue;
+    const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+    if (d < wxDist) { wxDist = d; wxNearest = p; }
+    if (p.ffmc != null && p.dc != null && d < fwiDist) { fwiDist = d; fwiNearest = p; }
+  }
+  const nearest = (fwiNearest && fwiDist <= wxDist + 200) ? fwiNearest : wxNearest;
+  if (!nearest) return null;
+
+  // DC divergence check — flag if nearby stations (≤75 km) have DC spread ≥75
+  let dcMin = Infinity, dcMax = -Infinity, dcCount = 0;
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.dc == null) continue;
+    const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+    if (d > 75) continue;
+    dcMin = Math.min(dcMin, +p.dc);
+    dcMax = Math.max(dcMax, +p.dc);
+    dcCount++;
+  }
+  const dcDivergence = dcCount >= 2 && (dcMax - dcMin) >= 75
+    ? { spread: Math.round(dcMax - dcMin), min: Math.round(dcMin), max: Math.round(dcMax) }
+    : null;
+
+  const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
+  const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+
+  // Correct underinitialized spring startup DC (cold-start artifact only)
+  let rawDC = hasFWI ? +nearest.dc : null;
+  let dcUnderinit = false;
+  if (rawDC != null) {
+    const adj = applyDCFloor(rawDC, +nearest.lat, +nearest.lon);
+    rawDC = adj.dc; dcUnderinit = adj.corrected;
+  }
+
+  return {
+    temp:  nearest.temp,
+    rh:    nearest.rh,
+    wind:  nearest.ws,
+    wdir:  nearest.wdir ?? null,
+    rain:  nearest.precip ?? 0,
+    month: new Date().getMonth() + 1,
+    ffmc: hasFWI ? nearest.ffmc : null,
+    dmc:  hasFWI ? nearest.dmc  : null,
+    dc:   rawDC,
+    isi:  hasFWI ? nearest.isi  : null,
+    bui:  hasFWI ? nearest.bui  : null,
+    fwi:  hasFWI ? nearest.fwi  : null,
+    fwiFromCWFIS: hasFWI,
+    repDate: nearest.rep_date || null,
+    source: hasFWI
+      ? `CWFIS · ${stationName}`
+      : `CWFIS · ${stationName} · FWI calc`,
+    stationName,
+    stationLat: +nearest.lat,
+    stationLng: +nearest.lon,
+    distKm: Math.round(fwiNearest ? fwiDist : wxDist),
+    dcDivergence,
+    dcUnderinit,
+  };
+}
+
+/**
+ * One province-wide CWFIS query — every station in a single request, instead
+ * of one bbox query per station. Returns the raw feature array (cached for the
+ * page session) so buildStationMap can resolve all 199 stations locally.
+ */
+let _allCWFISFeatures = null;
+async function fetchAllCWFIS(latMin = 48.8, latMax = 60.5, lonMin = -120.5, lonMax = -109.5) {
+  if (_allCWFISFeatures) return _allCWFISFeatures;
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000` +
+    `&CQL_FILTER=lat+BETWEEN+${latMin}+AND+${latMax}+AND+lon+BETWEEN+${lonMin}+AND+${lonMax}`;
+  const data = await fetchWithTimeout(url, { cache: 'no-cache' }, 20000).then(r => r.json());
+  _allCWFISFeatures = data.features ?? [];
+  return _allCWFISFeatures;
 }
 
 /**
@@ -1168,11 +1209,18 @@ async function fetchSWOB(lat, lng) {
   const now  = new Date();
   const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
   const fmt  = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
+  // Request only the properties we read — full SWOB records carry hundreds of
+  // fields each (~411 KB for 50); the subset is ~10× smaller. 8 s timeout: SWOB
+  // can hang for 13 s+, which previously stalled the whole tier chain.
+  const props = ['air_temp','avg_air_temp_pst1hr','rel_hum','avg_rel_hum_pst1hr',
+    'avg_wnd_spd_10m_pst1hr','avg_wnd_spd_10m_pst10mts','avg_wnd_dir_10m_pst1hr',
+    'avg_wnd_dir_10m_pst10mts','pcpn_amt_pst1hr','pcpn_amt_pst6hrs','pcpn_amt_pst24hrs',
+    'date_tm-value','obs_date_tm','stn_nam-value'].join(',');
   const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
     `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
-    `&datetime=${fmt(past)}/${fmt(now)}&limit=50&f=json`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+    `&datetime=${fmt(past)}/${fmt(now)}&limit=50&properties=${props}&f=json`;
+  let res;
+  try { res = await fetchWithTimeout(url, {}, 8000); } catch (_) { return null; }
   const d = await res.json();
   if (!d.features?.length) return null;
 
@@ -1293,8 +1341,7 @@ async function fetchWeather(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&past_days=1&forecast_days=2&timezone=UTC`;
-  const res = await fetch(url, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+  const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
   const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
 
@@ -1900,8 +1947,7 @@ async function _queryWMSFuelType(lat, lng) {
     `&BBOX=${lng - d},${lat - d},${lng + d},${lat + d}` +
     `&WIDTH=3&HEIGHT=3&SRS=EPSG:4326&X=1&Y=1` +
     `&INFO_FORMAT=application/json`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`WMS ${resp.status}`);
+  const resp = await fetchWithTimeout(url, {}, 10000);
   const data = await resp.json();
   const props = data.features?.[0]?.properties || {};
   const raw = props.Label_CFFDRS_FBP_Fuel_Type ||
@@ -2269,11 +2315,10 @@ let _forecastCache = { days: [], results: [] };
  */
 async function loadCWFISPrev() {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/cwfis_prev.json',
-      { cache: 'no-cache' }
+      { cache: 'no-cache' }, 10000
     );
-    if (!res.ok) return;
     const data = await res.json();
     // Reject stale caches: if the daily Action has been broken for 2+ days,
     // silently replaying week-old codes is worse than a clean cold start.
@@ -2461,8 +2506,7 @@ async function fetchForecastNAEFS(code) {
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
     `&outputFormat=application/json&CQL_FILTER=code=${code}&count=20`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`NAEFS WFS ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   return d.features
     .map(f => {
@@ -2500,8 +2544,7 @@ async function fetchForecast(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
     `&timezone=UTC&past_days=1&forecast_days=8`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo forecast ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
@@ -2548,8 +2591,7 @@ async function fetchHourly(lat, lng) {
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
     `&timezone=auto&past_hours=23&forecast_hours=0`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo hourly ${res.status}`);
+  const res = await fetchWithTimeout(url, {}, 12000);
   const d = await res.json();
   const h = d.hourly;
   return (h.time || []).map((t, i) => ({
@@ -3698,10 +3740,21 @@ async function buildStationMap(containerId) {
     if (clusterGroup) clusterGroup.addLayer(m); else m.addTo(map);
   }
 
+  // One province-wide CWFIS query, reused for all stations — replaces 199
+  // sequential per-station bbox queries (minutes of serial network → ~2 s).
+  // Stations with no local CWFIS match fall back to the per-station tier chain.
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+  let allFeatures = [];
+  try { allFeatures = await fetchAllCWFIS(); }
+  catch (e) { console.warn('[FWI Map] province CWFIS query failed, falling back per-station', e); }
+
   // Fetch data and update each marker as it arrives
   for (const s of ALBERTA_STATIONS) {
     try {
-      const w = await fetchWeatherPrimary(s.lat, s.lng);
+      let w = _selectCWFIS(allFeatures, s.lat, s.lng);
+      // Fall back to the full per-station tier chain only when the province
+      // query found nothing usable nearby (rare — off-season or sparse north).
+      if (!w) w = await fetchWeatherPrimary(s.lat, s.lng);
 
       // Carry-over: use cached CWFIS prev-day values when Van Wagner is needed (SWOB/NWP tier)
       let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(s.name) };
@@ -3794,6 +3847,14 @@ async function buildStationMap(containerId) {
       );
     } catch (e) {
       console.warn(`[FWI Map] ${s.name}:`, e);
+      // Mark the row as errored instead of leaving an infinite loading shimmer.
+      const tr = document.getElementById('srow-' + s.name.replace(/\s+/g, '-'));
+      if (tr) tr.innerHTML =
+        `<td class="py-2 pl-3 pr-2 font-semibold text-xs">${s.name}</td>` +
+        `<td class="py-2 pr-2 text-slate-500 text-[10px]">${_stationSector(s.lat)}</td>` +
+        `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;background:#1c191740;color:#78716c;border:1px solid #44403c">ERR</span></td>` +
+        `<td colspan="6" class="py-2 pr-3 text-right text-[10px] text-slate-600">data unavailable</td>`;
+      markers[s.name]?.setPopupContent(`<b>${s.name}</b><br><small style="color:#9ca3af">Data unavailable</small>`);
     }
   }
 
@@ -3831,7 +3892,7 @@ async function buildStationMap(containerId) {
         .bindPopup(`<b>${f.firename || 'Active Fire'}</b><br>${ha >= 1 ? ha.toLocaleString('en-CA',{maximumFractionDigits:0}) + ' ha' : '< 1 ha'}<br><small>${f.stage_of_control || ''} · ${f.agency?.toUpperCase() || ''}</small>`)
         .addTo(activeFiresLayer);
     });
-  });
+  }).catch(e => console.warn('[FWI Map] active fires layer failed:', e));
 
   // Hotspots layer
   const hotspotsLayer = L.layerGroup();
@@ -3842,7 +3903,7 @@ async function buildStationMap(containerId) {
         .bindPopup(`<b>Satellite Hotspot</b><br><small>${h.satellite || h.sensor || ''}</small>${hfiTip}`)
         .addTo(hotspotsLayer);
     });
-  });
+  }).catch(e => console.warn('[FWI Map] hotspots layer failed:', e));
 
   // Toggle buttons
   const setupToggle = (btnId, layer) => {
@@ -3868,8 +3929,8 @@ async function fetchSCRIBE(lat, lng) {
       `&outputFormat=application/json` +
       `&CQL_FILTER=latitude+BETWEEN+${(lat-2).toFixed(2)}+AND+${(lat+2).toFixed(2)}` +
       `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=100`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
+    let res;
+    try { res = await fetchWithTimeout(url, {}, 12000); } catch (_) { return null; }
     const d = await res.json();
     // Group valid records by station name
     const byStation = {};
@@ -3924,20 +3985,21 @@ async function fetchActiveFires() {
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:activefires_current` +
     `&outputFormat=application/json&count=200`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
+  let res;
+  try { res = await fetchWithTimeout(url, {}, 12000); } catch (_) { return []; }
   const d = await res.json();
   return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
 
 async function fetchHotspots() {
-  // Filter to Canada/northern US bounding box to limit results
+  // Filter to Canada/northern US bbox and request only the fields we render —
+  // the full GeoJSON is ~468 KB for 500 dots; the property subset is ~10× smaller.
   const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
     `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:hotspots_24h` +
-    `&outputFormat=application/json` +
+    `&outputFormat=application/json&propertyName=lat,lon,satellite,sensor,hfi` +
     `&CQL_FILTER=lat+BETWEEN+48+AND+70+AND+lon+BETWEEN+-140+AND+-50&count=500`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
+  let res;
+  try { res = await fetchWithTimeout(url, {}, 12000); } catch (_) { return []; }
   const d = await res.json();
   return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
 }
