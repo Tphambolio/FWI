@@ -148,6 +148,7 @@ async function fetchAEFStations() {
   }
 }
 
+// ═══ SCIENCE CORE BEGIN: FWI daily equations (shared AB/BC — keep identical; CI-checked) ═══
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
   if (rain > 0.5) {
@@ -212,6 +213,8 @@ function _fwi(isi, bui) {
   const b = 0.1*isi*fd;
   return b<=1 ? b : Math.exp(2.72*(0.434*Math.log(b))**0.647);
 }
+
+// ═══ SCIENCE CORE END: FWI daily equations ═══
 
 // Wind degrees → compass direction + arrow
 function windCompass(deg) {
@@ -292,28 +295,84 @@ function componentRating(key, val) {
   return RATING_LABELS[4];
 }
 
-// ─── FBP System (ST-X-3, Forestry Canada 1992) ───────────────────────────────
-// Parameters ported from wildfire-simulator-v3/engine/src/firesim/fbp/constants.py
+// ─── FBP System (FCFDG 1992 ST-X-3 · Wotton, Alexander & Taylor 2009 GLC-X-10) ──
+// Constants verified line-for-line against the canonical `cffdrs` R package
+// (github.com/cran/cffdrs) on 2026-06-10. Validated by tests/science.test.mjs
+// against an independent reference port — run `node --test tests/`.
 
+// ═══ SCIENCE CORE BEGIN: FBP parameters (shared AB/BC — keep identical; CI-checked) ═══
 const FUEL_TYPES = {
-  C1:  { name:'Spruce-Lichen Woodland',       a:90,  b:0.0649, c:4.5, q:0.90, bui0:72,  cbh:2,  cfl:0.75, sfc:0.75 },
-  C2:  { name:'Boreal Spruce',                a:110, b:0.0282, c:1.5, q:0.70, bui0:64,  cbh:3,  cfl:0.80, sfc:0.80 },
-  C3:  { name:'Mature Jack/Lodgepole Pine',   a:110, b:0.0444, c:3.0, q:0.75, bui0:62,  cbh:8,  cfl:1.15, sfc:1.15 },
-  C4:  { name:'Immature Jack/Lodgepole Pine', a:110, b:0.0293, c:1.5, q:0.75, bui0:66,  cbh:4,  cfl:1.20, sfc:1.20 },
-  C5:  { name:'Red and White Pine',           a:30,  b:0.0697, c:4.0, q:0.80, bui0:56,  cbh:18, cfl:1.20, sfc:1.20 },
-  C6:  { name:'Conifer Plantation',           a:30,  b:0.0800, c:3.0, q:0.80, bui0:62,  cbh:7,  cfl:1.80, sfc:1.80 },
-  C7:  { name:'Ponderosa Pine/Douglas-fir',   a:45,  b:0.0305, c:2.0, q:0.85, bui0:106, cbh:10, cfl:0.50, sfc:0.50 },
-  D1:  { name:'Leafless Aspen',               a:30,  b:0.0232, c:1.6, q:0.90, bui0:32,  cbh:0,  cfl:0.00, sfc:0.35 },
-  D2:  { name:'Green Aspen',                  a:6,   b:0.0232, c:1.6, q:0.90, bui0:32,  cbh:0,  cfl:0.00, sfc:0.35 },
-  O1a: { name:'Matted Grass',                 a:190, b:0.0310, c:1.4, q:1.00, bui0:1,   cbh:0,  cfl:0.00, sfc:0.35 },
-  O1b: { name:'Standing Grass',               a:250, b:0.0350, c:1.7, q:1.00, bui0:1,   cbh:0,  cfl:0.00, sfc:0.35 },
-  S1:  { name:'Jack/Lodgepole Pine Slash',    a:75,  b:0.0297, c:1.3, q:0.75, bui0:38,  cbh:0,  cfl:0.00, sfc:4.50 },
-  S2:  { name:'White Spruce/Balsam Slash',    a:40,  b:0.0438, c:1.7, q:0.75, bui0:63,  cbh:0,  cfl:0.00, sfc:4.50 },
-  S3:  { name:'Cedar/Hemlock/DF Slash',       a:55,  b:0.0829, c:3.2, q:0.75, bui0:31,  cbh:0,  cfl:0.00, sfc:4.50 },
-  // M1/M2 — Boreal Mixedwood (ST-X-3). No a/b/c — ROS blends C2 (softwood) + D1/D2 (hardwood) by PS%.
-  M1:  { name:'Boreal Mixedwood \u2014 Leafless', softwood:'C2', hardwood:'D1', mixedwood:true },
-  M2:  { name:'Boreal Mixedwood \u2014 Green',    softwood:'C2', hardwood:'D2', mixedwood:true },
+  // a, b, c — ROS coefficients (ST-X-3 Table 6; M3/M4 per GLC-X-10 Eq. 30)
+  // q, bui0 — buildup effect (ST-X-3 Table 7; C4 q=0.80, M1-M4 q=0.80/BUI0=50)
+  // cbh (m), cfl (kg/m²) — crown geometry (ST-X-3 Table 8; M1-M4 CBH=6, CFL=0.80)
+  // SFC is NOT a constant — see calcSFC() (ST-X-3 Eqs. 9-25, BUI/FFMC-dependent)
+  C1:  { name:'Spruce-Lichen Woodland',       a:90,  b:0.0649, c:4.5,  q:0.90, bui0:72,  cbh:2,  cfl:0.75 },
+  C2:  { name:'Boreal Spruce',                a:110, b:0.0282, c:1.5,  q:0.70, bui0:64,  cbh:3,  cfl:0.80 },
+  C3:  { name:'Mature Jack/Lodgepole Pine',   a:110, b:0.0444, c:3.0,  q:0.75, bui0:62,  cbh:8,  cfl:1.15 },
+  C4:  { name:'Immature Jack/Lodgepole Pine', a:110, b:0.0293, c:1.5,  q:0.80, bui0:66,  cbh:4,  cfl:1.20 },
+  C5:  { name:'Red and White Pine',           a:30,  b:0.0697, c:4.0,  q:0.80, bui0:56,  cbh:18, cfl:1.20 },
+  C6:  { name:'Conifer Plantation',           a:30,  b:0.0800, c:3.0,  q:0.80, bui0:62,  cbh:7,  cfl:1.80 },
+  C7:  { name:'Ponderosa Pine/Douglas-fir',   a:45,  b:0.0305, c:2.0,  q:0.85, bui0:106, cbh:10, cfl:0.50 },
+  D1:  { name:'Leafless Aspen',               a:30,  b:0.0232, c:1.6,  q:0.90, bui0:32,  cbh:0,  cfl:0.00 },
+  D2:  { name:'Green Aspen',                  a:30,  b:0.0232, c:1.6,  q:0.90, bui0:32,  cbh:0,  cfl:0.00 }, // ROS = 0.2×D1, only at BUI ≥ 80 (GLC-X-10)
+  M1:  { name:'Boreal Mixedwood — Leafless',  q:0.80, bui0:50, cbh:6,  cfl:0.80, mixedwood:true },
+  M2:  { name:'Boreal Mixedwood — Green',     q:0.80, bui0:50, cbh:6,  cfl:0.80, mixedwood:true },
+  M3:  { name:'Dead Balsam Fir Mixedwood — Leafless', a:120, b:0.0572, c:1.4,  q:0.80, bui0:50, cbh:6, cfl:0.80, deadfir:true },
+  M4:  { name:'Dead Balsam Fir Mixedwood — Green',    a:100, b:0.0404, c:1.48, q:0.80, bui0:50, cbh:6, cfl:0.80, deadfir:true },
+  S1:  { name:'Jack/Lodgepole Pine Slash',    a:75,  b:0.0297, c:1.3,  q:0.75, bui0:38,  cbh:0,  cfl:0.00 },
+  S2:  { name:'White Spruce/Balsam Slash',    a:40,  b:0.0438, c:1.7,  q:0.75, bui0:63,  cbh:0,  cfl:0.00 },
+  S3:  { name:'Cedar/Hemlock/DF Slash',       a:55,  b:0.0829, c:3.2,  q:0.75, bui0:31,  cbh:0,  cfl:0.00 },
+  O1a: { name:'Matted Grass',                 a:190, b:0.0310, c:1.4,  q:1.00, bui0:1,   cbh:0,  cfl:0.00 },
+  O1b: { name:'Standing Grass',               a:250, b:0.0350, c:1.7,  q:1.00, bui0:1,   cbh:0,  cfl:0.00 },
 };
+
+/**
+ * Surface fuel consumption (kg/m²) — ST-X-3 Eqs. 9-25 (GLC-X-10 revisions).
+ * SFC depends on BUI (duff load consumed) and, for C1/C7, on FFMC.
+ * @param {string} fuelCode  FBP fuel type
+ * @param {number} ffmc      Fine Fuel Moisture Code
+ * @param {number} bui       Buildup Index
+ * @param {number} pc        Percent conifer for M1/M2 (default 50)
+ * @param {number} gfl       Grass fuel load kg/m² for O1 (GLC-X-10 default 0.35)
+ */
+function calcSFC(fuelCode, ffmc, bui, pc = 50, gfl = 0.35) {
+  let sfc;
+  switch (fuelCode) {
+    case 'C1':  // Eqs. 9a/9b (GLC-X-10 revision)
+      sfc = ffmc > 84
+        ? 0.75 + 0.75 * Math.sqrt(1 - Math.exp(-0.23 * (ffmc - 84)))
+        : 0.75 - 0.75 * Math.sqrt(1 - Math.exp(-0.23 * (84 - ffmc)));
+      break;
+    case 'C2': case 'M3': case 'M4':  // Eq. 10
+      sfc = 5.0 * (1 - Math.exp(-0.0115 * bui)); break;
+    case 'C3': case 'C4':             // Eq. 11
+      sfc = 5.0 * Math.pow(1 - Math.exp(-0.0164 * bui), 2.24); break;
+    case 'C5': case 'C6':             // Eq. 12
+      sfc = 5.0 * Math.pow(1 - Math.exp(-0.0149 * bui), 2.48); break;
+    case 'C7':                        // Eqs. 13-15 (forest floor + woody)
+      sfc = (ffmc > 70 ? 2 * (1 - Math.exp(-0.104 * (ffmc - 70))) : 0)
+          + 1.5 * (1 - Math.exp(-0.0201 * bui));
+      break;
+    case 'D1': case 'D2':             // Eq. 16
+      sfc = 1.5 * (1 - Math.exp(-0.0183 * bui)); break;
+    case 'M1': case 'M2':             // Eq. 17 — PC-weighted C2/D1 blend
+      sfc = pc / 100 * (5.0 * (1 - Math.exp(-0.0115 * bui)))
+          + (100 - pc) / 100 * (1.5 * (1 - Math.exp(-0.0183 * bui)));
+      break;
+    case 'O1a': case 'O1b':           // Eq. 18 — grass fuel load
+      sfc = gfl; break;
+    case 'S1':                        // Eqs. 19, 20, 25
+      sfc = 4.0 * (1 - Math.exp(-0.025 * bui)) + 4.0 * (1 - Math.exp(-0.034 * bui)); break;
+    case 'S2':                        // Eqs. 21, 22, 25
+      sfc = 10.0 * (1 - Math.exp(-0.013 * bui)) + 6.0 * (1 - Math.exp(-0.060 * bui)); break;
+    case 'S3':                        // Eqs. 23, 24, 25
+      sfc = 12.0 * (1 - Math.exp(-0.0166 * bui)) + 20.0 * (1 - Math.exp(-0.0210 * bui)); break;
+    default:
+      sfc = 0;
+  }
+  return Math.max(sfc, 0.000001);
+}
+// ═══ SCIENCE CORE END: FBP parameters ═══
 
 /**
  * Station-level dominant FBP fuel type derived from CWFIS WMS
@@ -374,71 +433,77 @@ const FUEL_PAIR_COMPLEMENT = {
   O1a:'O1b', O1b:'O1a',
 };
 
+// ═══ SCIENCE CORE BEGIN: FMC + RSI helpers (shared AB/BC — keep identical; CI-checked) ═══
 /**
- * Calculate FBP fire behaviour from FWI codes + wind speed.
- * Equations: ST-X-3 (Forestry Canada 1992), Van Wagner 1977 (crown fire).
- *
- * @param {string} fuelCode  FBP fuel type code (e.g. 'C2')
- * @param {number} ffmc      Fine Fuel Moisture Code
- * @param {number} dmc       Duff Moisture Code
- * @param {number} dc        Drought Code
- * @param {number} windSpeed 10-m open wind speed (km/h)
- * @param {number} slope     Percent slope (default 0)
- * @returns {{ isi, bui, ros, hfi, cfb, tfc, flameLength, fireType } | null}
+ * Foliar moisture content — FCFDG 1992 Eqs. 1, 2, 5-8 (no-elevation form;
+ * station elevations are not yet plumbed through).
+ * FMC bottoms out (~85) around the date of minimum foliar moisture D0 and
+ * saturates at 120 elsewhere. Affects crown-fire initiation via CSI.
+ * @param {number} lat  Station latitude (°N)
+ * @param {number} lng  Station longitude (°, negative W or positive °W both accepted)
+ * @param {number} doy  Day of year (1-366)
  */
-// P5: Van Wagner (1987) seasonal foliar moisture content equation.
-// FMC declines from ~120 (early spring) toward ~85 (peak summer) as foliage matures.
-// Affects crown fire initiation threshold (CSI) — lower FMC = easier crown fire.
-function calcFMC(lat, doy) {
-  const latn = lat < 60
-    ? 46 + 0.234 * (Math.cos(0.0171 * (doy - 200)) - 1) * (lat - 46)
-    : lat;
-  const D0 = 2.6286 * (90 - latn) - 21.626;
-  return Math.min(120, Math.max(85, 85 + 0.0189 * Math.pow(doy - D0, 2)));
+function calcFMC(lat, lng, doy) {
+  const lonW = Math.abs(lng);                                  // Eq. 1 uses °W positive
+  const latn = 46 + 23.4 * Math.exp(-0.0360 * (150 - lonW));   // Eq. 1
+  const d0 = Math.round(151 * (lat / latn));                   // Eq. 2 (rounded — it is a date)
+  const nd = Math.abs(doy - d0);                               // Eq. 5
+  if (nd < 30) return 85 + 0.0189 * nd * nd;                   // Eq. 6
+  if (nd < 50) return 32.9 + 3.17 * nd - 0.0288 * nd * nd;     // Eq. 7
+  return 120;                                                  // Eq. 8
 }
+
+/** Basic RSI = a(1−e^{−b·ISI})^c — ST-X-3 Eq. 26. */
+function _rsiBasic(fuelCode, isi) {
+  const p = FUEL_TYPES[fuelCode];
+  return p.a * Math.pow(1 - Math.exp(-p.b * isi), p.c);
+}
+
+/** Buildup effect — ST-X-3 Eq. 54. */
+function _buildupEffect(fuelCode, bui) {
+  const p = FUEL_TYPES[fuelCode];
+  if (!p || bui <= 0 || p.bui0 <= 0) return 1;
+  return Math.exp(50 * Math.log(p.q) * (1 / bui - 1 / p.bui0));
+}
+// ═══ SCIENCE CORE END: FMC + RSI helpers ═══
 
 let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
 let _stationLng = -113.5; // module-level; set by initFWI
 let _stationName = 'Edmonton'; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
-function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100, ps = 50) {
+// ═══ SCIENCE CORE BEGIN: calculateFBP (shared AB/BC — keep identical; CI-checked) ═══
+/**
+ * FBP head-fire behaviour from FWI codes + wind.
+ * FCFDG 1992 (ST-X-3) with GLC-X-10 (2009) revisions, structured to match the
+ * canonical `cffdrs` R package. Validated by tests/science.test.mjs.
+ *
+ * @param {string} fuelCode  FBP fuel type code (e.g. 'C2')
+ * @param {number} ffmc      Fine Fuel Moisture Code
+ * @param {number} dmc       Duff Moisture Code
+ * @param {number} dc        Drought Code
+ * @param {number} windSpeed 10-m open wind speed (km/h)
+ * @param {number} slope     Percent slope (default 0; see note below)
+ * @param {number} curing    Grass curing % for O1a/O1b (default 100 = fully cured)
+ * @param {number} ps        Percent conifer (M1/M2 softwood share, default 50)
+ * @param {object} opts      { lat, lng, doy, gfl, pdf } overrides — defaults to
+ *                           the active station and today; pdf = % dead fir (M3/M4)
+ * @returns {{ isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, flameLength, fireType } | null}
+ */
+function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 100, ps = 50, opts = {}) {
   const ft = FUEL_TYPES[fuelCode];
   if (!ft) return null;
 
-  // Mixedwood blend — M1/M2 (ST-X-3 §M1/M2)
-  // ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2; crown fire from softwood component only.
-  if (ft.mixedwood) {
-    const r  = Math.max(0, Math.min(100, ps)) / 100;
-    const sw = calculateFBP(ft.softwood, ffmc, dmc, dc, windSpeed, slope, curing, ps);
-    const hw = calculateFBP(ft.hardwood, ffmc, dmc, dc, windSpeed, slope, curing, ps);
-    if (!sw || !hw) return null;
-    const ros         = r * sw.ros + (1 - r) * hw.ros;
-    const cfb         = sw.cfb; // crown fire from softwood only
-    const sfc         = r * FUEL_TYPES[ft.softwood].sfc + (1 - r) * FUEL_TYPES[ft.hardwood].sfc;
-    const cfl         = r * FUEL_TYPES[ft.softwood].cfl; // hardwood cfl = 0
-    const tfc         = sfc + cfb * cfl;
-    const hfi         = 18000 * tfc * ros / 60;
-    const flameLength = hfi > 0 ? 0.0775 * Math.pow(hfi, 0.46) : 0;
-    let fireType = 'Surface';
-    if      (cfb > 0.9) fireType = 'Active Crown';
-    else if (cfb > 0.1) fireType = 'Passive Crown';
-    return { isi: sw.isi, bui: sw.bui, ros, hfi, cfb, tfc, flameLength, fireType };
-  }
+  const lat = opts.lat ?? _stationLat;
+  const lng = opts.lng ?? _stationLng;
+  const doy = opts.doy ?? Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const gfl = opts.gfl ?? 0.35;   // GLC-X-10 default grass fuel load
+  const pdf = opts.pdf ?? 35;     // default % dead balsam fir for M3/M4
 
-  // ISI — identical to Van Wagner formula used in FWI system
+  // ISI — Van Wagner (1987), identical to the FWI-system form
   const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
   const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
   const isi = 0.208 * ff * Math.exp(0.05039 * windSpeed);
-
-  // Grass curing factor — FBP ST-X-3 (O1a/O1b only)
-  // CF = 0.005 × (exp(0.061 × PC) − 1); modifies effective ISI before ROS calc.
-  // At PC=0 → CF=0 (no spread); PC=80 → CF≈0.65; PC=100 → CF≈2.22
-  let isiForROS = isi;
-  if (fuelCode === 'O1a' || fuelCode === 'O1b') {
-    const pc = Math.max(0, Math.min(100, curing));
-    isiForROS = 0.005 * (Math.exp(0.061 * pc) - 1) * isi;
-  }
 
   // BUI — same formula as _bui()
   let bui;
@@ -449,49 +514,83 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   }
   bui = Math.max(0, bui);
 
-  // BUI effect: BE = exp(50 × ln(q) × (1/BUI − 1/BUI₀))
-  let be = 1.0;
-  if (bui > 0 && ft.q < 1.0) {
-    be = Math.exp(50.0 * Math.log(ft.q) * (1.0 / bui - 1.0 / ft.bui0));
+  const fmc = calcFMC(lat, lng, doy);
+  const pc  = Math.max(0, Math.min(100, ps));
+  const sfc = calcSFC(fuelCode, ffmc, bui, pc, gfl);
+
+  // ── Initial spread rate RSI by fuel class ──────────────────────────────────
+  let rsi;
+  if (ft.mixedwood) {
+    // M1: Eq. 27/28 — PC-weighted C2 + D1. M2: GLC-X-10 — D1 share × 0.2 (green).
+    const hwFactor = fuelCode === 'M2' ? 0.2 : 1.0;
+    rsi = pc / 100 * _rsiBasic('C2', isi) + hwFactor * (100 - pc) / 100 * _rsiBasic('D1', isi);
+  } else if (ft.deadfir) {
+    // M3/M4: GLC-X-10 Eqs. 29-33 — PDF-weighted dead-fir + D1 (M4: D1 share × 0.2)
+    const hwFactor = fuelCode === 'M4' ? 0.2 : 1.0;
+    rsi = pdf / 100 * _rsiBasic(fuelCode, isi) + hwFactor * (1 - pdf / 100) * _rsiBasic('D1', isi);
+  } else if (fuelCode === 'O1a' || fuelCode === 'O1b') {
+    // Grass curing — GLC-X-10 Eq. 35b (revised from ST-X-3 Eq. 35), multiplies ROS.
+    // CF = 1.0 at 100% cured; the 1992 curve (which reached 2.22) is superseded.
+    const cc = Math.max(0, Math.min(100, curing));
+    const cf = cc < 58.8 ? 0.005 * (Math.exp(0.061 * cc) - 1) : 0.176 + 0.02 * (cc - 58.8);
+    rsi = _rsiBasic(fuelCode, isi) * cf;
+  } else if (fuelCode === 'D2') {
+    // GLC-X-10: green aspen carries fire only at BUI ≥ 80, at 0.2 × D1 rate
+    rsi = bui >= 80 ? 0.2 * _rsiBasic('D1', isi) : 0;
+  } else if (fuelCode === 'C6') {
+    rsi = 30 * Math.pow(1 - Math.exp(-0.08 * isi), 3.0);  // Eq. 62
+  } else {
+    rsi = _rsiBasic(fuelCode, isi);                        // Eq. 26
   }
 
-  // Surface ROS (m/min): RSI = a × (1 − e^{−b·ISI_eff})^c × BE
-  let ros = ft.a * Math.pow(1.0 - Math.exp(-ft.b * isiForROS), ft.c) * be;
-
-  // Slope factor — Butler (2007), capped at 2×
+  // Slope — ST-X-3 Eq. 39 spread factor, capped at 10 (GS ≥ 70%, GLC-X-10).
+  // NOTE: approximation — full ST-X-3 slope treatment vectors slope through an
+  // ISI-equivalent (ISF/WSE); no caller currently passes slope > 0.
   if (slope > 0) {
-    const sf = Math.min(Math.exp(3.533 * Math.pow(slope / 100.0, 1.2)), 2.0);
-    ros *= sf;
+    rsi *= Math.min(Math.exp(3.533 * Math.pow(slope / 100.0, 1.2)), 10.0);
   }
 
-  // Surface fire intensity (kW/m): SFI = H × SFC × ROS / 60
-  const H   = 18000; // kJ/kg, low heat of combustion
-  const sfi = H * ft.sfc * ros / 60.0;
+  // ── Crown fire — ST-X-3 Eqs. 56-65 ─────────────────────────────────────────
+  const csi = ft.cbh > 0
+    ? 0.001 * Math.pow(ft.cbh, 1.5) * Math.pow(460 + 25.9 * fmc, 1.5)  // Eq. 56
+    : Infinity;
+  const rso = ft.cbh > 0 ? csi / (300 * sfc) : Infinity;               // Eq. 57 (m/min)
 
-  // Crown fraction burned — Van Wagner (1977)
-  // CSI (critical surface intensity) = 0.001 × CBH^1.5 × (460 + 25.9 × FMC)^1.5
-  const doy = Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  const fmc = calcFMC(_stationLat, doy); // P5: seasonal FMC from station lat + day-of-year
-  const csi = ft.cbh > 0 ? 0.001 * Math.pow(ft.cbh, 1.5) * Math.pow(460 + 25.9 * fmc, 1.5) : Infinity;
-  const rso = ft.sfc > 0 ? csi / (H * ft.sfc) : Infinity;
-  const cfb = (ft.cbh > 0 && ros > rso) ? Math.max(0, 1.0 - Math.exp(-0.23 * (ros - rso))) : 0.0;
+  let rss, cfb, ros;
+  if (fuelCode === 'C6') {
+    // C6 two-equation system: surface (RSS) vs crown (RSC) blended by CFB
+    rss = rsi * _buildupEffect('C6', bui);                              // Eq. 63
+    const fme = Math.pow(1.5 - 0.00275 * fmc, 4) / (460 + 25.9 * fmc) * 1000;  // Eq. 61
+    const rsc = 60 * (1 - Math.exp(-0.0497 * isi)) * fme / 0.778;       // Eq. 64
+    cfb = (rsc > rss && rss > rso) ? 1 - Math.exp(-0.23 * (rss - rso)) : 0;    // Eq. 58
+    ros = rsc > rss ? rss + cfb * (rsc - rss) : rss;                    // Eq. 65
+  } else {
+    rss = rsi * _buildupEffect(fuelCode, bui);                          // Eq. 54/55
+    cfb = (ft.cbh > 0 && rss > rso) ? 1 - Math.exp(-0.23 * (rss - rso)) : 0;   // Eq. 58
+    ros = rss;
+  }
+  ros = Math.max(ros, 0.000001);
 
-  // Total fuel consumption and head fire intensity
-  const cfc = cfb * ft.cfl;
-  const tfc = ft.sfc + cfc;
-  const hfi = H * tfc * ros / 60.0;
+  // ── Consumption and intensity — ST-X-3 Eqs. 66-69 (GLC-X-10 66b/66c) ──────
+  let cfc = cfb * ft.cfl;                                               // Eq. 66a
+  if (ft.mixedwood) cfc *= pc / 100;                                    // Eq. 66b
+  if (ft.deadfir)   cfc *= pdf / 100;                                   // Eq. 66c
+  const tfc = sfc + cfc;                                                // Eq. 67
+  const hfi = 300 * tfc * ros;                                          // Eq. 69 (kW/m)
+  const sfi = 300 * sfc * (fuelCode === 'C6' ? rss : ros);              // surface-only intensity
 
-  // Flame length — Byram (1959): L = 0.0775 × I^0.46
+  // Flame length — Byram (1959): L = 0.0775 × I^0.46 (applied to total HFI)
   const flameLength = hfi > 0 ? 0.0775 * Math.pow(hfi, 0.46) : 0.0;
 
-  // Fire type classification
+  // Fire type classification (ST-X-3 CFB convention)
   let fireType = 'Surface';
-  if      (cfb > 0.9)             fireType = 'Active Crown';
-  else if (cfb > 0.1)             fireType = 'Passive Crown';
-  else if (ft.cbh > 0 && sfi > csi) fireType = 'Torching';
+  if      (cfb >= 0.9) fireType = 'Active Crown';
+  else if (cfb >= 0.1) fireType = 'Passive Crown';
+  else if (cfb > 0)    fireType = 'Torching';
 
-  return { isi, bui, ros, hfi, cfb, tfc, flameLength, fireType };
+  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType };
 }
+// ═══ SCIENCE CORE END: calculateFBP ═══
 
 /** Render FBP results for both fuels into the station_detail dual-fuel sections. */
 function wireFBP(weather, fwi) {
@@ -2894,7 +2993,7 @@ async function printStationBriefing() {
   const fuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
   const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
   const doy = Math.ceil((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-  const fmc = calcFMC(lat, doy);
+  const fmc = calcFMC(lat, lng, doy);
 
   // FBP prediction
   const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, 0);
@@ -3662,7 +3761,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector,
+window.FWI = { initFWI, calcFMC, calcSFC, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };
