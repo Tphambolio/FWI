@@ -1339,7 +1339,7 @@ async function fetchWeatherPrimary(lat, lng) {
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,thunderstorm_probability` +
     `&past_days=1&forecast_days=2&timezone=UTC`;
   const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
@@ -1371,6 +1371,7 @@ async function fetchWeather(lat, lng) {
     temp:  d.hourly.temperature_2m[i],
     rh:    d.hourly.relative_humidity_2m[i],
     wind:  d.hourly.wind_speed_10m[i],
+    gust:  d.hourly.wind_gusts_10m?.[i] ?? null,
     wdir:  d.hourly.wind_direction_10m[i] ?? null,
     rain:             rain24,
     thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
@@ -1402,6 +1403,73 @@ function calculateFWI(w, prev = STARTUP) {
   const bui  = _bui(dmc, dc);
   const fwi  = _fwi(isi, bui);
   return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRating(fwi), weather: w };
+}
+
+// ─── RPAS Operations Panel ────────────────────────────────────────────────────
+
+// DJI M4TD platform limits (km/h)
+const RPAS_WIND_CAUTION = 36;  // 10 m/s — practical safe operational limit
+const RPAS_WIND_NOGO    = 43;  // 12 m/s — M4TD rated max
+const RPAS_GUST_NOGO    = 50;  // ~14 m/s — gust absolute limit
+
+function _civilTwilight(lat, lng, date) {
+  const JD = date.getTime() / 86400000 + 2440587.5;
+  const n  = JD - 2451545.0;
+  const L  = (280.460 + 0.9856474 * n) % 360;
+  const g  = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
+  const lambda = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * Math.PI / 180;
+  const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
+  const dec    = Math.asin(sinDec);
+  const cosHA  = (Math.sin(-6 * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * sinDec) /
+                 (Math.cos(lat * Math.PI / 180) * Math.cos(dec));
+  if (Math.abs(cosHA) > 1) return null;
+  const HA = Math.acos(cosHA) * 180 / Math.PI;
+  const B  = (360 / 365) * (n - 81) * Math.PI / 180;
+  const EoT = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+  const noonUTC = 12 - lng / 15 - EoT / 60;
+  const toDate = h => { const d = new Date(date); d.setUTCHours(0, 0, 0, 0); return new Date(d.getTime() + h * 3600000); };
+  return { rise: toDate(noonUTC - HA / 15), set: toDate(noonUTC + HA / 15) };
+}
+
+function _updateRPAS(weather, lat, lng) {
+  const panel = document.getElementById('fwi-rpas-panel');
+  if (!panel) return;
+
+  const wind = weather?.wind ?? null;
+  const gust = weather?.gust ?? null;
+
+  let statusText = '—', statusClass = 'text-slate-400';
+  if (wind !== null) {
+    if (wind > RPAS_WIND_NOGO || (gust !== null && gust > RPAS_GUST_NOGO)) {
+      statusText = 'NO-GO'; statusClass = 'text-red-400 font-bold';
+    } else if (wind > RPAS_WIND_CAUTION) {
+      statusText = 'CAUTION'; statusClass = 'text-amber-400 font-bold';
+    } else {
+      statusText = 'GO'; statusClass = 'text-emerald-400 font-bold';
+    }
+  }
+
+  const setEl = (id, text, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    if (cls) el.className = cls;
+  };
+  setEl('fwi-rpas-wind',   wind !== null ? Math.round(wind) + ' km/h' : '—');
+  setEl('fwi-rpas-gust',   gust !== null ? Math.round(gust) + ' km/h' : '—');
+  setEl('fwi-rpas-status', statusText, statusClass + ' font-headline text-2xl');
+
+  const now = new Date(Date.now() - 7 * 3600000); // MDT display
+  const ct = _civilTwilight(lat, lng, new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z'));
+  if (ct) {
+    const fmt = d => d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Edmonton' });
+    setEl('fwi-rpas-civil-rise', fmt(ct.rise));
+    setEl('fwi-rpas-civil-set',  fmt(ct.set));
+    const nowMs = Date.now();
+    const daylight = nowMs >= ct.rise.getTime() && nowMs <= ct.set.getTime();
+    setEl('fwi-rpas-daylight', daylight ? 'Daylight ops' : 'Outside civil twilight',
+          daylight ? 'text-emerald-400 font-bold' : 'text-amber-500 font-bold');
+  }
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */
@@ -1562,6 +1630,9 @@ function wireDOM(r, lat, lng) {
 
   // P4: SCRIBE 48-hr validation — async, non-blocking
   fetchSCRIBE(lat, lng).then(renderSCRIBE);
+
+  // RPAS ops panel (station_detail only)
+  _updateRPAS(r.weather, lat, lng);
 }
 
 /**
@@ -2252,6 +2323,7 @@ function _updateStationTableRow(entry) {
   const el2 = document.getElementById('fwi-avg-rh');
   if (el1) el1.textContent = extCnt > 0 ? `${extCnt} Extreme` : extCnt === 0 ? '0' : '—';
   if (el2 && avgRH != null) el2.textContent = `${avgRH.toFixed(0)}%`;
+  _updateAlarmStrip();
 }
 
 /** Sort station table by column key (asc/desc). */
@@ -2301,6 +2373,37 @@ const REGIONS = [
 let _regionalCache = [];
 // Cache populated by buildStationMap — stores all 39 station FWI results
 let _mapStationCache = [];
+
+const FWI_ALARM_KEY = 'fwi-alarm-threshold';
+
+function _getAlarmThreshold() {
+  return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5');
+}
+
+function _updateAlarmStrip() {
+  const strip = document.getElementById('fwi-alarm-strip');
+  if (!strip) return;
+  const threshold = _getAlarmThreshold();
+  const alarms = _mapStationCache
+    .filter(e => e.result?.fwi != null && e.result.fwi >= threshold)
+    .sort((a, b) => b.result.fwi - a.result.fwi);
+  const thEl = document.getElementById('fwi-alarm-threshold-label');
+  if (thEl) thEl.textContent = `FWI ≥ ${threshold}`;
+  if (!alarms.length) {
+    strip.innerHTML = `<span class="text-[10px] text-slate-600 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
+    return;
+  }
+  const DANGER_COLORS = { Low:'#2d9e58', Moderate:'#7bd0ff', High:'#f5c518', 'Very High':'#f97316', Extreme:'#ef4444' };
+  strip.innerHTML = alarms.map(e => {
+    const c = DANGER_COLORS[e.result.danger] || '#7bd0ff';
+    const nav = `${e.navLat ?? e.lat},${e.navLng ?? e.lng}`;
+    return `<a href="../station_detail/code.html" onclick="localStorage.setItem('fwi-station','${nav}')"
+      class="inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors hover:brightness-110"
+      style="background:${c}22;border-color:${c}55;color:${c}">
+      <span>${e.name}</span><span class="font-headline">${e.result.fwi.toFixed(1)}</span>
+    </a>`;
+  }).join('');
+}
 // Previous-day CWFIS carry-over values loaded from GitHub-hosted JSON (see cwfis-daily.yml)
 let _cwfisPrev = {};
 // Cache populated by buildForecastTrends — used by exportForecastReport
@@ -4151,7 +4254,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector,
+window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, _updateAlarmStrip,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };

@@ -380,6 +380,38 @@
 
 </div><!-- /today card -->
 
+<!-- RPAS OPS PANEL -->
+<div id="fwi-rpas-panel" class="bg-[#0b1326] border border-[#1e2740] rounded-2xl px-5 py-4 mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.15em] text-slate-500 flex items-center gap-1.5">
+      <span class="material-symbols-outlined" style="font-size:13px">flight</span>RPAS Ops · DJI M4TD
+    </span>
+    <span id="fwi-rpas-status" class="font-headline text-2xl text-slate-400">—</span>
+  </div>
+  <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm mb-3">
+    <div class="flex justify-between">
+      <span class="text-[10px] uppercase tracking-wider text-slate-500">Wind</span>
+      <span id="fwi-rpas-wind" class="font-bold text-white text-sm">—</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-[10px] uppercase tracking-wider text-slate-500">Gust</span>
+      <span id="fwi-rpas-gust" class="font-bold text-white text-sm">—</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-[10px] uppercase tracking-wider text-slate-500">Civil Rise</span>
+      <span id="fwi-rpas-civil-rise" class="font-bold text-white text-sm">—</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-[10px] uppercase tracking-wider text-slate-500">Civil Set</span>
+      <span id="fwi-rpas-civil-set" class="font-bold text-white text-sm">—</span>
+    </div>
+  </div>
+  <div class="flex justify-between items-center border-t border-[#1e2740] pt-2">
+    <span class="text-[9px] text-slate-600">Max sustained 43 km/h · Max gust 50 km/h · No night VLOS w/o SFOC</span>
+    <span id="fwi-rpas-daylight" class="text-[10px] font-bold text-slate-400">—</span>
+  </div>
+</div>
+
 <!-- TOMORROW -->
 <section id="fwi-d1-preview-section" class="hidden md:block">
 <div id="fwi-d1-card" class="rounded-2xl p-5 h-full transition-all"
@@ -663,6 +695,8 @@
     <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
     <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
   </div>
+    <span class="text-[8px] text-slate-600 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
+  <span class="text-[8px] text-amber-600/80 font-medium">For informational use only — not for operational fire management decisions</span>
   <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
 </footer>
 </main>

@@ -147,6 +147,24 @@
 </div>
 </section>
 
+<!-- Alarm Strip -->
+<div class="mb-4 bg-[#0f1829] border border-[#1e2740] rounded-xl px-4 py-3">
+  <div class="flex items-center justify-between mb-2 gap-3">
+    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.15em] text-slate-500">
+      Stations in Alarm · <span id="fwi-alarm-threshold-label">FWI ≥ 15.5</span>
+    </span>
+    <div class="flex items-center gap-2">
+      <span class="text-[9px] text-slate-600">Threshold:</span>
+      <input type="range" id="fwi-alarm-slider" min="5" max="50" step="0.5" value="15.5"
+        class="w-20 accent-amber-400" style="height:3px"
+        oninput="localStorage.setItem('fwi-alarm-threshold',this.value);document.getElementById('fwi-alarm-threshold-label').textContent='FWI ≥ '+this.value;FWI._updateAlarmStrip()" />
+    </div>
+  </div>
+  <div id="fwi-alarm-strip" class="flex flex-wrap gap-2 min-h-[1.5rem]">
+    <span class="text-[10px] text-slate-700 italic">Loading…</span>
+  </div>
+</div>
+
 <!-- Station Network Table -->
 <section class="mb-10">
 <div class="flex items-baseline justify-between mb-2">
@@ -176,6 +194,8 @@
     <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
     <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
   </div>
+    <span class="text-[8px] text-slate-600 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
+  <span class="text-[8px] text-amber-600/80 font-medium">For informational use only — not for operational fire management decisions</span>
   <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
 </footer>
 </main>
@@ -191,6 +211,10 @@
 <script>
   const _h = document.getElementById('fwi-station-network-heading');
   if (_h) _h.textContent = `Station Network — All ${FWI.ALBERTA_STATIONS.length} Stations`;
+  // Restore saved alarm threshold
+  const _savedTh = parseFloat(localStorage.getItem('fwi-alarm-threshold') ?? '15.5');
+  const _sl = document.getElementById('fwi-alarm-slider');
+  if (_sl) { _sl.value = _savedTh; document.getElementById('fwi-alarm-threshold-label').textContent = 'FWI ≥ ' + _savedTh; }
   FWI.buildRegionalSummary();
   FWI.buildStationMap('fwi-station-map');
   document.getElementById('fwi-export-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
