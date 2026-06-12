@@ -2711,7 +2711,8 @@ async function fetchForecastNAEFS(code) {
         rain:  p.median_pcp  ?? 0,
         month: dt.getMonth() + 1,
         label,
-        _ts: dt.getTime(),  // preserve original timestamp for reliable sort
+        // midnight UTC → noon UTC so _mdtDateStr(-6h) returns the same calendar date
+        _ts: dt.getTime() + 12 * 3600000,
         peak: { temp: peakTemp, rh: peakRh, wind: peakWind },
       };
     })
@@ -4241,13 +4242,15 @@ async function buildD1Card() {
   const todayIdx    = days.findIndex(d => d._ts && _pdtDateStr(d._ts) === _nowPDT);
   const tomorrowIdx = days.findIndex(d => d._ts && _pdtDateStr(d._ts) > _nowPDT);
 
-  // Populate LEFT card (today peak burn) — overwrites the CWFIS noon data set by wireFBP
+  // Populate LEFT card (today peak burn). Use _lastWeather (fetchWeatherPrimary)
+  // for the display — it's already the peak burn forecast (pre-noon) or real obs
+  // (post-noon). NAEFS daily max-T is biased high and not suitable for same-day display.
   if (todayIdx >= 0) {
-    const t0pw = days[todayIdx]?.peak || days[todayIdx] || {};
+    const t0pw = _lastWeather || days[todayIdx]?.peak || days[todayIdx] || {};
     const setW = (attr, val) => { const el = document.querySelector(`[data-fwi="${attr}"]`); if (el) el.textContent = val; };
-    setW('temp', `${(+t0pw.temp||0).toFixed(1)}°C`);
-    setW('rh',   `${Math.round(t0pw.rh||0)}%`);
-    setW('wind', `${Math.round(t0pw.wind||0)} km/h`);
+    setW('temp', `${(+(t0pw.temp)||0).toFixed(1)}°C`);
+    setW('rh',   `${Math.round(+(t0pw.rh)||0)}%`);
+    setW('wind', `${Math.round(+(t0pw.wind)||0)} km/h`);
     setW('wdir', t0pw.wdir != null ? windCompass(t0pw.wdir) : '—');
     setW('rain', '—');
 

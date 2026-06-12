@@ -2586,6 +2586,10 @@ async function fetchForecastNAEFS(code) {
       const peakTemp = p.max_temp ?? 15;
       const peakRh   = p.min_rh   ?? 40;
       const peakWind = p.median_ws ?? 10;
+      // NAEFS date_time is midnight UTC representing that UTC calendar day.
+      // _mdtDateStr subtracts 6h (MDT), so midnight UTC maps to 6pm of the
+      // previous MDT day — off by one. Adding 12h shifts to noon UTC so
+      // _mdtDateStr correctly returns the same calendar date in MDT.
       return {
         temp:  peakTemp,
         rh:    peakRh,
@@ -2593,7 +2597,7 @@ async function fetchForecastNAEFS(code) {
         rain:  p.median_pcp  ?? 0,
         month: dt.getMonth() + 1,
         label,
-        _ts: dt.getTime(),  // preserve original timestamp for reliable sort
+        _ts: dt.getTime() + 12 * 3600000,  // midnight UTC → noon UTC → same MDT calendar date
         peak: { temp: peakTemp, rh: peakRh, wind: peakWind },
       };
     })
@@ -4135,13 +4139,17 @@ async function buildD1Card() {
   const todayIdx    = days.findIndex(d => d._ts && _mdtDateStr(d._ts) === _nowMDT);
   const tomorrowIdx = days.findIndex(d => d._ts && _mdtDateStr(d._ts) > _nowMDT);
 
-  // Populate LEFT card (today peak burn) — overwrites the CWFIS noon data set by wireFBP
+  // Populate LEFT card (today peak burn).
+  // Weather display uses _lastWeather (from fetchWeatherPrimary) — already the peak
+  // burn forecast when pre-noon, or real obs when post-noon. NAEFS/forecast peak
+  // values are NOT used for display because NAEFS uses daily max-T (biased high)
+  // and its date_time is UTC-keyed, making it unreliable for same-day display.
   if (todayIdx >= 0) {
-    const t0pw = days[todayIdx]?.peak || days[todayIdx] || {};
+    const t0pw = _lastWeather || days[todayIdx]?.peak || days[todayIdx] || {};
     const setW = (attr, val) => { const el = document.querySelector(`[data-fwi="${attr}"]`); if (el) el.textContent = val; };
-    setW('temp', `${(+t0pw.temp||0).toFixed(1)}°C`);
-    setW('rh',   `${Math.round(t0pw.rh||0)}%`);
-    setW('wind', `${Math.round(t0pw.wind||0)} km/h`);
+    setW('temp', `${(+(t0pw.temp)||0).toFixed(1)}°C`);
+    setW('rh',   `${Math.round(+(t0pw.rh)||0)}%`);
+    setW('wind', `${Math.round(+(t0pw.wind)||0)} km/h`);
     setW('wdir', t0pw.wdir != null ? windCompass(t0pw.wdir) : '—');
     setW('rain', '—');
 
