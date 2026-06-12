@@ -1295,7 +1295,19 @@ async function fetchWeatherPrimary(lat, lng) {
   const isPreNoon = mstHour < 12;
 
   try {
-    const cwfis = await fetchCWFIS(lat, lng, _idwMode);
+    // Post-noon: fetch CWFIS and SWOB in parallel so we can cross-validate weather obs.
+    // CWFIS fire weather stations can carry stale or erroneous temperature readings;
+    // MSC SWOB (airport) is the authoritative ground-truth for weather values.
+    let cwfis, swob = null;
+    if (!isPreNoon && !_idwMode) {
+      [cwfis, swob] = await Promise.all([
+        fetchCWFIS(lat, lng, false).catch(() => null),
+        fetchSWOB(lat, lng).catch(() => null),
+      ]);
+    } else {
+      cwfis = await fetchCWFIS(lat, lng, _idwMode);
+    }
+
     if (cwfis) {
       if (isPreNoon && !_idwMode) {
         // CWFIS layer serves yesterday's noon obs until 19:00 UTC — always fall through
@@ -1313,9 +1325,28 @@ async function fetchWeatherPrimary(lat, lng) {
         }
         // Fall through — use today's peak burn forecast for weather inputs
       } else {
+        // Cross-validate CWFIS temp against SWOB. If a close SWOB station disagrees
+        // by > 8°C the CWFIS obs is stale or the station sensor is faulty — use SWOB
+        // weather values while keeping the CWFIS FWI chain (which is based on carry-over,
+        // not the instantaneous reading).
+        if (swob?.temp != null && cwfis.temp != null &&
+            (swob.distKm ?? 999) <= 25 &&
+            Math.abs(cwfis.temp - swob.temp) > 8) {
+          return {
+            ...swob,
+            ffmc: cwfis.ffmc,  dmc: cwfis.dmc,  dc:  cwfis.dc,
+            isi:  cwfis.isi,   bui: cwfis.bui,  fwi: cwfis.fwi,
+            fwiFromCWFIS: cwfis.fwiFromCWFIS,
+            stationName:  cwfis.stationName,
+            distKm:       cwfis.distKm,
+            repDate:      cwfis.repDate,
+          };
+        }
         return cwfis;
       }
     }
+    // Post-noon SWOB already fetched above — return it if valid
+    if (!isPreNoon && swob) return swob;
   } catch (e) { /* fall through */ }
 
   // Pre-noon: skip SWOB — real-time morning obs are not useful for peak burn prediction

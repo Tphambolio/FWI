@@ -1296,14 +1296,35 @@ async function fetchWeatherPrimary(lat, lng) {
   // Tier 0+1 (BC): race BCWS Datamart and CWFIS simultaneously — use whichever returns first.
   // Sequential cascade was causing 20s+ waits when BCWS was slow/down.
   // IDW mode skips BCWS (needs multi-station blend) and uses CWFIS IDW-only.
+  // SWOB runs in parallel for cross-validation: if the primary source disagrees by > 8°C
+  // with a close MSC station, the CWFIS/BCWS FWI chain is kept but SWOB weather is used.
   if (!_idwMode) {
     try {
-      const result = await Promise.any([
-        fetchBCWSForCoords(lat, lng).then(r => r ?? Promise.reject('no data')),
-        fetchCWFIS(lat, lng, false).then(r => r ?? Promise.reject('no data')),
+      const [primary, swob] = await Promise.all([
+        Promise.any([
+          fetchBCWSForCoords(lat, lng).then(r => r ?? Promise.reject('no data')),
+          fetchCWFIS(lat, lng, false).then(r => r ?? Promise.reject('no data')),
+        ]).catch(() => null),
+        fetchSWOB(lat, lng).catch(() => null),
       ]);
-      if (result) return result;
-    } catch (e) { /* all failed, fall through */ }
+      if (primary) {
+        if (swob?.temp != null && primary.temp != null &&
+            (swob.distKm ?? 999) <= 25 &&
+            Math.abs(primary.temp - swob.temp) > 8) {
+          return {
+            ...swob,
+            ffmc: primary.ffmc,  dmc: primary.dmc,  dc:  primary.dc,
+            isi:  primary.isi,   bui: primary.bui,  fwi: primary.fwi,
+            fwiFromCWFIS: primary.fwiFromCWFIS,
+            stationName:  primary.stationName,
+            distKm:       primary.distKm,
+            repDate:      primary.repDate,
+          };
+        }
+        return primary;
+      }
+      if (swob) return swob;
+    } catch (e) { /* fall through */ }
   } else {
     try {
       const cwfis = await fetchCWFIS(lat, lng, true);
