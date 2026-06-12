@@ -1326,7 +1326,7 @@ async function fetchWeatherPrimary(lat, lng) {
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,thunderstorm_probability` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
     `&past_days=1&forecast_days=2&timezone=UTC`;
   const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
@@ -1357,7 +1357,6 @@ async function fetchWeather(lat, lng) {
     temp:  d.hourly.temperature_2m[i],
     rh:    d.hourly.relative_humidity_2m[i],
     wind:  d.hourly.wind_speed_10m[i],
-    gust:  d.hourly.wind_gusts_10m?.[i] ?? null,
     wdir:  d.hourly.wind_direction_10m[i] ?? null,
     rain:             rain24,
     thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
@@ -1389,68 +1388,6 @@ function calculateFWI(w, prev = STARTUP) {
   const bui  = _bui(dmc, dc);
   const fwi  = _fwi(isi, bui);
   return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
-}
-
-// ─── RPAS Operations Panel ────────────────────────────────────────────────────
-
-const RPAS_WIND_CAUTION = 36;
-const RPAS_WIND_NOGO    = 43;
-const RPAS_GUST_NOGO    = 50;
-
-function _civilTwilight(lat, lng, date) {
-  const JD = date.getTime() / 86400000 + 2440587.5;
-  const n  = JD - 2451545.0;
-  const L  = (280.460 + 0.9856474 * n) % 360;
-  const g  = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
-  const lambda = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * Math.PI / 180;
-  const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
-  const dec    = Math.asin(sinDec);
-  const cosHA  = (Math.sin(-6 * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * sinDec) /
-                 (Math.cos(lat * Math.PI / 180) * Math.cos(dec));
-  if (Math.abs(cosHA) > 1) return null;
-  const HA = Math.acos(cosHA) * 180 / Math.PI;
-  const B  = (360 / 365) * (n - 81) * Math.PI / 180;
-  const EoT = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
-  const noonUTC = 12 - lng / 15 - EoT / 60;
-  const toDate = h => { const d = new Date(date); d.setUTCHours(0, 0, 0, 0); return new Date(d.getTime() + h * 3600000); };
-  return { rise: toDate(noonUTC - HA / 15), set: toDate(noonUTC + HA / 15) };
-}
-
-function _updateRPAS(weather, lat, lng) {
-  const panel = document.getElementById('fwi-rpas-panel');
-  if (!panel) return;
-  const wind = weather?.wind ?? null;
-  const gust = weather?.gust ?? null;
-  let statusText = '—', statusClass = 'text-slate-400';
-  if (wind !== null) {
-    if (wind > RPAS_WIND_NOGO || (gust !== null && gust > RPAS_GUST_NOGO)) {
-      statusText = 'NO-GO'; statusClass = 'text-red-400 font-bold';
-    } else if (wind > RPAS_WIND_CAUTION) {
-      statusText = 'CAUTION'; statusClass = 'text-amber-400 font-bold';
-    } else {
-      statusText = 'GO'; statusClass = 'text-emerald-400 font-bold';
-    }
-  }
-  const setEl = (id, text, cls) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = text;
-    if (cls) el.className = cls;
-  };
-  setEl('fwi-rpas-wind',   wind !== null ? Math.round(wind) + ' km/h' : '—');
-  setEl('fwi-rpas-gust',   gust !== null ? Math.round(gust) + ' km/h' : '—');
-  setEl('fwi-rpas-status', statusText, statusClass + ' font-headline text-2xl');
-  const now = new Date(Date.now() - 8 * 3600000); // PST display
-  const ct = _civilTwilight(lat, lng, new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z'));
-  if (ct) {
-    const fmt = d => d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Vancouver' });
-    setEl('fwi-rpas-civil-rise', fmt(ct.rise));
-    setEl('fwi-rpas-civil-set',  fmt(ct.set));
-    const nowMs = Date.now();
-    const daylight = nowMs >= ct.rise.getTime() && nowMs <= ct.set.getTime();
-    setEl('fwi-rpas-daylight', daylight ? 'Daylight ops' : 'Outside civil twilight',
-          daylight ? 'text-emerald-400 font-bold' : 'text-amber-500 font-bold');
-  }
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */
@@ -1599,9 +1536,6 @@ function wireDOM(r, lat, lng) {
 
   // P4: SCRIBE 48-hr validation — async, non-blocking
   fetchSCRIBE(lat, lng).then(renderSCRIBE);
-
-  // RPAS ops panel (station_detail only)
-  _updateRPAS(r.weather, lat, lng);
 }
 
 /**

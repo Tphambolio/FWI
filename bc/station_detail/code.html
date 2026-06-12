@@ -379,38 +379,6 @@
 
 </div><!-- /today card -->
 
-<!-- RPAS OPS PANEL -->
-<div id="fwi-rpas-panel" class="bg-[#0b1326] border border-[#1e2740] rounded-2xl px-5 py-4 mb-4">
-  <div class="flex items-center justify-between mb-3">
-    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.15em] text-slate-500 flex items-center gap-1.5">
-      <span class="material-symbols-outlined" style="font-size:13px">flight</span>RPAS Ops · DJI M4TD
-    </span>
-    <span id="fwi-rpas-status" class="font-headline text-2xl text-slate-400">—</span>
-  </div>
-  <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm mb-3">
-    <div class="flex justify-between">
-      <span class="text-[10px] uppercase tracking-wider text-slate-500">Wind</span>
-      <span id="fwi-rpas-wind" class="font-bold text-white text-sm">—</span>
-    </div>
-    <div class="flex justify-between">
-      <span class="text-[10px] uppercase tracking-wider text-slate-500">Gust</span>
-      <span id="fwi-rpas-gust" class="font-bold text-white text-sm">—</span>
-    </div>
-    <div class="flex justify-between">
-      <span class="text-[10px] uppercase tracking-wider text-slate-500">Civil Rise</span>
-      <span id="fwi-rpas-civil-rise" class="font-bold text-white text-sm">—</span>
-    </div>
-    <div class="flex justify-between">
-      <span class="text-[10px] uppercase tracking-wider text-slate-500">Civil Set</span>
-      <span id="fwi-rpas-civil-set" class="font-bold text-white text-sm">—</span>
-    </div>
-  </div>
-  <div class="flex justify-between items-center border-t border-[#1e2740] pt-2">
-    <span class="text-[9px] text-slate-600">Max sustained 43 km/h · Max gust 50 km/h · No night VLOS w/o SFOC</span>
-    <span id="fwi-rpas-daylight" class="text-[10px] font-bold text-slate-400">—</span>
-  </div>
-</div>
-
 <!-- TOMORROW -->
 <section id="fwi-d1-preview-section" class="hidden md:block">
 <div id="fwi-d1-card" class="rounded-2xl p-5 h-full transition-all"
@@ -705,7 +673,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=122"></script>
+<script src="../fwi.js?v=123"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
