@@ -2,13 +2,20 @@
  * Live chain test — runs the FWI forecast chain using real Open-Meteo weather
  * data for several stations, checks for plausibility across 7 days.
  * Also tests SWOB cross-validation logic with synthetic divergence.
+ * BC stations are run through both the AB and BC engines; results must match.
  *
  * Run: node tests/live_chain_test.mjs
  */
 import { readFileSync } from 'fs';
 import vm from 'vm';
+import { loadEngine } from './load-engine.mjs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-// Load AB engine
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+
+// Load AB engine (inline sandbox for fetch support)
 const code = readFileSync(new URL('../fwi.js', import.meta.url), 'utf8');
 const sandbox = {
   window: {}, document: { querySelectorAll: () => [], getElementById: () => null },
@@ -20,12 +27,15 @@ vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
 const FWI = sandbox.window.FWI;
 
+// Load BC engine (no-network sandbox — chain tests use fetchForecast7 separately)
+const FWI_BC = loadEngine(path.join(ROOT, 'bc', 'fwi.js'));
+
 let pass = 0, fail = 0;
 const issues = [];
 
 // ─── Helper: Van Wagner chain forward one day ─────────────────────────────────
-function chainDay(w, prev) {
-  return FWI.calculateFWI(w, prev);
+function chainDay(w, prev, engine = FWI) {
+  return engine.calculateFWI(w, prev);
 }
 
 // ─── Fetch Open-Meteo 7-day forecast for a point ─────────────────────────────
@@ -57,7 +67,7 @@ async function fetchForecast7(lat, lon, tzOffsetH, label) {
 }
 
 // ─── Test: 7-day chain plausibility ──────────────────────────────────────────
-async function testChain(stationLabel, lat, lon, tzOffsetH, cwfisStart) {
+async function testChain(stationLabel, lat, lon, tzOffsetH, cwfisStart, engine = FWI) {
   console.log(`\n── ${stationLabel} ──`);
   const days = await fetchForecast7(lat, lon, tzOffsetH, stationLabel);
   if (!days.length) { console.log('  SKIP: no forecast data'); return; }
@@ -69,7 +79,7 @@ async function testChain(stationLabel, lat, lon, tzOffsetH, cwfisStart) {
 
   for (const day of days) {
     const w = { ...day, fwiFromCWFIS: false };
-    const r = chainDay(w, prev);
+    const r = chainDay(w, prev, engine);
     const fwi = r.fwi ?? 0;
     const dayDrop = Math.abs(fwi - prevFWI);
     if (!isNaN(prevFWI)) maxDropInOneDay = Math.max(maxDropInOneDay, dayDrop);
@@ -86,7 +96,7 @@ async function testChain(stationLabel, lat, lon, tzOffsetH, cwfisStart) {
       issues.push(`  LOW FWI=${fwi.toFixed(1)} at ${day.temp}°C/${day.rh}%RH on ${day.date} (${stationLabel})`);
     }
 
-    const danger = FWI.dangerRating(fwi);
+    const danger = engine.dangerRating(fwi);
     console.log(`  ${day.date}  T=${day.temp?.toFixed(1).padStart(5)}°C  RH=${String(day.rh).padStart(3)}%  W=${day.wind?.toFixed(0).padStart(3)} km/h  Rain=${day.rain?.toFixed(1).padStart(5)}mm  FWI=${fwi.toFixed(1).padStart(6)}  ${danger}`);
     prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
     prevFWI = fwi;
@@ -96,6 +106,41 @@ async function testChain(stationLabel, lat, lon, tzOffsetH, cwfisStart) {
     console.log(`  OK — no anomalies. Max single-day FWI change: ${maxDropInOneDay.toFixed(1)}`);
     pass++;
   } else {
+    fail++;
+  }
+}
+
+// ─── Test: BC engine produces identical chain to AB engine on BC station data ─
+async function testBCEngineParity(stationLabel, lat, lon, tzOffsetH, cwfisStart) {
+  console.log(`\n── BC engine parity: ${stationLabel} ──`);
+  const days = await fetchForecast7(lat, lon, tzOffsetH, stationLabel);
+  if (!days.length) { console.log('  SKIP: no forecast data'); return; }
+
+  let prevAB = cwfisStart, prevBC = cwfisStart;
+  let maxDiff = 0;
+  let parityFail = false;
+
+  for (const day of days) {
+    const w = { ...day, fwiFromCWFIS: false };
+    const rAB = FWI.calculateFWI(w, prevAB);
+    const rBC = FWI_BC.calculateFWI(w, prevBC);
+    const diff = Math.abs((rAB.fwi ?? 0) - (rBC.fwi ?? 0));
+    maxDiff = Math.max(maxDiff, diff);
+    if (diff > 0.01) {
+      parityFail = true;
+      issues.push(`  Parity divergence at ${stationLabel} ${day.date}: AB=${rAB.fwi?.toFixed(3)} BC=${rBC.fwi?.toFixed(3)} Δ=${diff.toFixed(3)}`);
+    }
+    prevAB = { ffmc: rAB.ffmc, dmc: rAB.dmc, dc: rAB.dc };
+    prevBC = { ffmc: rBC.ffmc, dmc: rBC.dmc, dc: rBC.dc };
+    const danger = FWI_BC.dangerRating(rBC.fwi ?? 0);
+    console.log(`  ${day.date}  FWI AB=${String((rAB.fwi ?? 0).toFixed(1)).padStart(6)}  BC=${String((rBC.fwi ?? 0).toFixed(1)).padStart(6)}  Δ=${diff.toFixed(3)}  ${danger}`);
+  }
+
+  if (!parityFail) {
+    console.log(`  PARITY PASS — max FWI divergence over 7 days: ${maxDiff.toFixed(4)}`);
+    pass++;
+  } else {
+    console.log(`  PARITY FAIL — engines diverged`);
     fail++;
   }
 }
@@ -176,15 +221,24 @@ const AB_STARTS = {
 const BC_STARTS = {
   cranbrook:  { ffmc: 85.2, dmc: 19.4, dc: 327.8 },  // CRANBROOK AIRPORT AUTO
   golden:     { ffmc: 86.1, dmc: 33.2, dc: 283.3 },  // GOLDEN AIRPORT
+  kamloops:   { ffmc: 87.0, dmc: 42.0, dc: 380.0 },  // KAMLOOPS (typical June)
 };
 
 testSWOBCrossValidation();
 
+// AB stations — via AB engine
 await testChain('Edmonton Blatchford AB',  53.567, -113.517, 7, AB_STARTS.edmonton);
 await testChain('Coronation AB (windy)',   52.07,  -111.45,  7, AB_STARTS.coronation);
 await testChain('Fort McMurray AB',        56.65,  -111.22,  7, { ffmc: 70, dmc: 8, dc: 60 });
-await testChain('Cranbrook BC',            49.62,  -115.79,  8, BC_STARTS.cranbrook);
-await testChain('Golden BC',               51.30,  -116.98,  8, BC_STARTS.golden);
+
+// BC stations — via BC engine (plausibility + engine parity with AB engine)
+await testChain('Cranbrook BC [BC engine]', 49.62, -115.79, 8, BC_STARTS.cranbrook,  FWI_BC);
+await testChain('Golden BC [BC engine]',    51.30, -116.98, 8, BC_STARTS.golden,     FWI_BC);
+await testChain('Kamloops BC [BC engine]',  50.70, -120.44, 8, BC_STARTS.kamloops,   FWI_BC);
+
+// Cross-engine parity: same BC weather data through both AB and BC engines must agree
+await testBCEngineParity('Cranbrook parity check', 49.62, -115.79, 8, BC_STARTS.cranbrook);
+await testBCEngineParity('Kamloops parity check',  50.70, -120.44, 8, BC_STARTS.kamloops);
 
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
