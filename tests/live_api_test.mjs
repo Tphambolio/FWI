@@ -160,8 +160,53 @@ async function testNAEFSEndpoint() {
   }
 }
 
+// ─── Test: CWFIS observation timestamp freshness ─────────────────────────────
+async function testCWFISTimestamp() {
+  console.log('\n── CWFIS timestamp freshness ──');
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000`;
+  let data;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) { console.log(`  SKIP: CWFIS WFS returned HTTP ${res.status}`); return; }
+    data = await res.json();
+  } catch (e) {
+    console.log(`  SKIP: CWFIS fetch failed — ${e.message}`);
+    return;
+  }
+
+  const features = (data.features ?? []).filter(f => f.properties?.rep_date);
+  if (!features.length) { console.log('  SKIP: no features with rep_date'); return; }
+
+  const todayUTC = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const byDate = {};
+  for (const f of features) {
+    const d = (f.properties.rep_date ?? '').slice(0, 10);
+    byDate[d] = (byDate[d] ?? 0) + 1;
+  }
+
+  const todayCount = byDate[todayUTC] ?? 0;
+  const totalCount = features.length;
+  const stalePct  = Math.round(100 * (totalCount - todayCount) / totalCount);
+  const dateList  = Object.entries(byDate).sort().map(([d, n]) => `${d}(${n})`).join(', ');
+
+  if (todayCount === 0) {
+    const msg = `  FAIL  CWFIS: 0/${totalCount} stations have today's data (${todayUTC}) — all stale. Dates: ${dateList}`;
+    console.log(msg);
+    issues.push(msg);
+    fail++;
+  } else if (stalePct > 25) {
+    console.log(`  WARN  CWFIS: ${todayCount}/${totalCount} today (${100 - stalePct}%) — ${stalePct}% stale. Dates: ${dateList}`);
+  } else {
+    console.log(`  PASS  CWFIS: ${todayCount}/${totalCount} stations have today's data (${todayUTC}), ${stalePct}% stale. Dates: ${dateList}`);
+    pass++;
+  }
+}
+
 // ─── Run all ─────────────────────────────────────────────────────────────────
 await testCWFISCrossCheck();
+await testCWFISTimestamp();
 await testSWOBFreshness();
 await testNAEFSEndpoint();
 
