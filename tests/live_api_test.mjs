@@ -38,25 +38,21 @@ function calcFWI(isi, bui) {
   return B > 1 ? Math.exp(2.72 * (0.434 * Math.log(B)) ** 0.647) : B;
 }
 
+// ─── Shared CWFIS WFS fetch (used by cross-check + data health tests) ────────
+async function fetchCWFISFeatures() {
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return data.features ?? [];
+}
+
 // ─── Test: CWFIS FWI cross-check ─────────────────────────────────────────────
-async function testCWFISCrossCheck() {
+async function testCWFISCrossCheck(features) {
   console.log('\n── CWFIS FWI cross-check ──');
 
-  let data;
-  try {
-    // Same WFS endpoint used by the app (firewx_stns_current, up to 2000 features)
-    const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
-      `?service=WFS&version=2.0.0&request=GetFeature` +
-      `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) { console.log(`  SKIP: CWFIS WFS returned HTTP ${res.status}`); return; }
-    data = await res.json();
-  } catch (e) {
-    console.log(`  SKIP: CWFIS fetch failed — ${e.message}`);
-    return;
-  }
-
-  const features = data.features ?? [];
   // Filter AB+BC stations with complete FWI chain data
   const stations = features.filter(f => {
     const p = f.properties;
@@ -160,53 +156,67 @@ async function testNAEFSEndpoint() {
   }
 }
 
-// ─── Test: CWFIS observation timestamp freshness ─────────────────────────────
-async function testCWFISTimestamp() {
-  console.log('\n── CWFIS timestamp freshness ──');
-  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
-    `?service=WFS&version=2.0.0&request=GetFeature` +
-    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000`;
-  let data;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) { console.log(`  SKIP: CWFIS WFS returned HTTP ${res.status}`); return; }
-    data = await res.json();
-  } catch (e) {
-    console.log(`  SKIP: CWFIS fetch failed — ${e.message}`);
-    return;
-  }
+// ─── Test: CWFIS data health (timestamp freshness + FWI chain completeness) ───
+function testCWFISDataHealth(features) {
+  console.log('\n── CWFIS data health ──');
 
-  const features = (data.features ?? []).filter(f => f.properties?.rep_date);
-  if (!features.length) { console.log('  SKIP: no features with rep_date'); return; }
+  const withDate = features.filter(f => f.properties?.rep_date);
+  if (!withDate.length) { console.log('  SKIP: no features with rep_date'); return; }
 
-  const todayUTC = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const byDate = {};
-  for (const f of features) {
+  // ── Timestamp freshness ──
+  const todayUTC  = new Date().toISOString().slice(0, 10);
+  const byDate    = {};
+  for (const f of withDate) {
     const d = (f.properties.rep_date ?? '').slice(0, 10);
     byDate[d] = (byDate[d] ?? 0) + 1;
   }
-
   const todayCount = byDate[todayUTC] ?? 0;
-  const totalCount = features.length;
-  const stalePct  = Math.round(100 * (totalCount - todayCount) / totalCount);
-  const dateList  = Object.entries(byDate).sort().map(([d, n]) => `${d}(${n})`).join(', ');
+  const totalCount = withDate.length;
+  const stalePct   = Math.round(100 * (totalCount - todayCount) / totalCount);
+  const dateList   = Object.entries(byDate).sort().map(([d, n]) => `${d}(${n})`).join(', ');
 
   if (todayCount === 0) {
-    const msg = `  FAIL  CWFIS: 0/${totalCount} stations have today's data (${todayUTC}) — all stale. Dates: ${dateList}`;
-    console.log(msg);
-    issues.push(msg);
-    fail++;
+    const msg = `  FAIL  Timestamp: 0/${totalCount} stations have today (${todayUTC}) — all stale. Dates: ${dateList}`;
+    console.log(msg); issues.push(msg); fail++;
   } else if (stalePct > 25) {
-    console.log(`  WARN  CWFIS: ${todayCount}/${totalCount} today (${100 - stalePct}%) — ${stalePct}% stale. Dates: ${dateList}`);
+    console.log(`  WARN  Timestamp: ${todayCount}/${totalCount} today (${100 - stalePct}%) — ${stalePct}% stale. Dates: ${dateList}`);
   } else {
-    console.log(`  PASS  CWFIS: ${todayCount}/${totalCount} stations have today's data (${todayUTC}), ${stalePct}% stale. Dates: ${dateList}`);
+    console.log(`  PASS  Timestamp: ${todayCount}/${totalCount} stations today (${todayUTC}), ${stalePct}% stale`);
+    pass++;
+  }
+
+  // ── FWI chain completeness ──
+  const withFWI = features.filter(f => {
+    const p = f.properties;
+    return p.ffmc > 0 && p.dmc != null && p.dc > 0 && p.fwi != null && p.fwi >= 0;
+  });
+  const byProv = {};
+  for (const f of withFWI) {
+    const prov = f.properties.prov ?? '??';
+    byProv[prov] = (byProv[prov] ?? 0) + 1;
+  }
+  const fwiPct   = Math.round(100 * withFWI.length / features.length);
+  const provList = Object.entries(byProv).sort().map(([p, n]) => `${p}(${n})`).join(' ');
+
+  if (fwiPct < 30) {
+    console.log(`  WARN  FWI chain: ${withFWI.length}/${features.length} (${fwiPct}%) stations have complete data — mid-publish-cycle? By prov: ${provList}`);
+  } else {
+    console.log(`  PASS  FWI chain: ${withFWI.length}/${features.length} (${fwiPct}%) stations complete. By prov: ${provList}`);
     pass++;
   }
 }
 
 // ─── Run all ─────────────────────────────────────────────────────────────────
-await testCWFISCrossCheck();
-await testCWFISTimestamp();
+// Single CWFIS WFS fetch shared across cross-check + data health tests
+let cwfisFeatures = [];
+try {
+  cwfisFeatures = await fetchCWFISFeatures();
+} catch (e) {
+  console.log(`\n  SKIP: CWFIS WFS fetch failed — ${e.message}`);
+}
+
+await testCWFISCrossCheck(cwfisFeatures);
+testCWFISDataHealth(cwfisFeatures);
 await testSWOBFreshness();
 await testNAEFSEndpoint();
 
