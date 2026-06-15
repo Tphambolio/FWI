@@ -66,33 +66,64 @@ async function testCWFISCrossCheck(features) {
   console.log(`  Found ${stations.length} AB/BC stations with complete data`);
   if (!stations.length) { console.log('  SKIP: no complete stations'); return; }
 
-  // Sample up to 12 stations spread across both provinces
+  // ── Full distribution across all AB/BC stations ──
+  const TOL     = 2.5; // Van Wagner rounding + float tolerance
+  const deltas  = stations.map(f => {
+    const p    = f.properties;
+    const isi  = calcISI(p.ffmc, p.ws);
+    const bui  = calcBUI(p.dmc, p.dc);
+    const fwi  = calcFWI(isi, bui);
+    return { name: (p.name ?? p.stn_id ?? 'STA').trim(), prov: p.prov,
+             cwfis: p.fwi, recalc: fwi, diff: Math.abs(fwi - p.fwi) };
+  });
+  deltas.sort((a, b) => a.diff - b.diff);
+
+  const n       = deltas.length;
+  const mean    = deltas.reduce((s, d) => s + d.diff, 0) / n;
+  const p50     = deltas[Math.floor(n * 0.50)].diff;
+  const p95     = deltas[Math.floor(n * 0.95)].diff;
+  const maxD    = deltas[n - 1].diff;
+  const outliers = deltas.filter(d => d.diff > TOL);
+
+  console.log(`  Delta stats (n=${n}): mean=${mean.toFixed(2)}  p50=${p50.toFixed(2)}  p95=${p95.toFixed(2)}  max=${maxD.toFixed(2)}  outliers(Δ>${TOL})=${outliers.length}`);
+  if (outliers.length) {
+    outliers.slice(0, 5).forEach(d =>
+      console.log(`    ⚠ ${d.name.slice(0,28).padEnd(28)} [${d.prov}]  CWFIS=${String(d.cwfis?.toFixed(1)).padStart(5)}  recalc=${d.recalc.toFixed(1).padStart(5)}  Δ=${d.diff.toFixed(1)}`)
+    );
+  }
+
+  // ── 12-station sample detail (6 AB + 6 BC) for quick reading ──
   const ab = stations.filter(f => f.properties.prov === 'AB').slice(0, 6);
   const bc = stations.filter(f => f.properties.prov === 'BC').slice(0, 6);
-  const sample = [...ab, ...bc];
-
   let crossCheckPass = 0, crossCheckFail = 0;
-
-  for (const f of sample) {
-    const p = f.properties;
+  for (const f of [...ab, ...bc]) {
+    const p    = f.properties;
     const isi  = calcISI(p.ffmc, p.ws);
     const bui  = calcBUI(p.dmc, p.dc);
     const fwi  = calcFWI(isi, bui);
     const diff = Math.abs(fwi - p.fwi);
-    const tol  = 2.5; // Van Wagner rounding + float tolerance
-
-    const name = (p.name ?? p.display_name ?? p.stn_id ?? 'STA').trim().slice(0, 28).padEnd(28);
-    if (diff <= tol) {
+    const name = (p.name ?? p.stn_id ?? 'STA').trim().slice(0, 28).padEnd(28);
+    if (diff <= TOL) {
       console.log(`  PASS  ${name} [${p.prov}]  CWFIS=${String(p.fwi?.toFixed(1)).padStart(5)}  recalc=${fwi.toFixed(1).padStart(5)}  Δ=${diff.toFixed(1)}`);
       crossCheckPass++; pass++;
     } else {
-      const msg = `  FAIL  ${name} [${p.prov}]  CWFIS=${String(p.fwi?.toFixed(1)).padStart(5)}  recalc=${fwi.toFixed(1).padStart(5)}  Δ=${diff.toFixed(1)} > ${tol}`;
-      console.log(msg);
-      issues.push(msg);
-      crossCheckFail++; fail++;
+      const msg = `  FAIL  ${name} [${p.prov}]  CWFIS=${String(p.fwi?.toFixed(1)).padStart(5)}  recalc=${fwi.toFixed(1).padStart(5)}  Δ=${diff.toFixed(1)} > ${TOL}`;
+      console.log(msg); issues.push(msg); crossCheckFail++; fail++;
     }
   }
-  console.log(`  Cross-check: ${crossCheckPass} pass, ${crossCheckFail} fail`);
+  console.log(`  Cross-check sample: ${crossCheckPass} pass, ${crossCheckFail} fail`);
+
+  // Fail if more than 5% of all AB/BC stations exceed tolerance (systematic issue)
+  if (outliers.length > Math.ceil(n * 0.05)) {
+    const msg = `  FAIL  ${outliers.length}/${n} AB/BC stations exceed Δ=${TOL} tolerance (>${Math.ceil(n * 0.05)} threshold)`;
+    console.log(msg); issues.push(msg); fail++;
+  } else if (outliers.length === 0) {
+    console.log(`  PASS  All ${n} AB/BC stations within Δ=${TOL}`);
+    pass++;
+  } else {
+    console.log(`  PASS  ${n - outliers.length}/${n} within Δ=${TOL} (${outliers.length} outlier${outliers.length > 1 ? 's' : ''} acceptable)`);
+    pass++;
+  }
 }
 
 // ─── Test: SWOB freshness (Edmonton area via OGC API) ────────────────────────
