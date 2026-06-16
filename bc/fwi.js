@@ -2204,7 +2204,10 @@ function buildStationPicker() {
   function loadStation(save = true) {
     const [lat, lng] = sel.value.split(',').map(Number);
     const name = sel.options[sel.selectedIndex].textContent;
-    if (save) localStorage.setItem('bc-fwi-station', sel.value);
+    if (save) {
+      localStorage.setItem('bc-fwi-station', sel.value);
+      history.replaceState(null, '', `${location.pathname}?stn=${encodeURIComponent(name)}`);
+    }
     const frame = document.getElementById('fwi-map-frame');
     if (frame?._leafletMap) {
       frame._leafletMap.setView([lat, lng], 8);

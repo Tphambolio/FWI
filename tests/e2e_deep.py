@@ -350,6 +350,11 @@ def run_station_switch_test(browser):
         p(leth_loaded, 'Lethbridge loaded after switch (FWI or PENDING)',
           f'danger={danger_leth!r} fwi={fwi_leth_text!r}' if not leth_loaded else f'danger={danger_leth!r}')
 
+        # URL should contain ?stn= (shareable deep-link)
+        url_after_ab = page.url
+        p('stn=' in url_after_ab, 'AB URL updated with ?stn= after station switch',
+          f'url={url_after_ab!r}' if 'stn=' not in url_after_ab else 'stn param present')
+
         # DOM must not contain NaN after switch
         check_no_nan(page, 'after station switch')
         check_js_errors(js_errors, 'station switch interaction')
@@ -358,6 +363,87 @@ def run_station_switch_test(browser):
         p(False, 'station switch timed out', AB_URL)
     except Exception as e:
         p(False, 'station switch unexpected error', str(e))
+    finally:
+        page.close()
+
+
+def run_bc_station_switch_test(browser):
+    """
+    BC interaction test: load default (Kamloops area), switch to Cranbrook.
+    Mirrors run_station_switch_test for BC — verifies the BC station picker
+    works, source attribution changes to a Cranbrook station, no NaN, no JS errors.
+    Also verifies the URL is updated with ?stn= after selection (shareable link).
+    """
+    print(f"\n{'─'*60}")
+    print("  BC station picker interaction: default → Cranbrook")
+
+    js_errors = []
+    page = browser.new_page()
+    page.on('pageerror', lambda e: js_errors.append(str(e)))
+
+    try:
+        page.goto(BC_URL, wait_until='networkidle', timeout=NETWORK_WAIT)
+        try:
+            page.wait_for_function(
+                "() => { const t = document.querySelector('[data-fwi=\"danger\"]')?.innerText?.trim(); "
+                "return t && t !== '—' && t !== 'PENDING'; }",
+                timeout=FWI_CALC_WAIT
+            )
+        except PwTimeout:
+            pass
+
+        # Verify default (Kamloops area) loaded
+        danger_default = get_text(page, '[data-fwi="danger"]')
+        fwi_default    = parse_num(get_text(page, '[data-fwi="fwi"]'))
+        default_ok = fwi_default is not None or danger_default in ('PENDING', *DANGER_LABELS)
+        p(default_ok, 'BC default loaded before switch (FWI or PENDING)',
+          f'danger={danger_default!r}' if not default_ok else f'danger={danger_default!r}')
+
+        src_before = get_text(page, '[data-fwi="source-station"]')
+
+        # Switch to Cranbrook
+        picker = page.query_selector('#fwi-station-picker')
+        if not picker:
+            p(False, 'BC station picker found', 'element #fwi-station-picker missing')
+            return
+
+        picker.select_option(label='Cranbrook')
+        page.wait_for_load_state('networkidle', timeout=NETWORK_WAIT)
+        try:
+            page.wait_for_function(
+                "() => { const t = document.querySelector('[data-fwi=\"danger\"]')?.innerText?.trim(); "
+                "return t && t !== '—' && t !== 'PENDING'; }",
+                timeout=FWI_CALC_WAIT
+            )
+        except PwTimeout:
+            pass
+
+        # Verify Cranbrook loaded
+        danger_crank = get_text(page, '[data-fwi="danger"]')
+        fwi_crank    = parse_num(get_text(page, '[data-fwi="fwi"]'))
+        crank_ok = fwi_crank is not None or danger_crank in ('PENDING', *DANGER_LABELS)
+        p(crank_ok, 'Cranbrook loaded after switch (FWI or PENDING)',
+          f'danger={danger_crank!r}' if not crank_ok else f'danger={danger_crank!r}')
+
+        # URL should contain ?stn= (shareable deep-link)
+        url_after = page.url
+        url_has_stn = 'stn=' in url_after
+        p(url_has_stn, 'URL updated with ?stn= after station switch',
+          f'url={url_after!r}' if not url_has_stn else f'stn param present')
+
+        # Source attribution should reference Cranbrook (not Kamloops)
+        src_after = get_text(page, '[data-fwi="source-station"]')
+        src_changed = src_after != '' and src_after != '—' and any(s in src_after for s in SOURCE_LABELS)
+        p(src_changed, 'BC source attribution present after switch',
+          f'got {src_after!r}' if not src_changed else src_after[:60])
+
+        check_no_nan(page, 'after BC station switch')
+        check_js_errors(js_errors, 'BC station switch interaction')
+
+    except PwTimeout:
+        p(False, 'BC station switch timed out', BC_URL)
+    except Exception as e:
+        p(False, 'BC station switch unexpected error', str(e))
     finally:
         page.close()
 
@@ -404,8 +490,9 @@ with sync_playwright() as pw:
     run_station_page(browser, BC_URL, 'BC Kamloops (interior)',   'Kamloops')
     run_station_page(browser, BC_URL, 'BC Cranbrook (southeast)', 'Cranbrook')
 
-    # ── Interaction test ───────────────────────────────────────────────────────
+    # ── Interaction tests ──────────────────────────────────────────────────────
     run_station_switch_test(browser)
+    run_bc_station_switch_test(browser)
 
     # ── Summary / trend pages (load-wait) ─────────────────────────────────────
     run_load_page(browser, f"{BASE}/regional_summary/code.html",     'AB regional summary')
