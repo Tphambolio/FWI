@@ -1848,6 +1848,68 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   }
 }
 
+// ─── Van Wagner rain threshold boundary tests ────────────────────────────────
+// FFMC threshold: rain > 0.5  (strictly greater)
+// DMC  threshold: rain > 1.5  (strictly greater)
+// DC   threshold: rain > 2.8  (strictly greater)
+//
+// Key invariant: at-threshold rain must NOT trigger the correction — it must
+// equal the no-rain result. Just-above-threshold must produce a different
+// (lower) value. These tests would catch an accidental >= change.
+{
+  console.log('\n── Van Wagner rain threshold boundaries (_ffmc/_dmc/_dc) ──');
+  const ffmcFn = sandbox._ffmc;
+  const dmcFn  = sandbox._dmc;
+  const dcFn   = sandbox._dc;
+
+  const TOL = 0.00001;
+
+  // _ffmc: baseline temp=20, rh=50, wind=15, prev=88
+  // rain=0.5 (at threshold) must equal rain=0 (no correction)
+  const ffmcBase    = ffmcFn(20, 50, 15, 0,     88);
+  const ffmcAt05    = ffmcFn(20, 50, 15, 0.5,   88);
+  const ffmcAbove05 = ffmcFn(20, 50, 15, 0.501, 88);
+  const ffmcAbove06 = ffmcFn(20, 50, 15, 0.6,   88);
+
+  let ok = Math.abs(ffmcAt05 - ffmcBase) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _ffmc rain=0.5 (at threshold) → ${ffmcAt05.toFixed(5)} == no-rain ${ffmcBase.toFixed(5)}`);
+  if (ok) pass++; else { issues.push(`_ffmc rain=0.5 should equal no-rain: got ${ffmcAt05} vs ${ffmcBase}`); fail++; }
+
+  ok = ffmcAbove05 < ffmcBase - 0.01;
+  console.log(`  ${ok?'PASS':'FAIL'}  _ffmc rain=0.501 (just above) → ${ffmcAbove05.toFixed(5)} < no-rain (correction triggered)`);
+  if (ok) pass++; else { issues.push(`_ffmc rain=0.501 should trigger correction: ${ffmcAbove05} vs ${ffmcBase}`); fail++; }
+
+  ok = ffmcAbove06 < ffmcBase - 0.5;
+  console.log(`  ${ok?'PASS':'FAIL'}  _ffmc rain=0.6 → ${ffmcAbove06.toFixed(5)} (expected notably lower than ${ffmcBase.toFixed(5)})`);
+  if (ok) pass++; else { issues.push(`_ffmc rain=0.6 should suppress: ${ffmcAbove06} vs ${ffmcBase}`); fail++; }
+
+  // _dmc: baseline temp=20, rh=50, rain varies, month=6, prev=30
+  const dmcBase    = dmcFn(20, 50, 0,   6, 30);
+  const dmcAt15    = dmcFn(20, 50, 1.5, 6, 30);
+  const dmcAbove15 = dmcFn(20, 50, 1.6, 6, 30);
+
+  ok = Math.abs(dmcAt15 - dmcBase) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dmc  rain=1.5 (at threshold) → ${dmcAt15.toFixed(5)} == no-rain ${dmcBase.toFixed(5)}`);
+  if (ok) pass++; else { issues.push(`_dmc rain=1.5 should equal no-rain: got ${dmcAt15} vs ${dmcBase}`); fail++; }
+
+  ok = dmcAbove15 < dmcBase - 0.5;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dmc  rain=1.6 (just above) → ${dmcAbove15.toFixed(5)} < no-rain (correction triggered)`);
+  if (ok) pass++; else { issues.push(`_dmc rain=1.6 should trigger correction: ${dmcAbove15} vs ${dmcBase}`); fail++; }
+
+  // _dc: baseline temp=20, rain varies, month=6, prev=200
+  const dcBase    = dcFn(20, 0,   6, 200);
+  const dcAt28    = dcFn(20, 2.8, 6, 200);
+  const dcAbove28 = dcFn(20, 2.9, 6, 200);
+
+  ok = Math.abs(dcAt28 - dcBase) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc   rain=2.8 (at threshold) → ${dcAt28.toFixed(5)} == no-rain ${dcBase.toFixed(5)}`);
+  if (ok) pass++; else { issues.push(`_dc rain=2.8 should equal no-rain: got ${dcAt28} vs ${dcBase}`); fail++; }
+
+  ok = dcAbove28 < dcBase - 1.0;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc   rain=2.9 (just above) → ${dcAbove28.toFixed(5)} < no-rain (correction triggered)`);
+  if (ok) pass++; else { issues.push(`_dc rain=2.9 should trigger correction: ${dcAbove28} vs ${dcBase}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
