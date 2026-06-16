@@ -202,15 +202,25 @@ console.log('\n── FBP plausibility ──');
 // calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope=0, curing=100, ps=50, opts={})
 const fbpCases = [
   // High fire danger — C2 with well-developed chain
-  { fuel: 'C2',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'C2 high danger',  expectROS: [2, 30],  expectHFI: [500, 15000] },
-  // Grass at 80% curing
-  { fuel: 'O1a', ffmc: 84, dmc: 20, dc: 100, wind: 15, curing: 80, label: 'O1a 80% curing',  expectROS: [0.5, 15], expectHFI: [20, 2000] },
+  { fuel: 'C2',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'C2 high danger',       expectROS: [2,  30],  expectHFI: [500,  15000] },
+  // Grass at 80% curing (matted O1a)
+  { fuel: 'O1a', ffmc: 84, dmc: 20, dc: 100, wind: 15, curing: 80, label: 'O1a matted 80%',        expectROS: [0.5,15],  expectHFI: [20,   2000] },
+  // Standing grass at 80% curing (O1b)
+  { fuel: 'O1b', ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 80, label: 'O1b standing 80%',      expectROS: [3,  40],  expectHFI: [100,  6000] },
   // Cool day — low danger
-  { fuel: 'C2',  ffmc: 70, dmc: 13, dc: 165, wind: 16, curing: 0,  label: 'C2 cool day',     expectROS: [0, 2],   expectHFI: [0, 200] },
+  { fuel: 'C2',  ffmc: 70, dmc: 13, dc: 165, wind: 16, curing: 0,  label: 'C2 cool day',          expectROS: [0,  2],   expectHFI: [0,    200] },
   // Extreme dry — C7 Ponderosa
-  { fuel: 'C7',  ffmc: 92, dmc: 60, dc: 500, wind: 30, curing: 0,  label: 'C7 extreme',      expectROS: [1, 20],  expectHFI: [500, 20000] },
+  { fuel: 'C7',  ffmc: 92, dmc: 60, dc: 500, wind: 30, curing: 0,  label: 'C7 extreme',           expectROS: [1,  20],  expectHFI: [500,  20000] },
   // D1 leafless aspen (low unless BUI very high)
-  { fuel: 'D1',  ffmc: 85, dmc: 30, dc: 250, wind: 20, curing: 0,  label: 'D1 leafless',     expectROS: [0, 15],  expectHFI: [0, 3000] },
+  { fuel: 'D1',  ffmc: 85, dmc: 30, dc: 250, wind: 20, curing: 0,  label: 'D1 leafless',          expectROS: [0,  15],  expectHFI: [0,    3000] },
+  // C1 spruce-lichen woodland (common in AB boreal)
+  { fuel: 'C1',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'C1 spruce-lichen',     expectROS: [0.5, 8],  expectHFI: [100,  4000] },
+  // C3 mature lodgepole pine (Rocky Mountain parks)
+  { fuel: 'C3',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'C3 mature pine',       expectROS: [1,  12],  expectHFI: [300,  8000] },
+  // M1 mixed wood 50% conifer (AB boreal transition)
+  { fuel: 'M1',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'M1 mixed 50% conifer', expectROS: [2,  20],  expectHFI: [500,  15000] },
+  // S1 slash (harvested areas)
+  { fuel: 'S1',  ffmc: 88, dmc: 40, dc: 300, wind: 20, curing: 0,  label: 'S1 slash',             expectROS: [4,  40],  expectHFI: [5000, 60000] },
 ];
 
 for (const c of fbpCases) {
