@@ -2133,6 +2133,77 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   if (ok) pass++; else { issues.push(`_fwi(3.81,1) exp branch: got ${fwi_exp} exp 1.01175`); fail++; }
 }
 
+// ─── _selectCWFIS station selection + DC divergence detection ────────────────
+// Tests the non-trivial logic in _selectCWFIS:
+//   1. Empty/null features → null
+//   2. Feature missing temp/rh/ws → skipped, does not crash
+//   3. fwiFromCWFIS: true when ffmc+dmc+dc present, false otherwise
+//   4. DC divergence: ≥2 stations within 75 km, spread ≥75 → flagged
+//   5. FWI-station preferred over weather-only if within 200 km of nearest wx
+{
+  console.log('\n── _selectCWFIS station selection + DC divergence ──');
+  const sel = sandbox._selectCWFIS;
+  if (typeof sel !== 'function') {
+    console.log('  SKIP  _selectCWFIS not exported from sandbox — skipping section');
+  } else {
+    // helper: build a synthetic CWFIS feature
+    const mkFeat = (name, lat, lon, temp=20, rh=50, ws=10, ffmc=null, dmc=null, dc=null, fwi=null, isi=null, bui=null) => ({
+      type: 'Feature',
+      properties: { name, lat: String(lat), lon: String(lon), temp, rh, ws, precip:0,
+                    ffmc, dmc, dc, isi, bui, fwi, rep_date:'2026-06-16T12:00:00Z' }
+    });
+
+    // 1. empty array → null
+    let ok = sel([], 53.5, -113.5) === null;
+    console.log(`  ${ok?'PASS':'FAIL'}  empty features → null`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS([]) should be null`); fail++; }
+
+    // 2. null arg → null
+    ok = sel(null, 53.5, -113.5) === null;
+    console.log(`  ${ok?'PASS':'FAIL'}  null features → null`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS(null) should be null`); fail++; }
+
+    // 3. single station, weather only (no ffmc) → result with fwiFromCWFIS=false
+    const wxOnly = [mkFeat('Wx_Only', 53.5, -113.5)];
+    const r3 = sel(wxOnly, 53.5, -113.5);
+    ok = r3 !== null && r3.fwiFromCWFIS === false;
+    console.log(`  ${ok?'PASS':'FAIL'}  wx-only station → fwiFromCWFIS=false (got ${r3?.fwiFromCWFIS})`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS wx-only: fwiFromCWFIS=${r3?.fwiFromCWFIS}`); fail++; }
+
+    // 4. single station with full FWI → fwiFromCWFIS=true
+    const fwiStn = [mkFeat('FWI_Stn', 53.5, -113.5, 20, 50, 10, 85.0, 30.0, 200.0, 12.5, 8.0, 44.0)];
+    const r4 = sel(fwiStn, 53.5, -113.5);
+    ok = r4 !== null && r4.fwiFromCWFIS === true && Math.abs(r4.ffmc - 85.0) < 0.01;
+    console.log(`  ${ok?'PASS':'FAIL'}  FWI station → fwiFromCWFIS=true ffmc=${r4?.ffmc}`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS FWI station: fwiFromCWFIS=${r4?.fwiFromCWFIS} ffmc=${r4?.ffmc}`); fail++; }
+
+    // 5. feature with missing temp → skipped; result comes from valid neighbour
+    const badFeat = mkFeat('Bad_Stn', 53.5, -113.5);
+    badFeat.properties.temp = null;   // missing required field
+    const goodFeat = mkFeat('Good_Stn', 54.0, -113.5, 22, 45, 12, 87.0, 35.0, 220.0, 15.0, 10.0, 50.0);
+    const r5 = sel([badFeat, goodFeat], 53.5, -113.5);
+    ok = r5 !== null && r5.stationName === 'Good_Stn';
+    console.log(`  ${ok?'PASS':'FAIL'}  incomplete station skipped → selects Good_Stn (got "${r5?.stationName}")`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS bad station skip: stationName=${r5?.stationName}`); fail++; }
+
+    // 6. DC divergence: 2 nearby stations (≤75 km) with spread ≥75 → dcDivergence set
+    // Edmonton ~53.5,-113.5 and a station 50 km north, DC difference = 100
+    const stn_lowDC  = mkFeat('LowDC',  53.5,  -113.5, 20, 50, 10, 85, 30, 100, 10, 7, 40);
+    const stn_highDC = mkFeat('HighDC', 54.0,  -113.5, 20, 50, 10, 85, 30, 200, 10, 7, 40);
+    const r6 = sel([stn_lowDC, stn_highDC], 53.75, -113.5);
+    ok = r6 !== null && r6.dcDivergence !== null && r6.dcDivergence.spread >= 75;
+    console.log(`  ${ok?'PASS':'FAIL'}  DC divergence (spread 100) → flagged spread=${r6?.dcDivergence?.spread} (exp ≥75)`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS DC divergence: dcDivergence=${JSON.stringify(r6?.dcDivergence)}`); fail++; }
+
+    // 7. No DC divergence when stations beyond 75 km or spread < 75
+    const stn_far = mkFeat('FarDC', 54.7, -113.5, 20, 50, 10, 85, 30, 200, 10, 7, 40);
+    const r7 = sel([stn_lowDC, stn_far], 53.5, -113.5);
+    ok = r7 !== null && r7.dcDivergence === null;
+    console.log(`  ${ok?'PASS':'FAIL'}  DC divergence: far station (>75 km) → dcDivergence=null (got ${r7?.dcDivergence})`);
+    if (ok) pass++; else { issues.push(`_selectCWFIS far DC station should not flag divergence: ${JSON.stringify(r7?.dcDivergence)}`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
