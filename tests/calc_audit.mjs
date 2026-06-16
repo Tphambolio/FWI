@@ -813,6 +813,69 @@ console.log('\n── M3/M4 blend + C6 two-equation ──');
   if (ok) pass++; else { issues.push(`  C6 extreme should be Active Crown, got cfb=${c6_ex.cfb} ${c6_ex.fireType}`); fail++; }
 }
 
+// ─── _calcFireArea60 (elliptical fire growth) ────────────────────────────────
+// LB = 1 + 8.729·(1−e^{−0.030·W})^{2.155}  (length-to-breadth ratio)
+// A60 = π·(ROS·60·1.05)² / (4·LB·10000)    (hectares)
+// Guard: ros≤0 or null → 0. W=0 → LB=1 (circular). A ∝ ROS².
+console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
+{
+  const TOL = 0.001;
+  const calcArea = sandbox._calcFireArea60;
+
+  // Guard cases
+  for (const [ros, w, note] of [[0, 20, 'ros=0'], [-1, 20, 'ros<0'], [null, 20, 'ros=null']]) {
+    const got = calcArea(ros, w);
+    const ok  = got === 0;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${note} → ${got} (expect 0)`);
+    if (ok) pass++; else { issues.push(`  _calcFireArea60 guard: ${note} got ${got}`); fail++; }
+  }
+
+  // W=0: LB=1 (circular fire), formula self-check
+  const ros10_w0 = calcArea(10, 0);
+  const d0 = 10 * 60 * 1.05;
+  const a0_exp = Math.PI * d0 * d0 / (4 * 1 * 10000);
+  let ok = Math.abs(ros10_w0 - a0_exp) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  W=0 LB=1 (circular): A60=${ros10_w0.toFixed(4)} ha (π·d²/40000=${a0_exp.toFixed(4)})`);
+  if (ok) pass++; else { issues.push(`  _calcFireArea60 W=0: got ${ros10_w0} exp ${a0_exp}`); fail++; }
+
+  // Reference case: C2 ROS=28 m/min, W=20 → ~95.07 ha (Alberta FSB reference ~96 ha)
+  const a_ref = calcArea(28, 20);
+  const lb20  = 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * 20), 2.155);
+  const d20   = 28 * 60 * 1.05;
+  const a20_exp = Math.PI * d20 * d20 / (4 * lb20 * 10000);
+  ok = Math.abs(a_ref - a20_exp) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  C2 ref ROS=28 W=20: A60=${a_ref.toFixed(4)} ha (formula=${a20_exp.toFixed(4)}, LB=${lb20.toFixed(4)})`);
+  if (ok) pass++; else { issues.push(`  _calcFireArea60 ref case: got ${a_ref} exp ${a20_exp}`); fail++; }
+
+  // Area ∝ ROS² — at fixed W=20, doubling ROS should quadruple area
+  const a10 = calcArea(10, 20);
+  const a20 = calcArea(20, 20);
+  const a40 = calcArea(40, 20);
+  const r1 = a20 / a10;
+  const r2 = a40 / a20;
+  ok = Math.abs(r1 - 4.0) < 0.001 && Math.abs(r2 - 4.0) < 0.001;
+  console.log(`  ${ok?'PASS':'FAIL'}  A ∝ ROS²: (ROS20/ROS10)=${r1.toFixed(4)} (ROS40/ROS20)=${r2.toFixed(4)} (both ~4.0)`);
+  if (ok) pass++; else { issues.push(`  _calcFireArea60 ROS² scaling: r1=${r1} r2=${r2}`); fail++; }
+
+  // Higher wind → smaller area (elongated ellipse, same ROS=28)
+  const a_w0  = calcArea(28, 0);
+  const a_w40 = calcArea(28, 40);
+  const lb40  = 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * 40), 2.155);
+  const ratio_exp = 1 / lb40;   // A ∝ 1/LB at fixed ROS
+  const ratio_got = a_w40 / a_w0;
+  ok = Math.abs(ratio_got - ratio_exp) < 0.0001;
+  console.log(`  ${ok?'PASS':'FAIL'}  W=40 elongation: A_w40/A_w0=${ratio_got.toFixed(4)} (=1/LB40=${ratio_exp.toFixed(4)})`);
+  if (ok) pass++; else { issues.push(`  _calcFireArea60 W=40 elongation: got ${ratio_got} exp ${ratio_exp}`); fail++; }
+
+  // LB spot-check at W=60 — verifies formula coefficients
+  const a_w60 = calcArea(28, 60);
+  const lb60  = 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * 60), 2.155);
+  const a_w60_exp = Math.PI * d20 * d20 / (4 * lb60 * 10000);
+  ok = Math.abs(a_w60 - a_w60_exp) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  W=60 LB=${lb60.toFixed(4)}: A60=${a_w60.toFixed(4)} ha (expected ${a_w60_exp.toFixed(4)})`);
+  if (ok) pass++; else { issues.push(`  _calcFireArea60 W=60: got ${a_w60} exp ${a_w60_exp}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
