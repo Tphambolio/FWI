@@ -595,6 +595,23 @@ console.log('\n── calcFMC branch boundaries ──');
     // BC interior: Kamloops (lat=50.7, lng=-120.4, d0=142)
     [50.7, -120.4, 142, 85.0000,    'Kamloops nd=0 minimum FMC'],
     [50.7, -120.4, 192, 120.0,      'Kamloops nd=50 saturated'],
+    // Extreme latitude/longitude — verifies latn (Eq.1) and d0 (Eq.2) computation
+    // Each row: at doy=d0 FMC must be 85; at d0+30 FMC=102.08; at d0+50 FMC=120.
+    // Cranbrook BC (lat=49.6, lng=-115.8): latn=52.831 → d0=142 (May 22, earlier than Edmonton)
+    [49.6, -115.8, 142, 85.0000,    'Cranbrook BC nd=0 — d0=142 same as Kamloops'],
+    [49.6, -115.8, 172, 102.0800,   'Cranbrook BC nd=30 first Eq.7 (doy=d0+30)'],
+    [49.6, -115.8, 192, 120.0,      'Cranbrook BC nd=50 saturated (doy=d0+50)'],
+    // Vancouver BC (lat=49.2, lng=-123.2): latn=54.917 → d0=135 (May 15, earliest — coastal)
+    [49.2, -123.2, 135, 85.0000,    'Vancouver BC nd=0 — d0=135 earliest (coastal Eq.1)'],
+    [49.2, -123.2, 165, 102.0800,   'Vancouver BC nd=30 first Eq.7'],
+    [49.2, -123.2, 185, 120.0,      'Vancouver BC nd=50 saturated'],
+    // Fort Nelson BC (lat=58.8, lng=-122.7): latn=54.758 → d0=162 (Jun 11, latest BC)
+    [58.8, -122.7, 162, 85.0000,    'Fort Nelson BC nd=0 — d0=162 far-north late minimum'],
+    [58.8, -122.7, 212, 120.0,      'Fort Nelson BC nd=50 saturated'],
+    // Fort Chipewyan AB (lat=60.0, lng=-112.0): latn=51.961 → d0=174 (Jun 23, latest AB)
+    [60.0, -112.0, 174, 85.0000,    'Fort Chipewyan AB nd=0 — d0=174 northernmost AB'],
+    [60.0, -112.0, 204, 102.0800,   'Fort Chipewyan AB nd=30 first Eq.7'],
+    [60.0, -112.0, 224, 120.0,      'Fort Chipewyan AB nd=50 saturated'],
   ];
 
   for (const [lat, lng, doy, expected, note] of FMC_CASES) {
