@@ -477,6 +477,50 @@ console.log('\n── calculateFBP parity (AB vs BC engine) ──');
   }
 }
 
+// ─── hfiClassInfo boundary conditions ────────────────────────────────────────
+// hfiClassInfo is outside the science core so byte-identity checks don't cover it.
+// Verify both engines return the correct class at each threshold and agree with each other.
+console.log('\n── hfiClassInfo boundary conditions (AB parity + BC correctness) ──');
+{
+  // [hfi, expectedNum, expectedLabel]
+  const HFI_CASES = [
+    [0,      1, 'Low'],
+    [9.9,    1, 'Low'],
+    [10,     2, 'Moderate'],
+    [499,    2, 'Moderate'],
+    [500,    3, 'High'],
+    [1999,   3, 'High'],
+    [2000,   4, 'Very High'],
+    [3999,   4, 'Very High'],
+    [4000,   5, 'Extreme'],
+    [9999,   5, 'Extreme'],
+    [10000,  6, 'Catastrophic'],
+    [50000,  6, 'Catastrophic'],
+  ];
+
+  for (const [hfi, expectedNum, expectedLabel] of HFI_CASES) {
+    const ab = AB.hfiClassInfo(hfi);
+    const bc = BC.hfiClassInfo(hfi);
+    const abOk = ab.num === expectedNum && ab.label === expectedLabel;
+    const bcOk = bc.num === expectedNum && bc.label === expectedLabel;
+    const parityOk = ab.num === bc.num && ab.label === bc.label && ab.bg === bc.bg && ab.text === bc.text;
+    const ok = abOk && bcOk && parityOk;
+    const lbl = `HFI=${String(hfi).padStart(6)}  class ${expectedNum} ${expectedLabel}`;
+    if (ok) {
+      console.log(`  PASS  ${lbl}`);
+      pass++;
+    } else {
+      let msg = `  FAIL  ${lbl}`;
+      if (!abOk)      msg += `  AB=${ab.num}(${ab.label})`;
+      if (!bcOk)      msg += `  BC=${bc.num}(${bc.label})`;
+      if (!parityOk)  msg += `  PARITY MISMATCH`;
+      console.log(msg);
+      issues.push(msg);
+      fail++;
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
