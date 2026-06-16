@@ -281,6 +281,70 @@ function testCWFISDataHealth(features) {
   }
 }
 
+// ─── Test: NAEFS BC forecast plausibility ────────────────────────────────────
+async function testNAEFSForecastBC() {
+  console.log('\n── NAEFS BC forecast plausibility (Kamloops, code=10195) ──');
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
+    `&outputFormat=application/json&CQL_FILTER=code=10195&count=10`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) {
+      const msg = `  FAIL  NAEFS BC WFS HTTP ${res.status}`;
+      console.log(msg); issues.push(msg); fail++;
+      return;
+    }
+    const d = await res.json();
+    const features = d.features ?? [];
+    if (!features.length) {
+      console.log('  WARN  NAEFS BC WFS returned 0 features (outside fire season?)');
+      return;
+    }
+
+    const loc = features[0].properties.location ?? '?';
+    const dates = features.map(f => f.properties.date_time).filter(Boolean).sort();
+    const anomalies = [];
+
+    for (const f of features) {
+      const p = f.properties;
+      const dt   = p.date_time ?? '?';
+      const temp = p.median_temp ?? p.mean_temp;
+      const rh   = p.median_rh  ?? p.mean_rh;
+      const ws   = p.median_ws  ?? p.mean_ws;
+
+      if (temp != null && (temp < -40 || temp > 50))
+        anomalies.push(`${dt}: median_temp=${temp}°C out of range`);
+      if (rh != null && (rh < 0 || rh > 100))
+        anomalies.push(`${dt}: median_rh=${rh}% out of range`);
+      if (ws != null && ws < 0)
+        anomalies.push(`${dt}: median_ws=${ws} km/h negative`);
+    }
+
+    const firstDate = dates[0] ?? '?';
+    const lastDate  = dates[dates.length - 1] ?? '?';
+
+    for (const f of features.slice(0, 3)) {
+      const p = f.properties;
+      const temp = (p.median_temp ?? p.mean_temp)?.toFixed(1) ?? '?';
+      const rh   = (p.median_rh  ?? p.mean_rh)?.toFixed(0)  ?? '?';
+      const ws   = (p.median_ws  ?? p.mean_ws)?.toFixed(1)  ?? '?';
+      console.log(`  ${p.date_time ?? '?'}  T=${String(temp).padStart(5)}°C  RH=${String(rh).padStart(3)}%  W=${String(ws).padStart(5)} km/h`);
+    }
+
+    if (features.length < 3) {
+      console.log(`  WARN  Only ${features.length} forecast day(s) returned (expected ≥3)`);
+    } else if (anomalies.length) {
+      const msg = `  FAIL  NAEFS BC plausibility: ${anomalies.length} anomaly(ies): ${anomalies[0]}`;
+      console.log(msg); issues.push(msg); fail++;
+    } else {
+      console.log(`  PASS  NAEFS BC ${features.length} days for ${loc} (${firstDate} → ${lastDate}), weather plausible`);
+      pass++;
+    }
+  } catch (e) {
+    console.log(`  WARN: NAEFS BC fetch timed out or failed — ${e.message}`);
+  }
+}
+
 // ─── Run all ─────────────────────────────────────────────────────────────────
 // Single CWFIS WFS fetch shared across cross-check + data health tests
 let cwfisFeatures = [];
@@ -294,6 +358,7 @@ await testCWFISCrossCheck(cwfisFeatures);
 testCWFISDataHealth(cwfisFeatures);
 await testSWOBFreshness();
 await testNAEFSForecast();
+await testNAEFSForecastBC();
 
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
