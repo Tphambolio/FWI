@@ -661,6 +661,92 @@ console.log('\n── TFC / HFI / flame length chain ──');
   if (fl_zero_ok) pass++; else { issues.push(`  FL near-zero guard: got NaN/negative ${o1a_calm.flameLength}`); fail++; }
 }
 
+// ─── Slope effect, mixedwood blending, grass curing, D2 aspen ───────────────
+// Slope (ST-X-3 Eq.39 approx): rsi *= min(exp(3.533*(slope/100)^1.2), 10)
+// M1/M2 (Eq.27/28, GLC-X-10): RSI = pc/100*C2_RSI + hwFactor*(100-pc)/100*D1_RSI
+// O1a/b curing (GLC-X-10 Eq.35b): CF breakpoint at cc=58.8
+// D2 (GLC-X-10): ros=0 below BUI 80, ros=0.2*D1 above
+console.log('\n── Slope / mixedwood / curing / D2 ──');
+{
+  const TOL = 0.0001;
+  const _isi = sandbox._isi;
+  const rsiB  = sandbox._rsiBasic;
+  const _be   = sandbox._buildupEffect;
+
+  // ── Slope ──────────────────────────────────────────────────────────────────
+  const s0  = FWI.calculateFBP('C2', 88, 60, 300, 20, 0,   100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const s30 = FWI.calculateFBP('C2', 88, 60, 300, 20, 30,  100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const s70 = FWI.calculateFBP('C2', 88, 60, 300, 20, 70,  100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const s100= FWI.calculateFBP('C2', 88, 60, 300, 20, 100, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const sf30  = Math.exp(3.533 * Math.pow(0.30, 1.2));        // ~2.3004
+  const sf70c = 10;                                            // capped
+  const ratio30 = s30.ros / s0.ros;
+  const ratio70 = s70.ros / s0.ros;
+  const ratio100= s100.ros / s0.ros;
+  let ok;
+  ok = Math.abs(ratio30 - sf30) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=30: ROS factor=${ratio30.toFixed(6)} (expected ${sf30.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  slope=30 factor wrong: got ${ratio30} expected ${sf30}`); fail++; }
+  ok = Math.abs(ratio70 - sf70c) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=70: factor=${ratio70.toFixed(4)} (capped at 10.0)`);
+  if (ok) pass++; else { issues.push(`  slope=70 cap wrong: got ${ratio70} expected 10`); fail++; }
+  ok = Math.abs(ratio100 - sf70c) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=100: factor=${ratio100.toFixed(4)} (still capped at 10.0)`);
+  if (ok) pass++; else { issues.push(`  slope=100 cap wrong: got ${ratio100} expected 10`); fail++; }
+
+  // ── M1/M2 blending ────────────────────────────────────────────────────────
+  const isi20 = _isi(88, 20);
+  const bui80 = s0.bui;                                 // bui from dmc=60,dc=300 → 80
+  const rC2 = rsiB('C2', isi20);
+  const rD1 = rsiB('D1', isi20);
+  const beM1 = _be('M1', bui80);
+  const m1 = FWI.calculateFBP('M1', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const m2 = FWI.calculateFBP('M2', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const m2_0 = FWI.calculateFBP('M2', 88, 60, 300, 20, 0, 100, 0,  { lat:53.5, lng:-113.5, doy:184 });
+  const m1_0 = FWI.calculateFBP('M1', 88, 60, 300, 20, 0, 100, 0,  { lat:53.5, lng:-113.5, doy:184 });
+  // Eq.27/28: M1 RSI = pc/100*C2 + 1.0*(100-pc)/100*D1; M2: hwFactor=0.2
+  const m1_ros_exp = (0.5*rC2 + 0.5*rD1) * beM1;
+  const m2_ros_exp = (0.5*rC2 + 0.2*0.5*rD1) * _be('M2', bui80);
+  ok = Math.abs(m1.ros - m1_ros_exp) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  M1 pc=50 blend: ros=${m1.ros.toFixed(6)} (expected ${m1_ros_exp.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  M1 pc=50 blend mismatch: got ${m1.ros} exp ${m1_ros_exp}`); fail++; }
+  ok = Math.abs(m2.ros - m2_ros_exp) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  M2 pc=50 blend (hwFactor=0.2): ros=${m2.ros.toFixed(6)} (expected ${m2_ros_exp.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  M2 pc=50 blend mismatch: got ${m2.ros} exp ${m2_ros_exp}`); fail++; }
+  // M2/M1 at pc=0: ratio should be exactly 0.2 (pure hardwood, M2 green suppression)
+  ok = Math.abs(m2_0.ros / m1_0.ros - 0.2) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  M2/M1 ratio at pc=0 = ${(m2_0.ros/m1_0.ros).toFixed(4)} (expect 0.2)`);
+  if (ok) pass++; else { issues.push(`  M2/M1 pc=0 ratio: got ${m2_0.ros/m1_0.ros} expected 0.2`); fail++; }
+
+  // ── Grass curing O1a (GLC-X-10 Eq.35b) ──────────────────────────────────
+  const isi15 = _isi(88, 15);
+  const rsiO1a = rsiB('O1a', isi15);
+  const o1a_0   = FWI.calculateFBP('O1a', 88, 50, 250, 15, 0, 0,   50, { lat:53.5, lng:-113.5, doy:184 });
+  const o1a_50  = FWI.calculateFBP('O1a', 88, 50, 250, 15, 0, 50,  50, { lat:53.5, lng:-113.5, doy:184 });
+  const o1a_100 = FWI.calculateFBP('O1a', 88, 50, 250, 15, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const cf50  = 0.005 * (Math.exp(0.061 * 50) - 1);  // below breakpoint 58.8
+  ok = o1a_0.ros < 0.001;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1a curing=0: ros≈0 (got ${o1a_0.ros.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  O1a curing=0 should be ~0, got ${o1a_0.ros}`); fail++; }
+  ok = Math.abs(o1a_50.ros - rsiO1a * cf50) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1a curing=50: ros=${o1a_50.ros.toFixed(6)} (CF=${cf50.toFixed(6)}·RSI)`);
+  if (ok) pass++; else { issues.push(`  O1a curing=50: got ${o1a_50.ros} expected ${rsiO1a*cf50}`); fail++; }
+  ok = Math.abs(o1a_100.ros - rsiO1a) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1a curing=100: CF=1.0, ros=rsiBasic=${o1a_100.ros.toFixed(6)}`);
+  if (ok) pass++; else { issues.push(`  O1a curing=100: got ${o1a_100.ros} expected ${rsiO1a}`); fail++; }
+
+  // ── D2 green aspen (GLC-X-10) ────────────────────────────────────────────
+  const d2_lo = FWI.calculateFBP('D2', 85, 20, 100, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const d2_hi = FWI.calculateFBP('D2', 92, 80, 400, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const d1_hi = FWI.calculateFBP('D1', 92, 80, 400, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  ok = d2_lo.ros < 0.001;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  D2 BUI=${d2_lo.bui.toFixed(1)}<80: ros≈0 (got ${d2_lo.ros.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  D2 below BUI80 should be ~0, got ${d2_lo.ros}`); fail++; }
+  ok = Math.abs(d2_hi.ros / d1_hi.ros - 0.2) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  D2/D1 ratio at BUI=${d2_hi.bui.toFixed(1)}>80 = ${(d2_hi.ros/d1_hi.ros).toFixed(4)} (expect 0.2)`);
+  if (ok) pass++; else { issues.push(`  D2/D1 ratio: got ${d2_hi.ros/d1_hi.ros} expected 0.2`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
