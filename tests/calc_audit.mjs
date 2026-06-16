@@ -1732,6 +1732,39 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   if (d2ok) pass++; else { issues.push(`D2 complement wrong: ${fpc['D2']}`); fail++; }
 }
 
+// ─── calculateFBP BUI edge cases ─────────────────────────────────────────────
+// When dmc=0 and dc=0, the inline BUI formula (0.8*0*0/(0+0)) = 0/0 = NaN
+// before the guard was added. Regression test: results must be finite.
+console.log('\n── calculateFBP BUI edge cases (dmc=dc=0 → non-NaN, BUI=500 → finite) ──');
+{
+  const OPT = { lat: 53.5, lng: -113.5, doy: 180 };
+
+  // dmc=0, dc=0: degenerate spring startup — BUI must resolve to 0, not NaN
+  for (const [fuel, label] of [['C2','Boreal Spruce'],['D1','Deciduous'],['C6','C6 two-eq'],['M1','Mixedwood']]) {
+    const r = FWI.calculateFBP(fuel, 85, 0, 0, 20, 0, 100, 50, OPT);
+    const ok = r !== null && isFinite(r.hfi) && isFinite(r.ros) && r.hfi >= 0 && r.ros >= 0;
+    const lbl = `${fuel} ${label} dmc=0 dc=0`;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${lbl.padEnd(32)}  bui=${r?.bui?.toFixed(2)} hfi=${r?.hfi?.toFixed(3)}`);
+    if (ok) pass++; else { issues.push(`calculateFBP ${fuel} dmc=dc=0: got hfi=${r?.hfi}`); fail++; }
+  }
+
+  // dmc=0, dc=200: partial zero — should also be safe (BUI formula uses only dmc)
+  {
+    const r = FWI.calculateFBP('C2', 85, 0, 200, 20, 0, 100, 50, OPT);
+    const ok = r !== null && isFinite(r.hfi) && r.bui >= 0;
+    console.log(`  ${ok?'PASS':'FAIL'}  C2 dmc=0 dc=200                  bui=${r?.bui?.toFixed(2)} hfi=${r?.hfi?.toFixed(3)}`);
+    if (ok) pass++; else { issues.push(`calculateFBP C2 dmc=0 dc=200: got hfi=${r?.hfi}`); fail++; }
+  }
+
+  // BUI=500 extreme drought: all fields finite, HFI positive
+  {
+    const r = FWI.calculateFBP('C2', 92, 300, 800, 30, 0, 100, 50, OPT);
+    const ok = r !== null && isFinite(r.hfi) && r.hfi > 0 && isFinite(r.ros) && r.bui < 800;
+    console.log(`  ${ok?'PASS':'FAIL'}  C2 dmc=300 dc=800 (high drought)  bui=${r?.bui?.toFixed(2)} hfi=${r?.hfi?.toFixed(0)}`);
+    if (ok) pass++; else { issues.push(`calculateFBP C2 high BUI: got hfi=${r?.hfi}`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);

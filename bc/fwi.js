@@ -565,9 +565,11 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
   const isi = 0.208 * ff * Math.exp(0.05039 * windSpeed);
 
-  // BUI — same formula as _bui()
+  // BUI — same formula as _bui(); guard dmc=dc=0 to avoid 0/0 = NaN
   let bui;
-  if (dmc <= 0.4 * dc) {
+  if (!dmc && !dc) {
+    bui = 0;
+  } else if (dmc <= 0.4 * dc) {
     bui = 0.8 * dmc * dc / (dmc + 0.4 * dc);
   } else {
     bui = dmc - (1.0 - 0.8 * dc / (dmc + 0.4 * dc)) * (0.92 + Math.pow(0.0114 * dmc, 1.7));
