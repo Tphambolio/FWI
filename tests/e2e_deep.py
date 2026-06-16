@@ -70,8 +70,10 @@ def get_text(page, selector):
 
 
 def parse_num(text):
-    """Extract first number from text (handles '86.2', '15.3 km/h', '42%')."""
-    m = re.search(r'-?\d+(?:\.\d+)?', text)
+    """Extract first number from text (handles '86.2', '15.3 km/h', '42%', '3,679 kW/m')."""
+    # Strip thousand-separator commas before matching so '3,679' → 3679, not 3
+    cleaned = text.replace(',', '')
+    m = re.search(r'-?\d+(?:\.\d+)?', cleaned)
     return float(m.group()) if m else None
 
 
@@ -179,8 +181,11 @@ def check_fbp_panel(page, suffix, label_prefix, fwi_active=True):
     for elem_id, (lo, hi, unit) in checks.items():
         text = get_text(page, f'#{elem_id}')
         val  = parse_num(text)
-        ok   = text != '' and text != '—' and val is not None
-        p(ok, f'{elem_id.split("-")[-2]}={text!r}', f'unpopulated' if not ok else '')
+        populated = text not in ('', '—') and val is not None
+        in_bounds  = populated and lo <= val <= hi
+        ok = populated and in_bounds
+        detail = 'unpopulated' if not populated else (f'out of bounds {val} (expect {lo}–{hi} {unit})' if not in_bounds else '')
+        p(ok, f'{elem_id.split("-")[-2]}={text!r}', detail)
         if not ok:
             all_ok = False
     return all_ok
@@ -212,24 +217,29 @@ def check_d1_fbp_panel(page, label_prefix):
     This verifies the null-chainStart fallback introduced in the CWFIS-outage fix.
     """
     print(f"\n  ── D+1 forecast FBP panel ({label_prefix}) ──")
+    # lo_min is the *minimum plausible* value — catches near-zero null-coercion artefacts.
+    # With STARTUP defaults (ffmc=85,dmc=6,dc=300) on any fire-season day, C2 HFI >> 100 kW/m.
     checks = [
-        ('fwi-d1-preview-ros-a',       0, 500,   'm/min'),
-        ('fwi-d1-preview-hfi-kwm-a',   0, 200000, 'kW/m'),
-        ('fwi-d1-preview-cfb-a',       0, 100,   '%'),
-        ('fwi-d1-preview-flame-a',     0, 200,   'm'),
-        ('fwi-d1-preview-date',        None, None, 'date label'),
+        ('fwi-d1-preview-ros-a',       0.01, 500,    'm/min',   'ROS must be >0 (null-coercion guard)'),
+        ('fwi-d1-preview-hfi-kwm-a',   100,  200000, 'kW/m',    'HFI must be >100 kW/m with STARTUP defaults'),
+        ('fwi-d1-preview-cfb-a',       0,    100,    '%',       ''),
+        ('fwi-d1-preview-flame-a',     0.01, 200,    'm',       'flame must be >0'),
+        ('fwi-d1-preview-date',        None, None,   'date label', ''),
     ]
     all_ok = True
-    for elem_id, lo, hi, unit in checks:
+    for elem_id, lo, hi, unit, hint in checks:
         text = get_text(page, f'#{elem_id}')
         if lo is None:
-            # date label — just needs to be non-empty
             ok = text not in ('', '—', 'Loading…')
             p(ok, f'{elem_id.split("-")[-1]}={text!r}', 'still loading' if not ok else '')
         else:
             val = parse_num(text)
-            ok  = text not in ('', '—') and val is not None
-            p(ok, f'{elem_id.split("-")[-1]}={text!r}', f'unpopulated ({unit})' if not ok else '')
+            populated  = text not in ('', '—') and val is not None
+            in_bounds  = populated and lo <= val <= hi
+            ok = populated and in_bounds
+            detail = 'unpopulated' if not populated else (
+                f'{hint or "out of bounds"}: {val} (expect {lo}–{hi} {unit})' if not in_bounds else '')
+            p(ok, f'{elem_id.split("-")[-1]}={text!r}', detail)
         if not ok:
             all_ok = False
     return all_ok
