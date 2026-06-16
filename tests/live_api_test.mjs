@@ -194,25 +194,27 @@ function testCWFISDataHealth(features) {
   const withDate = features.filter(f => f.properties?.rep_date);
   if (!withDate.length) { console.log('  SKIP: no features with rep_date'); return; }
 
-  // ── Timestamp freshness ──
-  const todayUTC  = new Date().toISOString().slice(0, 10);
-  const byDate    = {};
-  for (const f of withDate) {
-    const d = (f.properties.rep_date ?? '').slice(0, 10);
-    byDate[d] = (byDate[d] ?? 0) + 1;
-  }
-  const todayCount = byDate[todayUTC] ?? 0;
-  const totalCount = withDate.length;
-  const stalePct   = Math.round(100 * (totalCount - todayCount) / totalCount);
-  const dateList   = Object.entries(byDate).sort().map(([d, n]) => `${d}(${n})`).join(', ');
+  // ── Timestamp freshness (age-based, not calendar-date)
+  // CWFIS publishes once daily at noon UTC. Between midnight and noon on a new
+  // day, all stations legitimately carry yesterday's date — that data is still
+  // fresh (<24h old). We FAIL only when data is >30h old (missed a full cycle).
+  const nowMs     = Date.now();
+  const repTimes  = withDate.map(f => new Date(f.properties.rep_date).getTime()).filter(t => !isNaN(t));
+  if (!repTimes.length) { console.log('  SKIP: no parseable rep_date values'); return; }
+  const newestMs  = Math.max(...repTimes);
+  const oldestMs  = Math.min(...repTimes);
+  const newestAgeH = (nowMs - newestMs) / 3600000;
+  const oldestAgeH = (nowMs - oldestMs) / 3600000;
+  const newestDate = new Date(newestMs).toISOString().slice(0, 16) + 'Z';
 
-  if (todayCount === 0) {
-    const msg = `  FAIL  Timestamp: 0/${totalCount} stations have today (${todayUTC}) — all stale. Dates: ${dateList}`;
+  const totalCount = withDate.length;
+  if (newestAgeH > 30) {
+    const msg = `  FAIL  Timestamp: newest rep_date ${newestDate} is ${newestAgeH.toFixed(1)}h old (>${30}h — missed publish cycle)`;
     console.log(msg); issues.push(msg); fail++;
-  } else if (stalePct > 25) {
-    console.log(`  WARN  Timestamp: ${todayCount}/${totalCount} today (${100 - stalePct}%) — ${stalePct}% stale. Dates: ${dateList}`);
+  } else if (newestAgeH > 24) {
+    console.log(`  WARN  Timestamp: newest rep_date ${newestDate} is ${newestAgeH.toFixed(1)}h old (publish late?), oldest ${oldestAgeH.toFixed(1)}h`);
   } else {
-    console.log(`  PASS  Timestamp: ${todayCount}/${totalCount} stations today (${todayUTC}), ${stalePct}% stale`);
+    console.log(`  PASS  Timestamp: newest rep_date ${newestDate}, age=${newestAgeH.toFixed(1)}h (${totalCount} stations)`);
     pass++;
   }
 
