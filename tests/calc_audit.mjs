@@ -269,6 +269,38 @@ for (const [fwi, expected] of BOUNDARY_CASES) {
   else { fail++; issues.push(`  dangerRating FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); }
 }
 
+// ─── calcSFC reference values (FCFDG 1992 / ST-X-3 equations) ────────────────
+// Direct equation verification — SFC feeds into TFC → HFI, so drift here
+// propagates silently through all FBP outputs. Tolerance 0.001 kg/m².
+console.log('\n── calcSFC reference values ──');
+const SFC_CASES = [
+  // [fuel, ffmc, bui, pc, gfl, label, expected]
+  // C1 Eqs. 9a/9b — FFMC-dependent, two branches
+  ['C1',  88,  0,  50, 0.35, 'C1 FFMC=88 (Eq.9a above 84)',   1.33166],
+  ['C1',  80,  0,  50, 0.35, 'C1 FFMC=80 (Eq.9b below 84)',   0.16834],
+  // C2/C3/C5 BUI-driven equations
+  ['C2',  85, 50,  50, 0.35, 'C2 BUI=50  (Eq.10)',            2.18648],
+  ['C3',  85, 80,  50, 0.35, 'C3 BUI=80  (Eq.11)',            2.47612],
+  // D1 — leafless aspen / deciduous
+  ['D1',  85, 40,  50, 0.35, 'D1 BUI=40  (Eq.16)',            0.77858],
+  // M1 — PC-weighted C2/D1 blend
+  ['M1',  85, 60,  50, 0.35, 'M1 pc=50 BUI=60 (Eq.17)',       1.74591],
+  // O1a — constant grass fuel load
+  ['O1a', 85, 40,  50, 0.35, 'O1a gfl=0.35 (Eq.18)',          0.35000],
+  // S1/S2 — two-component slash equations
+  ['S1',  85, 50,  50, 0.35, 'S1 BUI=50  (Eqs.19,20,25)',     6.12325],
+  ['S2',  85, 80,  50, 0.35, 'S2 BUI=80  (Eqs.21,22,25)',    12.41607],
+];
+const SFC_TOL = 0.001;
+for (const [fuel, ffmc, bui, pc, gfl, label, expected] of SFC_CASES) {
+  const sfc = FWI.calcSFC(fuel, ffmc, bui, pc, gfl);
+  const ok  = Math.abs(sfc - expected) <= SFC_TOL;
+  const tag = ok ? 'PASS' : 'FAIL';
+  console.log(`  ${tag}  ${label.padEnd(38)}  SFC=${sfc.toFixed(5)} (expected ${expected.toFixed(5)})`);
+  if (ok) pass++;
+  else { fail++; issues.push(`  calcSFC FAIL: ${label} got ${sfc.toFixed(5)} expected ${expected.toFixed(5)}`); }
+}
+
 // ─── hfiClassInfo boundary conditions ────────────────────────────────────────
 // Six HFI intensity classes: Low(<10), Moderate(<500), High(<2000),
 // Very High(<4000), Extreme(<10000), Catastrophic(≥10000) kW/m
