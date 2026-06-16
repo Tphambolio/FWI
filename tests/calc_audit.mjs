@@ -2086,6 +2086,53 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   if (vanWagnerRan) pass++; else { issues.push(`calculateFWI CWFIS ffmc=null should fall through to Van Wagner: ffmc=${rB.ffmc}`); fail++; }
 }
 
+// ─── _isi extremes and _fwi b=1 inner boundary ───────────────────────────────
+// _isi(ffmc, wind): at FFMC=0, moisture m≈249.9 → ISI≈0 (finite but near-zero).
+//                  at FFMC=101, m=0 → ISI = 0.208 * exp(0.05039*wind) * 91.9.
+// _fwi(isi, bui):  b = 0.1*isi*fd; returns b when b≤1 (linear), else exponential.
+//                  With BUI=1, fd=2.626 → threshold isi = 10/2.626 ≈ 3.808.
+{
+  console.log('\n── _isi extremes + _fwi b=1 inner boundary ──');
+  const isiFn = sandbox._isi;
+  const fwiFn = sandbox._fwi;
+  const TOL   = 0.0001;
+
+  // _isi: FFMC=0 should give a near-zero but finite, non-NaN value
+  const isi0 = isiFn(0, 0);
+  let ok = isFinite(isi0) && !isNaN(isi0) && isi0 >= 0 && isi0 < 1e-6;
+  console.log(`  ${ok?'PASS':'FAIL'}  _isi(0,0) = ${isi0.toExponential(3)} (finite, ≥0, ≈0 — extreme low moisture)`);
+  if (ok) pass++; else { issues.push(`_isi(0,0) not finite near-zero: ${isi0}`); fail++; }
+
+  // _isi: FFMC=101 (max), wind=0 → m=0 → ISI = 0.208 * 1 * 91.9 * 1 * 1 = 19.1152
+  const isi101w0 = isiFn(101, 0);
+  ok = Math.abs(isi101w0 - 19.1152) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _isi(101,0) = ${isi101w0.toFixed(4)} (expected 19.1152 — max FFMC, calm)`);
+  if (ok) pass++; else { issues.push(`_isi(101,0): got ${isi101w0} exp 19.1152`); fail++; }
+
+  // _isi: FFMC=101, wind=20 → pinned reference
+  const isi101w20 = isiFn(101, 20);
+  ok = Math.abs(isi101w20 - 52.3674) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _isi(101,20) = ${isi101w20.toFixed(4)} (expected 52.3674)`);
+  if (ok) pass++; else { issues.push(`_isi(101,20): got ${isi101w20} exp 52.3674`); fail++; }
+
+  // _fwi: ISI=0 → b=0 → return 0 regardless of BUI
+  ok = fwiFn(0, 0) === 0 && fwiFn(0, 80) === 0;
+  console.log(`  ${ok?'PASS':'FAIL'}  _fwi(isi=0,bui=0/80) = 0 (b=0 → linear branch returns 0)`);
+  if (ok) pass++; else { issues.push(`_fwi isi=0 should return 0: got ${fwiFn(0,0)}, ${fwiFn(0,80)}`); fail++; }
+
+  // _fwi b=1 inner branch: BUI=1, fd=2.626, threshold isi≈3.808
+  // ISI=3.5 → b=0.9191 ≤ 1 → linear branch; ISI=3.81 → b≈1.012 > 1 → exponential
+  const fwi_linear = fwiFn(3.5,  1);
+  const fwi_exp    = fwiFn(3.81, 1);
+  ok = Math.abs(fwi_linear - 0.91910) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _fwi(3.5,1) = ${fwi_linear.toFixed(5)} (linear branch b<1, exp 0.91910)`);
+  if (ok) pass++; else { issues.push(`_fwi(3.5,1) linear branch: got ${fwi_linear} exp 0.91910`); fail++; }
+
+  ok = Math.abs(fwi_exp - 1.01175) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _fwi(3.81,1) = ${fwi_exp.toFixed(5)} (exponential branch b>1, exp 1.01175)`);
+  if (ok) pass++; else { issues.push(`_fwi(3.81,1) exp branch: got ${fwi_exp} exp 1.01175`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
