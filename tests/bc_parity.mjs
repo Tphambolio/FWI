@@ -366,6 +366,66 @@ console.log('\n── BC findNearestNAEFS (BC station list, 150 km cutoff) ─�
   }
 }
 
+// ─── calcMultiDayFBP parity (AB vs BC engine) ────────────────────────────────
+// calcMultiDayFBP powers the forecast trends page. It chains calculateFWI then
+// calls calculateFBP on each day — testing it end-to-end catches bugs that
+// calculateFBP-alone or calculateFWI-alone tests cannot detect (e.g. a broken
+// state hand-off between days, or rain reset applied twice).
+//
+// Only surface-fire fuel types (D1, O1a) are used here. Crown-fire fuels (C2,
+// C6, etc.) use calcFMC internally, and calcFMC depends on _stationLat which
+// defaults to different values in each engine (AB=53.5, BC=50.70), making a
+// fair parity comparison impossible without opts overrides.
+console.log('\n── calcMultiDayFBP parity (AB vs BC engine) ──');
+{
+  const DAYS = [
+    { temp: 28, rh: 30, wind: 20, rain:  0, month: 7, label: 'Day1-hot'  },
+    { temp: 14, rh: 85, wind:  5, rain: 15, month: 7, label: 'Day2-rain' },
+    { temp: 32, rh: 18, wind: 30, rain:  0, month: 7, label: 'Day3-hot'  },
+  ];
+  const START = { ffmc: 85, dmc: 40, dc: 200 };
+  const TOL   = 0.001;
+
+  // D1 — deciduous aspen, always surface fire (cfb=0), FMC-independent
+  const D1_REF = [
+    { fwi: 32.20306, ffmc: 91.86789, ros: 4.68820,  hfi: 1383.783 },
+    { fwi:  0.01012, ffmc: 32.34857, ros: 0.00003,  hfi:    0.007 },
+    { fwi: 38.45552, ffmc: 92.15120, ros: 8.87773,  hfi: 2058.813 },
+  ];
+  const abD1 = AB.calcMultiDayFBP(DAYS, 300, START, 'D1', 100, 50);
+  const bcD1 = BC.calcMultiDayFBP(DAYS, 300, START, 'D1', 100, 50);
+  for (let i = 0; i < DAYS.length; i++) {
+    const ref = D1_REF[i];
+    const aR = abD1[i], bR = bcD1[i];
+    const abOk = Math.abs(aR.fwi - ref.fwi) < TOL && Math.abs((aR.fbp?.ros ?? 0) - ref.ros) < TOL;
+    const parOk = Math.abs(aR.fwi - bR.fwi) < TOL && Math.abs((aR.fbp?.ros ?? 0) - (bR.fbp?.ros ?? 0)) < TOL;
+    const ok = abOk && parOk;
+    console.log(`  ${ok?'PASS':'FAIL'}  D1 ${DAYS[i].label}  FWI=${aR.fwi.toFixed(3)} ROS=${(aR.fbp?.ros??0).toFixed(3)}  AB≈ref=${abOk} AB==BC=${parOk}`);
+    if (ok) pass++;
+    else {
+      issues.push(`calcMultiDayFBP D1 Day${i+1}: ref mismatch or AB/BC divergence (fwi AB=${aR.fwi.toFixed(5)} BC=${bR.fwi.toFixed(5)} ref=${ref.fwi})`);
+      fail++;
+    }
+  }
+
+  // O1a — grass (100% curing), surface only, FMC-independent
+  const O1A_ROS_REF = [48.70450, 0.00177, 84.15251];
+  const abO1 = AB.calcMultiDayFBP(DAYS, 300, START, 'O1a', 100, 50);
+  const bcO1 = BC.calcMultiDayFBP(DAYS, 300, START, 'O1a', 100, 50);
+  for (let i = 0; i < DAYS.length; i++) {
+    const aR = abO1[i], bR = bcO1[i];
+    const abOk  = Math.abs((aR.fbp?.ros ?? 0) - O1A_ROS_REF[i]) < TOL;
+    const parOk = Math.abs((aR.fbp?.ros ?? 0) - (bR.fbp?.ros ?? 0)) < TOL;
+    const ok = abOk && parOk;
+    console.log(`  ${ok?'PASS':'FAIL'}  O1a ${DAYS[i].label}  ROS=${(aR.fbp?.ros??0).toFixed(3)}  AB≈ref=${abOk} AB==BC=${parOk}`);
+    if (ok) pass++;
+    else {
+      issues.push(`calcMultiDayFBP O1a Day${i+1}: ref mismatch or AB/BC divergence`);
+      fail++;
+    }
+  }
+}
+
 // ─── calculateFBP parity (AB vs BC engine) ───────────────────────────────────
 // The science core is byte-identical, so calculateFBP must return identical
 // results from both engines for all fuel types. This catches accidental
