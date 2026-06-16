@@ -480,6 +480,73 @@ console.log('\n── calcFMC branch boundaries ──');
   }
 }
 
+// ─── _buildupEffect (ST-X-3 Eq. 54) ─────────────────────────────────────────
+// BE = exp(50·ln(q)·(1/bui − 1/bui0)). At bui=bui0 always 1; q=1 always 1.
+console.log('\n── _buildupEffect (Eq. 54) ──');
+{
+  const TOL = 0.000001;
+  const buildupEffect = sandbox._buildupEffect;
+  if (typeof buildupEffect !== 'function') {
+    console.log('  FAIL  _buildupEffect not found in sandbox');
+    issues.push('_buildupEffect missing from sandbox'); fail++;
+  } else {
+    const BE_CASES = [
+      // [fuelCode, bui, expected, note]
+      ['C2',  0,    1,          'bui=0 guard → 1'],
+      ['C2',  64,   1,          'C2 bui=bui0=64 neutral → 1'],
+      ['C2',  32,   0.756803,   'C2 bui below bui0 → dampens'],
+      ['C2',  128,  1.149499,   'C2 bui above bui0 → amplifies'],
+      ['O1a', 50,   1,          'O1a q=1.0 → always 1'],
+      ['C7',  106,  1,          'C7 bui=bui0=106 neutral → 1'],
+      ['C7',  53,   0.926205,   'C7 half-bui0 dampens'],
+      ['D1',  32,   1,          'D1 bui=bui0=32 neutral → 1'],
+      ['D1',  16,   0.848211,   'D1 half-bui0 dampens'],
+    ];
+    for (const [fuel, bui, expected, note] of BE_CASES) {
+      const got  = buildupEffect(fuel, bui);
+      const diff = Math.abs(got - expected);
+      const ok   = diff <= TOL;
+      const tag  = ok ? 'PASS' : 'FAIL';
+      const lbl  = `${fuel} bui=${bui}`.padEnd(14);
+      console.log(`  ${tag}  ${lbl}  BE=${got.toFixed(6)}  (${note})`);
+      if (ok) pass++;
+      else { issues.push(`  _buildupEffect FAIL: ${note}: got ${got.toFixed(6)} expected ${expected}`); fail++; }
+    }
+  }
+}
+
+// ─── _rsiBasic (ST-X-3 Eq. 26) ───────────────────────────────────────────────
+// RSI = a·(1−e^{−b·ISI})^c. At ISI=0 always 0.
+console.log('\n── _rsiBasic (Eq. 26) ──');
+{
+  const TOL = 0.001;
+  const rsiBasic = sandbox._rsiBasic;
+  if (typeof rsiBasic !== 'function') {
+    console.log('  FAIL  _rsiBasic not found in sandbox');
+    issues.push('_rsiBasic missing from sandbox'); fail++;
+  } else {
+    const RSI_CASES = [
+      // [fuelCode, isi, expected, note]
+      ['C2',  0,   0,       'ISI=0 always gives zero RSI'],
+      ['C2',  10,  13.3989, 'C2 a=110 b=0.0282 c=1.5 at ISI=10'],
+      ['O1a', 10,  29.8436, 'O1a a=190 b=0.031 c=1.4 at ISI=10'],
+      ['C7',  15,  6.0655,  'C7 a=45 b=0.0305 c=2.0 at ISI=15'],
+      ['O1b', 8,   22.7592, 'O1b a=250 b=0.035 c=1.7 at ISI=8'],
+      ['C1',  5,   0.2794,  'C1 a=90 b=0.0649 c=4.5 at ISI=5'],
+    ];
+    for (const [fuel, isi, expected, note] of RSI_CASES) {
+      const got  = rsiBasic(fuel, isi);
+      const diff = Math.abs(got - expected);
+      const ok   = diff <= TOL;
+      const tag  = ok ? 'PASS' : 'FAIL';
+      const lbl  = `${fuel} ISI=${isi}`.padEnd(12);
+      console.log(`  ${tag}  ${lbl}  RSI=${got.toFixed(4).padStart(8)}  (${note})`);
+      if (ok) pass++;
+      else { issues.push(`  _rsiBasic FAIL: ${note}: got ${got.toFixed(4)} expected ${expected}`); fail++; }
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
