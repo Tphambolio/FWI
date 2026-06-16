@@ -1967,6 +1967,56 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   if (ok) pass++; else { issues.push(`_dc winter temp=2.0 should exceed prev: got ${dcWinterAbove}`); fail++; }
 }
 
+// ─── DMC_LL / DC_LL monthly lookup table coverage ────────────────────────────
+// Both drying tables are used in the Van Wagner daily equations (FTR-33 Table 1).
+// Testing only summer months leaves the table vulnerable to silent corruption.
+// These reference values lock all 12 entries of DMC_LL and DC_LL — a wrong
+// value in any month changes the drying increment and breaks the pinned value.
+//
+// Fixed inputs: temp=20°C, rh=50%, rain=0, DMC_prev=30, DC_prev=200.
+// (temp=20 is well above both -1.1°C and -2.8°C gates, so monthly variation
+// is purely from the lookup table. Same condition across all months.)
+{
+  console.log('\n── DMC_LL / DC_LL monthly table coverage (all 12 months) ──');
+  const dmcFn = sandbox._dmc;
+  const dcFn  = sandbox._dc;
+  const TOL   = 0.00001;
+
+  // Reference: computed from engine; locking the full table
+  // Columns: month, expected_dmc, expected_dc
+  const MONTHLY_REF = [
+    //  mo    dmc           dc
+    [  1,  31.29881,  203.30400 ],  // DMC_LL=6.5,   DC_LL=-1.6
+    [  2,  31.49863,  203.30400 ],  // DMC_LL=7.5,   DC_LL=-1.6
+    [  3,  31.79835,  203.30400 ],  // DMC_LL=9.0,   DC_LL=-1.6
+    [  4,  32.55766,  204.55400 ],  // DMC_LL=12.8,  DC_LL=0.9
+    [  5,  32.77746,  206.00400 ],  // DMC_LL=13.9,  DC_LL=3.8
+    [  6,  32.77746,  207.00400 ],  // DMC_LL=13.9,  DC_LL=5.8
+    [  7,  32.47773,  207.30400 ],  // DMC_LL=12.4,  DC_LL=6.4  ← peak DC drying
+    [  8,  32.17801,  206.60400 ],  // DMC_LL=10.9,  DC_LL=5.0
+    [  9,  31.87828,  205.30400 ],  // DMC_LL=9.4,   DC_LL=2.4
+    [ 10,  31.59854,  204.30400 ],  // DMC_LL=8.0,   DC_LL=0.4
+    [ 11,  31.39872,  203.30400 ],  // DMC_LL=7.0,   DC_LL=-1.6
+    [ 12,  31.19890,  203.30400 ],  // DMC_LL=6.0,   DC_LL=-1.6
+  ];
+
+  for (const [mo, expDMC, expDC] of MONTHLY_REF) {
+    const gotDMC = dmcFn(20, 50, 0, mo, 30);
+    const gotDC  = dcFn(20, 0, mo, 200);
+    const dmcOk  = Math.abs(gotDMC - expDMC) < TOL;
+    const dcOk   = Math.abs(gotDC  - expDC)  < TOL;
+    const ok     = dmcOk && dcOk;
+    const label  = `month=${String(mo).padStart(2)}`;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${label}  DMC=${gotDMC.toFixed(5)} (exp ${expDMC})  DC=${gotDC.toFixed(5)} (exp ${expDC})`);
+    if (ok) pass++;
+    else {
+      if (!dmcOk) issues.push(`DMC_LL table month=${mo}: got ${gotDMC.toFixed(5)} exp ${expDMC}`);
+      if (!dcOk)  issues.push(`DC_LL  table month=${mo}: got ${gotDC.toFixed(5)} exp ${expDC}`);
+      fail++;
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
