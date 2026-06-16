@@ -235,6 +235,30 @@ for (const c of fbpCases) {
   }
 }
 
+// ─── dangerRating boundary conditions ────────────────────────────────────────
+// Thresholds: Low <5.5, Moderate <15.5, High <22.5, Very High <29.5, Extreme ≥29.5
+console.log('\n── dangerRating boundaries ──');
+const BOUNDARY_CASES = [
+  [0,    'Low'],
+  [5.49, 'Low'],
+  [5.5,  'Moderate'],
+  [15.49,'Moderate'],
+  [15.5, 'High'],
+  [22.49,'High'],
+  [22.5, 'Very High'],
+  [29.49,'Very High'],
+  [29.5, 'Extreme'],
+  [100,  'Extreme'],
+];
+for (const [fwi, expected] of BOUNDARY_CASES) {
+  const got = FWI.dangerRating(fwi);
+  const ok = got === expected;
+  const tag = ok ? 'PASS' : 'FAIL';
+  console.log(`  ${tag}  FWI=${String(fwi).padStart(5)}  → ${got.padEnd(9)} (expected ${expected})`);
+  if (ok) pass++;
+  else { fail++; issues.push(`  dangerRating FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
