@@ -1366,6 +1366,52 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   }
 }
 
+// ─── FUEL_PAIR_COMPLEMENT completeness ───────────────────────────────────────
+{
+  console.log('\n── FUEL_PAIR_COMPLEMENT completeness ──');
+  const fpc = FWI.FUEL_PAIR_COMPLEMENT;
+  const ft  = FWI.FUEL_TYPES;
+
+  // Every key in FUEL_TYPES must have a complement entry
+  for (const code of Object.keys(ft)) {
+    const comp = fpc[code];
+    const ok   = comp !== undefined;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${code} has complement → ${comp ?? '(missing)'}`);
+    if (ok) pass++; else { issues.push(`FUEL_PAIR_COMPLEMENT missing ${code}`); fail++; }
+  }
+
+  // Every complement value must itself be a valid fuel type
+  for (const [code, comp] of Object.entries(fpc)) {
+    const ok = ft[comp] !== undefined;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${code}→${comp} is a valid fuel type`);
+    if (ok) pass++; else { issues.push(`FUEL_PAIR_COMPLEMENT[${code}]="${comp}" not in FUEL_TYPES`); fail++; }
+  }
+
+  // M3↔M4 are dead-fir slash — must be each other's complement (not D1 default)
+  const m3ok = fpc['M3'] === 'M4';
+  const m4ok = fpc['M4'] === 'M3';
+  console.log(`  ${m3ok?'PASS':'FAIL'}  M3 complement is M4 (got ${fpc['M3']})`);
+  console.log(`  ${m4ok?'PASS':'FAIL'}  M4 complement is M3 (got ${fpc['M4']})`);
+  if (m3ok) pass++; else { issues.push(`M3 complement wrong: ${fpc['M3']}`); fail++; }
+  if (m4ok) pass++; else { issues.push(`M4 complement wrong: ${fpc['M4']}`); fail++; }
+
+  // O1a↔O1b reciprocity
+  const o1aok = fpc['O1a'] === 'O1b';
+  const o1bok = fpc['O1b'] === 'O1a';
+  console.log(`  ${o1aok?'PASS':'FAIL'}  O1a complement is O1b`);
+  console.log(`  ${o1bok?'PASS':'FAIL'}  O1b complement is O1a`);
+  if (o1aok) pass++; else { issues.push(`O1a complement wrong: ${fpc['O1a']}`); fail++; }
+  if (o1bok) pass++; else { issues.push(`O1b complement wrong: ${fpc['O1b']}`); fail++; }
+
+  // D1↔D2 reciprocity
+  const d1ok = fpc['D1'] === 'D2';
+  const d2ok = fpc['D2'] === 'D1';
+  console.log(`  ${d1ok?'PASS':'FAIL'}  D1 complement is D2`);
+  console.log(`  ${d2ok?'PASS':'FAIL'}  D2 complement is D1`);
+  if (d1ok) pass++; else { issues.push(`D1 complement wrong: ${fpc['D1']}`); fail++; }
+  if (d2ok) pass++; else { issues.push(`D2 complement wrong: ${fpc['D2']}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);

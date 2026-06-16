@@ -488,7 +488,7 @@ const STATION_FUEL_TYPES = {
 const FUEL_PAIR_COMPLEMENT = {
   C1:'C2',  C2:'M1',  C3:'C2',  C4:'C3',  C5:'C4',  C6:'C5',  C7:'D1',
   D1:'D2',  D2:'D1',
-  M1:'C2',  M2:'M1',
+  M1:'C2',  M2:'M1',  M3:'M4',  M4:'M3',
   S1:'S2',  S2:'S3',  S3:'S2',
   O1a:'O1b', O1b:'O1a',
 };

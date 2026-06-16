@@ -28,7 +28,7 @@ CHECKS = [
     (BASE_AB + "?stn=Lethbridge",                  "AB Lethbridge",                   "networkidle"),
     (BASE_AB + "?stn=McMurray",                    "AB Fort McMurray",                "networkidle"),
     (BASE_BC,                                      "BC station detail — default",     "networkidle"),
-    (BASE_BC + "?stn=Kamloops",                    "BC Kamloops",                     "networkidle"),
+    (BASE_BC + "?stn=Vanderhoof",                  "BC Vanderhoof Hub (north)",        "networkidle"),
     (BASE_BC + "?stn=Cranbrook",                   "BC Cranbrook",                    "networkidle"),
     (f"{BASE}/regional_summary/code.html",         "AB regional summary",             "load"),
     (f"{BASE}/forecast_trends/code.html",          "AB forecast trends",              "load"),
