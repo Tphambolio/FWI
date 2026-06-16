@@ -2017,6 +2017,75 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   }
 }
 
+// ─── _fwi BUI formula branch and _bui dmc/dc branch boundaries ───────────────
+// _fwi uses fd = 0.626*bui^0.809+2 when bui≤80, else 1000/(25+108.64*e^(-0.023*bui))
+// _bui uses 0.8*dmc*dc/(dmc+0.4*dc) when dmc≤0.4*dc, else the complementary formula.
+// Pinning values at BUI=79/80/81 catches any change to the threshold or formula.
+{
+  console.log('\n── _fwi BUI=80 branch switch + _bui dmc=0.4*dc branch ──');
+  const fwiFn = sandbox._fwi;
+  const buiFn = sandbox._bui;
+  const TOL   = 0.00001;
+
+  // _fwi: ISI=15, BUI spanning the ≤80 / >80 boundary
+  // BUI=80 uses formula 1; BUI=81 jumps to formula 2 → small upward step
+  const FWI_BUI_REF = [
+    [15,  79, 36.77818],  // formula 1
+    [15,  80, 37.00310],  // formula 1 (inclusive ≤80)
+    [15,  81, 37.20972],  // formula 2 — step at this boundary
+    [15, 200, 50.34245],  // deep formula 2
+  ];
+  for (const [isi, b, exp] of FWI_BUI_REF) {
+    const got = fwiFn(isi, b);
+    const ok  = Math.abs(got - exp) < TOL;
+    console.log(`  ${ok?'PASS':'FAIL'}  _fwi(isi=${isi},bui=${b}) → ${got.toFixed(5)} (exp ${exp})`);
+    if (ok) pass++; else { issues.push(`_fwi isi=${isi} bui=${b}: got ${got.toFixed(5)} exp ${exp}`); fail++; }
+  }
+
+  // _bui: at dmc=0.4*dc (exactly at branch point, ≤ uses first formula)
+  // dmc=40, dc=100: 0.8*40*100/(40+40) = 3200/80 = 40.0 exactly
+  const BUI_BRANCH_REF = [
+    [39, 100, 39.49367],  // dmc < 0.4*dc → formula 1
+    [40, 100, 40.00000],  // dmc = 0.4*dc → formula 1 (≤ is inclusive)
+    [41, 100, 40.98525],  // dmc > 0.4*dc → formula 2
+  ];
+  for (const [dmc, dc, exp] of BUI_BRANCH_REF) {
+    const got = buiFn(dmc, dc);
+    const ok  = Math.abs(got - exp) < TOL;
+    console.log(`  ${ok?'PASS':'FAIL'}  _bui(dmc=${dmc},dc=${dc}) → ${got.toFixed(5)} (exp ${exp})`);
+    if (ok) pass++; else { issues.push(`_bui dmc=${dmc} dc=${dc}: got ${got.toFixed(5)} exp ${exp}`); fail++; }
+  }
+}
+
+// ─── calculateFWI fwiFromCWFIS passthrough paths ──────────────────────────────
+// Path A: fwiFromCWFIS=true + ffmc!=null + isi/bui/fwi all provided → pass through exactly
+// Path B: fwiFromCWFIS=true + ffmc=null → falls through to Van Wagner (ignores flag)
+// Both paths are tested; a broken ?? chain or changed condition would fail these.
+{
+  console.log('\n── calculateFWI fwiFromCWFIS passthrough paths ──');
+  const TOL = 0.00001;
+
+  // Path A: all CWFIS values provided — must come back unchanged
+  const wA = { temp:20, rh:50, wind:15, rain:0, month:6, fwiFromCWFIS:true,
+               ffmc:85.0, dmc:30.0, dc:200.0, isi:12.5, bui:44.3, fwi:28.7 };
+  const rA = FWI.calculateFWI(wA, null);
+  const isiOk = Math.abs(rA.isi - 12.5) < TOL;
+  const buiOk = Math.abs(rA.bui - 44.3) < TOL;
+  const fwiOk = Math.abs(rA.fwi - 28.7) < TOL;
+  const okA = isiOk && buiOk && fwiOk;
+  console.log(`  ${okA?'PASS':'FAIL'}  fwiFromCWFIS all-provided: isi=${rA.isi} bui=${rA.bui} fwi=${rA.fwi} (expect 12.5/44.3/28.7)`);
+  if (okA) pass++;
+  else { issues.push(`calculateFWI CWFIS passthrough broken: isi=${rA.isi} bui=${rA.bui} fwi=${rA.fwi}`); fail++; }
+
+  // Path B: fwiFromCWFIS=true but ffmc=null → condition fails → Van Wagner runs
+  const wB = { temp:20, rh:50, wind:15, rain:0, month:6, fwiFromCWFIS:true, ffmc:null, dmc:30, dc:200 };
+  const prevB = { ffmc:82, dmc:25, dc:180 };
+  const rB = FWI.calculateFWI(wB, prevB);
+  const vanWagnerRan = rB.ffmc !== null && typeof rB.ffmc === 'number' && rB.ffmc > 80;
+  console.log(`  ${vanWagnerRan?'PASS':'FAIL'}  fwiFromCWFIS + ffmc=null → Van Wagner ran: ffmc=${rB.ffmc?.toFixed(3)} (expect ~86.234)`);
+  if (vanWagnerRan) pass++; else { issues.push(`calculateFWI CWFIS ffmc=null should fall through to Van Wagner: ffmc=${rB.ffmc}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
