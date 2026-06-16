@@ -216,11 +216,14 @@ console.log('\n── BC getStartupDC ──');
 {
   const gsd = bcSandbox.getStartupDC;
 
-  // Known BC station lookups (Southeast Fire Centre has higher carry-over)
+  // Known BC station lookups — one representative per startup DC tier
   const bcStCases = [
-    ['Cranbrook',  175],
-    ['Lillooet',   125],
-    ['Whiskey',    150],
+    ['Summit',     50],   // Coastal tier-50
+    ['Darcy',      75],   // Interior wet-belt tier-75
+    ['Vanderhoof Hub', 100], // default tier-100 named station
+    ['Lillooet',   125],  // Kamloops Fire Centre tier-125
+    ['Whiskey',    150],  // Southeast Fire Centre tier-150
+    ['Cranbrook',  175],  // Southeast Fire Centre tier-175
     // Unknown station → BC default 100
     ['UnknownBC',  100],
   ];
