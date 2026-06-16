@@ -329,6 +329,43 @@ console.log('\n── BC ?stn= URL station matching (BC_STATIONS) ──');
   if (countOk) pass++; else { fail++; issues.push(`BC_STATIONS.length=${bcStations.length} unexpected`); }
 }
 
+// ─── BC findNearestNAEFS — routes to NAEFS_BC_STATIONS (not AB list) ─────────
+// In bc/fwi.js, _province='BC' is a compile-time constant so findNearestNAEFS
+// always searches NAEFS_BC_STATIONS. Undetected divergence (e.g. the function
+// accidentally using the AB list) would silently route 10-day forecasts to
+// wrong stations. The 150 km cutoff must also work correctly — Edmonton AB
+// is >400 km from any BC NAEFS point and must return null.
+console.log('\n── BC findNearestNAEFS (BC station list, 150 km cutoff) ──');
+{
+  const fnn = bcSandbox.findNearestNAEFS;
+  if (typeof fnn !== 'function') {
+    console.log('  FAIL  findNearestNAEFS not in bcSandbox');
+    fail++;
+  } else {
+    const NAEFS_CASES = [
+      // [lat, lng, expectedCode, expectedName, label]
+      [49.60, -115.78, 10189, 'Cranbrook',     'Cranbrook exact match'],
+      [50.70, -120.45, 10195, 'Kamloops',      'Kamloops exact match'],
+      [49.18, -123.17, 10211, 'Vancouver Intl','Vancouver exact match'],
+      [53.88, -122.68, 10202, 'Prince George', 'Prince George exact match'],
+      [58.42, -130.02, 10190, 'Dease Lake',    'Dease Lake — far-north BC coverage'],
+    ];
+    for (const [lat, lng, expCode, expName, label] of NAEFS_CASES) {
+      const got = fnn(lat, lng);
+      const ok  = got !== null && got.code === expCode && got.name === expName;
+      const gotStr = got ? `${got.name}(${got.code})` : 'null';
+      console.log(`  ${ok?'PASS':'FAIL'}  ${label} → ${gotStr}`);
+      if (ok) pass++; else { issues.push(`BC findNearestNAEFS(${lat},${lng}): got ${gotStr} exp ${expName}(${expCode})`); fail++; }
+    }
+
+    // Edmonton AB must return null — too far from all BC NAEFS stations
+    const edm = fnn(53.57, -113.52);
+    const edmOk = edm === null;
+    console.log(`  ${edmOk?'PASS':'FAIL'}  Edmonton AB → ${edm ? edm.name : 'null'} (exp null — >400 km from BC stations)`);
+    if (edmOk) pass++; else { issues.push(`BC findNearestNAEFS Edmonton: expected null, got ${edm?.name}`); fail++; }
+  }
+}
+
 // ─── calculateFBP parity (AB vs BC engine) ───────────────────────────────────
 // The science core is byte-identical, so calculateFBP must return identical
 // results from both engines for all fuel types. This catches accidental
