@@ -36,7 +36,7 @@ run_suite() {
 run_suite "science (Van Wagner reference)" \
   node tests/science.test.mjs
 
-run_suite "calc_audit (18 CFFDRS cases)" \
+run_suite "calc_audit (FWI/FBP engine audit)" \
   node tests/calc_audit.mjs
 
 run_suite "bc_parity (BC/AB parity + BC-specific functions)" \

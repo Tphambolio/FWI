@@ -287,9 +287,23 @@ const SFC_CASES = [
   ['M1',  85, 60,  50, 0.35, 'M1 pc=50 BUI=60 (Eq.17)',       1.74591],
   // O1a — constant grass fuel load
   ['O1a', 85, 40,  50, 0.35, 'O1a gfl=0.35 (Eq.18)',          0.35000],
-  // S1/S2 — two-component slash equations
-  ['S1',  85, 50,  50, 0.35, 'S1 BUI=50  (Eqs.19,20,25)',     6.12325],
-  ['S2',  85, 80,  50, 0.35, 'S2 BUI=80  (Eqs.21,22,25)',    12.41607],
+  // C5/C6 — same equation as C4 but different β (Eq.12)
+  ['C5',  85, 80,  50, 0.35, 'C5 BUI=80  (Eq.12)',             2.03816],
+  ['C6',  85, 80,  50, 0.35, 'C6 BUI=80  (Eq.12)',             2.03816],
+  // C7 — forest-floor (FFMC-gated) + BUI component (Eqs.13-15)
+  ['C7',  88, 60,  50, 0.35, 'C7 FFMC=88 BUI=60 (Eqs.13-15)', 2.74328],
+  ['C7',  65, 60,  50, 0.35, 'C7 FFMC=65 BUI=60 (no ff term)', 1.05091],
+  // M2 — same blend equation as M1 but different PC (Eq.17)
+  ['M2',  85, 60,  75, 0.35, 'M2 pc=75 BUI=60 (Eq.17)',        2.11901],
+  // M3/M4 — dead balsam fir slash, same as C2 (Eq.10)
+  ['M3',  85, 50,  50, 0.35, 'M3 BUI=50  (Eq.10, = C2)',       2.18648],
+  ['M4',  85, 50,  50, 0.35, 'M4 BUI=50  (Eq.10, = C2)',       2.18648],
+  // D2 — same as D1 (Eq.16; toggled by BUI season gate in calculateFBP)
+  ['D2',  85, 40,  50, 0.35, 'D2 BUI=40  (Eq.16, = D1)',       0.77858],
+  // S1/S2/S3 — two-component slash equations
+  ['S1',  85, 50,  50, 0.35, 'S1 BUI=50  (Eqs.19,20,25)',      6.12325],
+  ['S2',  85, 80,  50, 0.35, 'S2 BUI=80  (Eqs.21,22,25)',     12.41607],
+  ['S3',  85, 80,  50, 0.35, 'S3 BUI=80  (Eqs.23,24,25)',     25.09244],
 ];
 const SFC_TOL = 0.001;
 for (const [fuel, ffmc, bui, pc, gfl, label, expected] of SFC_CASES) {
