@@ -447,6 +447,39 @@ console.log('\n── componentRating boundaries ──');
   }
 }
 
+// ─── calcFMC branch boundaries (FCFDG 1992 Eqs. 1,2,5-8) ────────────────────
+// FMC has 3 branches: nd<30 Eq.6, 30≤nd<50 Eq.7, nd≥50 Eq.8.
+// Test at exact boundary nd values using Edmonton (lat=53.5, lng=-113.5, d0=154).
+console.log('\n── calcFMC branch boundaries ──');
+{
+  const TOL = 0.001;
+  // (lat, lng, doy, expected_fmc, note)
+  // Edmonton d0=154; nd = |doy - 154|
+  const FMC_CASES = [
+    [53.5, -113.5, 154, 85.0000,    'nd=0  minimum FMC (Eq.6)'],
+    [53.5, -113.5, 183, 100.8949,   'nd=29 last Eq.6 value'],
+    [53.5, -113.5, 184, 102.0800,   'nd=30 first Eq.7 value'],
+    [53.5, -113.5, 203, 119.0812,   'nd=49 last Eq.7 value'],
+    [53.5, -113.5, 204, 120.0,      'nd=50 Eq.8 saturates at 120'],
+    // Same nd=50 but using doy before d0 (nd counted symmetrically)
+    [53.5, -113.5, 104, 120.0,      'nd=50 early season also saturates at 120'],
+    // BC interior: Kamloops (lat=50.7, lng=-120.4, d0=142)
+    [50.7, -120.4, 142, 85.0000,    'Kamloops nd=0 minimum FMC'],
+    [50.7, -120.4, 192, 120.0,      'Kamloops nd=50 saturated'],
+  ];
+
+  for (const [lat, lng, doy, expected, note] of FMC_CASES) {
+    const got = FWI.calcFMC(lat, lng, doy);
+    const diff = Math.abs(got - expected);
+    const ok   = diff <= TOL;
+    const tag  = ok ? 'PASS' : 'FAIL';
+    const lbl  = `lat=${lat} doy=${doy}`.padEnd(22);
+    console.log(`  ${tag}  ${lbl}  FMC=${got.toFixed(4).padStart(8)}  (${note})`);
+    if (ok) pass++;
+    else { issues.push(`  calcFMC FAIL: ${note}: got ${got.toFixed(4)} expected ${expected} Δ=${diff.toFixed(4)}`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
