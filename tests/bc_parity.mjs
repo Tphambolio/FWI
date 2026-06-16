@@ -252,6 +252,36 @@ console.log('\n── BC dangerRatingProv (routes to dangerRatingBC) ──');
   }
 }
 
+// ─── BC _stationFireCentre — lat/lng to Fire Centre assignment ───────────────
+// Verifies all 6 BC Fire Centre classifications from geographically unambiguous
+// reference points. A regression here would mislabel regional summary rows.
+console.log('\n── BC _stationFireCentre (all 6 Fire Centres) ──');
+{
+  const fc = bcSandbox._stationFireCentre;
+  if (typeof fc !== 'function') {
+    console.log('  FAIL  _stationFireCentre not in bcSandbox');
+    fail++;
+  } else {
+    const CENTRE_CASES = [
+      // [lat, lng, expectedCentre, label]
+      [58.42, -130.02, 'Northwest',     'Dease Lake (lat≥57)'],
+      [54.52, -128.59, 'Northwest',     'Terrace (lat≥54 & lon<-124)'],
+      [50.68, -127.37, 'Coastal',       'Port Hardy (lon<-125.5)'],
+      [49.28, -123.12, 'Coastal',       'Vancouver (lon<-122.5 & lat<52)'],
+      [49.60, -115.78, 'Southeast',     'Cranbrook (lat<51.5 & lon>-118.5)'],
+      [53.88, -122.68, 'Prince George', 'Prince George (lat≥53)'],
+      [52.13, -122.14, 'Cariboo',       'Williams Lake (lat≥51.5)'],
+      [50.70, -120.45, 'Kamloops',      'Kamloops (southern interior default)'],
+    ];
+    for (const [lat, lng, expCentre, label] of CENTRE_CASES) {
+      const got = fc(lat, lng);
+      const ok = got === expCentre;
+      console.log(`  ${ok?'PASS':'FAIL'}  ${label} → "${got}" (exp "${expCentre}")`);
+      if (ok) pass++; else { issues.push(`BC _stationFireCentre(${lat},${lng}): got "${got}" exp "${expCentre}"`); fail++; }
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
