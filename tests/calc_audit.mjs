@@ -1078,6 +1078,147 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   }
 }
 
+// ─── _normalizeFuelCode — user input parsing ─────────────────────────────────
+{
+  console.log('\n── _normalizeFuelCode ──');
+  const nfc = sandbox._normalizeFuelCode;
+
+  const nfcCases = [
+    // Exact codes pass through
+    ['C2',        'C2'],
+    ['O1a',       'O1a'],
+    ['O1b',       'O1b'],
+    ['M1',        'M1'],
+    ['S3',        'S3'],
+    // Case-insensitive
+    ['c2',        'C2'],
+    ['o1A',       'O1a'],
+    ['m3',        'M3'],
+    // Hyphen stripping
+    ['C-2',       'C2'],
+    ['D-1',       'D1'],
+    ['O-1a',      'O1a'],
+    // Trailing /N suffix (WMS labels)
+    ['O1a/100',   'O1a'],
+    ['C2/50',     'C2'],
+    // First token only (WMS label includes description)
+    ['C2 Boreal Spruce',          'C2'],
+    ['O1a Matted Grass',          'O1a'],
+    ['D-1/D-2 Aspen',             'D1'],
+    // Invalid / null / empty
+    ['',          null],
+    [null,        null],
+    ['BOGUS',     null],
+    ['X9',        null],
+  ];
+
+  for (const [raw, exp] of nfcCases) {
+    const got = nfc(raw);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  _normalizeFuelCode("${raw}") → ${JSON.stringify(got)} (exp ${JSON.stringify(exp)})`);
+    if (ok) pass++; else { issues.push(`_normalizeFuelCode("${raw}"): got ${got} exp ${exp}`); fail++; }
+  }
+}
+
+// ─── _haversineKm — geographic distance ──────────────────────────────────────
+{
+  console.log('\n── _haversineKm ──');
+  const hav = sandbox._haversineKm;
+
+  // Same point → 0
+  {
+    const d = hav(53.5344, -113.4903, 53.5344, -113.4903);
+    const ok = d < 0.001;
+    console.log(`  ${ok?'PASS':'FAIL'}  same point → ${d.toFixed(6)} km (exp 0)`);
+    if (ok) pass++; else { issues.push(`_haversineKm same point: ${d}`); fail++; }
+  }
+
+  // Edmonton (53.5344, -113.4903) to Calgary (51.0447, -114.0719) ≈ 279.6 km
+  {
+    const d = hav(53.5344, -113.4903, 51.0447, -114.0719);
+    const ok = d > 270 && d < 290;
+    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Calgary → ${d.toFixed(2)} km (exp 270–290)`);
+    if (ok) pass++; else { issues.push(`_haversineKm Edm→Calgary: ${d.toFixed(2)} km`); fail++; }
+  }
+
+  // Symmetry: A→B == B→A
+  {
+    const d1 = hav(53.5344, -113.4903, 56.7264, -111.3803);  // Edmonton→Fort Mac
+    const d2 = hav(56.7264, -111.3803, 53.5344, -113.4903);
+    const ok = Math.abs(d1 - d2) < 0.001;
+    console.log(`  ${ok?'PASS':'FAIL'}  symmetry: Edm→FtMac=${d1.toFixed(3)} FtMac→Edm=${d2.toFixed(3)} (diff ${Math.abs(d1-d2).toFixed(6)})`);
+    if (ok) pass++; else { issues.push(`_haversineKm symmetry: ${d1} vs ${d2}`); fail++; }
+  }
+
+  // Edmonton to Vancouver ≈ 800–860 km
+  {
+    const d = hav(53.5344, -113.4903, 49.2827, -123.1207);
+    const ok = d > 800 && d < 860;
+    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Vancouver → ${d.toFixed(2)} km (exp 800–860)`);
+    if (ok) pass++; else { issues.push(`_haversineKm Edm→Vancouver: ${d.toFixed(2)} km`); fail++; }
+  }
+}
+
+// ─── calcMultiDay — FWI-only chain over multiple days ────────────────────────
+{
+  console.log('\n── calcMultiDay (FWI chain) ──');
+  const cmd = sandbox.calcMultiDay;
+
+  // 3-day chain: hot→rain→hot; verify state carries forward
+  const DAYS = [
+    { temp: 30, rh: 20, wind: 20, rain: 0,  month: 7, label: 'Day1-hot' },
+    { temp: 14, rh: 90, wind: 5,  rain: 20, month: 7, label: 'Day2-rain' },
+    { temp: 32, rh: 18, wind: 25, rain: 0,  month: 7, label: 'Day3-hot' },
+  ];
+  const startState = { ffmc: 85, dmc: 40, dc: 200 };
+  let ok, r;
+
+  try {
+    const chain = cmd(DAYS, 300, startState);
+
+    // Correct length
+    ok = chain.length === 3;
+    console.log(`  ${ok?'PASS':'FAIL'}  length=3: got ${chain.length}`);
+    if (ok) pass++; else { issues.push(`calcMultiDay length: ${chain.length}`); fail++; }
+
+    // Labels pass through
+    ok = chain[0].label === 'Day1-hot' && chain[2].label === 'Day3-hot';
+    console.log(`  ${ok?'PASS':'FAIL'}  labels pass-through: ["${chain[0].label}", "${chain[2].label}"]`);
+    if (ok) pass++; else { issues.push(`calcMultiDay labels: ${chain[0].label}, ${chain[2].label}`); fail++; }
+
+    // Hot day → FFMC rises from 85
+    ok = chain[0].ffmc > startState.ffmc;
+    console.log(`  ${ok?'PASS':'FAIL'}  Day1 FFMC rises on hot/dry: ${chain[0].ffmc?.toFixed(2)} (prev 85)`);
+    if (ok) pass++; else { issues.push(`calcMultiDay Day1 FFMC: ${chain[0].ffmc}`); fail++; }
+
+    // Rain day → FFMC drops from Day1
+    ok = chain[1].ffmc < chain[0].ffmc;
+    console.log(`  ${ok?'PASS':'FAIL'}  Day2 FFMC drops after rain: ${chain[1].ffmc?.toFixed(2)} (prev ${chain[0].ffmc?.toFixed(2)})`);
+    if (ok) pass++; else { issues.push(`calcMultiDay Day2 FFMC rain: ${chain[1].ffmc}`); fail++; }
+
+    // Day3 FFMC recovers above Day2
+    ok = chain[2].ffmc > chain[1].ffmc;
+    console.log(`  ${ok?'PASS':'FAIL'}  Day3 FFMC recovers after rain: ${chain[2].ffmc?.toFixed(2)} (prev ${chain[1].ffmc?.toFixed(2)})`);
+    if (ok) pass++; else { issues.push(`calcMultiDay Day3 FFMC recover: ${chain[2].ffmc}`); fail++; }
+
+    // All outputs have FWI/ISI/BUI
+    ok = chain.every(d => typeof d.fwi === 'number' && !isNaN(d.fwi));
+    console.log(`  ${ok?'PASS':'FAIL'}  all days have valid FWI: [${chain.map(d=>d.fwi?.toFixed(1)).join(', ')}]`);
+    if (ok) pass++; else { issues.push(`calcMultiDay: NaN in FWI chain`); fail++; }
+
+    // Null-safe defaults — pass a day with all nulls
+    const nullDay = [{ temp: null, rh: null, wind: null, rain: null, month: null }];
+    const nullChain = cmd(nullDay, 300, { ffmc: 85, dmc: 10, dc: 100 });
+    ok = nullChain.length === 1 && typeof nullChain[0].fwi === 'number' && !isNaN(nullChain[0].fwi);
+    console.log(`  ${ok?'PASS':'FAIL'}  null weather defaults: FWI=${nullChain[0]?.fwi?.toFixed(2)}`);
+    if (ok) pass++; else { issues.push(`calcMultiDay null weather: ${nullChain[0]?.fwi}`); fail++; }
+
+  } catch (e) {
+    console.log(`  FAIL  calcMultiDay threw: ${e.message}`);
+    issues.push(`calcMultiDay threw: ${e.message}`); fail++;
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);

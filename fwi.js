@@ -1962,9 +1962,17 @@ const ALBERTA_STATIONS = [
 function _normalizeFuelCode(raw) {
   if (!raw) return null;
   const token = raw.trim().split(/\s/)[0]; // take code only, strip description
-  const s = token.toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
-  // Case-insensitive match (O1A → O1a)
-  return Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s) || null;
+  const norm = t => t.toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
+  const s = norm(token);
+  const match = Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s);
+  if (match) return match;
+  // Handle WMS slash-notation (D-1/D-2 → try the part before the first /)
+  const slash = token.indexOf('/');
+  if (slash > 0) {
+    const s2 = norm(token.slice(0, slash));
+    return Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s2) || null;
+  }
+  return null;
 }
 
 /** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
