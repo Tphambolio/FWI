@@ -49,14 +49,17 @@ run_suite "live_chain (Open-Meteo 7-day, AB+BC engines)" \
 run_suite "live_api (CWFIS + SWOB + NAEFS)" \
   node tests/live_api_test.mjs
 
-# ── Browser smoke test (requires playwright) ─────────────────────────────────
+# ── Browser tests (require playwright) ───────────────────────────────────────
 if command -v python3 &>/dev/null && python3 -c "import playwright" 2>/dev/null; then
-  run_suite "browser_smoke (6 AB+BC pages)" \
+  run_suite "browser_smoke (11 AB+BC pages)" \
     python3 tests/browser_smoke.py
+  run_suite "e2e_deep (FWI components, FBP, NaN, interaction)" \
+    python3 tests/e2e_deep.py
 else
-  printf "\n${YLW}── browser_smoke ──${NC}\n"
+  printf "\n${YLW}── browser tests ──${NC}\n"
   printf "  SKIP  playwright not available\n"
   results+=("SKIP  browser_smoke (playwright unavailable)")
+  results+=("SKIP  e2e_deep (playwright unavailable)")
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
