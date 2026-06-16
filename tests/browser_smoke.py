@@ -25,11 +25,11 @@ BASE_BC      = f"{BASE}/bc/station_detail/code.html"
 # long-polling background fetches so we use "load" + a short JS paint delay.
 CHECKS = [
     (BASE_AB,                                      "AB station detail — default",    "networkidle"),
-    (BASE_AB + "?stn=LETH",                        "AB Lethbridge",                   "networkidle"),
-    (BASE_AB + "?stn=FORT",                        "AB Fort McMurray",                "networkidle"),
+    (BASE_AB + "?stn=Lethbridge",                  "AB Lethbridge",                   "networkidle"),
+    (BASE_AB + "?stn=McMurray",                    "AB Fort McMurray",                "networkidle"),
     (BASE_BC,                                      "BC station detail — default",     "networkidle"),
-    (BASE_BC + "?stn=KAMLOOPS",                    "BC Kamloops",                     "networkidle"),
-    (BASE_BC + "?stn=CRAN",                        "BC Cranbrook",                    "networkidle"),
+    (BASE_BC + "?stn=Kamloops",                    "BC Kamloops",                     "networkidle"),
+    (BASE_BC + "?stn=Cranbrook",                   "BC Cranbrook",                    "networkidle"),
     (f"{BASE}/regional_summary/code.html",         "AB regional summary",             "load"),
     (f"{BASE}/forecast_trends/code.html",          "AB forecast trends",              "load"),
     (f"{BASE}/science_guide/code.html",            "AB science guide",                "load"),

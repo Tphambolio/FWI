@@ -2251,6 +2251,24 @@ function buildStationPicker() {
 
   sel.addEventListener('change', () => loadStation(true));
 
+  // URL deep link: ?stn=NAME pre-selects a station for sharing / bookmarking.
+  // Case-insensitive; strips non-alphanumeric so "Prince+George" == "princegeorge".
+  // Priority: exact → prefix → substring. Does NOT overwrite localStorage.
+  const _urlStn = new URLSearchParams(location.search).get('stn');
+  if (_urlStn) {
+    const q = _urlStn.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const stationList = getStationList();
+    const norm = s => s.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const stnMatch =
+      stationList.find(s => norm(s) === q) ||
+      stationList.find(s => norm(s).startsWith(q)) ||
+      stationList.find(s => norm(s).includes(q));
+    if (stnMatch && selectByValue(`${stnMatch.lat},${stnMatch.lng}`)) {
+      loadStation(false); // don't overwrite saved station
+      return;
+    }
+  }
+
   const saved = localStorage.getItem('bc-fwi-station');
   if (selectByValue(saved)) {
     // Returning user — load saved station immediately, no geo prompt

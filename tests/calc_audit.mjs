@@ -1317,6 +1317,55 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   }
 }
 
+// ─── ?stn= URL deep-link matching logic ──────────────────────────────────────
+// Tests the station-name normalization used by buildStationPicker's URL param
+// handler: case-insensitive, strips non-alphanumeric, priority exact>prefix>sub.
+{
+  console.log('\n── ?stn= URL deep-link station matching ──');
+
+  // Replicate the matching logic from buildStationPicker
+  function matchStn(query, stations = FWI.ALBERTA_STATIONS) {
+    if (!query) return null;
+    const q    = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const norm = s => s.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (
+      stations.find(s => norm(s) === q) ||
+      stations.find(s => norm(s).startsWith(q)) ||
+      stations.find(s => norm(s).includes(q)) ||
+      null
+    );
+  }
+
+  const stCases = [
+    // Exact and prefix matches (AB)
+    ['Lethbridge',    name => name.startsWith('Lethbridge')],
+    ['McMurray',      name => name.includes('McMurray')],
+    ['Calgary',       name => name.includes('Calgary')],
+    ['Banff',         name => name.includes('Banff')],
+    // Case-insensitive
+    ['lethbridge',    name => name.toLowerCase().includes('lethbridge')],
+    ['MCMURRAY',      name => name.toLowerCase().includes('mcmurray')],
+    // Substring match
+    ['blatchford',    name => name.toLowerCase().includes('blatchford')],
+    // No match → null
+    ['XYZ_NOMATCH',   null],
+    ['',              null],
+  ];
+
+  for (const [query, predOrNull] of stCases) {
+    const got = matchStn(query);
+    let ok;
+    if (predOrNull === null) {
+      ok = got === null;
+      console.log(`  ${ok?'PASS':'FAIL'}  matchStn("${query}") → ${got?.name ?? 'null'} (exp null)`);
+    } else {
+      ok = got !== null && predOrNull(got.name);
+      console.log(`  ${ok?'PASS':'FAIL'}  matchStn("${query}") → "${got?.name ?? 'null'}"`);
+    }
+    if (ok) pass++; else { issues.push(`matchStn("${query}"): got "${got?.name}"`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
