@@ -747,6 +747,72 @@ console.log('\n── Slope / mixedwood / curing / D2 ──');
   if (ok) pass++; else { issues.push(`  D2/D1 ratio: got ${d2_hi.ros/d1_hi.ros} expected 0.2`); fail++; }
 }
 
+// ─── M3/M4 dead balsam fir blend + C6 two-equation system ───────────────────
+// M3/M4 (GLC-X-10 Eqs.29-33): RSI = pdf/100*rsiSelf + hwFactor*(1-pdf/100)*rsiD1
+//   hwFactor=1.0 for M3 (leafless), 0.2 for M4 (green)
+// C6 (ST-X-3 Eqs.61-65): rsi=30*(1−e^{−0.08·ISI})^3; ros blends RSS and RSC
+console.log('\n── M3/M4 blend + C6 two-equation ──');
+{
+  const TOL    = 0.0001;
+  const isi20  = sandbox._isi(88, 20);
+  const isi40  = sandbox._isi(92, 40);
+  const rsiB   = sandbox._rsiBasic;
+  const _be    = sandbox._buildupEffect;
+  const bui80  = FWI.calculateFBP('C2', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 }).bui;
+  const fmc    = FWI.calcFMC(53.5, -113.5, 184);
+
+  // ── M3 (pdf=35 default): RSI = 35%*M3 + 65%*D1 ──────────────────────────
+  const pdf  = 35;
+  const rM3  = rsiB('M3', isi20), rD1 = rsiB('D1', isi20);
+  const m3_rsi_exp = pdf/100 * rM3 + 1.0 * (1 - pdf/100) * rD1;
+  const m3_ros_exp = m3_rsi_exp * _be('M3', bui80);
+  const m3 = FWI.calculateFBP('M3', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  let ok = Math.abs(m3.ros - m3_ros_exp) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  M3 pdf=35 blend: ros=${m3.ros.toFixed(6)} (expected ${m3_ros_exp.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  M3 pdf=35 mismatch: got ${m3.ros} exp ${m3_ros_exp}`); fail++; }
+
+  // ── M4 (pdf=35): hwFactor=0.2 for D1 share ────────────────────────────────
+  const m4_rsi_exp = pdf/100 * rsiB('M4', isi20) + 0.2 * (1 - pdf/100) * rD1;
+  const m4_ros_exp = m4_rsi_exp * _be('M4', bui80);
+  const m4 = FWI.calculateFBP('M4', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  ok = Math.abs(m4.ros - m4_ros_exp) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  M4 pdf=35 blend (hwFactor=0.2): ros=${m4.ros.toFixed(6)} (expected ${m4_ros_exp.toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  M4 pdf=35 mismatch: got ${m4.ros} exp ${m4_ros_exp}`); fail++; }
+
+  // ── M4/M3 ratio at pdf=0 (pure hardwood D1): must be 0.2 ─────────────────
+  const m3_p0 = FWI.calculateFBP('M3', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184, pdf:0 });
+  const m4_p0 = FWI.calculateFBP('M4', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184, pdf:0 });
+  ok = Math.abs(m4_p0.ros / m3_p0.ros - 0.2) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  M4/M3 ratio at pdf=0 = ${(m4_p0.ros/m3_p0.ros).toFixed(4)} (expect 0.2)`);
+  if (ok) pass++; else { issues.push(`  M4/M3 pdf=0 ratio: got ${m4_p0.ros/m3_p0.ros} expected 0.2`); fail++; }
+
+  // ── C6 Eq.62: RSI = 30·(1−e^{−0.08·ISI})^3 ──────────────────────────────
+  const c6_rsi_exp = 30 * Math.pow(1 - Math.exp(-0.08 * isi20), 3);
+  const be_c6 = _be('C6', bui80);
+  const c6_mod = FWI.calculateFBP('C6', 88, 60, 300, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  // At moderate conditions RSS < RSO → cfb=0, ros=rss=rsi*BE
+  ok = Math.abs(c6_mod.ros - c6_rsi_exp * be_c6) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  C6 Eq.62 RSS surface: ros=${c6_mod.ros.toFixed(6)} (Eq.62·BE=${(c6_rsi_exp*be_c6).toFixed(6)})`);
+  if (ok) pass++; else { issues.push(`  C6 Eq.62 surface mismatch: got ${c6_mod.ros} exp ${c6_rsi_exp*be_c6}`); fail++; }
+  ok = c6_mod.cfb === 0 && c6_mod.fireType === 'Surface';
+  console.log(`  ${ok?'PASS':'FAIL'}  C6 moderate: RSS<RSO → cfb=0 Surface (cfb=${c6_mod.cfb} rso=${c6_mod.rso.toFixed(3)})`);
+  if (ok) pass++; else { issues.push(`  C6 moderate should be Surface cfb=0, got cfb=${c6_mod.cfb} ${c6_mod.fireType}`); fail++; }
+
+  // ── C6 Eq.65: ros = rss + cfb·(rsc−rss) under active crown ──────────────
+  const c6_ex = FWI.calculateFBP('C6', 92, 80, 400, 40, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
+  const rsi_c6_ex = 30 * Math.pow(1 - Math.exp(-0.08 * isi40), 3);
+  const rss_ex = rsi_c6_ex * _be('C6', c6_ex.bui);
+  const fme_ex = Math.pow(1.5 - 0.00275 * fmc, 4) / (460 + 25.9 * fmc) * 1000;
+  const rsc_ex = 60 * (1 - Math.exp(-0.0497 * isi40)) * fme_ex / 0.778;
+  const ros_exp_ex = rss_ex + c6_ex.cfb * (rsc_ex - rss_ex);
+  ok = Math.abs(c6_ex.ros - ros_exp_ex) < 0.001;
+  console.log(`  ${ok?'PASS':'FAIL'}  C6 Eq.65 active crown blend: ros=${c6_ex.ros.toFixed(4)} (rss+cfb·Δrsc=${ros_exp_ex.toFixed(4)}) cfb=${c6_ex.cfb.toFixed(4)}`);
+  if (ok) pass++; else { issues.push(`  C6 Eq.65 mismatch: got ${c6_ex.ros} exp ${ros_exp_ex}`); fail++; }
+  ok = c6_ex.cfb >= 0.9 && c6_ex.fireType === 'Active Crown';
+  console.log(`  ${ok?'PASS':'FAIL'}  C6 extreme: RSC>RSS>RSO → Active Crown (cfb=${c6_ex.cfb.toFixed(4)})`);
+  if (ok) pass++; else { issues.push(`  C6 extreme should be Active Crown, got cfb=${c6_ex.cfb} ${c6_ex.fireType}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
