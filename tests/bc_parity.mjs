@@ -282,6 +282,50 @@ console.log('\n── BC _stationFireCentre (all 6 Fire Centres) ──');
   }
 }
 
+// ─── BC ?stn= URL deep-link station matching ─────────────────────────────────
+// The BC station picker normalises the ?stn= query the same way as AB:
+// lowercase + strip non-alphanumeric, then exact > prefix > substring.
+// Key difference: BC_STATIONS has 241 entries — "Kamloops" is NOT in the
+// list (it is the default lat/lng, not a named BCWS fire weather station),
+// so ?stn=Kamloops falls through to null and the page shows the default.
+console.log('\n── BC ?stn= URL station matching (BC_STATIONS) ──');
+{
+  const bcStations = BC.BC_STATIONS;
+  function matchStn(query, stations) {
+    if (!query) return null;
+    const q    = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const norm = s => s.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (
+      stations.find(s => norm(s) === q) ||
+      stations.find(s => norm(s).startsWith(q)) ||
+      stations.find(s => norm(s).includes(q)) ||
+      null
+    );
+  }
+  // [query, expected_name_or_null, label]
+  const bcStnCases = [
+    ['Cranbrook',    'Cranbrook',       'exact match'],
+    ['Lillooet',     'Lillooet',        'exact match (internal station)'],
+    ['vanderhoof',   'Vanderhoof Hub',  'case-insensitive → Vanderhoof Hub'],
+    ['CRANBROOK',    'Cranbrook',       'all-caps case-insensitive'],
+    ['kelowna',      'West Kelowna',    'substring match (no bare Kelowna station)'],
+    ['Kamloops',     null,              'no match — Kamloops is BC default, not in list'],
+    ['XYZ_NOMATCH',  null,              'no match'],
+    ['',             null,              'empty query → null'],
+  ];
+  for (const [query, expName, label] of bcStnCases) {
+    const got = matchStn(query, bcStations);
+    const ok  = expName === null ? got === null : got?.name === expName;
+    const gotStr = got?.name ?? 'null';
+    console.log(`  ${ok?'PASS':'FAIL'}  matchStn("${query}") → ${gotStr}  [${label}]`);
+    if (ok) pass++; else { issues.push(`BC matchStn("${query}"): got "${gotStr}" exp "${expName ?? 'null'}"`); fail++; }
+  }
+  // Sanity: BC_STATIONS has ~241 entries; a grossly wrong import would be caught
+  const countOk = bcStations.length >= 200 && bcStations.length <= 300;
+  console.log(`  ${countOk?'PASS':'FAIL'}  BC_STATIONS length=${bcStations.length} (exp 200–300)`);
+  if (countOk) pass++; else { fail++; issues.push(`BC_STATIONS.length=${bcStations.length} unexpected`); }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
