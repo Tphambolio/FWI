@@ -795,6 +795,40 @@ console.log('\n── TFC / HFI / flame length chain ──');
   console.log(`  ${c6_ok ? 'PASS' : 'FAIL'}  C6 TFC=SFC+CFB·1.80: ${c6.tfc.toFixed(4)} (cfb=${c6.cfb.toFixed(4)})`);
   if (c6_ok) pass++; else { issues.push(`  C6 TFC mismatch: got ${c6.tfc} expected ${tfc_c6exp}`); fail++; }
 
+  // C6 SFI = 300·SFC·RSS (surface-only intensity, uses RSS not blended ROS — Eq.63+54)
+  // RSS is not exposed; reconstruct from returned ISI/BUI using Eq.62 + Eq.54
+  {
+    const rsi_c6 = 30 * Math.pow(1 - Math.exp(-0.08 * c6.isi), 3);  // C6 Eq.62
+    const BE_c6  = Math.exp(50 * Math.log(0.80) * (1 / c6.bui - 1 / 62));  // Eq.54 q=0.80 bui0=62
+    const rss_c6 = rsi_c6 * BE_c6;
+    const sfi_c6_exp = 300 * c6.sfc * rss_c6;
+    const sfi_c6_ok  = Math.abs(c6.sfi - sfi_c6_exp) < TOL;
+    console.log(`  ${sfi_c6_ok ? 'PASS' : 'FAIL'}  C6 SFI=300·SFC·RSS (passive, cfb=${c6.cfb.toFixed(4)}): ${c6.sfi.toFixed(4)} vs ${sfi_c6_exp.toFixed(4)}`);
+    if (sfi_c6_ok) pass++; else { issues.push(`  C6 SFI mismatch: got ${c6.sfi} expected ${sfi_c6_exp}`); fail++; }
+    // SFI < HFI when crown is burning — blended ROS (Eq.65) > RSS
+    const sfi_lt_hfi_ok = c6.sfi < c6.hfi;
+    console.log(`  ${sfi_lt_hfi_ok ? 'PASS' : 'FAIL'}  C6 passive: SFI=${c6.sfi.toFixed(1)} < HFI=${c6.hfi.toFixed(1)} (crown contribution raises total intensity)`);
+    if (sfi_lt_hfi_ok) pass++; else { issues.push(`  C6 SFI should be < HFI when crown burning`); fail++; }
+  }
+
+  // C7 active crown — TFC / HFI / FL chain (CFL=0.50 for C7)
+  {
+    const c7 = FWI.calculateFBP('C7', 91, 100, 500, 45, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+    const cfl_c7 = 0.50;
+    const tfc_c7exp = c7.sfc + c7.cfb * cfl_c7;
+    const hfi_c7exp = 300 * c7.tfc * c7.ros;
+    const fl_c7exp  = 0.0775 * Math.pow(c7.hfi, 0.46);
+    const tfc_c7_ok = Math.abs(c7.tfc - tfc_c7exp) < TOL;
+    const hfi_c7_ok = Math.abs(c7.hfi - hfi_c7exp) < 0.1;
+    const fl_c7_ok  = Math.abs(c7.flameLength - fl_c7exp) < TOL;
+    console.log(`  ${tfc_c7_ok ? 'PASS' : 'FAIL'}  C7 TFC=SFC+CFB·0.50: ${c7.tfc.toFixed(6)} (cfb=${c7.cfb.toFixed(4)})`);
+    if (tfc_c7_ok) pass++; else { issues.push(`  C7 TFC mismatch: got ${c7.tfc} expected ${tfc_c7exp}`); fail++; }
+    console.log(`  ${hfi_c7_ok ? 'PASS' : 'FAIL'}  C7 HFI=300·TFC·ROS: ${c7.hfi.toFixed(1)} kW/m`);
+    if (hfi_c7_ok) pass++; else { issues.push(`  C7 HFI mismatch: got ${c7.hfi} expected ${hfi_c7exp}`); fail++; }
+    console.log(`  ${fl_c7_ok  ? 'PASS' : 'FAIL'}  C7 FL=0.0775·HFI^0.46: ${c7.flameLength.toFixed(6)} m`);
+    if (fl_c7_ok)  pass++; else { issues.push(`  C7 FL mismatch: got ${c7.flameLength} expected ${fl_c7exp}`); fail++; }
+  }
+
   // Byram formula standalone spot-checks (formula: 0.0775 * HFI^0.46)
   const BYRAM_CASES = [
     [100,   0.6446,  'Low intensity (100 kW/m)'],
