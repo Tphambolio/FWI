@@ -19,6 +19,18 @@ vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
 const FWI = sandbox.window.FWI;
 
+// Load BC engine
+const bcCode = readFileSync(new URL('../bc/fwi.js', import.meta.url), 'utf8');
+const bcSandbox = {
+  window: {}, document: { querySelectorAll: () => [], getElementById: () => null },
+  console: { log: () => {}, warn: () => {} },
+  localStorage: { getItem: () => null, setItem: () => {} },
+  fetch: globalThis.fetch,
+};
+vm.createContext(bcSandbox);
+vm.runInContext(bcCode, bcSandbox);
+const BCFWI = bcSandbox.window.FWI;
+
 let pass = 0, fail = 0;
 const issues = [];
 
@@ -345,6 +357,58 @@ async function testNAEFSForecastBC() {
   }
 }
 
+// ─── Test: Engine danger ratings against live CWFIS FWI values ───────────────
+// Exercises the actual engine methods (dangerRating / dangerRatingBC) — neither
+// is called anywhere else in this file. Catches mismatch between engines and
+// ensures the rating strings are valid for each province's scale.
+function testEngineDangerRatings(features) {
+  console.log('\n── Engine danger ratings vs live CWFIS FWI ──');
+
+  const AB_RATINGS = new Set(['Low', 'Moderate', 'High', 'Very High', 'Extreme']);
+  // BC scale: Very Low/Low/Moderate/High/Extreme (no "Very High")
+  const BC_RATINGS = new Set(['Very Low', 'Low', 'Moderate', 'High', 'Extreme']);
+
+  const ab = features
+    .filter(f => f.properties.prov === 'AB' && f.properties.fwi != null && f.properties.fwi >= 0)
+    .slice(0, 6);
+  const bc = features
+    .filter(f => f.properties.prov === 'BC' && f.properties.fwi != null && f.properties.fwi >= 0)
+    .slice(0, 6);
+
+  if (!ab.length && !bc.length) {
+    console.log('  SKIP: no AB/BC stations with FWI data');
+    return;
+  }
+
+  let localPass = 0, localFail = 0;
+
+  for (const f of ab) {
+    const p      = f.properties;
+    const rating = FWI.dangerRating(p.fwi);
+    const name   = (p.name ?? p.stn_id ?? 'STA').trim().slice(0, 28).padEnd(28);
+    const ok     = AB_RATINGS.has(rating);
+    console.log(`  ${ok?'PASS':'FAIL'}  ${name} [AB]  FWI=${String(p.fwi?.toFixed(1)).padStart(5)}  → ${rating}`);
+    if (ok) { pass++; localPass++; } else {
+      const msg = `dangerRating(${p.fwi}) → "${rating}" not a valid AB rating`;
+      issues.push(msg); fail++; localFail++;
+    }
+  }
+
+  for (const f of bc) {
+    const p      = f.properties;
+    const rating = BCFWI.dangerRatingBC(p.fwi);
+    const name   = (p.name ?? p.stn_id ?? 'STA').trim().slice(0, 28).padEnd(28);
+    const ok     = BC_RATINGS.has(rating);
+    console.log(`  ${ok?'PASS':'FAIL'}  ${name} [BC]  FWI=${String(p.fwi?.toFixed(1)).padStart(5)}  → ${rating}`);
+    if (ok) { pass++; localPass++; } else {
+      const msg = `dangerRatingBC(${p.fwi}) → "${rating}" not a valid BC rating`;
+      issues.push(msg); fail++; localFail++;
+    }
+  }
+
+  console.log(`  Engine ratings: ${localPass} pass, ${localFail} fail`);
+}
+
 // ─── Run all ─────────────────────────────────────────────────────────────────
 // Single CWFIS WFS fetch shared across cross-check + data health tests
 let cwfisFeatures = [];
@@ -356,6 +420,7 @@ try {
 
 await testCWFISCrossCheck(cwfisFeatures);
 testCWFISDataHealth(cwfisFeatures);
+testEngineDangerRatings(cwfisFeatures);
 await testSWOBFreshness();
 await testNAEFSForecast();
 await testNAEFSForecastBC();
