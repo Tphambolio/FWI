@@ -4150,7 +4150,9 @@ async function buildD1Card() {
         days = _forecastCache.days; // reuse weather; only recalc FBP
       }
       if (!days?.length) throw new Error('[D+1] Forecast fetch returned no days');
-      const chainStart = _lastFWI ? {
+      // Only carry the chain if we have a real FFMC — null coerces to 0, giving
+      // artificially low forecast fire behaviour (same root cause as wireFBP bug).
+      const chainStart = (_lastFWI?.ffmc != null) ? {
         ffmc: _lastFWI.ffmc,
         dmc:  _lastFWI.dmc,
         dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
@@ -4215,8 +4217,12 @@ async function buildD1Card() {
       const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
       if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
     };
-    populateTodaySection('-a', results[todayIdx]);
-    populateTodaySection('-b', resultsB?.[todayIdx]);
+    // Show today's FBP only when the FWI chain has real data; otherwise N/A
+    // (consistent with the main wireDOM/wireFBP guard for null ffmc).
+    const todayFBPA = (_lastFWI?.ffmc != null) ? results[todayIdx]  : null;
+    const todayFBPB = (_lastFWI?.ffmc != null) ? resultsB?.[todayIdx] : null;
+    populateTodaySection('-a', todayFBPA);
+    populateTodaySection('-b', todayFBPB);
   }
 
   // RIGHT card — always tomorrow
