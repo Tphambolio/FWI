@@ -2827,11 +2827,11 @@ function _nextPeakDayIdx(days) {
 
 /** Chain Van Wagner + FBP per day. FBP uses each day's peak (16:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
-function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50) {
+function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50, opts = {}) {
   const results = calcMultiDay(days, startupDC, startState);
   return results.map((r, i) => {
     const pw = days[i]?.peak || days[i]; // peak = 16:00; fallback to noon
-    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing, ps);
+    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing, ps, opts);
     return { ...r, fbp, peakWeather: pw };
   });
 }

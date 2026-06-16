@@ -372,10 +372,11 @@ console.log('\n── BC findNearestNAEFS (BC station list, 150 km cutoff) ─�
 // calculateFBP-alone or calculateFWI-alone tests cannot detect (e.g. a broken
 // state hand-off between days, or rain reset applied twice).
 //
-// Only surface-fire fuel types (D1, O1a) are used here. Crown-fire fuels (C2,
-// C6, etc.) use calcFMC internally, and calcFMC depends on _stationLat which
-// defaults to different values in each engine (AB=53.5, BC=50.70), making a
-// fair parity comparison impossible without opts overrides.
+// Surface fuels (D1, O1a): tested without opts — FMC-independent, parity is
+// guaranteed regardless of _stationLat default.
+// Crown-fire fuels (C2): tested with explicit opts {lat, lng, doy} which are
+// now threaded through calcMultiDayFBP → calculateFBP → calcFMC, ensuring both
+// engines use identical FMC and produce byte-identical crown-fire results.
 console.log('\n── calcMultiDayFBP parity (AB vs BC engine) ──');
 {
   const DAYS = [
@@ -421,6 +422,34 @@ console.log('\n── calcMultiDayFBP parity (AB vs BC engine) ──');
     if (ok) pass++;
     else {
       issues.push(`calcMultiDayFBP O1a Day${i+1}: ref mismatch or AB/BC divergence`);
+      fail++;
+    }
+  }
+
+  // C2 Boreal Spruce with explicit opts — crown-fire fuel, FMC depends on lat/lng.
+  // calcMultiDayFBP now accepts opts={} and threads it to calculateFBP, so both
+  // engines receive the same FMC and must produce identical CFB/ROS/HFI.
+  const C2_OPT = { lat: 51.5, lng: -116.5, doy: 180 }; // Rocky Mountain foothills, midsummer
+  const C2_REF = [
+    { fwi: 32.20306, ros: 22.25376, cfb: 0.99195, hfi: 21604.907 },
+    { fwi:  0.01012, ros:  0.00029, cfb: 0.00000, hfi:     0.135 },
+    { fwi: 38.45552, ros: 35.24438, cfb: 0.99955, hfi: 27786.359 },
+  ];
+  const abC2 = AB.calcMultiDayFBP(DAYS, 300, START, 'C2', 100, 50, C2_OPT);
+  const bcC2 = BC.calcMultiDayFBP(DAYS, 300, START, 'C2', 100, 50, C2_OPT);
+  for (let i = 0; i < DAYS.length; i++) {
+    const ref = C2_REF[i];
+    const aR = abC2[i], bR = bcC2[i];
+    const abOk = Math.abs(aR.fwi - ref.fwi) < TOL &&
+                 Math.abs((aR.fbp?.ros ?? 0) - ref.ros) < TOL &&
+                 Math.abs((aR.fbp?.cfb ?? 0) - ref.cfb) < TOL;
+    const parOk = Math.abs(aR.fwi - bR.fwi) < TOL &&
+                  Math.abs((aR.fbp?.ros ?? 0) - (bR.fbp?.ros ?? 0)) < TOL;
+    const ok = abOk && parOk;
+    console.log(`  ${ok?'PASS':'FAIL'}  C2 ${DAYS[i].label}  ROS=${(aR.fbp?.ros??0).toFixed(3)}  CFB=${(aR.fbp?.cfb??0).toFixed(3)}  AB≈ref=${abOk} AB==BC=${parOk}`);
+    if (ok) pass++;
+    else {
+      issues.push(`calcMultiDayFBP C2 Day${i+1}: ref mismatch or AB/BC divergence (ros AB=${(aR.fbp?.ros??0).toFixed(5)} BC=${(bR.fbp?.ros??0).toFixed(5)} ref=${ref.ros})`);
       fail++;
     }
   }

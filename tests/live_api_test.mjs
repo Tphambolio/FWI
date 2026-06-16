@@ -148,24 +148,26 @@ async function testSWOBFreshness() {
   const now  = new Date();
   const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
   const fmt  = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
-  // Edmonton bbox ±1.5°
+  // Edmonton bbox ±1.5° — fetch more to find the freshest; API returns ascending by time
   const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
-    `?bbox=-115.02,52.07,-112.02,55.07&datetime=${fmt(past)}/${fmt(now)}&limit=5&f=json`;
+    `?bbox=-115.02,52.07,-112.02,55.07&datetime=${fmt(past)}/${fmt(now)}&limit=20&f=json`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) { console.log(`  WARN: SWOB API HTTP ${res.status}`); return; }
     const d = await res.json();
     const n = d.features?.length ?? 0;
     if (!n) { console.log('  WARN: SWOB API returned 0 features (off-season or stale?)'); return; }
-    const f    = d.features[0];
-    const obsT = new Date(f.properties['date_tm-value'] || f.properties['obs_date_tm'] || 0);
+    // Pick freshest observation — API returns ascending, so take newest
+    const getObsTime = f => new Date(f.properties['date_tm-value'] || f.properties['obs_date_tm'] || 0).getTime();
+    const f    = d.features.reduce((best, cur) => getObsTime(cur) > getObsTime(best) ? cur : best, d.features[0]);
+    const obsT = new Date(getObsTime(f));
     const ageMin = (Date.now() - obsT) / 60000;
     const stn  = (f.properties['stn_nam-value'] || '').replace(/\+/g, ' ').trim() || 'unknown';
     if (ageMin < 90) {
-      console.log(`  PASS  SWOB OGC API — ${n} features, nearest: ${stn}, age=${ageMin.toFixed(0)} min`);
+      console.log(`  PASS  SWOB OGC API — ${n} features, freshest: ${stn}, age=${ageMin.toFixed(0)} min`);
       pass++;
     } else {
-      console.log(`  WARN  SWOB data stale — age=${ageMin.toFixed(0)} min (station: ${stn})`);
+      console.log(`  WARN  SWOB data stale — age=${ageMin.toFixed(0)} min (freshest station: ${stn})`);
     }
   } catch (e) {
     console.log(`  WARN: SWOB fetch failed — ${e.message}`);
