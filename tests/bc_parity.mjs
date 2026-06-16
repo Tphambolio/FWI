@@ -521,6 +521,48 @@ console.log('\n── hfiClassInfo boundary conditions (AB parity + BC correctne
   }
 }
 
+// ─── BC _stationFireCentre routing ───────────────────────────────────────────
+// BC.stationSector routes to _stationFireCentre(lat, lng) in BC build.
+// Rules (in order): lat>=57 → NW; lat>=54&&lng<-124 → NW; lat>=52&&lng<-127 → NW;
+// lat<51.5&&lng>-118.5 → SE; lng<-122.5&&lat<52 → Coastal; lng<-125.5 → Coastal;
+// lat>=53 → PG; lat>=51.5 → Cariboo; default → Kamloops.
+console.log('\n── BC stationSector (_stationFireCentre routing) ──');
+{
+  const SECTOR_CASES = [
+    // [lat, lng, expected, note]
+    [58.4, -130.0,  'Northwest',      'Dease Lake — lat≥57'],
+    [54.8, -127.2,  'Northwest',      'Smithers — lat≥54 && lng<−124'],
+    [54.3, -128.5,  'Northwest',      'Prince Rupert — lat≥54 && lng<−124'],
+    [52.4, -126.8,  'Coastal',        'Bella Coola — lng<−125.5'],
+    [49.2, -123.2,  'Coastal',        'Vancouver — lng<−122.5 && lat<52'],
+    [50.0, -125.3,  'Coastal',        'Campbell River — lng<−122.5 && lat<52'],
+    [49.6, -115.8,  'Southeast',      'Cranbrook — lat<51.5 && lng>−118.5'],
+    [49.3, -116.5,  'Southeast',      'Nelson — lat<51.5 && lng>−118.5'],
+    [53.9, -122.7,  'Prince George',  'Prince George — lat≥53'],
+    [56.2, -120.8,  'Prince George',  'Fort St John — lat≥53'],
+    [52.1, -122.1,  'Cariboo',        'Williams Lake — lat≥51.5'],
+    [51.8, -121.5,  'Cariboo',        'Cache Creek — lat≥51.5'],
+    [50.7, -120.4,  'Kamloops',       'Kamloops — default southern interior'],
+    [49.5, -119.5,  'Kamloops',       'Penticton — default southern interior'],
+  ];
+
+  for (const [lat, lng, expected, note] of SECTOR_CASES) {
+    const got = BC.stationSector(lat, lng);
+    const ok = got === expected;
+    const lbl = `${String(lat).padStart(5)}, ${String(lng).padStart(7)}  → ${(got ?? '').padEnd(14)} (${note})`;
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${lbl}`);
+    if (ok) pass++;
+    else { issues.push(`stationSector(${lat},${lng}): got "${got}" exp "${expected}"`); fail++; }
+  }
+
+  // getRegions() in BC build must return 6 BC regions with required fields
+  const regions = BC.getRegions();
+  const regOk = Array.isArray(regions) && regions.length === 6 &&
+    regions.every(r => r.name && typeof r.lat === 'number' && typeof r.lng === 'number');
+  console.log(`  ${regOk ? 'PASS' : 'FAIL'}  getRegions() → ${Array.isArray(regions) ? regions.length : '?'} regions with name/lat/lng`);
+  if (regOk) pass++; else { issues.push(`getRegions() failed: ${JSON.stringify(regions)}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
