@@ -7,6 +7,8 @@
  * Run: node tests/bc_parity.mjs
  */
 import { loadEngine, extractScienceCore } from './load-engine.mjs';
+import { readFileSync } from 'fs';
+import vm from 'vm';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -15,6 +17,20 @@ const ROOT = path.resolve(__dirname, '..');
 
 const AB = loadEngine(path.join(ROOT, 'fwi.js'));
 const BC = loadEngine(path.join(ROOT, 'bc', 'fwi.js'));
+
+// Raw BC sandbox — exposes internal functions not in window.FWI
+const bcCode = readFileSync(path.join(ROOT, 'bc', 'fwi.js'), 'utf8');
+const bcSandbox = {
+  window: {}, document: { querySelectorAll: () => [], getElementById: () => null },
+  console: { log: () => {}, warn: () => {} },
+  localStorage: { getItem: () => null, setItem: () => {} },
+  navigator: { userAgent: 'node-test' }, location: { search: '' },
+  fetch: async () => { throw new Error('network disabled'); },
+  AbortController, URLSearchParams, setTimeout, clearTimeout, Date, Math, JSON, Promise,
+};
+bcSandbox.globalThis = bcSandbox; bcSandbox.self = bcSandbox.window;
+vm.createContext(bcSandbox);
+vm.runInContext(bcCode, bcSandbox);
 
 let pass = 0, fail = 0;
 const issues = [];
@@ -135,6 +151,105 @@ for (const [fwi, expected] of BC_DANGER_CASES) {
   console.log(`  ${tag}  FWI=${String(fwi).padStart(5)}  → ${got.padEnd(10)} (expected ${expected})`);
   if (ok) pass++;
   else { issues.push(`  dangerRatingBC FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); fail++; }
+}
+
+// ─── BC-specific internal functions ──────────────────────────────────────────
+// Tests applyDCFloor (BC) and getStartupDC (BC) — not exported in window.FWI
+// but critical to correct spring chain initialization.
+console.log('\n── BC applyDCFloor (BC-specific floors + PST month window) ──');
+{
+  const adf = bcSandbox.applyDCFloor;
+
+  // Always-safe: outside BC geographic bounds → no correction
+  {
+    const r = adf(30, 53.5, -113.5);  // Edmonton AB
+    const ok = r.dc === 30 && r.corrected === false;
+    console.log(`  ${ok?'PASS':'FAIL'}  AB coords (Edmonton) DC=30 → dc=${r.dc} corrected=${r.corrected} (exp 30, false)`);
+    if (ok) pass++; else { issues.push(`BC applyDCFloor AB coords: ${JSON.stringify(r)}`); fail++; }
+  }
+
+  // DC above cold-start ceiling (60) → never corrected
+  {
+    const r = adf(200, 50.7, -120.4);  // Kamloops BC, but DC=200
+    const ok = r.dc === 200 && r.corrected === false;
+    console.log(`  ${ok?'PASS':'FAIL'}  Kamloops DC=200 (>ceiling) → dc=${r.dc} corrected=${r.corrected} (exp 200, false)`);
+    if (ok) pass++; else { issues.push(`BC applyDCFloor Kamloops DC=200: ${JSON.stringify(r)}`); fail++; }
+  }
+
+  // Spring-window BC corrections (months 3–7 PST)
+  const mo = new Date(Date.now() - 8 * 3600000).getUTCMonth() + 1; // PST month
+  if (mo >= 3 && mo <= 7) {
+    // Thompson/Kootenay zone: lat 50-52 → floor 75
+    {
+      const r = adf(30, 50.7, -120.4);  // Kamloops lat=50.7
+      const ok = r.dc === 75 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  Kamloops DC=30 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 75, true)`);
+      if (ok) pass++; else { issues.push(`BC applyDCFloor Kamloops DC=30: ${JSON.stringify(r)}`); fail++; }
+    }
+    // South coast / Okanagan: lat<50 → floor 50
+    {
+      const r = adf(30, 49.2, -123.1);  // Vancouver lat=49.2
+      const ok = r.dc === 50 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  Vancouver DC=30 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 50, true)`);
+      if (ok) pass++; else { issues.push(`BC applyDCFloor Vancouver DC=30: ${JSON.stringify(r)}`); fail++; }
+    }
+    // Cariboo/Skeena: lat 52-56 → floor 80
+    {
+      const r = adf(40, 53.9, -122.7);  // Prince George lat=53.9
+      const ok = r.dc === 80 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  Prince George DC=40 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 80, true)`);
+      if (ok) pass++; else { issues.push(`BC applyDCFloor PG DC=40: ${JSON.stringify(r)}`); fail++; }
+    }
+    // NW boreal: lat≥56 → floor 60
+    {
+      const r = adf(40, 58.0, -130.0);  // NW BC
+      const ok = r.dc === 60 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  NW BC DC=40 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 60, true)`);
+      if (ok) pass++; else { issues.push(`BC applyDCFloor NW BC DC=40: ${JSON.stringify(r)}`); fail++; }
+    }
+  } else {
+    console.log(`  SKIP  Spring corrections (mo=${mo} outside BC spring window Mar–Jul)`);
+  }
+}
+
+console.log('\n── BC getStartupDC ──');
+{
+  const gsd = bcSandbox.getStartupDC;
+
+  // Known BC station lookups (Southeast Fire Centre has higher carry-over)
+  const bcStCases = [
+    ['Cranbrook',  175],
+    ['Lillooet',   125],
+    ['Whiskey',    150],
+    // Unknown station → BC default 100
+    ['UnknownBC',  100],
+  ];
+  for (const [name, exp] of bcStCases) {
+    const got = gsd(name);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  getStartupDC("${name}") → ${got} (exp ${exp})`);
+    if (ok) pass++; else { issues.push(`BC getStartupDC("${name}"): got ${got} exp ${exp}`); fail++; }
+  }
+}
+
+console.log('\n── BC dangerRatingProv (routes to dangerRatingBC) ──');
+{
+  const drp = bcSandbox.dangerRatingProv;
+  // In BC build, dangerRatingProv must equal dangerRatingBC at every threshold
+  const provCases = [
+    [0,   'Very Low'],
+    [4.9, 'Very Low'],
+    [5,   'Low'],
+    [12,  'Moderate'],
+    [21,  'High'],
+    [34,  'Extreme'],
+  ];
+  for (const [fwi, exp] of provCases) {
+    const got = drp(fwi);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  dangerRatingProv(${fwi}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`BC dangerRatingProv(${fwi}): got "${got}" exp "${exp}"`); fail++; }
+  }
 }
 
 // ─── Summary ─────────────────────────────────────────────────────────────────
