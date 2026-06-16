@@ -259,6 +259,71 @@ for (const [fwi, expected] of BOUNDARY_CASES) {
   else { fail++; issues.push(`  dangerRating FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); }
 }
 
+// ─── Multi-day FBP chain ──────────────────────────────────────────────────────
+// calcMultiDayFBP drives the forecast trends page. Tests that:
+//   · FWI chain is continuous (state propagates day-to-day)
+//   · Hot/dry days raise FWI; heavy rain collapses it
+//   · FBP ros/hfi are non-NaN and non-negative every day
+console.log('\n── Multi-day FBP chain ──');
+const CHAIN_DAYS = [
+  { temp: 20, rh: 45, wind: 15, rain: 0,  month: 7, label: 'Day 1 moderate' },
+  { temp: 34, rh: 15, wind: 30, rain: 0,  month: 7, label: 'Day 2 hot/dry'  },
+  { temp: 16, rh: 80, wind: 8,  rain: 25, month: 7, label: 'Day 3 heavy rain'},
+  { temp: 22, rh: 40, wind: 12, rain: 0,  month: 7, label: 'Day 4 recovery'  },
+  { temp: 31, rh: 20, wind: 25, rain: 0,  month: 7, label: 'Day 5 hot/dry'  },
+];
+const CHAIN_START = { ffmc: 85, dmc: 30, dc: 200 };
+
+try {
+  const chain = FWI.calcMultiDayFBP(CHAIN_DAYS, 300, CHAIN_START, 'C2', 80, 50);
+
+  if (!Array.isArray(chain) || chain.length !== CHAIN_DAYS.length) {
+    console.log(`  FAIL  calcMultiDayFBP returned wrong length: ${chain?.length}`);
+    fail++;
+  } else {
+    let chainOk = true;
+
+    // (a) Each day: no NaN/OOB in FWI chain
+    for (const [i, r] of chain.entries()) {
+      const dayOk = !isNaN(r.fwi) && r.ffmc >= 0 && r.ffmc <= 101 && r.dmc >= 0 && r.dc >= 0;
+      if (!dayOk) { chainOk = false; issues.push(`  FAIL multi-day chain Day ${i+1}: fwi=${r.fwi} ffmc=${r.ffmc}`); }
+    }
+
+    // (b) FBP result non-NaN/non-negative every day
+    for (const [i, r] of chain.entries()) {
+      const fbpOk = r.fbp && isFinite(r.fbp.ros) && r.fbp.ros >= 0 && isFinite(r.fbp.hfi) && r.fbp.hfi >= 0;
+      if (!fbpOk) { chainOk = false; issues.push(`  FAIL multi-day FBP Day ${i+1}: ros=${r.fbp?.ros} hfi=${r.fbp?.hfi}`); }
+    }
+
+    // (c) Hot/dry day 2 must have higher FWI than moderate day 1
+    if (chain[1].fwi <= chain[0].fwi) {
+      chainOk = false; issues.push(`  FAIL Day 2 FWI=${chain[1].fwi.toFixed(1)} not > Day 1 FWI=${chain[0].fwi.toFixed(1)}`);
+    }
+
+    // (d) Rain day 3 FFMC must be substantially lower than day 2 (25mm rain suppresses)
+    if (chain[2].ffmc >= chain[1].ffmc - 10) {
+      chainOk = false; issues.push(`  FAIL Day 3 FFMC=${chain[2].ffmc.toFixed(1)} not suppressed vs Day 2=${chain[1].ffmc.toFixed(1)}`);
+    }
+
+    // (e) Day 5 (hot/dry after recovery) FWI must be above Low (not stuck at 0)
+    if (chain[4].fwi < 5) {
+      chainOk = false; issues.push(`  FAIL Day 5 FWI=${chain[4].fwi.toFixed(1)} implausibly low after dry sequence`);
+    }
+
+    for (const [i, r] of chain.entries()) {
+      const label = CHAIN_DAYS[i].label.padEnd(20);
+      console.log(`  ${label}  FWI=${r.fwi.toFixed(1).padStart(6)}  FFMC=${r.ffmc.toFixed(1).padStart(5)}  ROS=${r.fbp?.ros?.toFixed(1).padStart(5)} m/min  HFI=${r.fbp?.hfi?.toFixed(0).padStart(6)} kW/m`);
+    }
+
+    if (chainOk) { console.log('  PASS  chain continuous, rain-suppressed, FBP valid'); pass++; }
+    else { console.log('  FAIL  chain anomaly — see issues'); fail++; }
+  }
+} catch (e) {
+  console.log(`  FAIL  calcMultiDayFBP threw: ${e.message}`);
+  issues.push(`  FAIL calcMultiDayFBP: ${e.message}`);
+  fail++;
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
