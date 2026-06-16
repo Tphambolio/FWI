@@ -2725,7 +2725,7 @@ async function fetchForecastNAEFS(code) {
     .map(f => {
       const p = f.properties;
       const dt = new Date(p.date_time);
-      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
       // NAEFS max_temp / min_rh / median_ws already represent peak afternoon conditions
       const peakTemp = p.max_temp ?? 15;
       const peakRh   = p.min_rh   ?? 40;

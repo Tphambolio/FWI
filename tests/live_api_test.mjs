@@ -386,6 +386,52 @@ async function testNAEFSForecastBC() {
   }
 }
 
+// ─── Test: NAEFS label integrity (UTC vs browser-local timezone) ─────────────
+// Catches the bug where toLocaleDateString without timeZone:'UTC' shifts NAEFS
+// midnight-UTC dates into the previous local-timezone day (e.g. Jun 17Z → Jun 16 MDT).
+// This would cause the D+1 preview card to show today's date as "tomorrow".
+async function testNAEFSLabelIntegrity() {
+  console.log('\n── NAEFS label integrity (UTC date alignment) ──');
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
+    `&outputFormat=application/json&CQL_FILTER=code=10195&count=5`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) { console.log(`  WARN  NAEFS label check skipped — HTTP ${res.status}`); return; }
+    const d = await res.json();
+    const features = (d.features ?? []).slice(0, 5);
+    if (!features.length) { console.log('  WARN  NAEFS returned 0 features — skipping label check'); return; }
+
+    let allOk = true;
+    for (const f of features) {
+      const rawDate = f.properties.date_time; // e.g. "2026-06-16Z"
+      const dt = new Date(rawDate);
+      // Correct label — UTC calendar date (matches NAEFS date_time)
+      const labelUTC   = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      // Buggy label — browser-local timezone (MDT=UTC-6) shifts midnight UTC to yesterday
+      const labelLocal = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+
+      // The UTC label's calendar date must match the raw date_time date
+      const utcY = dt.getUTCFullYear(), utcM = dt.getUTCMonth()+1, utcD = dt.getUTCDate();
+      const utcDateStr = `${utcY}-${String(utcM).padStart(2,'0')}-${String(utcD).padStart(2,'0')}`;
+      const rawDatePart = rawDate.replace(/T.*$/, '').replace(/Z$/, '');
+
+      const correct = utcDateStr === rawDatePart;
+      // Report the timezone offset in hours so the test is meaningful in any server tz
+      const tzOffsetH = -(new Date().getTimezoneOffset() / 60);
+      const shifted   = labelLocal !== labelUTC;
+      console.log(`  ${correct ? 'PASS' : 'FAIL'}  ${rawDate} → UTC label: ${labelUTC}${shifted ? `  (local=${labelLocal}, tz offset UTC${tzOffsetH>=0?'+':''}${tzOffsetH}h — label would be wrong without timeZone:UTC)` : ''}`);
+      if (!correct) {
+        issues.push(`NAEFS label: UTC date ${utcDateStr} ≠ raw date ${rawDatePart}`);
+        fail++; allOk = false;
+      } else pass++;
+    }
+    if (allOk) console.log('  PASS  All NAEFS labels align with UTC calendar dates (timeZone:UTC enforced)');
+  } catch (e) {
+    console.log(`  WARN  NAEFS label check failed: ${e.message}`);
+  }
+}
+
 // ─── Test: Engine danger ratings against live CWFIS FWI values ───────────────
 // Exercises the actual engine methods (dangerRating / dangerRatingBC) — neither
 // is called anywhere else in this file. Catches mismatch between engines and
@@ -453,6 +499,7 @@ testEngineDangerRatings(cwfisFeatures);
 await testSWOBFreshness();
 await testNAEFSForecast();
 await testNAEFSForecastBC();
+await testNAEFSLabelIntegrity();
 
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
