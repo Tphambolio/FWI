@@ -329,6 +329,57 @@ console.log('\n── BC ?stn= URL station matching (BC_STATIONS) ──');
   if (countOk) pass++; else { fail++; issues.push(`BC_STATIONS.length=${bcStations.length} unexpected`); }
 }
 
+// ─── calculateFBP parity (AB vs BC engine) ───────────────────────────────────
+// The science core is byte-identical, so calculateFBP must return identical
+// results from both engines for all fuel types. This catches accidental
+// divergence in FUEL_TYPES constants, calcSFC, or calling conventions.
+//
+// IMPORTANT: opts.lat/lng must be explicit — the two engines have different
+// module-level _stationLat defaults (AB=53.5, BC=50.70) which feed calcFMC
+// and shift the crown-fire threshold. Parity tests must supply a shared
+// location so FMC is identical in both engines.
+console.log('\n── calculateFBP parity (AB vs BC engine) ──');
+{
+  // Shared opts: Rocky Mountain foothills — midpoint between AB/BC typical stations
+  const OPT = { lat: 51.5, lng: -116.5, doy: 180 }; // midsummer, neutral location
+
+  const FBP_CASES = [
+    // [label, fuelCode, ffmc, dmc, dc, wind, slope, curing, ps]
+    ['C2  Boreal Spruce  high crown',  'C2',  91, 100, 500, 45, 0,   100, 50],
+    ['C7  Ponderosa Pine moderate',    'C7',  88,  50, 250, 25, 0,   100, 50],
+    ['C3  Mature Jack Pine slope=10',  'C3',  86,  40, 200, 30, 10,  100, 50],
+    ['M1  Mixedwood pc=40',            'M1',  85,  35, 180, 20, 0,   100, 40],
+    ['O1b Grass curing=85',            'O1b', 88,  50, 250, 25, 0,    85, 50],
+    ['S1  Slash moderate',             'S1',  82,  30, 150, 15, 5,   100, 50],
+    ['D1  Deciduous aspen',            'D1',  80,  25, 120, 20, 0,   100, 50],
+    ['C6  Conifer two-equation',       'C6',  91, 100, 500, 45, 0,   100, 50],
+  ];
+
+  const FBP_FIELDS = ['ros', 'hfi', 'cfb', 'sfc', 'tfc'];
+  const FBP_TOL = 0.001;
+
+  for (const [label, fuelCode, ffmc, dmc, dc, wind, slope, curing, ps] of FBP_CASES) {
+    const abR = AB.calculateFBP(fuelCode, ffmc, dmc, dc, wind, slope, curing, ps, OPT);
+    const bcR = BC.calculateFBP(fuelCode, ffmc, dmc, dc, wind, slope, curing, ps, OPT);
+    const diffs = FBP_FIELDS.map(f => ({
+      f, d: Math.abs((abR[f] ?? 0) - (bcR[f] ?? 0))
+    }));
+    const maxDiff = Math.max(...diffs.map(x => x.d));
+    const worst = diffs.find(x => x.d === maxDiff);
+    const ok = maxDiff <= FBP_TOL;
+    const lbl = label.padEnd(35);
+    if (ok) {
+      console.log(`  PASS  ${lbl}  ROS=${(abR.ros ?? 0).toFixed(2).padStart(7)} m/min  HFI=${(abR.hfi ?? 0).toFixed(0).padStart(7)} kW/m  ${abR.fireType ?? ''}`);
+      pass++;
+    } else {
+      const msg = `  FAIL  ${lbl}  ${worst.f}: AB=${abR[worst.f]?.toFixed(4)} BC=${bcR[worst.f]?.toFixed(4)} Δ=${worst.d.toFixed(4)}`;
+      console.log(msg);
+      issues.push(msg);
+      fail++;
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
