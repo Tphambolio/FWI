@@ -393,6 +393,60 @@ try {
   fail++;
 }
 
+// ─── componentRating boundaries ──────────────────────────────────────────────
+// componentRating maps each FWI component to a label using component-specific
+// thresholds (not the FWI danger-rating scale). Accessed via VM sandbox.
+// Thresholds from fwi.js: ffmc[77,84,88,91] dmc[21,27,40,60]
+//   dc[80,190,300,500] isi[2,5,10,20] bui[31,40,60,90]
+console.log('\n── componentRating boundaries ──');
+{
+  const componentRating = sandbox.componentRating;
+  if (typeof componentRating !== 'function') {
+    console.log('  FAIL  componentRating not found in sandbox — engine may have moved it');
+    issues.push('componentRating missing from sandbox');
+    fail++;
+  } else {
+    const CR_CASES = [
+      // [key, val, expected, note]
+      // ffmc: thresholds 77 / 84 / 88 / 91
+      ['ffmc',  76,  'Low',       'below first threshold'],
+      ['ffmc',  77,  'Moderate',  'at first threshold'],
+      ['ffmc',  88,  'Very High', 'at third threshold'],
+      ['ffmc',  91,  'Extreme',   'at fourth threshold'],
+      // dmc: thresholds 21 / 27 / 40 / 60
+      ['dmc',   20,  'Low',       'below first threshold'],
+      ['dmc',   21,  'Moderate',  'at first threshold'],
+      ['dmc',   60,  'Extreme',   'at fourth threshold'],
+      // dc: thresholds 80 / 190 / 300 / 500
+      ['dc',    79,  'Low',       'below first threshold'],
+      ['dc',    80,  'Moderate',  'at first threshold'],
+      ['dc',   300,  'Very High', 'at third threshold'],
+      ['dc',   500,  'Extreme',   'at fourth threshold'],
+      // isi: thresholds 2 / 5 / 10 / 20
+      ['isi',    1,  'Low',       'below first threshold'],
+      ['isi',    2,  'Moderate',  'at first threshold'],
+      ['isi',   20,  'Extreme',   'at fourth threshold'],
+      // bui: thresholds 31 / 40 / 60 / 90
+      ['bui',   30,  'Low',       'below first threshold'],
+      ['bui',   31,  'Moderate',  'at first threshold'],
+      ['bui',   90,  'Extreme',   'at fourth threshold'],
+      // fwi key has no component threshold → falls back to dangerRating (AB scale)
+      ['fwi',    4,  'Low',       'fwi fallback: <5.5 → Low'],
+      ['fwi',   16,  'High',      'fwi fallback: 15.5≤x<22.5 → High'],
+    ];
+
+    for (const [key, val, expected, note] of CR_CASES) {
+      const got = componentRating(key, val);
+      const ok  = got === expected;
+      const tag = ok ? 'PASS' : 'FAIL';
+      const lbl = `${key}=${val}`.padEnd(10);
+      console.log(`  ${tag}  ${lbl}  → ${got.padEnd(12)} (${note})`);
+      if (ok) pass++;
+      else { issues.push(`  componentRating FAIL: ${key}=${val} got "${got}" expected "${expected}" (${note})`); fail++; }
+    }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
