@@ -510,31 +510,58 @@ console.log('\n── componentRating boundaries ──');
   } else {
     const CR_CASES = [
       // [key, val, expected, note]
-      // ffmc: thresholds 77 / 84 / 88 / 91
-      ['ffmc',  76,  'Low',       'below first threshold'],
-      ['ffmc',  77,  'Moderate',  'at first threshold'],
-      ['ffmc',  88,  'Very High', 'at third threshold'],
-      ['ffmc',  91,  'Extreme',   'at fourth threshold'],
-      // dmc: thresholds 21 / 27 / 40 / 60
-      ['dmc',   20,  'Low',       'below first threshold'],
-      ['dmc',   21,  'Moderate',  'at first threshold'],
-      ['dmc',   60,  'Extreme',   'at fourth threshold'],
-      // dc: thresholds 80 / 190 / 300 / 500
-      ['dc',    79,  'Low',       'below first threshold'],
-      ['dc',    80,  'Moderate',  'at first threshold'],
-      ['dc',   300,  'Very High', 'at third threshold'],
-      ['dc',   500,  'Extreme',   'at fourth threshold'],
-      // isi: thresholds 2 / 5 / 10 / 20
-      ['isi',    1,  'Low',       'below first threshold'],
-      ['isi',    2,  'Moderate',  'at first threshold'],
-      ['isi',   20,  'Extreme',   'at fourth threshold'],
-      // bui: thresholds 31 / 40 / 60 / 90
-      ['bui',   30,  'Low',       'below first threshold'],
-      ['bui',   31,  'Moderate',  'at first threshold'],
-      ['bui',   90,  'Extreme',   'at fourth threshold'],
-      // fwi key has no component threshold → falls back to dangerRating (AB scale)
+      // ffmc: thresholds 77 / 84 / 88 / 91 — all 5 classes
+      ['ffmc',  76,  'Low',       'ffmc below first (76<77)'],
+      ['ffmc',  77,  'Moderate',  'ffmc at first threshold'],
+      ['ffmc',  83,  'Moderate',  'ffmc just below second (83<84)'],
+      ['ffmc',  84,  'High',      'ffmc at second threshold'],
+      ['ffmc',  87,  'High',      'ffmc mid-High band'],
+      ['ffmc',  88,  'Very High', 'ffmc at third threshold'],
+      ['ffmc',  90,  'Very High', 'ffmc mid-Very High band'],
+      ['ffmc',  91,  'Extreme',   'ffmc at fourth threshold'],
+      ['ffmc',  99,  'Extreme',   'ffmc well above'],
+      // dmc: thresholds 21 / 27 / 40 / 60 — all 5 classes
+      ['dmc',   20,  'Low',       'dmc below first (20<21)'],
+      ['dmc',   21,  'Moderate',  'dmc at first threshold'],
+      ['dmc',   26,  'Moderate',  'dmc just below second'],
+      ['dmc',   27,  'High',      'dmc at second threshold'],
+      ['dmc',   39,  'High',      'dmc just below third'],
+      ['dmc',   40,  'Very High', 'dmc at third threshold'],
+      ['dmc',   59,  'Very High', 'dmc just below fourth'],
+      ['dmc',   60,  'Extreme',   'dmc at fourth threshold'],
+      // dc: thresholds 80 / 190 / 300 / 500 — all 5 classes
+      ['dc',    79,  'Low',       'dc below first (79<80)'],
+      ['dc',    80,  'Moderate',  'dc at first threshold'],
+      ['dc',   189,  'Moderate',  'dc just below second'],
+      ['dc',   190,  'High',      'dc at second threshold'],
+      ['dc',   299,  'High',      'dc just below third'],
+      ['dc',   300,  'Very High', 'dc at third threshold'],
+      ['dc',   499,  'Very High', 'dc just below fourth'],
+      ['dc',   500,  'Extreme',   'dc at fourth threshold'],
+      // isi: thresholds 2 / 5 / 10 / 20 — all 5 classes
+      ['isi',    1,  'Low',       'isi below first (1<2)'],
+      ['isi',    2,  'Moderate',  'isi at first threshold'],
+      ['isi',    4,  'Moderate',  'isi just below second'],
+      ['isi',    5,  'High',      'isi at second threshold'],
+      ['isi',    9,  'High',      'isi just below third'],
+      ['isi',   10,  'Very High', 'isi at third threshold'],
+      ['isi',   19,  'Very High', 'isi just below fourth'],
+      ['isi',   20,  'Extreme',   'isi at fourth threshold'],
+      // bui: thresholds 31 / 40 / 60 / 90 — all 5 classes
+      ['bui',   30,  'Low',       'bui below first (30<31)'],
+      ['bui',   31,  'Moderate',  'bui at first threshold'],
+      ['bui',   39,  'Moderate',  'bui just below second'],
+      ['bui',   40,  'High',      'bui at second threshold'],
+      ['bui',   59,  'High',      'bui just below third'],
+      ['bui',   60,  'Very High', 'bui at third threshold'],
+      ['bui',   89,  'Very High', 'bui just below fourth'],
+      ['bui',   90,  'Extreme',   'bui at fourth threshold'],
+      // fwi key → falls back to dangerRating (AB scale: 5.5/15.5/22.5/29.5)
       ['fwi',    4,  'Low',       'fwi fallback: <5.5 → Low'],
+      ['fwi',    5.5, 'Moderate', 'fwi fallback: at 5.5 threshold'],
       ['fwi',   16,  'High',      'fwi fallback: 15.5≤x<22.5 → High'],
+      ['fwi',   22.5, 'Very High','fwi fallback: at 22.5 threshold'],
+      ['fwi',   29.5, 'Extreme',  'fwi fallback: at 29.5 threshold'],
     ];
 
     for (const [key, val, expected, note] of CR_CASES) {
