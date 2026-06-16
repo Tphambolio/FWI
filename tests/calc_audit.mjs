@@ -1371,14 +1371,52 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   console.log('\n── AB getStartupDC ──');
   const gsd = sandbox.getStartupDC;
 
-  // Known entries from STATION_STARTUP_DC (southern AB higher, boreal lower)
+  // One representative per distinct DC tier + fallback.
+  // Southern AB carries higher overwinter DC; boreal refreshes more.
   const cases = [
-    ['Medicine Hat',   450],
-    ['Lethbridge',     425],
-    ['Calgary',        375],
-    ['Edmonton',       300],
-    ['Grande Prairie', 175],
+    // tier 100 — far northern boreal
     ['Fort Chipewyan', 100],
+    ['Fort Vermilion', 100],
+    ['High Level',     100],
+    // tier 130 — transition boreal
+    ['Wabasca',        130],
+    // tier 150 — central boreal / foothills
+    ['Fort McMurray',  150],
+    ['Athabasca',      150],
+    ['Slave Lake',     150],
+    ['Hinton',         150],
+    ['Cold Lake',      150],
+    // tier 175 — mountain/foothills
+    ['Banff',          175],
+    ['Jasper',         175],
+    ['Grande Prairie', 175],
+    // tier 200
+    ['Peace River',    200],
+    // tier 250
+    ['Lloydminster',   250],
+    // tier 275 — central AB
+    ['Red Deer',       275],
+    ['Camrose',        275],
+    ['Elk Island Nat Park', 275],
+    // tier 290 — Edmonton metro fringe
+    ['Edmonton Stony Plain CS', 290],
+    ['Edmonton Villeneuve',     290],
+    // tier 300 — Edmonton core + fallback
+    ['Edmonton',              300],
+    ["Edmonton Int'l A",      300],
+    ['Edmonton Blatchford',   300],
+    // tier 375 — Calgary zone + foothills
+    ['Calgary',        375],
+    ['Claresholm',     375],
+    ['Pincher Creek',  375],
+    // tier 400
+    ['Cardston',       400],
+    // tier 425 — southern plains
+    ['Lethbridge',     425],
+    ['Brooks',         425],
+    ['Drumheller',     425],
+    // tier 450 — driest SE corner
+    ['Medicine Hat',   450],
     // Unknown station falls back to 300
     ['UnknownStation', 300],
   ];
