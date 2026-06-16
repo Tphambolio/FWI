@@ -197,6 +197,48 @@ if (typeof applyDCFloor !== 'function') {
   }
 }
 
+// ─── getRegionalDCFloor zone reference values ────────────────────────────────
+// Tests that the exact floor value is correct for each AB geographic zone.
+// The existing applyDCFloor tests only verify direction (dc > raw), not the
+// specific expected value — a zone floor set to 250 instead of 300 would pass
+// those tests but be wrong. These tests pin the exact value per zone.
+console.log('\n── AB getRegionalDCFloor zone reference values ──');
+{
+  const grd = sandbox.getRegionalDCFloor;
+  if (typeof grd !== 'function') {
+    console.log('  FAIL  getRegionalDCFloor not in sandbox');
+    fail++;
+  } else {
+    const mo = new Date(Date.now() - 7 * 3600000).getUTCMonth() + 1; // MST
+    if (mo < 3 || mo > 6) {
+      console.log(`  SKIP  spring window inactive (mo=${mo}; active Mar–Jun)`);
+    } else {
+      // [lat, lon, expectedFloor, label]
+      const ZONE_CASES = [
+        [49.7, -112.8, 450, 'SE prairies (Lethbridge, lat<50.5 lon>-113.5)'],
+        [49.5, -113.8, 300, 'SW foothills (Pincher Creek, lat<50.5 lon≤-113.5)'],
+        [51.2, -112.0, 360, 'Drumheller corridor (lat<51.5 lon>-112.5)'],
+        [51.0, -114.0, 280, 'Calgary metro (lat<51.5 lon≤-112.5)'],
+        [52.0, -113.8, 290, 'Red Deer/Camrose (lat<52.5)'],
+        [53.5, -113.5, 300, 'Edmonton metro (lat<54.0)'],
+        [55.0, -114.0, 180, 'Slave Lake zone (lat<56.5)'],
+        [57.0, -117.0, 120, 'Northern boreal (lat≥56.5)'],
+        // Out-of-bounds → 0 (no floor applied)
+        [48.5, -113.5,   0, 'South of AB (lat<48.8) → 0'],
+        [53.5, -121.0,   0, 'West of AB (lon<-120.5) → 0'],
+        [53.5, -108.0,   0, 'East of AB (lon>-109.5) → 0'],
+        [61.5, -113.5,   0, 'North of AB (lat>60.5) → 0'],
+      ];
+      for (const [lat, lon, expFloor, label] of ZONE_CASES) {
+        const got = grd(lat, lon);
+        const ok = got === expFloor;
+        console.log(`  ${ok?'PASS':'FAIL'}  ${label} → floor=${got} (exp ${expFloor})`);
+        if (ok) pass++; else { fail++; issues.push(`getRegionalDCFloor FAIL: ${label} → ${got} exp ${expFloor}`); }
+      }
+    }
+  }
+}
+
 // ─── FBP plausibility check ───────────────────────────────────────────────────
 console.log('\n── FBP plausibility ──');
 // calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope=0, curing=100, ps=50, opts={})
