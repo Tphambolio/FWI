@@ -272,6 +272,33 @@ function testCWFISDataHealth(features) {
     pass++;
   }
 
+  // ── Rep-date distribution: catches partial-publish failures ──
+  // If CWFIS published for only a small fraction of stations today, the newest-age
+  // check above still passes. Count stations per unique rep_date so a partial
+  // publish (e.g. AB updated but BC stuck on yesterday) is visible.
+  const dateCounts = {};
+  for (const f of withDate) {
+    const d = new Date(f.properties.rep_date);
+    if (isNaN(d)) continue;
+    const key = d.toISOString().slice(0, 10); // date part only
+    dateCounts[key] = (dateCounts[key] ?? 0) + 1;
+  }
+  const dateKeys   = Object.keys(dateCounts).sort().reverse(); // newest first
+  const latestDate = dateKeys[0];
+  const latestN    = dateCounts[latestDate] ?? 0;
+  const distStr    = dateKeys.map(k => `${k}(${dateCounts[k]})`).join(' | ');
+  const latestPct  = Math.round(100 * latestN / withDate.length);
+
+  if (latestPct < 50) {
+    const msg = `  FAIL  Rep-date: only ${latestN}/${withDate.length} (${latestPct}%) on latest date ${latestDate} — partial publish? ${distStr}`;
+    console.log(msg); issues.push(msg); fail++;
+  } else if (latestPct < 80) {
+    console.log(`  WARN  Rep-date: ${latestN}/${withDate.length} (${latestPct}%) on ${latestDate} (publish in progress?). ${distStr}`);
+  } else {
+    console.log(`  PASS  Rep-date: ${latestN}/${withDate.length} (${latestPct}%) on ${latestDate}. ${distStr}`);
+    pass++;
+  }
+
   // ── FWI chain completeness ──
   const withFWI = features.filter(f => {
     const p = f.properties;
