@@ -710,11 +710,38 @@ console.log('\n── Crown-fire initiation (Eqs. 56-58) ──');
   console.log(`  ${c6Passive ? 'PASS' : 'FAIL'}  C6 moderate → Passive Crown (cfb=${c6.cfb.toFixed(4)})`);
   if (c6Passive) pass++; else { issues.push(`  C6 should be Passive Crown, got cfb=${c6.cfb} fireType=${c6.fireType}`); fail++; }
 
+  // C6 Eq.56 CSI and Eq.57 RSO self-consistency (cbh=7)
+  const cbh_c6 = 7;
+  const csiC6Expected = 0.001 * Math.pow(cbh_c6, 1.5) * Math.pow(460 + 25.9 * c6.fmc, 1.5);
+  const rsoC6Expected = c6.csi / (300 * c6.sfc);
+  const csiC6Ok = Math.abs(c6.csi - csiC6Expected) < TOL;
+  const rsoC6Ok = Math.abs(c6.rso - rsoC6Expected) < 0.000001;
+  console.log(`  ${csiC6Ok ? 'PASS' : 'FAIL'}  C6 Eq.56 CSI self-consistent: engine=${c6.csi.toFixed(3)} formula=${csiC6Expected.toFixed(3)}`);
+  if (csiC6Ok) pass++; else { issues.push(`  CSI C6 Eq.56 mismatch: engine ${c6.csi} vs formula ${csiC6Expected}`); fail++; }
+  console.log(`  ${rsoC6Ok ? 'PASS' : 'FAIL'}  C6 Eq.57 RSO self-consistent: engine=${c6.rso.toFixed(6)} formula=${rsoC6Expected.toFixed(6)}`);
+  if (rsoC6Ok) pass++; else { issues.push(`  RSO C6 Eq.57 mismatch`); fail++; }
+
   // Active crown: C7 extreme wind
   const c7ex = FWI.calculateFBP('C7', 91, 100, 500, 45, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
   const c7Active = c7ex.cfb >= 0.9 && c7ex.fireType === 'Active Crown';
   console.log(`  ${c7Active ? 'PASS' : 'FAIL'}  C7 extreme wind → Active Crown (cfb=${c7ex.cfb.toFixed(4)})`);
   if (c7Active) pass++; else { issues.push(`  C7 extreme should be Active Crown, got cfb=${c7ex.cfb} fireType=${c7ex.fireType}`); fail++; }
+
+  // C7 Eq.56 CSI, Eq.57 RSO, and Eq.58 CFB self-consistency (cbh=10)
+  // For non-C6 fuels ros=rss (line 810 fwi.js), so c7ex.ros IS the surface spread rate for Eq.58
+  const cbh_c7 = 10;
+  const csiC7Expected = 0.001 * Math.pow(cbh_c7, 1.5) * Math.pow(460 + 25.9 * c7ex.fmc, 1.5);
+  const rsoC7Expected = c7ex.csi / (300 * c7ex.sfc);
+  const cfbC7Expected = 1 - Math.exp(-0.23 * (c7ex.ros - c7ex.rso));
+  const csiC7Ok = Math.abs(c7ex.csi - csiC7Expected) < TOL;
+  const rsoC7Ok = Math.abs(c7ex.rso - rsoC7Expected) < 0.000001;
+  const cfbC7Ok = Math.abs(c7ex.cfb - cfbC7Expected) < TOL;
+  console.log(`  ${csiC7Ok ? 'PASS' : 'FAIL'}  C7 Eq.56 CSI self-consistent: engine=${c7ex.csi.toFixed(3)} formula=${csiC7Expected.toFixed(3)}`);
+  if (csiC7Ok) pass++; else { issues.push(`  CSI C7 Eq.56 mismatch: engine ${c7ex.csi} vs formula ${csiC7Expected}`); fail++; }
+  console.log(`  ${rsoC7Ok ? 'PASS' : 'FAIL'}  C7 Eq.57 RSO self-consistent: engine=${c7ex.rso.toFixed(6)} formula=${rsoC7Expected.toFixed(6)}`);
+  if (rsoC7Ok) pass++; else { issues.push(`  RSO C7 Eq.57 mismatch`); fail++; }
+  console.log(`  ${cfbC7Ok ? 'PASS' : 'FAIL'}  C7 Eq.58 CFB self-consistent: engine=${c7ex.cfb.toFixed(6)} formula=${cfbC7Expected.toFixed(6)}`);
+  if (cfbC7Ok) pass++; else { issues.push(`  CFB C7 Eq.58 mismatch: engine ${c7ex.cfb} vs formula ${cfbC7Expected}`); fail++; }
 
   // Surface fire: C7 low conditions (RSS < RSO)
   const c7lo = FWI.calculateFBP('C7', 75, 15, 80, 5, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
