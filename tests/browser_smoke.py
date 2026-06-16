@@ -37,7 +37,7 @@ CHECKS = [
     (f"{BASE}/bc/forecast_trends/code.html",       "BC forecast trends",              "load"),
 ]
 
-DANGER_LABELS = {'Low', 'Moderate', 'High', 'Very High', 'Extreme'}
+DANGER_LABELS = {'Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'}
 SOURCE_LABELS  = {'CWFIS', 'SWOB', 'Open-Meteo', 'NWP', 'MSC'}
 JS_PAINT_MS    = 3000  # extra wait after "load" for JS to render initial content
 

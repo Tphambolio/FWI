@@ -111,6 +111,32 @@ for (const [label, weather, prev] of EDGE) {
   }
 }
 
+// ─── BC danger rating boundaries ─────────────────────────────────────────────
+// BC uses a 5-class system distinct from AB: Very Low(<5), Low(<12), Moderate(<21),
+// High(<34), Extreme(≥34). No "Very High" class. This is tested here because the
+// AB calc_audit only verifies the AB dangerRating — BC is BC.dangerRatingBC.
+console.log('\n── BC danger rating boundaries ──');
+const BC_DANGER_CASES = [
+  [0,    'Very Low'],
+  [4.9,  'Very Low'],
+  [5,    'Low'],
+  [11.9, 'Low'],
+  [12,   'Moderate'],
+  [20.9, 'Moderate'],
+  [21,   'High'],
+  [33.9, 'High'],
+  [34,   'Extreme'],
+  [100,  'Extreme'],
+];
+for (const [fwi, expected] of BC_DANGER_CASES) {
+  const got = BC.dangerRatingBC(fwi);
+  const ok  = got === expected;
+  const tag = ok ? 'PASS' : 'FAIL';
+  console.log(`  ${tag}  FWI=${String(fwi).padStart(5)}  → ${got.padEnd(10)} (expected ${expected})`);
+  if (ok) pass++;
+  else { issues.push(`  dangerRatingBC FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
