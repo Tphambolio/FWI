@@ -876,6 +876,208 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   if (ok) pass++; else { issues.push(`  _calcFireArea60 W=60: got ${a_w60} exp ${a_w60_exp}`); fail++; }
 }
 
+// ─── Utility functions ────────────────────────────────────────────────────────
+// windCompass, compassDir, dangerRating, dangerClassNum, hfiClassInfo,
+// _hfiClass, _stationSector, trendLabel, applyDCFloor
+{
+  console.log('\n── Utility functions ──');
+
+  // windCompass — 16-pt compass with Unicode arrow + degrees
+  const wc = sandbox.windCompass;
+  const wcCases = [
+    [0,     '↓ N (0°)'],
+    [22.5,  '↓ NNE (23°)'],
+    [45,    '↙ NE (45°)'],
+    [90,    '← E (90°)'],
+    [135,   '↖ SE (135°)'],
+    [180,   '↑ S (180°)'],
+    [270,   '→ W (270°)'],
+    [315,   '↘ NW (315°)'],
+    [337.5, '↓ NNW (338°)'],
+    [null,  ''],
+  ];
+  for (const [deg, exp] of wcCases) {
+    const got = wc(deg);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  windCompass(${deg}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`windCompass(${deg}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // compassDir — 16-pt compass label only
+  const cd = sandbox.compassDir;
+  const cdCases = [
+    [0,   'N'],
+    [45,  'NE'],
+    [90,  'E'],
+    [135, 'SE'],
+    [180, 'S'],
+    [225, 'SW'],
+    [270, 'W'],
+    [315, 'NW'],
+    [null, '—'],
+  ];
+  for (const [deg, exp] of cdCases) {
+    const got = cd(deg);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  compassDir(${deg}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`compassDir(${deg}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // dangerRating — CWFIS FWI map thresholds 5.5 / 15.5 / 22.5 / 29.5
+  const dr = sandbox.dangerRating;
+  const drCases = [
+    [0,    'Low'],
+    [5,    'Low'],
+    [5.5,  'Moderate'],
+    [15,   'Moderate'],
+    [15.5, 'High'],
+    [22,   'High'],
+    [22.5, 'Very High'],
+    [29,   'Very High'],
+    [29.5, 'Extreme'],
+    [100,  'Extreme'],
+  ];
+  for (const [fwi, exp] of drCases) {
+    const got = dr(fwi);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  dangerRating(${fwi}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`dangerRating(${fwi}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // dangerClassNum — same thresholds, returns {num, label}
+  const dcn = sandbox.dangerClassNum;
+  const dcnCases = [
+    [0,    {num:1, label:'Low'}],
+    [5.5,  {num:2, label:'Moderate'}],
+    [15.5, {num:3, label:'High'}],
+    [22.5, {num:4, label:'Very High'}],
+    [29.5, {num:5, label:'Extreme'}],
+  ];
+  for (const [fwi, exp] of dcnCases) {
+    const got = dcn(fwi);
+    const ok = got.num === exp.num && got.label === exp.label;
+    console.log(`  ${ok?'PASS':'FAIL'}  dangerClassNum(${fwi}) → {num:${got.num}, label:"${got.label}"}`);
+    if (ok) pass++; else { issues.push(`dangerClassNum(${fwi}): got num=${got.num} label="${got.label}"`); fail++; }
+  }
+
+  // hfiClassInfo — Byram HFI intensity class thresholds 10 / 500 / 2000 / 4000 / 10000
+  const hci = sandbox.hfiClassInfo;
+  const hciCases = [
+    [0,     {num:1, label:'Low'}],
+    [9.9,   {num:1, label:'Low'}],
+    [10,    {num:2, label:'Moderate'}],
+    [499,   {num:2, label:'Moderate'}],
+    [500,   {num:3, label:'High'}],
+    [1999,  {num:3, label:'High'}],
+    [2000,  {num:4, label:'Very High'}],
+    [3999,  {num:4, label:'Very High'}],
+    [4000,  {num:5, label:'Extreme'}],
+    [9999,  {num:5, label:'Extreme'}],
+    [10000, {num:6, label:'Catastrophic'}],
+    [50000, {num:6, label:'Catastrophic'}],
+  ];
+  for (const [hfi, exp] of hciCases) {
+    const got = hci(hfi);
+    const ok = got.num === exp.num && got.label === exp.label;
+    console.log(`  ${ok?'PASS':'FAIL'}  hfiClassInfo(${hfi}) → num=${got.num} "${got.label}"`);
+    if (ok) pass++; else { issues.push(`hfiClassInfo(${hfi}): got num=${got.num} label="${got.label}"`); fail++; }
+  }
+
+  // _hfiClass — short string label (used in station table)
+  const hfcl = sandbox._hfiClass;
+  const hfclCases = [
+    [null,  '—'],
+    [NaN,   '—'],
+    [5,     '1-Low'],
+    [10,    '2-Mod'],
+    [500,   '3-High'],
+    [2000,  '4-VH'],
+    [4000,  '5-Ext'],
+    [10000, '6-Cat'],
+  ];
+  for (const [hfi, exp] of hfclCases) {
+    const got = hfcl(hfi);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  _hfiClass(${hfi}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`_hfiClass(${hfi}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // _stationSector — latitude-based Alberta fire sector assignment
+  const ss = sandbox._stationSector;
+  const ssCases = [
+    [57.0, 'Far North'],
+    [56.5, 'Far North'],
+    [55.0, 'North'],
+    [54.5, 'North'],
+    [53.5, 'Central'],
+    [53.0, 'Central'],
+    [52.0, 'Central-South'],
+    [51.5, 'Central-South'],
+    [50.0, 'South'],
+  ];
+  for (const [lat, exp] of ssCases) {
+    const got = ss(lat);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  _stationSector(${lat}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`_stationSector(${lat}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // trendLabel — FWI delta thresholds ±5
+  const tl = sandbox.trendLabel;
+  const tlCases = [
+    [30, 20, 'ESCALATING'],   // Δ=+10
+    [20, 14, 'ESCALATING'],   // Δ=+6
+    [10, 20, 'IMPROVING'],    // Δ=−10
+    [20, 26, 'IMPROVING'],    // Δ=−6
+    [20, 15, 'STABLE'],       // Δ=+5 (not > 5)
+    [20, 25, 'STABLE'],       // Δ=−5 (not < −5)
+    [20, 20, 'STABLE'],       // Δ=0
+  ];
+  for (const [fwi, prev, exp] of tlCases) {
+    const got = tl(fwi, prev);
+    const ok = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  trendLabel(${fwi}, ${prev}) → "${got}"  Δ=${fwi-prev}`);
+    if (ok) pass++; else { issues.push(`trendLabel(${fwi}, ${prev}): got "${got}" exp "${exp}"`); fail++; }
+  }
+
+  // applyDCFloor — always-safe cases (month-independent)
+  const adf = sandbox.applyDCFloor;
+  {
+    // Outside AB bounds — never corrected
+    const r = adf(30, 49.0, -124.0);
+    const ok = r.dc === 30 && r.corrected === false;
+    console.log(`  ${ok?'PASS':'FAIL'}  applyDCFloor: BC coast DC=30 → dc=${r.dc} corrected=${r.corrected} (exp 30, false)`);
+    if (ok) pass++; else { issues.push(`applyDCFloor BC coast: dc=${r.dc} corrected=${r.corrected}`); fail++; }
+  }
+  {
+    // DC above cold-start ceiling (60) — never corrected even in AB
+    const r = adf(200, 53.5, -113.5);
+    const ok = r.dc === 200 && r.corrected === false;
+    console.log(`  ${ok?'PASS':'FAIL'}  applyDCFloor: Edmonton DC=200 (>ceiling) → dc=${r.dc} corrected=${r.corrected} (exp 200, false)`);
+    if (ok) pass++; else { issues.push(`applyDCFloor Edmonton DC=200: dc=${r.dc}`); fail++; }
+  }
+  // Spring-window AB correction (months 3–6 MST)
+  const mo = new Date(Date.now() - 7 * 3600000).getUTCMonth() + 1;
+  if (mo >= 3 && mo <= 6) {
+    {
+      // Edmonton (lat=53.5, lon=−113.5) floor=300 in spring
+      const r = adf(30, 53.5, -113.5);
+      const ok = r.dc === 300 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  applyDCFloor: Edmonton DC=30 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 300, true)`);
+      if (ok) pass++; else { issues.push(`applyDCFloor Edmonton DC=30: dc=${r.dc} corrected=${r.corrected}`); fail++; }
+    }
+    {
+      // SE prairies / Lethbridge (lat=49.5, lon=−112.8) floor=450
+      const r = adf(50, 49.5, -112.8);
+      const ok = r.dc === 450 && r.corrected === true;
+      console.log(`  ${ok?'PASS':'FAIL'}  applyDCFloor: Lethbridge DC=50 spring(mo=${mo}) → dc=${r.dc} corrected=${r.corrected} (exp 450, true)`);
+      if (ok) pass++; else { issues.push(`applyDCFloor Lethbridge DC=50: dc=${r.dc} corrected=${r.corrected}`); fail++; }
+    }
+  } else {
+    console.log(`  SKIP  applyDCFloor spring correction (mo=${mo} outside spring window Mar–Jun)`);
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
