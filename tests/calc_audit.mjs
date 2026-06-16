@@ -1765,6 +1765,72 @@ console.log('\n── calculateFBP BUI edge cases (dmc=dc=0 → non-NaN, BUI=500
   }
 }
 
+// ─── D2 BUI gate and M3/M4 pdf boundaries ────────────────────────────────────
+// GLC-X-10 rules: D2 (green aspen) carries fire only at BUI ≥ 80 at 0.2×D1 rate;
+// M4's D1 share is scaled by hwFactor=0.2 so M4_pdf=0 ≈ 0.2 × M3_pdf=0.
+console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
+{
+  const OPT = { lat: 53.5, lng: -113.5, doy: 180 };
+  const FBP_TOL = 0.001;
+
+  // D2 BUI gate: GLC-X-10 — fire only at BUI ≥ 80
+  // Use dc=500, dmc=200*target/(400-target) to hit exact target BUI
+  for (const [targetBUI, expectFire] of [[79, false], [80, true]]) {
+    const dmc = 200 * targetBUI / (400 - targetBUI);
+    const r = FWI.calculateFBP('D2', 85, dmc, 500, 20, 0, 100, 50, OPT);
+    const atFloor = r.ros <= 0.000002;
+    const ok = expectFire ? !atFloor : atFloor;
+    const lbl = `D2 BUI=${String(targetBUI).padEnd(2)} (actual=${r.bui?.toFixed(2)}) ${expectFire ? 'should carry' : 'should NOT carry'}`;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${lbl.padEnd(52)}  ros=${r.ros?.toFixed(6)} hfi=${r.hfi?.toFixed(4)}`);
+    if (ok) pass++; else { issues.push(`D2 BUI=${targetBUI}: ros=${r.ros} expectFire=${expectFire}`); fail++; }
+  }
+
+  // D2 vs D1 at BUI=80: D2 should be ~0.2 × D1 (rsi branch only; SFC differs)
+  {
+    const d1 = FWI.calculateFBP('D1', 85, 50, 500, 20, 0, 100, 50, OPT);
+    const d2 = FWI.calculateFBP('D2', 85, 50, 500, 20, 0, 100, 50, OPT);
+    // bui≈80: D2 ros should be ~0.2×D1 ros (same SFC, hwFactor=0.2 on RSI)
+    const ratio = d2.ros / d1.ros;
+    const ok = Math.abs(ratio - 0.2) < 0.005;
+    console.log(`  ${ok?'PASS':'FAIL'}  D2/D1 ROS ratio at BUI=80 → ${ratio.toFixed(4)} (expected ~0.2000)`);
+    if (ok) pass++; else { issues.push(`D2/D1 ros ratio ${ratio.toFixed(4)} != 0.2`); fail++; }
+  }
+
+  // M3/M4 pdf boundaries: pdf=0 → pure D1 (M3) or 0.2×D1 (M4); pdf=100 → pure dead-fir
+  const M3_PDF_CASES = [
+    // [fuelCode, pdf, expectedROS, expectedHFI]
+    ['M3', 0,    1.176177, 1061.172],
+    ['M3', 35,   8.496309, 8192.524],
+    ['M3', 100, 22.090839, 25171.793],
+    ['M4', 0,    0.235235,   212.234],
+    ['M4', 35,   3.878795,  3578.812],
+    ['M4', 100, 10.645405, 11751.672],
+  ];
+  for (const [fuel, pdf, expROS, expHFI] of M3_PDF_CASES) {
+    const r = FWI.calculateFBP(fuel, 85, 50, 500, 20, 0, 100, 50, {...OPT, pdf});
+    const rosOk = Math.abs(r.ros - expROS) <= FBP_TOL;
+    const hfiOk = Math.abs(r.hfi - expHFI) <= FBP_TOL;
+    const ok = rosOk && hfiOk;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${fuel} pdf=${String(pdf).padEnd(3)}  ros=${r.ros?.toFixed(6)} (exp ${expROS})  hfi=${r.hfi?.toFixed(3)} (exp ${expHFI})`);
+    if (ok) pass++;
+    else {
+      if (!rosOk) issues.push(`${fuel} pdf=${pdf}: ros=${r.ros?.toFixed(4)} exp ${expROS}`);
+      if (!hfiOk) issues.push(`${fuel} pdf=${pdf}: hfi=${r.hfi?.toFixed(3)} exp ${expHFI}`);
+      fail++;
+    }
+  }
+
+  // Structural: M3 pdf=0 / M4 pdf=0 ROS ratio must be ~5.0 (hwFactor 1.0 vs 0.2)
+  {
+    const m3 = FWI.calculateFBP('M3', 85, 50, 500, 20, 0, 100, 50, {...OPT, pdf: 0});
+    const m4 = FWI.calculateFBP('M4', 85, 50, 500, 20, 0, 100, 50, {...OPT, pdf: 0});
+    const ratio = m3.ros / m4.ros;
+    const ok = Math.abs(ratio - 5.0) < 0.01;
+    console.log(`  ${ok?'PASS':'FAIL'}  M3/M4 ROS ratio at pdf=0 → ${ratio.toFixed(4)} (expected ~5.0000  hwFactor 1.0 vs 0.2)`);
+    if (ok) pass++; else { issues.push(`M3/M4 pdf=0 ros ratio ${ratio.toFixed(4)} != 5.0`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
