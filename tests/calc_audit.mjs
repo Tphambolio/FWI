@@ -495,6 +495,63 @@ try {
   fail++;
 }
 
+// ─── calcMultiDayFBP null-chainStart (startup-default fallback) ──────────────
+// When chainStart=null, calcMultiDayFBP must fall back to STARTUP defaults
+// (ffmc=85, dmc=6, dc=300) and produce valid non-zero fire behaviour.
+// This guards against the null→0 coercion bug where FFMC=0 → ISI≈0 → fabricated
+// near-zero fire behaviour (the buildD1Card chainStart bug, fixed 2026-06).
+console.log('\n── calcMultiDayFBP null-chainStart fallback ──');
+try {
+  const days1 = [
+    { temp: 28, rh: 25, wind: 20, rain: 0, month: 7 },
+    { temp: 30, rh: 20, wind: 25, rain: 0, month: 7 },
+  ];
+  // call with chainStart=null — must use STARTUP defaults
+  const chainNull = FWI.calcMultiDayFBP(days1, 300, null, 'C2', 80, 50);
+  const chainStartup = FWI.calcMultiDayFBP(days1, 300, { ffmc: 85, dmc: 6, dc: 300 }, 'C2', 80, 50);
+
+  if (!Array.isArray(chainNull) || chainNull.length !== days1.length) {
+    console.log('  FAIL  null-chainStart returned wrong length');
+    fail++;
+  } else {
+    // (a) Day 1 FWI chain values must be identical (null === STARTUP defaults)
+    const fwiMatch = Math.abs(chainNull[0].fwi - chainStartup[0].fwi) < 0.001
+                  && Math.abs(chainNull[0].ffmc - chainStartup[0].ffmc) < 0.001
+                  && Math.abs(chainNull[0].dmc  - chainStartup[0].dmc)  < 0.001
+                  && Math.abs(chainNull[0].dc   - chainStartup[0].dc)   < 0.001;
+    if (fwiMatch) { console.log('  PASS  null-chainStart produces same FWI as explicit STARTUP (ffmc=85,dmc=6,dc=300)'); pass++; }
+    else {
+      console.log(`  FAIL  null-chainStart FWI ${chainNull[0].fwi.toFixed(2)} ≠ STARTUP FWI ${chainStartup[0].fwi.toFixed(2)}`);
+      issues.push('calcMultiDayFBP null-chainStart did not fall back to STARTUP defaults');
+      fail++;
+    }
+
+    // (b) FBP values must be non-zero (ISI > 0 → ROS > 0 in C2 fuel on a hot day)
+    const d1Fbp = chainNull[0].fbp;
+    const fbpValid = d1Fbp && isFinite(d1Fbp.ros) && d1Fbp.ros > 0
+                           && isFinite(d1Fbp.hfi) && d1Fbp.hfi > 0;
+    if (fbpValid) { console.log(`  PASS  null-chainStart FBP valid: ROS=${d1Fbp.ros.toFixed(2)} m/min  HFI=${d1Fbp.hfi.toFixed(0)} kW/m`); pass++; }
+    else {
+      console.log(`  FAIL  null-chainStart FBP near-zero/NaN: ROS=${d1Fbp?.ros}  HFI=${d1Fbp?.hfi}`);
+      issues.push('calcMultiDayFBP null-chainStart produced near-zero FBP (null coercion bug)');
+      fail++;
+    }
+
+    // (c) Day 1 HFI must be > 100 kW/m (hot/dry C2 conditions — not fabricated near-zero)
+    const hfiPlausible = d1Fbp && d1Fbp.hfi > 100;
+    if (hfiPlausible) { console.log(`  PASS  null-chainStart HFI plausible (${d1Fbp.hfi.toFixed(0)} kW/m > 100)`); pass++; }
+    else {
+      console.log(`  FAIL  null-chainStart HFI implausibly low: ${d1Fbp?.hfi?.toFixed(0)} kW/m`);
+      issues.push(`calcMultiDayFBP null-chainStart HFI=${d1Fbp?.hfi?.toFixed(0)} — expected >100 kW/m`);
+      fail++;
+    }
+  }
+} catch (e) {
+  console.log(`  FAIL  calcMultiDayFBP null-chainStart threw: ${e.message}`);
+  issues.push(`calcMultiDayFBP null-chainStart: ${e.message}`);
+  fail++;
+}
+
 // ─── componentRating boundaries ──────────────────────────────────────────────
 // componentRating maps each FWI component to a label using component-specific
 // thresholds (not the FWI danger-rating scale). Accessed via VM sandbox.
