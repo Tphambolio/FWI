@@ -602,6 +602,65 @@ console.log('\n── Crown-fire initiation (Eqs. 56-58) ──');
   }
 }
 
+// ─── TFC / HFI / flame length chain (ST-X-3 Eqs. 66-69, Byram 1959) ─────────
+// TFC = SFC + CFB·CFL (Eq.66a/67), HFI = 300·TFC·ROS (Eq.69)
+// Flame length: L = 0.0775·HFI^0.46 (Byram 1959, applied to total HFI)
+console.log('\n── TFC / HFI / flame length chain ──');
+{
+  const TOL = 0.001;
+
+  // C2 active crown — full crown contribution: TFC = SFC + 1.0*CFL
+  const c2 = FWI.calculateFBP('C2', 92, 80, 400, 30, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const cfl_c2 = 0.80; // C2 CFL from FUEL_TYPES
+  const tfc_c2 = c2.sfc + c2.cfb * cfl_c2;
+  const hfi_c2 = 300 * c2.tfc * c2.ros;
+  const fl_c2  = 0.0775 * Math.pow(c2.hfi, 0.46);
+  const tfc_ok = Math.abs(c2.tfc - tfc_c2) < TOL;
+  const hfi_ok = Math.abs(c2.hfi - hfi_c2) < 0.1;
+  const fl_ok  = Math.abs(c2.flameLength - fl_c2) < TOL;
+  console.log(`  ${tfc_ok ? 'PASS' : 'FAIL'}  C2 TFC=SFC+CFB·CFL: ${c2.tfc.toFixed(4)} (Eq.66a/67)`);
+  if (tfc_ok) pass++; else { issues.push(`  C2 TFC mismatch: got ${c2.tfc} expected ${tfc_c2}`); fail++; }
+  console.log(`  ${hfi_ok ? 'PASS' : 'FAIL'}  C2 HFI=300·TFC·ROS: ${c2.hfi.toFixed(1)} kW/m (Eq.69)`);
+  if (hfi_ok) pass++; else { issues.push(`  C2 HFI mismatch: got ${c2.hfi} expected ${hfi_c2}`); fail++; }
+  console.log(`  ${fl_ok  ? 'PASS' : 'FAIL'}  C2 FL=0.0775·HFI^0.46: ${c2.flameLength.toFixed(4)} m (Byram 1959)`);
+  if (fl_ok)  pass++; else { issues.push(`  C2 FL mismatch: got ${c2.flameLength} expected ${fl_c2}`); fail++; }
+
+  // D1 surface fire — cfb=0 so CFC=0, TFC=SFC
+  const d1 = FWI.calculateFBP('D1', 85, 40, 200, 20, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const d1_tfc_ok = Math.abs(d1.tfc - d1.sfc) < TOL;
+  console.log(`  ${d1_tfc_ok ? 'PASS' : 'FAIL'}  D1 TFC=SFC (no crown, cfb=0): tfc=${d1.tfc.toFixed(4)} sfc=${d1.sfc.toFixed(4)}`);
+  if (d1_tfc_ok) pass++; else { issues.push(`  D1 TFC should equal SFC, got tfc=${d1.tfc} sfc=${d1.sfc}`); fail++; }
+
+  // C6 passive crown — TFC = SFC + CFB·1.80
+  const c6 = FWI.calculateFBP('C6', 90, 60, 300, 25, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const cfl_c6 = 1.80;
+  const tfc_c6exp = c6.sfc + c6.cfb * cfl_c6;
+  const c6_ok = Math.abs(c6.tfc - tfc_c6exp) < TOL;
+  console.log(`  ${c6_ok ? 'PASS' : 'FAIL'}  C6 TFC=SFC+CFB·1.80: ${c6.tfc.toFixed(4)} (cfb=${c6.cfb.toFixed(4)})`);
+  if (c6_ok) pass++; else { issues.push(`  C6 TFC mismatch: got ${c6.tfc} expected ${tfc_c6exp}`); fail++; }
+
+  // Byram formula standalone spot-checks (formula: 0.0775 * HFI^0.46)
+  const BYRAM_CASES = [
+    [100,   0.6446,  'Low intensity (100 kW/m)'],
+    [500,   1.3515,  'Moderate intensity (500 kW/m)'],
+    [2000,  2.5573,  'High intensity (2000 kW/m)'],
+    [10000, 5.3617,  'Extreme intensity (10000 kW/m)'],
+  ];
+  for (const [hfi, expected, note] of BYRAM_CASES) {
+    const got = 0.0775 * Math.pow(hfi, 0.46);
+    const ok  = Math.abs(got - expected) < TOL;
+    const tag = ok ? 'PASS' : 'FAIL';
+    console.log(`  ${tag}  Byram HFI=${hfi.toString().padStart(6)} → FL=${got.toFixed(4)} m  (${note})`);
+    if (ok) pass++; else { issues.push(`  Byram FAIL: HFI=${hfi} got ${got.toFixed(4)} expected ${expected}`); fail++; }
+  }
+
+  // HFI=0 guard — engine should return 0 (no division by zero, no NaN)
+  const o1a_calm = FWI.calculateFBP('O1a', 65, 10, 50, 0, 0, 50, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const fl_zero_ok = !isNaN(o1a_calm.flameLength) && o1a_calm.flameLength >= 0;
+  console.log(`  ${fl_zero_ok ? 'PASS' : 'FAIL'}  HFI near-zero → FL=${o1a_calm.flameLength.toFixed(4)} (no NaN)`);
+  if (fl_zero_ok) pass++; else { issues.push(`  FL near-zero guard: got NaN/negative ${o1a_calm.flameLength}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
