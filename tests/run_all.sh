@@ -39,7 +39,7 @@ run_suite "science (Van Wagner reference)" \
 run_suite "calc_audit (18 CFFDRS cases)" \
   node tests/calc_audit.mjs
 
-run_suite "bc_parity (16 AB/BC engine cases)" \
+run_suite "bc_parity (BC/AB parity + BC-specific functions)" \
   node tests/bc_parity.mjs
 
 # ── Live network tests (skip gracefully if offline) ──────────────────────────

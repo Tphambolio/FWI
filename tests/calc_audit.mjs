@@ -1219,6 +1219,104 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   }
 }
 
+// ─── AB getStartupDC — station-specific spring DC initialisation ──────────────
+{
+  console.log('\n── AB getStartupDC ──');
+  const gsd = sandbox.getStartupDC;
+
+  // Known entries from STATION_STARTUP_DC (southern AB higher, boreal lower)
+  const cases = [
+    ['Medicine Hat',   450],
+    ['Lethbridge',     425],
+    ['Calgary',        375],
+    ['Edmonton',       300],
+    ['Grande Prairie', 175],
+    ['Fort Chipewyan', 100],
+    // Unknown station falls back to 300
+    ['UnknownStation', 300],
+  ];
+  for (const [name, exp] of cases) {
+    const got = gsd(name);
+    const ok  = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  getStartupDC("${name}") → ${got} (exp ${exp})`);
+    if (ok) pass++; else { issues.push(`getStartupDC("${name}"): got ${got} exp ${exp}`); fail++; }
+  }
+}
+
+// ─── _defaultFuelFor — latitude-based fuel type assignment ───────────────────
+{
+  console.log('\n── _defaultFuelFor ──');
+  const dff = sandbox._defaultFuelFor;
+
+  const cases = [
+    // lat > 54.5 → boreal spruce
+    [55.0, 'C2'],
+    [58.0, 'C2'],
+    [54.6, 'C2'],
+    // lat > 52, ≤ 54.5 → deciduous aspen
+    [53.5, 'D1'],
+    [54.5, 'D1'],
+    [52.1, 'D1'],
+    // lat ≤ 52 → grass/matted
+    [52.0, 'O1a'],
+    [50.0, 'O1a'],
+    [49.0, 'O1a'],
+  ];
+  for (const [lat, exp] of cases) {
+    const got = dff(lat);
+    const ok  = got === exp;
+    console.log(`  ${ok?'PASS':'FAIL'}  _defaultFuelFor(${lat}) → "${got}" (exp "${exp}")`);
+    if (ok) pass++; else { issues.push(`_defaultFuelFor(${lat}): got "${got}" exp "${exp}"`); fail++; }
+  }
+}
+
+// ─── findNearestNAEFS — closest NAEFS station within 150 km ──────────────────
+{
+  console.log('\n── findNearestNAEFS ──');
+  const fnn = sandbox.findNearestNAEFS;
+
+  // Edmonton city centre → Edmonton Municipal A (≈3 km)
+  {
+    const st = fnn(53.5344, -113.4903);
+    const ok = st !== null && st.name === 'Edmonton Municipal A';
+    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton → ${st?.name ?? 'null'} (exp "Edmonton Municipal A")`);
+    if (ok) pass++; else { issues.push(`findNearestNAEFS Edmonton: ${st?.name}`); fail++; }
+  }
+
+  // Lethbridge → Lethbridge station (exact coords match)
+  {
+    const st = fnn(49.63, -112.80);
+    const ok = st !== null && st.name === 'Lethbridge';
+    console.log(`  ${ok?'PASS':'FAIL'}  Lethbridge → ${st?.name ?? 'null'} (exp "Lethbridge")`);
+    if (ok) pass++; else { issues.push(`findNearestNAEFS Lethbridge: ${st?.name}`); fail++; }
+  }
+
+  // Fort McMurray → Fort McMurray station
+  {
+    const st = fnn(56.65, -111.22);
+    const ok = st !== null && st.name === 'Fort McMurray';
+    console.log(`  ${ok?'PASS':'FAIL'}  Fort McMurray → ${st?.name ?? 'null'} (exp "Fort McMurray")`);
+    if (ok) pass++; else { issues.push(`findNearestNAEFS FtMac: ${st?.name}`); fail++; }
+  }
+
+  // Far outside Alberta (Toronto) → null (>150 km from all stations)
+  {
+    const st = fnn(43.65, -79.38);
+    const ok = st === null;
+    console.log(`  ${ok?'PASS':'FAIL'}  Toronto → ${st?.name ?? 'null'} (exp null — >150 km away)`);
+    if (ok) pass++; else { issues.push(`findNearestNAEFS Toronto: expected null, got ${st?.name}`); fail++; }
+  }
+
+  // SE Saskatchewan (Regina) → check if within range; nearest should be Medicine Hat or null
+  {
+    const st = fnn(50.45, -104.62);
+    // Regina is ~430 km from Medicine Hat → should be null
+    const ok = st === null;
+    console.log(`  ${ok?'PASS':'FAIL'}  Regina SK → ${st?.name ?? 'null'} (exp null — >150 km from AB)`);
+    if (ok) pass++; else { issues.push(`findNearestNAEFS Regina: expected null, got ${st?.name}`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
