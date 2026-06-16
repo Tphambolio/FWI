@@ -204,6 +204,37 @@ def check_tomorrow_preview(page, label_prefix):
     return ok
 
 
+def check_d1_fbp_panel(page, label_prefix):
+    """
+    D+1 forecast FBP panel must be populated regardless of CWFIS state.
+    When FWI chain is PENDING, buildD1Card falls back to startup-default chain
+    and must still produce valid ROS/HFI/CFB for the forecast day.
+    This verifies the null-chainStart fallback introduced in the CWFIS-outage fix.
+    """
+    print(f"\n  ── D+1 forecast FBP panel ({label_prefix}) ──")
+    checks = [
+        ('fwi-d1-preview-ros-a',       0, 500,   'm/min'),
+        ('fwi-d1-preview-hfi-kwm-a',   0, 200000, 'kW/m'),
+        ('fwi-d1-preview-cfb-a',       0, 100,   '%'),
+        ('fwi-d1-preview-flame-a',     0, 200,   'm'),
+        ('fwi-d1-preview-date',        None, None, 'date label'),
+    ]
+    all_ok = True
+    for elem_id, lo, hi, unit in checks:
+        text = get_text(page, f'#{elem_id}')
+        if lo is None:
+            # date label — just needs to be non-empty
+            ok = text not in ('', '—', 'Loading…')
+            p(ok, f'{elem_id.split("-")[-1]}={text!r}', 'still loading' if not ok else '')
+        else:
+            val = parse_num(text)
+            ok  = text not in ('', '—') and val is not None
+            p(ok, f'{elem_id.split("-")[-1]}={text!r}', f'unpopulated ({unit})' if not ok else '')
+        if not ok:
+            all_ok = False
+    return all_ok
+
+
 def run_station_page(browser, url, station_label, stn_param=None):
     """Full deep check on one station page."""
     full_url = url + (f'?stn={stn_param}' if stn_param else '')
@@ -241,6 +272,7 @@ def run_station_page(browser, url, station_label, stn_param=None):
         check_source(page, station_label)
         check_fbp_panel(page, 'a', station_label, fwi_active)
         check_tomorrow_preview(page, station_label)
+        check_d1_fbp_panel(page, station_label)
         check_js_errors(js_errors, station_label)
 
     except PwTimeout:
