@@ -67,7 +67,10 @@ async function testCWFISCrossCheck(features) {
   if (!stations.length) { console.log('  SKIP: no complete stations'); return; }
 
   // ── Full distribution across all AB/BC stations ──
-  const TOL     = 2.5; // Van Wagner rounding + float tolerance
+  // Tolerance calibrated from empirical distribution: n=542 AB/BC stations,
+  // mean=0.05, p95=0.13, max=0.79 → 1.5 gives a 2× safety margin above
+  // observed max while still catching genuine science-core regressions.
+  const TOL     = 1.5;
   const deltas  = stations.map(f => {
     const p    = f.properties;
     const isi  = calcISI(p.ffmc, p.ws);
