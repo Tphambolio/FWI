@@ -687,8 +687,14 @@ function wireFBP(weather, fwi) {
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   setEl('fwi-fbp-fuel-name-a', FUEL_TYPES[fuelA]?.name || fuelA);
   setEl('fwi-fbp-fuel-name-b', FUEL_TYPES[fuelB]?.name || fuelB);
-  populateSection('-a', calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps));
-  populateSection('-b', calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps));
+  const fbpA = fwi.ffmc != null
+    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    : null;
+  const fbpB = fwi.ffmc != null
+    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    : null;
+  populateSection('-a', fbpA);
+  populateSection('-b', fbpB);
 }
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
