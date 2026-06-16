@@ -1910,6 +1910,63 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
   if (ok) pass++; else { issues.push(`_dc rain=2.9 should trigger correction: ${dcAbove28} vs ${dcBase}`); fail++; }
 }
 
+// ─── Van Wagner temperature gate boundary tests ──────────────────────────────
+// _dmc: drying only when temp > -1.1°C (strictly greater)
+// _dc:  drying only when temp > -2.8°C (strictly greater)
+// _dc:  inner clamp Math.max(0, 0.36*(temp+2.8) + DC_LL[month]) prevents
+//       negative drying in winter months where DC_LL is negative (Jan–Mar,
+//       DC_LL[1..3] = -1.6).
+//
+// At-threshold temps must leave the index unchanged (equal to prev). These
+// tests catch an accidental >= change and verify winter-month cold-day behaviour.
+{
+  console.log('\n── Van Wagner temperature gate boundaries (_dmc/_dc) ──');
+  const dmcFn = sandbox._dmc;
+  const dcFn  = sandbox._dc;
+  const TOL   = 0.000001;
+
+  // _dmc: prev=30, month=7 (summer), rh=70, no rain
+  const dmcPrev = 30;
+  const dmcBase = dmcFn(20.0, 70, 0, 7, dmcPrev); // normal summer reference
+  const dmcAtGate   = dmcFn(-1.1, 70, 0, 7, dmcPrev); // at gate — NOT triggered
+  const dmcJustAbove = dmcFn(-1.0, 70, 0, 7, dmcPrev); // just above — triggered
+
+  let ok = Math.abs(dmcAtGate - dmcPrev) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dmc temp=-1.1 (at gate) → ${dmcAtGate.toFixed(6)} == prev ${dmcPrev} (no drying)`);
+  if (ok) pass++; else { issues.push(`_dmc temp=-1.1 should equal prev: got ${dmcAtGate}`); fail++; }
+
+  ok = dmcJustAbove > dmcPrev + 0.001;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dmc temp=-1.0 (just above gate) → ${dmcJustAbove.toFixed(6)} > prev (drying begins)`);
+  if (ok) pass++; else { issues.push(`_dmc temp=-1.0 should exceed prev: got ${dmcJustAbove}`); fail++; }
+
+  // _dc: prev=200, month=7, no rain
+  const dcPrev = 200;
+  const dcAtGate    = dcFn(-2.8, 0, 7, dcPrev); // at gate — NOT triggered
+  const dcJustAbove = dcFn(-2.7, 0, 7, dcPrev); // just above — triggered
+
+  ok = Math.abs(dcAtGate - dcPrev) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc  temp=-2.8 (at gate) → ${dcAtGate.toFixed(6)} == prev ${dcPrev} (no drying)`);
+  if (ok) pass++; else { issues.push(`_dc temp=-2.8 should equal prev: got ${dcAtGate}`); fail++; }
+
+  ok = dcJustAbove > dcPrev + 1.0; // 3.2 per DCLL for month 7
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc  temp=-2.7 (just above gate) → ${dcJustAbove.toFixed(6)} > prev (drying begins)`);
+  if (ok) pass++; else { issues.push(`_dc temp=-2.7 should exceed prev: got ${dcJustAbove}`); fail++; }
+
+  // _dc winter clamp: month=1, DC_LL[1]=-1.6
+  // Inner term = 0.36*(temp+2.8) + (-1.6) = 0 at temp ≈ 1.64°C
+  // Below ~1.64°C: Math.max clamps to 0 → DC unchanged despite temp > -2.8
+  const dcWinterBelow = dcFn(1.0, 0, 1, dcPrev); // temp > -2.8 but inner clamp = 0
+  const dcWinterAbove = dcFn(2.0, 0, 1, dcPrev); // above inner threshold → drying
+
+  ok = Math.abs(dcWinterBelow - dcPrev) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc  winter month=1 temp=1.0°C → ${dcWinterBelow.toFixed(6)} == prev (inner clamp, DC_LL=-1.6)`);
+  if (ok) pass++; else { issues.push(`_dc winter temp=1.0 should be clamped to prev: got ${dcWinterBelow}`); fail++; }
+
+  ok = dcWinterAbove > dcPrev;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc  winter month=1 temp=2.0°C → ${dcWinterAbove.toFixed(6)} > prev (inner clamp lifted)`);
+  if (ok) pass++; else { issues.push(`_dc winter temp=2.0 should exceed prev: got ${dcWinterAbove}`); fail++; }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
