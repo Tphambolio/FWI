@@ -1307,29 +1307,32 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
     if (ok) pass++; else { issues.push(`_haversineKm same point: ${d}`); fail++; }
   }
 
-  // Edmonton (53.5344, -113.4903) to Calgary (51.0447, -114.0719) ≈ 279.6 km
+  const HAV_TOL = 0.001; // km — tighter than WGS-84 rounding
+  // Edmonton (53.5344, -113.4903) to Calgary (51.0447, -114.0719)
   {
     const d = hav(53.5344, -113.4903, 51.0447, -114.0719);
-    const ok = d > 270 && d < 290;
-    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Calgary → ${d.toFixed(2)} km (exp 270–290)`);
-    if (ok) pass++; else { issues.push(`_haversineKm Edm→Calgary: ${d.toFixed(2)} km`); fail++; }
+    const ok = Math.abs(d - 279.6512) < HAV_TOL;
+    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Calgary → ${d.toFixed(4)} km (exp 279.6512)`);
+    if (ok) pass++; else { issues.push(`_haversineKm Edm→Calgary: ${d.toFixed(4)} km`); fail++; }
   }
 
   // Symmetry: A→B == B→A
   {
     const d1 = hav(53.5344, -113.4903, 56.7264, -111.3803);  // Edmonton→Fort Mac
     const d2 = hav(56.7264, -111.3803, 53.5344, -113.4903);
-    const ok = Math.abs(d1 - d2) < 0.001;
-    console.log(`  ${ok?'PASS':'FAIL'}  symmetry: Edm→FtMac=${d1.toFixed(3)} FtMac→Edm=${d2.toFixed(3)} (diff ${Math.abs(d1-d2).toFixed(6)})`);
-    if (ok) pass++; else { issues.push(`_haversineKm symmetry: ${d1} vs ${d2}`); fail++; }
+    const symOk = Math.abs(d1 - d2) < 0.001;
+    const expOk = Math.abs(d1 - 379.3888) < HAV_TOL;
+    const ok = symOk && expOk;
+    console.log(`  ${ok?'PASS':'FAIL'}  symmetry + Edm→FtMac=${d1.toFixed(4)} km (exp 379.3888, diff ${Math.abs(d1-d2).toFixed(6)})`);
+    if (ok) pass++; else { issues.push(`_haversineKm Edm→FtMac: ${d1.toFixed(4)} km, symmetry diff ${Math.abs(d1-d2)}`); fail++; }
   }
 
-  // Edmonton to Vancouver ≈ 800–860 km
+  // Edmonton to Vancouver (long-haul cross-province check)
   {
     const d = hav(53.5344, -113.4903, 49.2827, -123.1207);
-    const ok = d > 800 && d < 860;
-    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Vancouver → ${d.toFixed(2)} km (exp 800–860)`);
-    if (ok) pass++; else { issues.push(`_haversineKm Edm→Vancouver: ${d.toFixed(2)} km`); fail++; }
+    const ok = Math.abs(d - 817.2304) < HAV_TOL;
+    console.log(`  ${ok?'PASS':'FAIL'}  Edmonton→Vancouver → ${d.toFixed(4)} km (exp 817.2304)`);
+    if (ok) pass++; else { issues.push(`_haversineKm Edm→Vancouver: ${d.toFixed(4)} km`); fail++; }
   }
 }
 
@@ -1379,6 +1382,24 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
     ok = chain.every(d => typeof d.fwi === 'number' && !isNaN(d.fwi));
     console.log(`  ${ok?'PASS':'FAIL'}  all days have valid FWI: [${chain.map(d=>d.fwi?.toFixed(1)).join(', ')}]`);
     if (ok) pass++; else { issues.push(`calcMultiDay: NaN in FWI chain`); fail++; }
+
+    // Exact reference values — pin the full chain state.
+    // startState: {ffmc:85, dmc:40, dc:200} + weather above.
+    // These values lock the Van Wagner equations — a coefficient change would break these.
+    const CHAIN_REF = [
+      { ffmc: 94.37535, dmc: 45.84322, dc: 209.10400, fwi: 40.84280, isi: 21.76507, bui: 59.22548 },
+      { ffmc: 26.44158, dmc: 19.14689, dc: 167.41646, fwi:  0.00184, isi:  0.00157, bui: 29.77936 },
+      { ffmc: 90.92878, dmc: 25.52135, dc: 176.88046, fwi: 28.25579, isi: 17.25580, bui: 37.51169 },
+    ];
+    const CHAIN_TOL = 0.001;
+    for (const [i, ref] of CHAIN_REF.entries()) {
+      const d = chain[i];
+      const keys = Object.keys(ref);
+      const allOk = keys.every(k => Math.abs((d[k] ?? NaN) - ref[k]) < CHAIN_TOL);
+      const worst = keys.reduce((a, k) => Math.max(a, Math.abs((d[k] ?? NaN) - ref[k])), 0);
+      console.log(`  ${allOk?'PASS':'FAIL'}  Day${i+1} exact: ffmc=${d.ffmc?.toFixed(3)} dmc=${d.dmc?.toFixed(3)} fwi=${d.fwi?.toFixed(3)} (worst Δ=${worst.toFixed(6)})`);
+      if (allOk) pass++; else { issues.push(`calcMultiDay Day${i+1} exact mismatch: worst Δ=${worst}`); fail++; }
+    }
 
     // Null-safe defaults — pass a day with all nulls
     const nullDay = [{ temp: null, rh: null, wind: null, rain: null, month: null }];
