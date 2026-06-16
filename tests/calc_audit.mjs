@@ -547,6 +547,61 @@ console.log('\n── _rsiBasic (Eq. 26) ──');
   }
 }
 
+// ─── Crown-fire initiation (ST-X-3 Eqs. 56-58) ──────────────────────────────
+// CSI = 0.001·cbh^1.5·(460+25.9·fmc)^1.5  (Eq.56)
+// RSO = CSI/(300·SFC)                       (Eq.57)
+// CFB = 1−exp(−0.23·(RSS−RSO)) when RSS>RSO (Eq.58)
+// fireType: cfb≥0.9→Active Crown, ≥0.1→Passive Crown, else Surface
+console.log('\n── Crown-fire initiation (Eqs. 56-58) ──');
+{
+  const TOL = 0.001;
+
+  // C2 extreme summer — should be active crown (cfb≈1)
+  const c2 = FWI.calculateFBP('C2', 92, 80, 400, 30, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  // Verify Eq.56 self-consistency using engine's own fmc/cbh
+  const cbh_c2 = 3;
+  const csiExpected = 0.001 * Math.pow(cbh_c2, 1.5) * Math.pow(460 + 25.9 * c2.fmc, 1.5);
+  const rsoExpected = c2.csi / (300 * c2.sfc);
+
+  const csiOk = Math.abs(c2.csi - csiExpected) < TOL;
+  const rsoOk = Math.abs(c2.rso - rsoExpected) < 0.000001;
+  console.log(`  ${csiOk ? 'PASS' : 'FAIL'}  C2 Eq.56 CSI formula self-consistent: engine=${c2.csi.toFixed(3)} formula=${csiExpected.toFixed(3)}`);
+  if (csiOk) pass++; else { issues.push(`  CSI Eq.56 mismatch: engine ${c2.csi} vs formula ${csiExpected}`); fail++; }
+  console.log(`  ${rsoOk ? 'PASS' : 'FAIL'}  C2 Eq.57 RSO formula self-consistent: engine=${c2.rso.toFixed(6)} formula=${rsoExpected.toFixed(6)}`);
+  if (rsoOk) pass++; else { issues.push(`  RSO Eq.57 mismatch`); fail++; }
+
+  // Active crown: C2 extreme conditions
+  const c2Active = c2.cfb >= 0.9 && c2.fireType === 'Active Crown';
+  console.log(`  ${c2Active ? 'PASS' : 'FAIL'}  C2 extreme → Active Crown (cfb=${c2.cfb.toFixed(4)})`);
+  if (c2Active) pass++; else { issues.push(`  C2 should be Active Crown, got cfb=${c2.cfb} fireType=${c2.fireType}`); fail++; }
+
+  // Passive crown: C6 moderate conditions
+  const c6 = FWI.calculateFBP('C6', 90, 60, 300, 25, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const c6Passive = c6.cfb >= 0.1 && c6.cfb < 0.9 && c6.fireType === 'Passive Crown';
+  console.log(`  ${c6Passive ? 'PASS' : 'FAIL'}  C6 moderate → Passive Crown (cfb=${c6.cfb.toFixed(4)})`);
+  if (c6Passive) pass++; else { issues.push(`  C6 should be Passive Crown, got cfb=${c6.cfb} fireType=${c6.fireType}`); fail++; }
+
+  // Active crown: C7 extreme wind
+  const c7ex = FWI.calculateFBP('C7', 91, 100, 500, 45, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const c7Active = c7ex.cfb >= 0.9 && c7ex.fireType === 'Active Crown';
+  console.log(`  ${c7Active ? 'PASS' : 'FAIL'}  C7 extreme wind → Active Crown (cfb=${c7ex.cfb.toFixed(4)})`);
+  if (c7Active) pass++; else { issues.push(`  C7 extreme should be Active Crown, got cfb=${c7ex.cfb} fireType=${c7ex.fireType}`); fail++; }
+
+  // Surface fire: C7 low conditions (RSS < RSO)
+  const c7lo = FWI.calculateFBP('C7', 75, 15, 80, 5, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+  const c7Surf = c7lo.cfb === 0 && c7lo.fireType === 'Surface';
+  console.log(`  ${c7Surf ? 'PASS' : 'FAIL'}  C7 low → Surface (cfb=${c7lo.cfb.toFixed(4)} rso=${c7lo.rso.toFixed(3)})`);
+  if (c7Surf) pass++; else { issues.push(`  C7 low should be Surface, got cfb=${c7lo.cfb} fireType=${c7lo.fireType}`); fail++; }
+
+  // cbh=0 fuels: no crown fire possible — CSI=Infinity, CFB=0, fireType='Surface'
+  for (const [fuel, desc] of [['D1', 'Leafless Aspen'], ['O1a', 'Matted Grass'], ['S1', 'Pine Slash']]) {
+    const r = FWI.calculateFBP(fuel, 85, 40, 200, 20, 0, 100, 50, { lat: 53.5, lng: -113.5, doy: 184 });
+    const ok = r.csi === Infinity && r.cfb === 0 && r.fireType === 'Surface';
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${fuel} (${desc}) cbh=0 → no crown: csi=${r.csi} cfb=${r.cfb} fireType=${r.fireType}`);
+    if (ok) pass++; else { issues.push(`  ${fuel} cbh=0 should have csi=Infinity cfb=0 Surface, got csi=${r.csi} cfb=${r.cfb} fireType=${r.fireType}`); fail++; }
+  }
+}
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  WARN ${warn}  FAIL ${fail}`);
