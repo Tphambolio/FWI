@@ -151,28 +151,49 @@ for (const t of tests) {
 }
 
 // ─── applyDCFloor audit ───────────────────────────────────────────────────────
+// applyDCFloor is internal to fwi.js. The VM sandbox makes all module-level
+// declarations accessible directly (they land on the global/sandbox object).
 console.log('\n── DC Floor audit ──');
-const dcFloorCases = [
-  { raw: 15, lat: 53.5, lon: -113.5, mo: 5, expect: 'corrected' },
-  { raw: 15, lat: 53.5, lon: -113.5, mo: 8, expect: 'pass-through' },
-  { raw: 159, lat: 53.5, lon: -113.5, mo: 5, expect: 'pass-through' },
-  { raw: 15, lat: 51.0, lon: -120.0, mo: 5, expect: 'corrected (BC)' },
-  { raw: null, lat: 53.5, lon: -113.5, mo: 5, expect: 'null pass-through' },
-];
 
-// applyDCFloor isn't exported — test via calculateFWI with mock month
-// Use season-appropriate dates by testing the STARTUP chain
-for (const c of dcFloorCases) {
-  // Just verify the engine doesn't crash on these inputs
-  try {
-    const testW = { temp: 15, rh: 60, wind: 10, rain: 0, month: c.mo, fwiFromCWFIS: false };
-    const testP = { ffmc: 85, dmc: 10, dc: c.raw ?? 150 };
-    const r = FWI.calculateFWI(testW, testP);
-    console.log(`  dc=${c.raw ?? 'null'} mo=${c.mo} lat=${c.lat} → dc_out=${r.dc?.toFixed(1)} fwi=${r.fwi?.toFixed(2)} [expect: ${c.expect}]`);
-    pass++;
-  } catch (e) {
-    console.log(`  CRASH dc=${c.raw} mo=${c.mo}: ${e.message}`);
-    fail++;
+const applyDCFloor = sandbox.applyDCFloor;
+if (typeof applyDCFloor !== 'function') {
+  console.log('  FAIL  applyDCFloor not found in sandbox — engine refactor may have moved it');
+  fail++;
+} else {
+  // Each case: [rawDC, lat, lon, expectCorrected, label]
+  // Ceiling is DC_COLDSTART_CEILING=60; floor window is months 3-6 (spring); AB+BC interior
+  // Month is real-time in the engine — tests are month-agnostic: we call applyDCFloor directly.
+  const FLOOR_CASES = [
+    [15,   53.5, -113.5, true,  'AB Edmonton, DC=15 (below ceiling+floor → corrected)'],
+    [15,   56.5, -111.2, true,  'AB Fort Mac zone, DC=15 (below ceiling+floor → corrected)'],
+    [61,   53.5, -113.5, false, 'AB Edmonton, DC=61 (above ceiling → pass-through)'],
+    [300,  53.5, -113.5, false, 'AB Edmonton, DC=300 (well above floor → pass-through)'],
+    [15,   51.0, -120.0, true,  'BC interior, DC=15 (within bounds → corrected)'],
+    [15,   62.0, -114.0, false, 'North of AB bounds, DC=15 (lat>60.5 → no floor)'],
+    [null, 53.5, -113.5, false, 'null DC → pass-through with dc=null'],
+  ];
+
+  // The engine uses real Date.now() internally for month check — in June (month 6)
+  // the floor window is active. These tests run in June so correction cases are live.
+  // Month is determined by the engine at call time, not passed as a parameter.
+  for (const [raw, lat, lon, expectCorrected, label] of FLOOR_CASES) {
+    try {
+      const result = applyDCFloor(raw, lat, lon);
+      const corrOk = result.corrected === expectCorrected;
+      const dcOk   = raw == null
+        ? result.dc == null
+        : (expectCorrected ? result.dc > raw : result.dc === raw);
+      const ok = corrOk && dcOk;
+      const tag = ok ? 'PASS' : 'FAIL';
+      const detail = `dc=${raw ?? 'null'} → ${result.dc?.toFixed(1) ?? 'null'}  corrected=${result.corrected}`;
+      console.log(`  ${tag}  ${label}`);
+      console.log(`         ${detail}  (expected corrected=${expectCorrected})`);
+      if (ok) pass++; else { fail++; issues.push(`  DC Floor FAIL: ${label} — ${detail}`); }
+    } catch (e) {
+      console.log(`  FAIL  CRASH: ${label}: ${e.message}`);
+      issues.push(`  DC Floor CRASH: ${label}: ${e.message}`);
+      fail++;
+    }
   }
 }
 
