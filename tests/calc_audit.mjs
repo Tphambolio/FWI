@@ -925,6 +925,32 @@ console.log('\n── Slope / mixedwood / curing / D2 ──');
   console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1a curing=100: CF=1.0, ros=rsiBasic=${o1a_100.ros.toFixed(6)}`);
   if (ok) pass++; else { issues.push(`  O1a curing=100: got ${o1a_100.ros} expected ${rsiO1a}`); fail++; }
 
+  // ── Grass curing O1b (same CF formula; O1b q=1.00 bui0=1 → BE=1, ros=RSI·CF) ──
+  // Verifies the GLC-X-10 curing branch covers both O1a and O1b, and that the
+  // upper branch (cc≥58.8 → CF=0.176+0.02·(cc−58.8)) is reached through O1b.
+  {
+    const rsiO1b_15 = rsiB('O1b', isi15);  // wind=15, same ISI as O1a tests
+    const o1b_0   = FWI.calculateFBP('O1b', 88, 50, 250, 15, 0, 0,    50, { lat:53.5, lng:-113.5, doy:184 });
+    const o1b_58  = FWI.calculateFBP('O1b', 88, 50, 250, 15, 0, 58.8, 50, { lat:53.5, lng:-113.5, doy:184 });
+    const o1b_100 = FWI.calculateFBP('O1b', 88, 50, 250, 15, 0, 100,  50, { lat:53.5, lng:-113.5, doy:184 });
+    // CF at breakpoint 58.8 (upper branch): 0.176 + 0.02*(58.8−58.8) = 0.176
+    const cf_58 = 0.176;
+    // CF at 100% (upper branch): 0.176 + 0.02*(100−58.8) = 1.0 exactly
+    const cf_100 = 0.176 + 0.02 * (100 - 58.8);
+
+    ok = o1b_0.ros < 0.001;
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1b curing=0: ros≈0 (got ${o1b_0.ros.toFixed(6)})`);
+    if (ok) pass++; else { issues.push(`  O1b curing=0 should be ~0, got ${o1b_0.ros}`); fail++; }
+
+    ok = Math.abs(o1b_58.ros - rsiO1b_15 * cf_58) < TOL;
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1b curing=58.8 (upper branch CF=0.176): ros=${o1b_58.ros.toFixed(6)} (exp ${(rsiO1b_15*cf_58).toFixed(6)})`);
+    if (ok) pass++; else { issues.push(`  O1b curing=58.8: got ${o1b_58.ros} expected ${rsiO1b_15*cf_58}`); fail++; }
+
+    ok = Math.abs(o1b_100.ros - rsiO1b_15 * cf_100) < TOL;
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  O1b curing=100: CF=1.0 (${cf_100.toFixed(4)}), ros=${o1b_100.ros.toFixed(6)} vs rsiBasic=${rsiO1b_15.toFixed(6)}`);
+    if (ok) pass++; else { issues.push(`  O1b curing=100: got ${o1b_100.ros} expected ${rsiO1b_15*cf_100}`); fail++; }
+  }
+
   // ── D2 green aspen (GLC-X-10) ────────────────────────────────────────────
   const d2_lo = FWI.calculateFBP('D2', 85, 20, 100, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
   const d2_hi = FWI.calculateFBP('D2', 92, 80, 400, 20, 0, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
