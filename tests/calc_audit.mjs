@@ -269,6 +269,33 @@ for (const [fwi, expected] of BOUNDARY_CASES) {
   else { fail++; issues.push(`  dangerRating FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); }
 }
 
+// ─── hfiClassInfo boundary conditions ────────────────────────────────────────
+// Six HFI intensity classes: Low(<10), Moderate(<500), High(<2000),
+// Very High(<4000), Extreme(<10000), Catastrophic(≥10000) kW/m
+console.log('\n── hfiClassInfo boundaries ──');
+const HFI_BOUNDARY_CASES = [
+  [0,     1, 'Low'],
+  [9.9,   1, 'Low'],
+  [10,    2, 'Moderate'],
+  [499,   2, 'Moderate'],
+  [500,   3, 'High'],
+  [1999,  3, 'High'],
+  [2000,  4, 'Very High'],
+  [3999,  4, 'Very High'],
+  [4000,  5, 'Extreme'],
+  [9999,  5, 'Extreme'],
+  [10000, 6, 'Catastrophic'],
+  [50000, 6, 'Catastrophic'],
+];
+for (const [hfi, expectedNum, expectedLabel] of HFI_BOUNDARY_CASES) {
+  const info = FWI.hfiClassInfo(hfi);
+  const ok = info.num === expectedNum && info.label === expectedLabel;
+  const tag = ok ? 'PASS' : 'FAIL';
+  console.log(`  ${tag}  HFI=${String(hfi).padStart(6)} kW/m  → class ${info.num} ${info.label.padEnd(12)} (expected ${expectedNum} ${expectedLabel})`);
+  if (ok) pass++;
+  else { fail++; issues.push(`  hfiClassInfo FAIL: HFI=${hfi} got class ${info.num} "${info.label}" expected ${expectedNum} "${expectedLabel}"`); }
+}
+
 // ─── Multi-day FBP chain ──────────────────────────────────────────────────────
 // calcMultiDayFBP drives the forecast trends page. Tests that:
 //   · FWI chain is continuous (state propagates day-to-day)
