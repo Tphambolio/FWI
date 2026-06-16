@@ -245,6 +245,52 @@ for (const c of fbpCases) {
   }
 }
 
+// ─── FBP all-fuel-types sweep ────────────────────────────────────────────────
+// Runs all 18 fuel types through calculateFBP and checks for NaN regression.
+// FFMC=85 DMC=30 DC=200 wind=20 → BUI≈44 (below D2's BUI=80 gate).
+// Separate D2 test at high BUI (DMC=70 DC=400 → BUI≈80) confirms gate lifts.
+{
+  console.log('\n── FBP all-fuel-types sweep ──');
+  const VALID_TYPES = new Set(['Surface', 'Passive Crown', 'Active Crown', 'Torching']);
+  const opts = { lat: 53.0, lng: -114.0, doy: 180 };
+  const FUELS = Object.keys(FWI.FUEL_TYPES);
+
+  for (const fuel of FUELS) {
+    const r = FWI.calculateFBP(fuel, 85, 30, 200, 20, 0, 100, 50, opts);
+    if (!r) {
+      console.log(`  FAIL  ${fuel}: calculateFBP returned null`);
+      fail++; issues.push(`calculateFBP(${fuel}) returned null`); continue;
+    }
+    const nanFields = Object.entries(r).filter(([, v]) => typeof v === 'number' && isNaN(v)).map(([k]) => k);
+    const rosFinite = isFinite(r.ros) && r.ros >= 0;
+    const hfiFinite = isFinite(r.hfi) && r.hfi >= 0;
+    const typeValid = VALID_TYPES.has(r.fireType);
+
+    // D2 below BUI 80 gate: rsi=0 so ros floors at near-zero, hfi ≈ 0
+    const d2GateOk = fuel !== 'D2' || (r.ros < 0.01 && r.hfi < 1);
+
+    const ok = nanFields.length === 0 && rosFinite && hfiFinite && typeValid && d2GateOk;
+    const note = fuel === 'D2' ? ` (d2_gate_ok=${d2GateOk})` : '';
+    console.log(`  ${ok?'PASS':'FAIL'}  ${fuel.padEnd(4)} ros=${r.ros.toFixed(3).padStart(7)} hfi=${Math.round(r.hfi).toString().padStart(6)} type=${r.fireType}${note}`);
+    if (ok) pass++;
+    else {
+      fail++;
+      if (nanFields.length) issues.push(`calculateFBP(${fuel}): NaN in ${nanFields.join(',')}`);
+      if (!rosFinite)       issues.push(`calculateFBP(${fuel}): ROS not finite (${r.ros})`);
+      if (!hfiFinite)       issues.push(`calculateFBP(${fuel}): HFI not finite (${r.hfi})`);
+      if (!typeValid)       issues.push(`calculateFBP(${fuel}): unknown fireType "${r.fireType}"`);
+      if (!d2GateOk)        issues.push(`calculateFBP(D2): BUI<80 gate should suppress fire, ros=${r.ros}`);
+    }
+  }
+
+  // D2 at BUI≥80: DMC=70, DC=400 → BUI = 70 - (1 - 0.8*400/(70+160)) * (0.92 + (0.0114*70)^1.7)
+  // Easier: use DMC=100, DC=300 which definitely clears BUI=80 for D2
+  const rD2hi = FWI.calculateFBP('D2', 88, 100, 300, 25, 0, 100, 50, opts);
+  const d2HiOk = rD2hi && rD2hi.ros > 0.01 && isFinite(rD2hi.ros);
+  console.log(`  ${d2HiOk?'PASS':'FAIL'}  D2 high-BUI gate lifts: ros=${rD2hi?.ros?.toFixed(3)} bui=${rD2hi?.bui?.toFixed(1)}`);
+  if (d2HiOk) pass++; else { fail++; issues.push(`D2 high-BUI gate not lifting: ros=${rD2hi?.ros}`); }
+}
+
 // ─── dangerRating boundary conditions ────────────────────────────────────────
 // Thresholds: Low <5.5, Moderate <15.5, High <22.5, Very High <29.5, Extreme ≥29.5
 console.log('\n── dangerRating boundaries ──');
