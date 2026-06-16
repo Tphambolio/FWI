@@ -1138,6 +1138,51 @@ console.log('\n── _calcFireArea60 (elliptical fire growth) ──');
   }
 }
 
+// ─── _hffmc — hourly FFMC reference values (Van Wagner 1977) ─────────────────
+// The hourly FFMC feeds the 24-hour trend chart. These reference values anchor
+// the Van Wagner (1977) coefficients (0.0579 drying rate, specific equilibria).
+// Computed from the engine; any coefficient change breaks these tests.
+{
+  console.log('\n── _hffmc hourly FFMC reference values ──');
+  const h = FWI._hffmc;
+  const TOL = 0.0001;
+  const HFFMC_CASES = [
+    // [temp, rh, wind, rain, prevF, expected, label]
+    // Drying branch (mo > ed): hot/dry/windy
+    [30,  20, 25, 0,    70,   75.64134, 'drying: hot/dry/windy, low initial F'],
+    [30,  20, 25, 0,    90,   91.28906, 'drying: hot/dry, high initial F'],
+    // Wetting branch (mo < ew): cool/humid
+    [10,  90,  5, 0,    85,   84.34614, 'wetting: cool/humid, high initial F'],
+    [10,  90,  5, 0,    70,   70.23808, 'wetting: cool/humid, low initial (tiny change)'],
+    // Rain correction path
+    [18,  70, 10, 10,   88,   22.95715, 'rain 10mm: major suppression'],
+    [18,  70, 10, 0.5,  88,   76.90560, 'trace rain 0.5mm: moderate drop'],
+    // Near-equilibrium (small change expected)
+    [20,  50, 15, 0,    82,   82.79151, 'near equilibrium: slight drying'],
+    [25,  25, 20, 0,    85,   86.62542, 'Van Wagner conditions: slight drying'],
+  ];
+
+  for (const [temp, rh, wind, rain, prevF, expected, label] of HFFMC_CASES) {
+    const got = h(temp, rh, wind, rain, prevF);
+    const ok  = Math.abs(got - expected) <= TOL;
+    console.log(`  ${ok?'PASS':'FAIL'}  ${label}`);
+    console.log(`         prevF=${prevF} → F=${got.toFixed(5)} (expected ${expected.toFixed(5)})`);
+    if (ok) pass++;
+    else { fail++; issues.push(`_hffmc FAIL: ${label} got ${got.toFixed(5)} expected ${expected.toFixed(5)}`); }
+  }
+
+  // Property: 24 hourly steps under constant hot/dry conditions should give
+  // a higher FFMC than one daily step (hourly integrates the drying curve more
+  // finely; they're close but not identical).
+  let f24 = 70;
+  for (let i = 0; i < 24; i++) f24 = h(30, 20, 25, 0, f24);
+  const daily70 = FWI.calculateFWI({ temp: 30, rh: 20, wind: 25, rain: 0, month: 6 },
+                                    { ffmc: 70, dmc: 20, dc: 200 }).ffmc;
+  const ok24 = f24 > 90 && f24 <= 101;
+  console.log(`  ${ok24?'PASS':'FAIL'}  24 hourly steps from F=70: final=${f24.toFixed(2)} (daily step=${daily70.toFixed(2)}, expect >90)`);
+  if (ok24) pass++; else { fail++; issues.push(`24 hourly steps: F=${f24.toFixed(2)} expected >90`); }
+}
+
 // ─── _normalizeFuelCode — user input parsing ─────────────────────────────────
 {
   console.log('\n── _normalizeFuelCode ──');
