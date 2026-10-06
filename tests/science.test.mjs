@@ -11,6 +11,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { loadEngine, extractScienceCore } from './load-engine.mjs';
@@ -200,4 +201,20 @@ test('AB and BC science cores are identical', () => {
   assert.ok(ab, 'AB science core markers missing');
   assert.ok(bc, 'BC science core markers missing');
   assert.equal(ab, bc, 'science cores have diverged — copy the canonical block to both engines');
+});
+
+// ─── Edmonton LiDAR fuel raster legend ───────────────────────────────────────
+// The PNG carries the canopy-LiDAR codes written by
+// edmonton-burnp3/scripts/build_fuel_raster.py: 2 C-2, 12 D-2, 14 M-2,
+// 31 O-1a, 32 O-1b, 99 non-fuel. A shifted legend silently turns grass into
+// aspen and spruce into grass, so pin it.
+
+test('Edmonton fuel legend matches the canopy-LiDAR raster codes', () => {
+  const meta = JSON.parse(readFileSync(join(root, 'data', 'edmonton_fuels.json'), 'utf8'));
+  assert.deepEqual(meta.codes, {
+    '0': null, '2': 'C2', '12': 'D2', '14': 'M2', '31': 'O1a', '32': 'O1b', '99': null,
+  });
+  for (const code of Object.values(meta.codes)) {
+    if (code !== null) assert.ok(AB.FUEL_TYPES[code], `legend fuel ${code} is not an engine fuel type`);
+  }
 });
