@@ -14,9 +14,9 @@ Run: python3 tests/browser_smoke.py
 Exit: 0 = all pass, 1 = any fail
 """
 from playwright.sync_api import sync_playwright
-import re, sys
+import os, re, sys
 
-BASE         = "https://tphambolio.github.io/FWI"
+BASE         = os.environ.get("PYRA_BASE", "https://tphambolio.github.io/FWI")  # local: PYRA_BASE=http://127.0.0.1:8765
 BASE_AB      = f"{BASE}/station_detail/code.html"
 BASE_BC      = f"{BASE}/bc/station_detail/code.html"
 

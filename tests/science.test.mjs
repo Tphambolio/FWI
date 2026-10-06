@@ -62,6 +62,7 @@ for (const [label, engine] of [['AB', AB], ['BC', BC]]) {
       { temp: 12, rh: 70, wind: 5, rain: 14.2, month: 7 },
       { temp: 22, rh: 35, wind: 12, rain: 0.4, month: 8 },
       { temp: -2, rh: 88, wind: 8, rain: 6.1, month: 9 },
+      { temp: -5, rh: 80, wind: 10, rain: 0, month: 5 }, // T < -2.8 with Lf > 0
     ];
     for (const w of days) {
       const r = engine.calculateFWI(w, prev);
@@ -70,11 +71,9 @@ for (const [label, engine] of [['AB', AB], ['BC', BC]]) {
       const dc = ref.refDC(w.temp, w.rain, w.month, refPrev.dc);
       close(r.ffmc, ffmc, 1e-9, `FFMC ${JSON.stringify(w)}`);
       close(r.dmc, dmc, 1e-9, `DMC ${JSON.stringify(w)}`);
-      // Engine historically skips DC drying entirely below -2.8°C; canonical
-      // floors temp at -2.8 (so Lf-only drying still accrues). Allow that gap.
-      close(r.dc, dc, w.temp > -2.8 ? 1e-9 : 4, `DC ${JSON.stringify(w)}`);
+      close(r.dc, dc, 1e-9, `DC ${JSON.stringify(w)}`);
       close(r.isi, ref.refISI(ffmc, w.wind), 1e-9, `ISI`);
-      close(r.bui, ref.refBUI(dmc, dc), w.temp > -2.8 ? 1e-9 : 4, `BUI`);
+      close(r.bui, ref.refBUI(dmc, dc), 1e-9, `BUI`);
       prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
       refPrev = { ffmc, dmc, dc };
     }

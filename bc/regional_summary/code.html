@@ -173,7 +173,7 @@
   <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Click headers to sort</span>
 </div>
 <p class="text-[10px] text-on-surface-variant mb-4 leading-relaxed">
-  BC fire weather stations grouped by Fire Centre. <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-blue-400">SWOB</span> is real-time MSC sensor data; <span class="text-amber-400">NWP</span> is Open-Meteo model output. CWFIS does not cover BC (west of −114°W). <strong class="text-on-surface">HFI CLS</strong> is Byram intensity class using C3 lodgepole pine fuel.
+  BC fire weather stations grouped by Fire Centre. <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-blue-400">SWOB</span> is real-time MSC sensor data; <span class="text-amber-400">NWP</span> is Open-Meteo model output. <span class="text-primary">CWFIS</span> is the national fire weather station network (FWI chain carried over daily). <strong class="text-on-surface">HFI CLS</strong> is Byram intensity class using C3 lodgepole pine fuel.
 </p>
 <div id="fwi-region-list"></div>
 </section>
@@ -207,7 +207,7 @@
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=125"></script>
+<script src="../fwi.js?v=126"></script>
 <script>
   // Restore saved alarm threshold
   const _savedTh = parseFloat(localStorage.getItem('fwi-alarm-threshold') ?? '15.5');

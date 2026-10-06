@@ -18,3 +18,7 @@ jobs:
           node-version: 22
       - name: Run FWI/FBP validation suite
         run: node --test "tests/**/*.test.mjs"
+      - name: AB/BC parity (shared science sections + BC-specific functions)
+        run: node tests/bc_parity.mjs
+      - name: FWI/FBP engine audit
+        run: node tests/calc_audit.mjs

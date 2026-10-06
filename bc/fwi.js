@@ -12,8 +12,9 @@
 const DMC_LL = [0,6.5,7.5,9.0,12.8,13.9,13.9,12.4,10.9,9.4,8.0,7.0,6.0];
 const DC_LL  = [0,-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5.0,2.4,0.4,-1.6,-1.6];
 
-// Spring startup defaults (Van Wagner 1987)
-// Spring startup defaults — FFMC and DMC are uniform; DC varies by Alberta fuel zone.
+// Spring startup defaults. FFMC 85 / DMC 6 are the Van Wagner (1987) defaults;
+// Van Wagner's default DC is 15 — the 300 here is a project fallback, and the
+// per-station DC comes from getStartupDC() (regional zone values, not CFFDRS).
 const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
 
 // Standalone BC app — province is hardcoded. No localStorage, no province switching.
@@ -204,7 +205,10 @@ function _dc(temp, rain, month, p) {
     const qr = 800*Math.exp(-p/400) + 3.937*rd;
     d = Math.max(0, 400*Math.log(800/qr));
   }
-  if (temp > -2.8) d += 0.5 * Math.max(0, 0.36*(temp+2.8) + DC_LL[month]);
+  // Van Wagner 1987 eq 22 (cffdrs dcCalc): T is floored at −2.8 °C, not skipped —
+  // below −2.8 the day-length adjustment Lf/2 still applies when Lf > 0.
+  const tdc = Math.max(temp, -2.8);
+  d += 0.5 * Math.max(0, 0.36*(tdc+2.8) + DC_LL[month]);
   return Math.max(0, d);
 }
 
@@ -257,6 +261,11 @@ function _hffmc(temp, rh, wind, rain, prevF) {
 }
 
 // ═══ SCIENCE CORE END: FWI daily equations ═══
+
+/** Escape remote (WFS) text before it goes into HTML popups. */
+function _esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 // Wind degrees → compass direction + arrow
 function windCompass(deg) {
@@ -556,7 +565,7 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
 
   const lat = opts.lat ?? _stationLat;
   const lng = opts.lng ?? _stationLng;
-  const doy = opts.doy ?? Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const doy = opts.doy ?? Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
   const gfl = opts.gfl ?? 0.35;   // GLC-X-10 default grass fuel load
   const pdf = opts.pdf ?? 35;     // default % dead balsam fir for M3/M4
 
@@ -1114,7 +1123,19 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
     // Correct spring cold-start artifact in CWFIS DC (MSC airport stations use Van Wagner
     // April 1 fallback = DC 15 instead of the overwinter equation).
     let rawDC = hasFWI ? +nearest.dc : null;
-    if (rawDC != null) rawDC = applyDCFloor(rawDC, +nearest.lat, +nearest.lon).dc;
+    let dcCorrected = false;
+    if (rawDC != null) {
+      const adj = applyDCFloor(rawDC, +nearest.lat, +nearest.lon);
+      rawDC = adj.dc; dcCorrected = adj.corrected;
+    }
+    // CWFIS BUI/FWI were computed from the uncorrected DC — recompute when the
+    // floor raised it so BUI/FWI agree with the displayed DC (Van Wagner 1987).
+    let selBUI = hasFWI ? nearest.bui : null;
+    let selFWI = hasFWI ? nearest.fwi : null;
+    if (dcCorrected && nearest.isi != null) {
+      selBUI = _bui(+nearest.dmc, rawDC);
+      selFWI = _fwi(+nearest.isi, selBUI);
+    }
 
     return {
       temp:  nearest.temp,
@@ -1127,8 +1148,8 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
       dmc:  hasFWI ? nearest.dmc  : null,
       dc:   rawDC,
       isi:  hasFWI ? nearest.isi  : null,
-      bui:  hasFWI ? nearest.bui  : null,
-      fwi:  hasFWI ? nearest.fwi  : null,
+      bui:  selBUI,
+      fwi:  selFWI,
       fwiFromCWFIS: hasFWI,
       repDate: nearest.rep_date || null,
       source: hasFWI
@@ -1197,6 +1218,9 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
     } else {
       dc = cidw('dc');
     }
+    // BUI and FWI are nonlinear — derive from the blended codes, not averaged.
+    bui = _bui(dmc, dc);
+    fwi = _fwi(isi, bui);
   } else {
     let dcMin2 = Infinity, dcMax2 = -Infinity, dcCnt = 0;
     for (const c of cands) {
@@ -1409,7 +1433,10 @@ function calculateFWI(w, prev = STARTUP) {
     const fwi = w.fwi ?? _fwi(isi, bui);
     return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
   }
-  // Van Wagner equations — spring startup constants when no carry-over available
+  // Van Wagner equations — spring startup constants when no carry-over available.
+  // Clamp sensor/NWP inputs to physical ranges (as cffdrs does): RH > 100 or
+  // wind < 0 make the FFMC drying terms NaN; negative rain is meaningless.
+  w = { ...w, rh: Math.min(100, Math.max(0, w.rh)), wind: Math.max(0, w.wind), rain: Math.max(0, w.rain ?? 0) };
   const ffmc = _ffmc(w.temp, w.rh, w.wind, w.rain, prev.ffmc);
   const dmc  = _dmc(w.temp, w.rh, w.rain, w.month, prev.dmc);
   const dc   = _dc(w.temp, w.rain, w.month, prev.dc);
@@ -1471,9 +1498,13 @@ function wireDOM(r, lat, lng) {
   // Timestamp (line 1) + source label (line 2, station_detail only)
   set('updated', `Live · ${new Date().toLocaleTimeString()}`);
   const _distStr = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
-  const srcLabel = r.weather.stationName
+  // Only CWFIS-sourced weather gets the CWFIS prefix — SWOB results also carry
+  // a stationName, and were mislabelled "CWFIS · <airport>".
+  const _src = r.weather.source || '';
+  const srcLabel = (r.weather.stationName && _src.startsWith('CWFIS'))
     ? `CWFIS · ${r.weather.stationName}${_distStr}`
-    : (r.weather.source || 'Open-Meteo NWP');
+    : (_src ? `${_src}${r.weather.stationName ? _distStr : ''}` : 'Open-Meteo NWP');
+
   set('source-station', srcLabel);
 
   // IDW toggle button state sync
@@ -1504,20 +1535,15 @@ function wireDOM(r, lat, lng) {
       dcBadge.textContent = 'CWFIS' + stn + dst;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else if (r._cachedFWI) {
-      const cached = r._cachedFWI;
-      const stn = r.weather.stationName || cached.stationName;
-      const stnStr = stn ? ` · ${stn}` : '';
-      const distKm = r.weather.distKm ?? cached.distKm;
-      const dstStr = distKm != null ? ` · ${distKm} km` : '';
-      let dateStr = '';
-      if (cached.repDate) {
-        const d = new Date(cached.repDate);
-        dateStr = ` · ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })} ${d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Vancouver' })} PDT`;
-      } else if (cached.cachedAt) {
-        const d = new Date(cached.cachedAt);
-        dateStr = ` · ${d.toLocaleDateString('en-CA', { month:'short', day:'numeric' })}`;
-      }
-      dcBadge.textContent = 'CWFIS (holding)' + stnStr + dstStr + dateStr;
+      const co = r._cachedFWI;
+      const stn = co.src === 'holding' ? (co.stationName || '') : _stationName;
+      const dstStr = co.distKm != null ? ` · ${co.distKm} km` : '';
+      const dateStr = co.obsDate
+        ? new Date(co.obsDate + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+        : '';
+      dcBadge.textContent = co.final
+        ? `CWFIS (holding)${stn ? ' · ' + stn : ''}${dstStr} · ${dateStr}`
+        : `Calc from CWFIS ${dateStr} chain${stn ? ' · ' + stn : ''}${dstStr}`;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
     } else {
       dcBadge.textContent = 'Season start pending · CWFIS inactive';
@@ -1564,7 +1590,8 @@ function wireDOM(r, lat, lng) {
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
 
   // P4: SCRIBE 48-hr validation — async, non-blocking
-  fetchSCRIBE(lat, lng).then(renderSCRIBE);
+  const _g = _initGeneration;
+  fetchSCRIBE(lat, lng).then(sc => { if (_g === _initGeneration) renderSCRIBE(sc); });
 }
 
 /**
@@ -1579,6 +1606,9 @@ async function initFWI(lat = 50.70, lng = -120.45, station = 'Kamloops') {
   _stationLng  = lng;
   _stationName = station;
   const gen = ++_initGeneration; // this call's generation token
+  // Forecast cache is keyed on fuel settings only — a new station (or a new
+  // carry-over chain) must refetch, or the D+1 card shows the previous station.
+  _forecastCache = { days: [], results: [], resultsB: [] };
   document.querySelectorAll('[data-fwi="station"]').forEach(el => el.textContent = station);
   document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
 
@@ -1591,6 +1621,7 @@ async function initFWI(lat = 50.70, lng = -120.45, station = 'Kamloops') {
     if (weather.fwiFromCWFIS) {
       // CWFIS has today's operational FWI chain — use directly and cache for later
       result = calculateFWI(weather);
+      result._obsDate = weather.repDate ? String(weather.repDate).slice(0, 10) : _lstDateStr();
       if (!weather.idwMode) {
         try {
           localStorage.setItem(_holdKey(lat, lng), JSON.stringify({
@@ -1605,27 +1636,25 @@ async function initFWI(lat = 50.70, lng = -120.45, station = 'Kamloops') {
         } catch (_) {}
       }
     } else {
-      // CWFIS has weather obs but no FWI codes yet (pre-obs / processing lag / early season).
-      // Use last cached real CWFIS values instead of synthesising from startup constants.
-      let cachedFWI = null;
-      try { cachedFWI = JSON.parse(localStorage.getItem(_holdKey(lat, lng))); } catch (_) {}
-
-      // Reject HOLDING cache older than 36 hours — stale data is worse than
-      // startup defaults. (AB enforced this; BC previously did not.)
-      const cacheAge = cachedFWI?.cachedAt ? (Date.now() - new Date(cachedFWI.cachedAt).getTime()) : Infinity;
-      if (cacheAge >= 36 * 3600 * 1000) cachedFWI = null;
-
-      if (cachedFWI?.ffmc != null && cachedFWI?.dc != null) {
-        const isi = _isi(cachedFWI.ffmc, weather.wind ?? 0);
-        const bui = _bui(cachedFWI.dmc, cachedFWI.dc);
-        const fwi = _fwi(isi, bui);
-        result = {
-          ffmc: cachedFWI.ffmc, dmc: cachedFWI.dmc, dc: cachedFWI.dc,
-          isi, bui, fwi,
-          danger: dangerRatingProv(fwi),
-          weather,
-          _cachedFWI: cachedFWI,
-        };
+      // CWFIS has no FWI codes for today (pre-noon, layer refresh, processing lag,
+      // end of season). Fall back to the newest real carry-over — holding cache or
+      // the daily cwfis_prev.json mirror — rather than showing PENDING.
+      const co = _carryOverFor(lat, lng, station);
+      if (co) {
+        const dc = applyDCFloor(co.dc, lat, lng).dc;
+        if (co.final) {
+          // Already today's noon codes — ISI/BUI/FWI with today's wind
+          const isi = _isi(co.ffmc, weather.wind ?? 0);
+          const bui = _bui(co.dmc, dc);
+          const fwi = _fwi(isi, bui);
+          result = { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi,
+                     danger: dangerRatingProv(fwi), weather };
+        } else {
+          // Previous day's codes — step one day forward with today's weather (Van Wagner 1987)
+          result = calculateFWI({ ...weather, fwiFromCWFIS: false }, { ffmc: co.ffmc, dmc: co.dmc, dc });
+        }
+        result._cachedFWI = co;
+        result._obsDate   = co.final ? co.obsDate : _lstDateStr();
       } else {
         result = { ffmc: null, dmc: null, dc: null, isi: null, bui: null, fwi: null,
                    danger: null, weather, _inactive: true };
@@ -1655,9 +1684,16 @@ async function fetchStationData(station) {
   const weather = await fetchWeatherPrimary(station.lat, station.lng);
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   if (!weather.fwiFromCWFIS) {
-    const p = _cwfisPrevFor(station.name, station.lat, station.lng);
-    if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-      prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
+    const co = _carryOverFor(station.lat, station.lng, station.name);
+    if (co) {
+      const dc = applyDCFloor(co.dc, station.lat, station.lng).dc;
+      if (co.final) {
+        // Already today's noon codes — don't step them a second time
+        const isi = _isi(co.ffmc, weather.wind ?? 0), bui = _bui(co.dmc, dc), fwiV = _fwi(isi, bui);
+        return { station, weather, fwi: { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi: fwiV,
+                 danger: dangerRatingProv(fwiV), weather } };
+      }
+      prevFWI = { ffmc: co.ffmc, dmc: co.dmc, dc };
     }
   }
   const fwi = calculateFWI(weather, prevFWI);
@@ -1702,7 +1738,19 @@ async function fetchStationDataForecast(station) {
     prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
   }
 
-  const fwi = calculateFWI(weather, prevFWI);
+  // Step the chain through any forecast days between the carry-over obs and
+  // the target day (previously D+1 was stepped straight from D−1, skipping today).
+  const asOf  = p?.repDate ? String(p.repDate).slice(0, 10) : null;
+  const dayIx = days.indexOf(day);
+  if (asOf && dayIx > 0) {
+    const pre = calcMultiDay(days.slice(0, dayIx), getStartupDC(station.name), { ...prevFWI, obsDate: asOf });
+    const last = pre[pre.length - 1];
+    prevFWI = { ffmc: last.ffmc, dmc: last.dmc, dc: last.dc };
+  }
+  const dayDate = day?._ts != null ? new Date(day._ts).toISOString().slice(0, 10) : null;
+  const fwi = (asOf && dayDate && dayDate <= asOf)
+    ? calculateFWI({ ...weather, fwiFromCWFIS: true, ...prevFWI }, prevFWI) // target day already in carry-over
+    : calculateFWI(weather, prevFWI);
   return { station, weather, fwi, forecastDay: day };
 }
 
@@ -2526,6 +2574,41 @@ function _cwfisPrevFor(name, lat, lng) {
   return best;
 }
 
+/** Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST, UTC−8 for BC (PST). */
+function _lstDateStr(ts) {
+  return new Date((ts ?? Date.now()) - 8 * 3600000).toISOString().slice(0, 10);
+}
+
+/**
+ * Newest real FWI carry-over for a point when CWFIS has no codes for today
+ * (pre-noon, the ~19 UTC layer refresh, processing lag, or end of season):
+ * the browser holding cache or the daily cwfis_prev.json mirror, whichever
+ * has the later observation date. Returns null if neither is ≤2 days old.
+ * `final` = the codes are already today's noon values; otherwise they are an
+ * earlier day's and must be stepped forward with today's weather.
+ */
+function _carryOverFor(lat, lng, name) {
+  const cands = [];
+  try {
+    const h = JSON.parse(localStorage.getItem(_holdKey(lat, lng)));
+    if (h?.ffmc != null && h?.dmc != null && h?.dc != null && h.repDate) cands.push({ ...h, src: 'holding' });
+  } catch (_) {}
+  const p = _cwfisPrevFor(name, lat, lng);
+  if (p?.ffmc != null && p?.dmc != null && p?.dc != null && p.repDate) {
+    cands.push({ ...p, src: 'daily',
+      distKm: p.lat != null ? Math.round(_haversineKm(lat, lng, p.lat, p.lon)) : null });
+  }
+  let best = null;
+  for (const c of cands) {
+    c.obsDate = String(c.repDate).slice(0, 10);
+    if (!best || c.obsDate > best.obsDate) best = c;
+  }
+  if (!best) return null;
+  const ageDays = Math.round((Date.parse(_lstDateStr()) - Date.parse(best.obsDate)) / 86400000);
+  if (!(ageDays >= 0 && ageDays <= 2)) return null;
+  return { ...best, ageDays, final: ageDays === 0 };
+}
+
 const DANGER_COLORS = {
   'Very Low':  { bar: 'bg-[#a7f3d0]',  badge: 'bg-[#a7f3d0]/20 text-[#a7f3d0]',   dot: 'bg-[#a7f3d0] shadow-[0_0_8px_#a7f3d0]' },
   'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
@@ -2738,7 +2821,7 @@ async function fetchForecastNAEFS(code) {
         rh:    peakRh,
         wind:  peakWind,
         rain:  p.median_pcp  ?? 0,
-        month: dt.getMonth() + 1,
+        month: dt.getUTCMonth() + 1, // dt is midnight UTC — local month is the previous day's in the Americas
         label,
         // midnight UTC → noon UTC so _mdtDateStr(-6h) returns the same calendar date
         _ts: dt.getTime() + 12 * 3600000,
@@ -2883,6 +2966,10 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
   let prev = startState
     ? { ffmc: startState.ffmc, dmc: startState.dmc, dc: startState.dc }
     : { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: startupDC };
+  // startState.obsDate = date of the noon obs the start state already includes.
+  // Forecast days on/before it are not stepped again (that applied today's
+  // drying twice); they report the state's codes with that day's forecast wind.
+  const asOf = startState?.obsDate || null;
   // Guard against null values propagating through chain
   return days.map(w => {
     const safe = {
@@ -2892,7 +2979,10 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
       rain:  w.rain  ?? 0,
       month: w.month ?? (new Date().getMonth() + 1),
     };
-    const r = calculateFWI(safe, prev);
+    const dDate = w._ts != null ? new Date(w._ts).toISOString().slice(0, 10) : null;
+    const r = (asOf && dDate && dDate <= asOf)
+      ? calculateFWI({ ...safe, fwiFromCWFIS: true, ffmc: prev.ffmc, dmc: prev.dmc, dc: prev.dc }, prev)
+      : calculateFWI(safe, prev);
     prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
     return { ...r, label: w.label };
   });
@@ -2982,10 +3072,11 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     }
     // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start.
     // Apply DC floor so a cold-start artifact in _lastFWI.dc doesn't suppress the 14-day trend.
-    const chainStart = _lastFWI ? {
+    const chainStart = (_lastFWI?.ffmc != null) ? {
       ffmc: _lastFWI.ffmc,
       dmc:  _lastFWI.dmc,
       dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(stationName), lat, lng).dc,
+      obsDate: _lastFWI._obsDate ?? null,
     } : null;
     const fuelCode = _savedFuelCode();
     const curing   = _savedCuring();
@@ -3392,9 +3483,14 @@ setTimeout(function() {
 
   const map = L.map('print-map', { zoomControl: true });
   ${mapInitScript}
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    maxZoom: 19
+  // CARTO basemaps now require an API key (tiles render "API KEY REQUIRED");
+  // Esri Light Gray Canvas is keyless, like the imagery layer used elsewhere.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community',
+    maxNativeZoom: 16, maxZoom: 19
+  }).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16, maxZoom: 19
   }).addTo(map);
 
   // Draw all station markers (always visible regardless of zoom)
@@ -3552,10 +3648,11 @@ async function printStationBriefing() {
       } else {
         days = await fetchForecast(_stationLat, _stationLng);
       }
-      const chainStart = _lastFWI ? {
+      const chainStart = (_lastFWI?.ffmc != null) ? {
         ffmc: _lastFWI.ffmc,
         dmc:  _lastFWI.dmc,
         dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+        obsDate: _lastFWI._obsDate ?? null,
       } : null;
       const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C3';
       const printCuring = _savedCuring ? _savedCuring() : 100;
@@ -3578,7 +3675,7 @@ async function printStationBriefing() {
   const lng = _stationLng;
   const fuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
   const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
-  const doy = Math.ceil((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const doy = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
   const fmc = calcFMC(lat, lng, doy);
 
   // FBP prediction
@@ -3612,7 +3709,8 @@ async function printStationBriefing() {
   };
 
   // Source label
-  const srcLabel = w?.stationName ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
+  const srcLabel = (w?.stationName && (w?.source || '').startsWith('CWFIS'))
+    ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
 
   // Forecast source label — NAEFS days carry a stationName; Open-Meteo/ECMWF days do not
   const { days: fDays, results: fResults } = _forecastCache;
@@ -3764,7 +3862,7 @@ async function printStationBriefing() {
   </div>
 </div>
 
-<p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})${(fuelCode==='O1a'||fuelCode==='O1b') ? ` &nbsp;·&nbsp; Curing: ${_savedCuring()}% (CF=${(0.005*(Math.exp(0.061*_savedCuring())-1)).toFixed(3)})` : ''}</p>
+<p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})${(fuelCode==='O1a'||fuelCode==='O1b') ? ` &nbsp;·&nbsp; Curing: ${_savedCuring()}% (CF=${(_savedCuring() < 58.8 ? 0.005*(Math.exp(0.061*_savedCuring())-1) : 0.176+0.02*(_savedCuring()-58.8)).toFixed(3)})` : ''}</p>
 
 <div class="section">
   <div class="section-title">Current Fire Behaviour · ${fuelCode} — ${fuelName} · Today · ${today}</div>
@@ -3933,9 +4031,13 @@ async function buildStationMap(containerId, mapOpts = {}) {
     zoom:   mapOpts.zoom   || 5,
     zoomControl: true, attributionControl: true,
   });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19,
+  // CARTO basemaps now require an API key — Esri Light Gray Canvas is keyless.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community',
+    maxNativeZoom: 16, maxZoom: 19,
+  }).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16, maxZoom: 19,
   }).addTo(map);
 
   // MarkerCluster group — separates overlapping stations at low zoom
@@ -4100,7 +4202,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const ha = f.hectares || 1;
       const r  = Math.max(4, Math.min(12, Math.sqrt(ha) * 0.25));
       L.circleMarker([f.lat, f.lon], { radius: r, fillColor: '#ff3333', color: '#ff8888', weight: 1.5, fillOpacity: 0.5 })
-        .bindPopup(`<b>${f.firename || 'Active Fire'}</b><br>${ha >= 1 ? ha.toLocaleString('en-CA',{maximumFractionDigits:0}) + ' ha' : '< 1 ha'}<br><small>${f.stage_of_control || ''} · ${f.agency?.toUpperCase() || ''}</small>`)
+        .bindPopup(`<b>${_esc(f.firename || 'Active Fire')}</b><br>${ha >= 1 ? ha.toLocaleString('en-CA',{maximumFractionDigits:0}) + ' ha' : '&lt; 1 ha'}<br><small>${_esc(f.stage_of_control || '')} · ${_esc(f.agency?.toUpperCase() || '')}</small>`)
         .addTo(activeFiresLayer);
     });
   });
@@ -4111,7 +4213,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     spots.forEach(h => {
       const hfiTip = h.hfi != null ? `<br>HFI: ${Math.round(h.hfi).toLocaleString()} kW/m` : '';
       L.circleMarker([h.lat, h.lon], { radius: 4, fillColor: '#ff8c00', color: '#ffaa44', weight: 1, fillOpacity: 0.8 })
-        .bindPopup(`<b>Satellite Hotspot</b><br><small>${h.satellite || h.sensor || ''}</small>${hfiTip}`)
+        .bindPopup(`<b>Satellite Hotspot</b><br><small>${_esc(h.satellite || h.sensor || '')}</small>${hfiTip}`)
         .addTo(hotspotsLayer);
     });
   });
@@ -4136,17 +4238,17 @@ async function buildStationMap(containerId, mapOpts = {}) {
 async function fetchSCRIBE(lat, lng) {
   try {
     const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
-      `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_scribe_fcst` +
+      `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_scribe` +
       `&outputFormat=application/json` +
       `&CQL_FILTER=latitude+BETWEEN+${(lat-2).toFixed(2)}+AND+${(lat+2).toFixed(2)}` +
-      `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=100`;
+      `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=500`;
     const res = await fetchWithTimeout(url, {}, 12000);
     const d = await res.json();
     // Group valid records by station name
     const byStation = {};
     for (const f of d.features) {
       const p = f.properties;
-      if (!p.fwi || p.fwi < 0) continue;
+      if (p.fwi == null || p.fwi < 0) continue; // FWI 0 is a valid forecast
       if (!byStation[p.name]) byStation[p.name] = { lat: p.latitude, lng: p.longitude, records: [] };
       byStation[p.name].records.push(p);
     }
@@ -4211,6 +4313,7 @@ async function fetchHotspots() {
 async function buildD1Card() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('fwi-d1-preview-date', 'Loading…');
+  const gen = _initGeneration; // discard the result if the station changes mid-fetch
 
   let days, results, resultsB;
   try {
@@ -4250,6 +4353,7 @@ async function buildD1Card() {
         ffmc: _lastFWI.ffmc,
         dmc:  _lastFWI.dmc,
         dc:   applyDCFloor(_lastFWI.dc ?? getStartupDC(_stationName), _stationLat, _stationLng).dc,
+        obsDate: _lastFWI._obsDate ?? null,
       } : null;
       const startupDC  = getStartupDC(_stationName);
       results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
@@ -4266,6 +4370,7 @@ async function buildD1Card() {
     return;
   }
 
+  if (gen !== _initGeneration) return;
   // Find today and tomorrow indices using PDT dates
   const _nowPDT     = _pdtDateStr();
   const todayIdx    = days.findIndex(d => d._ts && _pdtDateStr(d._ts) === _nowPDT);

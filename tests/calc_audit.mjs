@@ -162,7 +162,6 @@ if (typeof applyDCFloor !== 'function') {
 } else {
   // Each case: [rawDC, lat, lon, expectCorrected, label]
   // Ceiling is DC_COLDSTART_CEILING=60; floor window is months 3-6 (spring); AB+BC interior
-  // Month is real-time in the engine — tests are month-agnostic: we call applyDCFloor directly.
   const FLOOR_CASES = [
     [15,   53.5, -113.5, true,  'AB Edmonton, DC=15 (below ceiling+floor → corrected)'],
     [15,   56.5, -111.2, true,  'AB Fort Mac zone, DC=15 (below ceiling+floor → corrected)'],
@@ -173,12 +172,17 @@ if (typeof applyDCFloor !== 'function') {
     [null, 53.5, -113.5, false, 'null DC → pass-through with dc=null'],
   ];
 
-  // The engine uses real Date.now() internally for month check — in June (month 6)
-  // the floor window is active. These tests run in June so correction cases are live.
-  // Month is determined by the engine at call time, not passed as a parameter.
+  // The floor applies only in the spring window (Mar–Jun MST AB / Mar–Jul PST BC)
+  // and the engine reads the month from Date.now(). Pin the clock to mid-June so
+  // these cases test the floor itself rather than the calendar day the suite runs.
+  const SDate = vm.runInContext('Date', sandbox); // engine's own Date intrinsic
+  const _realNow = SDate.now;
+  const JUNE_15_NOON_MST = Date.UTC(2026, 5, 15, 19);
   for (const [raw, lat, lon, expectCorrected, label] of FLOOR_CASES) {
     try {
-      const result = applyDCFloor(raw, lat, lon);
+      SDate.now = () => JUNE_15_NOON_MST;
+      let result;
+      try { result = applyDCFloor(raw, lat, lon); } finally { SDate.now = _realNow; }
       const corrOk = result.corrected === expectCorrected;
       const dcOk   = raw == null
         ? result.dc == null
@@ -1998,12 +2002,15 @@ console.log('\n── D2 BUI gate and M3/M4 pdf boundaries ──');
 
   // _dc: prev=200, month=7, no rain
   const dcPrev = 200;
-  const dcAtGate    = dcFn(-2.8, 0, 7, dcPrev); // at gate — NOT triggered
-  const dcJustAbove = dcFn(-2.7, 0, 7, dcPrev); // just above — triggered
+  // Van Wagner 1987 eq 22 / cffdrs: T is floored at −2.8, so at and below the
+  // floor DC still gains Lf/2 (July Lf = 6.4 → +3.2); it is not skipped.
+  const dcAtGate    = dcFn(-2.8, 0, 7, dcPrev);
+  const dcBelow     = dcFn(-10,  0, 7, dcPrev);
+  const dcJustAbove = dcFn(-2.7, 0, 7, dcPrev);
 
-  ok = Math.abs(dcAtGate - dcPrev) < TOL;
-  console.log(`  ${ok?'PASS':'FAIL'}  _dc  temp=-2.8 (at gate) → ${dcAtGate.toFixed(6)} == prev ${dcPrev} (no drying)`);
-  if (ok) pass++; else { issues.push(`_dc temp=-2.8 should equal prev: got ${dcAtGate}`); fail++; }
+  ok = Math.abs(dcAtGate - (dcPrev + 3.2)) < TOL && Math.abs(dcBelow - dcAtGate) < TOL;
+  console.log(`  ${ok?'PASS':'FAIL'}  _dc  temp=-2.8 / -10 → ${dcAtGate.toFixed(6)} / ${dcBelow.toFixed(6)} == prev + Lf/2 (203.2)`);
+  if (ok) pass++; else { issues.push(`_dc T<=-2.8 should equal prev+Lf/2=203.2: got ${dcAtGate} / ${dcBelow}`); fail++; }
 
   ok = dcJustAbove > dcPrev + 1.0; // 3.2 per DCLL for month 7
   console.log(`  ${ok?'PASS':'FAIL'}  _dc  temp=-2.7 (just above gate) → ${dcJustAbove.toFixed(6)} > prev (drying begins)`);

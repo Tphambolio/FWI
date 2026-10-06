@@ -58,12 +58,21 @@ jobs:
             return out;
           }
 
+          // The layer returns HTTP 200 with zero features during its refresh
+          // window and off-season — treat a near-empty province as a failure so
+          // good carry-over is never overwritten with {}. (Clients also check
+          // each station's repDate, so a kept-over province ages out cleanly.)
+          const MIN_STATIONS = 20;
+
           async function main() {
             const result = { generated: new Date().toISOString() };
             for (const [key, box] of Object.entries(PROVINCES)) {
               try {
-                result[key] = await fetchProvince(box);
-                console.log(`${key}: ${Object.keys(result[key]).length} stations with FWI chain`);
+                const got = await fetchProvince(box);
+                const n = Object.keys(got).length;
+                if (n < MIN_STATIONS) throw new Error(`only ${n} stations with FWI chain (< ${MIN_STATIONS})`);
+                result[key] = got;
+                console.log(`${key}: ${n} stations with FWI chain`);
               } catch (e) {
                 console.error(`${key} fetch failed: ${e.message}`);
                 // Keep yesterday's data for this province rather than nulling it
@@ -86,12 +95,16 @@ jobs:
           # wildfire.alberta.ca sends no Access-Control-Allow-Origin header, so
           # browsers cannot fetch it directly — the AEF blend was silently dead
           # in production. Mirroring it here makes it same-origin-fetchable.
-          curl -sS --max-time 60 -o data/aef_pmwx.csv https://wildfire.alberta.ca/files/pmwx.csv \
-            || echo "pmwx.csv fetch failed — keeping previous copy"
-          # Sanity check: must look like a CSV with a header and >50 lines
-          if [ "$(wc -l < data/aef_pmwx.csv 2>/dev/null || echo 0)" -lt 50 ]; then
-            echo "pmwx.csv looks wrong — reverting"
-            git checkout -- data/aef_pmwx.csv 2>/dev/null || rm -f data/aef_pmwx.csv
+          # Download to a temp file; only replace the mirror if it is a real CSV
+          # (-f fails on HTTP errors; an HTML error page must never be committed).
+          tmp=$(mktemp)
+          if curl -fsS --max-time 60 -o "$tmp" https://wildfire.alberta.ca/files/pmwx.csv \
+             && head -1 "$tmp" | grep -q '^id,ws_id,.*weather_date' \
+             && [ "$(wc -l < "$tmp")" -ge 50 ]; then
+            mv "$tmp" data/aef_pmwx.csv
+          else
+            echo "::warning::pmwx.csv fetch failed or malformed — keeping previous copy"
+            rm -f "$tmp"
           fi
 
       - name: Commit updated cache
@@ -99,6 +112,12 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/cwfis_prev.json data/aef_pmwx.csv
-          git diff --cached --quiet && echo "No changes to commit" || \
-            git commit -m "chore: update CWFIS carry-over cache $(date -u '+%Y-%m-%d')"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          # Label with the CWFIS observation date, not the (later) UTC run date
+          obs=$(node -e "const d=require('./data/cwfis_prev.json');const r=Object.values(d.stations||{}).map(s=>s.repDate).filter(Boolean).sort().pop();console.log((r||'').slice(0,10)||new Date().toISOString().slice(0,10))")
+          git commit -m "chore: update CWFIS carry-over cache (obs $obs)"
+          git pull --rebase origin main
           git push

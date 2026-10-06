@@ -24,9 +24,9 @@ Exit: 0 = all pass, 1 = any failure
 """
 
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
-import re, sys
+import os, re, sys
 
-BASE    = "https://tphambolio.github.io/FWI"
+BASE    = os.environ.get("PYRA_BASE", "https://tphambolio.github.io/FWI")  # PYRA_BASE=http://127.0.0.1:8765 to test a local build
 AB_URL  = f"{BASE}/station_detail/code.html"
 BC_URL  = f"{BASE}/bc/station_detail/code.html"
 
@@ -212,18 +212,18 @@ def check_tomorrow_preview(page, label_prefix):
 def check_d1_fbp_panel(page, label_prefix):
     """
     D+1 forecast FBP panel must be populated regardless of CWFIS state.
-    When FWI chain is PENDING, buildD1Card falls back to startup-default chain
-    and must still produce valid ROS/HFI/CFB for the forecast day.
-    This verifies the null-chainStart fallback introduced in the CWFIS-outage fix.
+    Values are only bounded below by 0: with the real carry-over chain a wet
+    forecast day (low FFMC) or a fuel below its spread threshold (D2 needs
+    BUI ≥ 80, GLC-X-10) legitimately gives ROS/HFI ~0. The old >100 kW/m floor
+    assumed STARTUP defaults and failed on correct output. NaN / '—' / unparsed
+    text still fails, which is what catches null-coercion artefacts.
     """
     print(f"\n  ── D+1 forecast FBP panel ({label_prefix}) ──")
-    # lo_min is the *minimum plausible* value — catches near-zero null-coercion artefacts.
-    # With STARTUP defaults (ffmc=85,dmc=6,dc=300) on any fire-season day, C2 HFI >> 100 kW/m.
     checks = [
-        ('fwi-d1-preview-ros-a',       0.01, 500,    'm/min',   'ROS must be >0 (null-coercion guard)'),
-        ('fwi-d1-preview-hfi-kwm-a',   100,  200000, 'kW/m',    'HFI must be >100 kW/m with STARTUP defaults'),
+        ('fwi-d1-preview-ros-a',       0,    500,    'm/min',   'ROS must be a number ≥ 0'),
+        ('fwi-d1-preview-hfi-kwm-a',   0,    200000, 'kW/m',    'HFI must be a number ≥ 0'),
         ('fwi-d1-preview-cfb-a',       0,    100,    '%',       ''),
-        ('fwi-d1-preview-flame-a',     0.01, 200,    'm',       'flame must be >0'),
+        ('fwi-d1-preview-flame-a',     0,    200,    'm',       'flame must be a number ≥ 0'),
         ('fwi-d1-preview-date',        None, None,   'date label', ''),
     ]
     all_ok = True
