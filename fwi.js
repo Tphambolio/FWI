@@ -7,10 +7,7 @@
  * at the top level here — the core is not loaded yet.
  */
 
-const PROVINCE = {
-  code: 'AB',
-  exports: () => ({}),
-};
+
 
 // P1: Per-station spring startup DC by Alberta fuel/climate zone.
 // Boreal North (high precip, good snowpack) → low carry-over.
@@ -34,8 +31,6 @@ const STATION_STARTUP_DC = {
   'Calgary': 375, 'Lethbridge': 425, 'Medicine Hat': 450, 'Brooks': 425,
   'Cardston': 400, 'Claresholm': 375, 'Drumheller': 425, 'Pincher Creek': 375,
 };
-function getStartupDC(stationName) { return STATION_STARTUP_DC[stationName] ?? 300; }
-
 function getRegionalDCFloor(lat, lon) {
   // Month in Mountain Standard Time, NOT the viewer's browser clock — a viewer
   // in another timezone must not flip the correction a day early/late.
@@ -381,11 +376,7 @@ const STATION_FUEL_TYPES = {
 /** Regional default when a station has no STATION_FUEL_TYPES entry. */
 function _defaultFuelFor(lat) {
   return lat > 54.5 ? 'C2' : lat > 52 ? 'D1' : 'O1a';
-}
-let _stationLat = 53.5; // module-level; set by initFWI for FMC calculation
-let _stationLng = -113.5; // module-level; set by initFWI
-let _stationName = 'Edmonton';
-/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
+}/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
 function wireFBP(weather, fwi) {
   const fuelA = document.getElementById('fwi-fuel-picker')?.value   || 'C2';
   const fuelB = document.getElementById('fwi-fuel-picker-2')?.value || 'D1';
@@ -778,13 +769,6 @@ async function fetchSWOB(lat, lng) {
   };
 }
 
-// Per-station holding-cache key. A single shared key was overwritten on every
-// call during the 199-station map loop, so the last station processed won wrote
-// the cache, and station_detail then replayed that arbitrary station's chain
-// under whatever station the user selected. Round coords to ~1 km.
-function _holdKey(lat, lng) {
-  return `fwi-cached-cwfis:${lat.toFixed(2)},${lng.toFixed(2)}`;
-}
 
 async function fetchWeatherPrimary(lat, lng) {
   // CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
@@ -1810,9 +1794,6 @@ const REGIONS = [
   { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
 ];
 
-function _getAlarmThreshold() {
-  return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5');
-}
 
 function _updateAlarmStrip() {
   const strip = document.getElementById('fwi-alarm-strip');
@@ -1863,18 +1844,7 @@ async function loadCWFISPrev() {
   } catch (_) { /* network error — fall through to STARTUP defaults */ }
 }
 
-/** Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST, UTC−7 for Alberta. */
-function _lstDateStr(ts) {
-  return new Date((ts ?? Date.now()) - 7 * 3600000).toISOString().slice(0, 10);
-}
 
-const DANGER_COLORS = {
-  'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
-  'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
-  'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
-  'Very High': { bar: 'bg-[#f97316]',  badge: 'bg-[#f97316]/10 text-[#f97316]',   dot: 'bg-[#f97316] shadow-[0_0_8px_#f97316]' },
-  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/10 text-[#ef4444]',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
-};
 
 async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
@@ -2100,47 +2070,7 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
   }
 }
 
-/** Read persisted fuel type (set by station_detail fuel picker), default C2. */
-function _savedFuelCode() {
-  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type'))  || 'C2');
-}
-function _savedFuelCode2() {
-  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-fuel-type-2')) || 'D1');
-}
-function _savedCuring() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-grass-curing')) || '80', 10);
-}
-function _savedPS() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-ps-percent')) || '50', 10);
-}
 
-/**
- * Return "YYYY-MM-DD" in Mountain Daylight Time (UTC-6).
- * AB fire weather peak burn at 16:00 MDT = 22:00 UTC.
- * @param {number} [ts] - Unix ms timestamp; defaults to Date.now()
- */
-function _mdtDateStr(ts) {
-  const d = new Date((ts ?? Date.now()) - 6 * 3600000);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-}
-
-/**
- * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 16:00 MDT (22:00 UTC) has not yet passed;
- * tomorrow's index otherwise. Falls back to index 0.
- */
-function _nextPeakDayIdx(days) {
-  // Compare MDT calendar dates — the old `getUTCHours() >= 22` test was only
-  // true 16:00–17:59 MDT (UTC wraps at 18:00 MDT), and the cutoff used the
-  // *viewer's* local midnight, so evening visitors saw "Tomorrow" flip back
-  // to a stale "Today".
-  const mdtNow     = new Date(Date.now() - 6 * 3600000);
-  const peakPassed = mdtNow.getUTCHours() >= 16;   // 16:00 MDT peak burn
-  const today      = _mdtDateStr();
-  const idx = days.findIndex(d => d._ts &&
-    (peakPassed ? _mdtDateStr(d._ts) > today : _mdtDateStr(d._ts) >= today));
-  return idx >= 0 ? idx : 0;
-}
 
 async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
   try {
@@ -3538,3 +3468,28 @@ async function buildD1Card() {
   populateD1Section('-a', results[idx]);
   populateD1Section('-b', resultsB?.[idx]);
 }
+
+/** "YYYY-MM-DD" in Mountain Daylight Time (UTC−6) — AB name for the core's _localDateStr. */
+function _mdtDateStr(ts) { return _localDateStr(ts); }
+
+// ─── Province config — read by core/fwi-core.js at load and call time ───────
+// Defined last so it can reference this module's data tables directly.
+const PROVINCE = {
+  code: 'AB',
+  // ── Time ──
+  lstOffset: 7,          // hours behind UTC for noon LST (MST) — the CFFDRS day
+  localOffset: 6,        // hours behind UTC for local daylight time (MDT) — Today/Tomorrow, 16:00 peak burn
+  // ── Defaults / persistence ──
+  defaultStation: { lat: 53.5, lng: -113.5, name: 'Edmonton' },   // module-level _station* before initFWI
+  holdKeyPrefix: 'fwi-cached-cwfis:',                              // per-station holding-cache key prefix
+  storageKeys: { station: 'fwi-station', fuelA: 'fwi-fuel-type', fuelB: 'fwi-fuel-type-2', curing: 'fwi-grass-curing', ps: 'fwi-ps-percent' },
+  fuelDefaults: { a: 'C2', b: 'D1' },                              // fuel pickers' fallback codes
+  // ── Stations / regions ──
+  stations: ALBERTA_STATIONS,                                      // picker / map / summary station list
+  regions: REGIONS,                                                // regional representatives (trend table)
+  stationSector: (lat, lng) => _stationSector(lat),                // latitude-band fire sector
+  startupDC: STATION_STARTUP_DC, startupDCDefault: 300,            // cold-start DC zones, fallback
+  // ── Danger classes ──
+  dangerRating: fwi => dangerRating(fwi),                          // CWFIS FWI-map 5-class
+  exports: () => ({ ALBERTA_STATIONS }),                           // province extras on window.FWI
+};

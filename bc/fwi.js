@@ -7,34 +7,13 @@
  * core functions at the top level here — the core is not loaded yet.
  */
 
-const PROVINCE = {
-  code: 'BC',
-  exports: () => ({ dangerRatingBC, dangerRatingProv, BC_STATIONS, getStationList, stationSector, getRegions, setProvince, getProvince }),
-};
+
 
 // Standalone BC app — province is hardcoded. No localStorage, no province switching.
 const _province = 'BC';
 function setProvince(p) {} // no-op in standalone BC build
 function getProvince() { return 'BC'; }
 
-// P1: Per-station spring startup DC by Alberta fuel/climate zone.
-// Boreal North (high precip, good snowpack) → low carry-over.
-// Southern AB (dry winters, low snowpack) → high carry-over.
-// Moot during fire season when CWFIS provides live DC; applies to cold-start
-// fallback and the NAEFS forecast carry-forward chain.
-const STATION_STARTUP_DC = {
-  'Fort Chipewyan': 100, 'Fort Vermilion': 100, 'High Level': 100,
-  'Manning': 100, 'Wabasca': 130,
-  'Athabasca': 150, 'Fort McMurray': 150, 'Lac La Biche': 150,
-  'Slave Lake': 150, 'High Prairie': 150, 'Fox Creek': 150,
-  'Edson': 150, 'Hinton': 150, 'Whitecourt': 150, 'Valleyview': 150,
-  'Grande Cache': 150, 'Rocky Mtn House': 150, 'Bonnyville': 150, 'Cold Lake': 150,
-  'Banff': 175, 'Jasper': 175, 'Grande Prairie': 175, 'Peace River': 200,
-  'Edmonton': 300, 'Drayton Valley': 275, 'Wetaskiwin': 300, 'Camrose': 275,
-  'Vegreville': 275, 'Lloydminster': 250, 'Red Deer': 275, 'Stettler': 275,
-  'Calgary': 375, 'Lethbridge': 425, 'Medicine Hat': 450, 'Brooks': 425,
-  'Cardston': 400, 'Claresholm': 375, 'Drumheller': 425, 'Pincher Creek': 375,
-};
 // BC spring DC startup — lower than Alberta due to higher precip and snowpack recharge.
 // Provincial overwinter DC calc (Van Wagner 1985 App.) requires fall DC + winter precip;
 // these are practical cold-start defaults by Fire Centre for browser fallback.
@@ -126,11 +105,6 @@ const BC_STATION_STARTUP_DC = {
   'Rory Creek': 150, 'Darkwoods': 175, 'Cariboo Creek': 150,
   'Bigattini': 175, 'Sparwood': 175, 'Little Chopaka': 150, 'Creston': 175,
 };
-function getStartupDC(stationName) {
-  if (_province === 'BC') return BC_STATION_STARTUP_DC[stationName] ?? 100;
-  return STATION_STARTUP_DC[stationName] ?? 300;
-}
-
 /**
  * Correct a raw CWFIS DC that is the spring cold-start artifact (BC version).
  * Mirrors the AB applyDCFloor logic with BC-appropriate regional floors.
@@ -161,12 +135,7 @@ function dangerRatingBC(fwi) {
   if (fwi < 21) return 'Moderate';
   if (fwi < 34) return 'High';
   return 'Extreme';
-}
-// Province-aware danger rating — used throughout for display; AB math unchanged
-function dangerRatingProv(fwi) {
-  return _province === 'BC' ? dangerRatingBC(fwi) : dangerRating(fwi);
-}
-/**
+}/**
  * Station-level dominant FBP fuel type derived from CWFIS WMS
  * cffdrs_fbp_fuel_types (NRCan 30m national grid), sampled Apr 2026.
  * Method: modal fuel type within 5 km radius of each CWFIS station coordinate.
@@ -214,11 +183,7 @@ const STATION_FUEL_TYPES = {
   'Wabasca':        'C2',   // M1→C2: boreal mixedwood
   'Wetaskiwin':     'O1a',  // WMS: agricultural ✓
   'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
-};
-let _stationLat = 50.70; // module-level; set by initFWI for FMC calculation (default: Kamloops)
-let _stationLng = -120.45; // module-level; set by initFWI
-let _stationName = 'Kamloops';
-/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
+};/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
 function wireFBP(weather, fwi) {
   const fuelA = document.getElementById('fwi-fuel-picker')?.value   || 'C2';
   const fuelB = document.getElementById('fwi-fuel-picker-2')?.value || 'D1';
@@ -733,11 +698,6 @@ async function fetchSWOB(lat, lng) {
   };
 }
 
-// Per-station holding-cache key — a single shared key would be clobbered during
-// the multi-station map build and replayed under the wrong station.
-function _holdKey(lat, lng) {
-  return `bc-fwi-cached-cwfis:${lat.toFixed(2)},${lng.toFixed(2)}`;
-}
 
 async function fetchWeatherPrimary(lat, lng) {
   // Tier 0+1 (BC): BCWS noon mirror and CWFIS fetched in parallel. Only a chain
@@ -1482,8 +1442,6 @@ const BC_STATIONS = [
   { code: 5858, name: 'Creston',           lat: 49.0650, lng: -116.5500 },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-/** Province-aware station list for UI pickers. */
-function getStationList() { return _province === 'BC' ? BC_STATIONS : ALBERTA_STATIONS; }
 
 // ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
 
@@ -1730,11 +1688,6 @@ function _stationFireCentre(lat, lng) {
   if (lat >= 51.5) return 'Cariboo';                         // Central plateau
   return 'Kamloops';                                         // Southern interior default
 }
-/** Province-aware sector/region label. */
-function stationSector(lat, lng) {
-  return _province === 'BC' ? _stationFireCentre(lat, lng) : _stationSector(lat);
-}
-
 /** Update a single skeleton row in fwi-station-tbody with live data. */
 function _updateStationTableRow(entry) {
   const id = 'srow-' + entry.name.replace(/\s+/g, '-');
@@ -1813,14 +1766,6 @@ function _sortStationTable(col, asc) {
   rows.forEach(r => tbody.appendChild(r));
 }
 
-const AB_REGIONS = [
-  { name: 'Fort McMurray',  sector: 'Northeast Boreal',  lat: 56.650, lng: -111.217 },
-  { name: 'Peace River',    sector: 'Northwest Sector',  lat: 56.233, lng: -117.283 },
-  { name: 'Slave Lake',     sector: 'Lesser Slave Zone', lat: 55.283, lng: -114.767 },
-  { name: 'Athabasca',      sector: 'Central-North',     lat: 54.717, lng: -113.283 },
-  { name: 'Edmonton',       sector: 'Central Alberta',   lat: 53.534, lng: -113.490 },
-  { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
-];
 const BC_REGIONS = [
   { name: 'Terrace',        sector: 'Northwest Fire Centre',      lat: 54.47, lng: -128.58 },
   { name: 'Prince George',  sector: 'Prince George Fire Centre',  lat: 53.88, lng: -122.68 },
@@ -1828,11 +1773,7 @@ const BC_REGIONS = [
   { name: 'Kamloops',       sector: 'Kamloops Fire Centre',       lat: 50.70, lng: -120.45 },
   { name: 'Cranbrook',      sector: 'Southeast Fire Centre',      lat: 49.60, lng: -115.78 },
   { name: 'Campbell River', sector: 'Coastal Fire Centre',        lat: 50.02, lng: -125.27 },
-];
-/** Province-aware regional representative stations for trend/summary displays. */
-function getRegions() { return _province === 'BC' ? BC_REGIONS : AB_REGIONS; }
-function _getAlarmThreshold() { return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5'); }
-function _updateAlarmStrip() {
+];function _updateAlarmStrip() {
   const strip = document.getElementById('fwi-alarm-strip');
   if (!strip) return;
   const threshold = _getAlarmThreshold();
@@ -1884,19 +1825,7 @@ async function loadCWFISPrev() {
   } catch (_) { /* network error — fall through to STARTUP defaults */ }
 }
 
-/** Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST, UTC−8 for BC (PST). */
-function _lstDateStr(ts) {
-  return new Date((ts ?? Date.now()) - 8 * 3600000).toISOString().slice(0, 10);
-}
 
-const DANGER_COLORS = {
-  'Very Low':  { bar: 'bg-[#a7f3d0]',  badge: 'bg-[#a7f3d0]/20 text-[#a7f3d0]',   dot: 'bg-[#a7f3d0] shadow-[0_0_8px_#a7f3d0]' },
-  'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
-  'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
-  'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
-  'Very High': { bar: 'bg-[#f97316]',  badge: 'bg-[#f97316]/10 text-[#f97316]',   dot: 'bg-[#f97316] shadow-[0_0_8px_#f97316]' },
-  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/10 text-[#ef4444]',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
-};
 
 async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
@@ -2153,50 +2082,7 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
   }
 }
 
-/** Read persisted fuel type (set by station_detail fuel picker), default C3/C7 (BC defaults). */
-function _savedFuelCode() {
-  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type'))  || 'C3');
-}
-function _savedFuelCode2() {
-  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type-2')) || 'C7');
-}
-function _savedCuring() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('bc-fwi-grass-curing')) || '80', 10);
-}
-function _savedPS() {
-  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('bc-fwi-ps-percent')) || '50', 10);
-}
 
-/**
- * Return "YYYY-MM-DD" in Pacific Daylight Time (UTC-7).
- * BC fire weather standard — all Today/Tomorrow labels use PDT.
- * @param {number} [ts] - Unix ms timestamp; defaults to Date.now()
- */
-function _pdtDateStr(ts) {
-  const d = new Date((ts ?? Date.now()) - 7 * 3600000);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-}
-
-/**
- * Index of the next operationally relevant peak burn day in a `days` array.
- * Returns today's index if 16:00 PDT has not yet passed; tomorrow's otherwise.
- * Falls back to index 0.
- *
- * All date comparisons use PDT (UTC-7) to match BC fire weather convention.
- * This avoids MDT vs PDT confusion and handles UTC-date rollovers correctly.
- */
-function _nextPeakDayIdx(days) {
-  // PDT hour: (UTC hour - 7 + 24) mod 24
-  const pdtHour = ((new Date().getUTCHours() - 7) + 24) % 24;
-  const peakPassed = pdtHour >= 16; // BC peak burn at 16:00 PDT
-  const todayPDT = _pdtDateStr();
-  const idx = days.findIndex(d => {
-    if (!d._ts) return false;
-    const dayPDT = _pdtDateStr(d._ts);
-    return peakPassed ? dayPDT > todayPDT : dayPDT >= todayPDT;
-  });
-  return idx >= 0 ? idx : 0;
-}
 
 async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
   try {
@@ -3578,3 +3464,28 @@ async function buildD1Card() {
   populateD1Section('-a', results[idx]);
   populateD1Section('-b', resultsB?.[idx]);
 }
+
+/** "YYYY-MM-DD" in Pacific Daylight Time (UTC−7) — BC name for the core's _localDateStr. */
+function _pdtDateStr(ts) { return _localDateStr(ts); }
+
+// ─── Province config — read by core/fwi-core.js at load and call time ───────
+// Defined last so it can reference this module's data tables directly.
+const PROVINCE = {
+  code: 'BC',
+  // ── Time ──
+  lstOffset: 8,          // hours behind UTC for noon LST (PST) — the CFFDRS day
+  localOffset: 7,        // hours behind UTC for local daylight time (PDT) — Today/Tomorrow, 16:00 peak burn
+  // ── Defaults / persistence ──
+  defaultStation: { lat: 50.70, lng: -120.45, name: 'Kamloops' },  // module-level _station* before initFWI
+  holdKeyPrefix: 'bc-fwi-cached-cwfis:',                           // per-station holding-cache key prefix
+  storageKeys: { station: 'bc-fwi-station', fuelA: 'fwi-bc-fuel-type', fuelB: 'fwi-bc-fuel-type-2', curing: 'bc-fwi-grass-curing', ps: 'bc-fwi-ps-percent' },
+  fuelDefaults: { a: 'C3', b: 'C7' },                              // fuel pickers' fallback codes
+  // ── Stations / regions ──
+  stations: BC_STATIONS,                                           // picker / map / summary station list
+  regions: BC_REGIONS,                                             // regional representatives (trend table)
+  stationSector: (lat, lng) => _stationFireCentre(lat, lng),       // BC Fire Centre
+  startupDC: BC_STATION_STARTUP_DC, startupDCDefault: 100,         // cold-start DC zones, fallback
+  // ── Danger classes ──
+  dangerRating: fwi => dangerRatingBC(fwi),                        // BC 5-class (Very Low … Extreme)
+  exports: () => ({ dangerRatingBC, dangerRatingProv, BC_STATIONS, getStationList, stationSector, getRegions, setProvince, getProvince }),
+};

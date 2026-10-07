@@ -22,6 +22,18 @@ const DC_LL  = [0,-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5.0,2.4,0.4,-1.6,-1.6];
 // per-station DC comes from getStartupDC() (regional zone values, not CFFDRS).
 const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
 
+// ─── Province routing (all province differences come from PROVINCE) ─────────
+/** Spring startup DC for a station (province startup-DC zone table, else the province default). */
+function getStartupDC(stationName) { return PROVINCE.startupDC[stationName] ?? PROVINCE.startupDCDefault; }
+/** Province danger class for display (AB: CWFIS 5-class incl. Very High; BC: 5-class incl. Very Low). */
+function dangerRatingProv(fwi) { return PROVINCE.dangerRating(fwi); }
+/** Province station list for UI pickers, map and summaries. */
+function getStationList() { return PROVINCE.stations; }
+/** Province sector / fire-centre label for a station. */
+function stationSector(lat, lng) { return PROVINCE.stationSector(lat, lng); }
+/** Province regional representative stations for trend/summary displays. */
+function getRegions() { return PROVINCE.regions; }
+
 /**
  * Regional spring DC floor by coordinate (Alberta only, March–June).
  * Based on Lawson & Armitage (2008) overwinter carryover expectations for each
@@ -375,7 +387,11 @@ function _buildupEffect(fuelCode, bui) {
   return Math.exp(50 * Math.log(p.q) * (1 / bui - 1 / p.bui0));
 }
 // ═══ SCIENCE CORE END: FMC + RSI helpers ═══
- // module-level; set by initFWI
+
+
+let _stationLat = PROVINCE.defaultStation.lat; // module-level; set by initFWI for FMC calculation
+let _stationLng = PROVINCE.defaultStation.lng; // module-level; set by initFWI
+let _stationName = PROVINCE.defaultStation.name; // module-level; set by initFWI // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
 // ═══ SCIENCE CORE BEGIN: calculateFBP (shared AB/BC — keep identical; CI-checked) ═══
@@ -572,6 +588,14 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
  */
 // IDW blend mode — persisted across page loads
 let _idwMode = false;
+
+// Per-station holding-cache key. A single shared key was overwritten on every
+// call during the 199-station map loop, so the last station processed won wrote
+// the cache, and station_detail then replayed that arbitrary station's chain
+// under whatever station the user selected. Round coords to ~1 km.
+function _holdKey(lat, lng) {
+  return `${PROVINCE.holdKeyPrefix}${lat.toFixed(2)},${lng.toFixed(2)}`;
+}
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 /** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
@@ -661,6 +685,10 @@ let _regionalCache = [];
 let _mapStationCache = [];
 
 const FWI_ALARM_KEY = 'fwi-alarm-threshold';
+
+function _getAlarmThreshold() {
+  return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5');
+}
 // Previous-day CWFIS carry-over values loaded from GitHub-hosted JSON (see cwfis-daily.yml)
 let _cwfisPrev = {};
 // Cache populated by buildForecastTrends — used by exportForecastReport
@@ -687,6 +715,26 @@ function _cwfisPrevFor(name, lat, lng) {
     if (d < bestD) { bestD = d; best = v; }
   }
   return best;
+}
+
+/**
+ * Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST
+ * (PROVINCE.lstOffset hours behind UTC: 7 for AB MST, 8 for BC PST).
+ */
+function _lstDateStr(ts) {
+  return new Date((ts ?? Date.now()) - PROVINCE.lstOffset * 3600000).toISOString().slice(0, 10);
+}
+
+/**
+ * Return "YYYY-MM-DD" in the province's daylight time (PROVINCE.localOffset
+ * hours behind UTC: MDT for AB, PDT for BC). All Today/Tomorrow labels and the
+ * 16:00 peak-burn cut-over use this. Province modules expose it under their
+ * historical names (_mdtDateStr / _pdtDateStr).
+ * @param {number} [ts] - Unix ms timestamp; defaults to Date.now()
+ */
+function _localDateStr(ts) {
+  const d = new Date((ts ?? Date.now()) - PROVINCE.localOffset * 3600000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -718,6 +766,17 @@ function _carryOverFor(lat, lng, name) {
   if (!(ageDays >= 0 && ageDays <= 2)) return null;
   return { ...best, ageDays, final: ageDays === 0 };
 }
+
+// Union of both provinces' classes: 'Very Low' is BC-only, 'Very High' AB-only
+// (BC's dangerRatingBC never returns it); lookups only, never iterated.
+const DANGER_COLORS = {
+  'Very Low':  { bar: 'bg-[#a7f3d0]',  badge: 'bg-[#a7f3d0]/20 text-[#a7f3d0]',   dot: 'bg-[#a7f3d0] shadow-[0_0_8px_#a7f3d0]' },
+  'Low':       { bar: 'bg-secondary',         badge: 'bg-on-secondary-container/20 text-secondary',       dot: 'bg-secondary shadow-[0_0_8px_#4ae176]' },
+  'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
+  'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
+  'Very High': { bar: 'bg-[#f97316]',  badge: 'bg-[#f97316]/10 text-[#f97316]',   dot: 'bg-[#f97316] shadow-[0_0_8px_#f97316]' },
+  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/10 text-[#ef4444]',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
+};
 
 function regionCard(name, sector, r) {
   const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
@@ -840,6 +899,41 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
   });
 }
 
+/** Read persisted fuel type (set by station_detail fuel picker), default PROVINCE.fuelDefaults.a. */
+function _savedFuelCode() {
+  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem(PROVINCE.storageKeys.fuelA))  || PROVINCE.fuelDefaults.a);
+}
+
+function _savedFuelCode2() {
+  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem(PROVINCE.storageKeys.fuelB)) || PROVINCE.fuelDefaults.b);
+}
+
+function _savedCuring() {
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem(PROVINCE.storageKeys.curing)) || '80', 10);
+}
+
+function _savedPS() {
+  return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem(PROVINCE.storageKeys.ps)) || '50', 10);
+}
+
+/**
+ * Index of the next operationally relevant peak burn day in a `days` array.
+ * Returns today's index if 16:00 local daylight time (MDT / PDT) has not yet
+ * passed; tomorrow's index otherwise. Falls back to index 0.
+ */
+function _nextPeakDayIdx(days) {
+  // Compare local daylight-time calendar dates — the old `getUTCHours() >= 22`
+  // test was only true 16:00–17:59 MDT (UTC wraps at 18:00 MDT), and the cutoff
+  // used the *viewer's* local midnight, so evening visitors saw "Tomorrow" flip
+  // back to a stale "Today".
+  const localNow   = new Date(Date.now() - PROVINCE.localOffset * 3600000);
+  const peakPassed = localNow.getUTCHours() >= 16;   // 16:00 local peak burn
+  const today      = _localDateStr();
+  const idx = days.findIndex(d => d._ts &&
+    (peakPassed ? _localDateStr(d._ts) > today : _localDateStr(d._ts) >= today));
+  return idx >= 0 ? idx : 0;
+}
+
 /** Chain Van Wagner + FBP per day. FBP uses each day's peak (16:00) conditions.
  *  Returns results array where each element has { ...fwiResult, fbp, peakWeather }. */
 function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C2', curing = 100, ps = 50, opts = {}) {
@@ -912,7 +1006,7 @@ const MARKER_COLORS = {
   'Extreme':   '#ff4d4d',
 };
 
-window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, ALBERTA_STATIONS, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, _updateAlarmStrip,
+window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, _updateAlarmStrip,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };
