@@ -119,3 +119,25 @@ test('BC: BCWS chain → source keeps its own "(N km)" without a duplicate dista
   assert.match(src, /^BCWS Datamart · Kamloops BCWS \(\d+ km\)$/);
   assert.match(badge, /^BCWS · Kamloops BCWS · \d+ km$/);
 });
+
+// ─── Provenance age level (cadence-aware) ────────────────────────────────────
+// CWFIS/BCWS publish one noon-LST chain per day: judged against the newest chain
+// expected by now (today's after 14:00 LST, else yesterday's) — current 'ok',
+// one day behind amber, older red. An hours threshold turned it amber daily. Hourly SWOB keeps the 3 h / 24 h thresholds.
+for (const e of [AB, BC]) {
+  test(`${e.prov}: provenance level — daily chain judged by obs date, SWOB by hours`, () => {
+    const now = lstClock(e, 7, 15, 17); // 17:00 LST, 5 h after today's noon obs
+    const h = makeContext(e.path, { now });
+    const lvl = w => h.run(`_provenance(${JSON.stringify(w)}, null, ${now}).level`);
+    assert.equal(lvl({ fwiFromCWFIS: true, repDate: rep(TODAY), source: 'CWFIS · X' }), 'ok');
+    assert.equal(lvl({ fwiFromCWFIS: true, repDate: rep(YDAY),  source: 'CWFIS · X' }), 'amber'); // 17:00: today's is due
+    const morning = lstClock(e, 7, 15, 9);
+    assert.equal(makeContext(e.path, { now: morning }).run(
+      `_provenance(${JSON.stringify({ fwiFromCWFIS: true, repDate: rep(YDAY), source: 'CWFIS · X' })}, null, ${morning}).level`),
+      'ok', "09:00: yesterday's chain is the newest that can exist");
+    assert.equal(lvl({ fwiFromCWFIS: true, repDate: '2026-07-12T12:00:00Z', source: 'CWFIS · X' }), 'red');
+    assert.equal(lvl({ source: 'MSC SWOB · Y (latest obs)', obsTime: new Date(now - 2 * 3600000).toISOString() }), 'ok');
+    assert.equal(lvl({ source: 'MSC SWOB · Y (latest obs)', obsTime: new Date(now - 5 * 3600000).toISOString() }), 'amber');
+    assert.equal(lvl({ source: 'Open-Meteo NWP (noon LST)' }), 'neutral');
+  });
+}

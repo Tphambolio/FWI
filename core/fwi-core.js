@@ -1890,7 +1890,9 @@ function _hfiClass(hfi) {
  *   kind     OBSERVED · MODEL FORECAST · CARRIED FROM YESTERDAY
  *   network  CWFIS · BCWS · MSC SWOB · Open-Meteo (station network or model)
  *   obsMs    observation time (CWFIS/BCWS rep_date = noon LST of that date; SWOB obs time)
- *   level    'ok' ≤ 3 h · 'amber' > 3 h · 'red' > 24 h · 'neutral' (model, no obs time)
+ *   level    daily CWFIS/BCWS chain vs the newest chain expected by now (today's
+ *            after 14:00 LST, else yesterday's): 'ok' current · 'amber' 1 day behind · 'red' more;
+ *            hourly SWOB: 'ok' ≤ 3 h · 'amber' > 3 h · 'red' > 24 h; 'neutral' = model
  *   detail   technical detail for the chip title (source, station, distance, chain date)
  * `co` = the dated carry-over that was used (from _carryOverFor), if any.
  * Display only — it never changes which tier or carry-over the engine picked.
@@ -1920,7 +1922,21 @@ function _provenance(w, co = null, nowMs = Date.now()) {
     kind = 'OBSERVED';
   }
   const ageH = obsMs != null && isFinite(obsMs) ? Math.max(0, (nowMs - obsMs) / 3600000) : null;
-  const level = ageH == null ? 'neutral' : ageH > 24 ? 'red' : ageH > 3 ? 'amber' : 'ok';
+  // CWFIS/BCWS chains are one noon-LST observation per day, so judge them by
+  // obs date (today ok · yesterday amber · older red) — an hours threshold
+  // turned every normal noon obs amber by mid-afternoon. Hourly sensors (SWOB)
+  // keep the 3 h / 24 h thresholds.
+  const dailyDate = co?.obsDate || ((w.fwiFromCWFIS && w.repDate) ? String(w.repDate).slice(0, 10) : null);
+  let level;
+  if (ageH == null) level = 'neutral';
+  else if (dailyDate) {
+    // Today's noon chain is published ~2 h after noon LST; until then yesterday's
+    // is the newest that can exist and is not "late".
+    const lstHour = new Date(nowMs - PROVINCE.lstOffset * 3600000).getUTCHours();
+    const expected = lstHour >= 14 ? _lstDateStr(nowMs) : _lstDateStr(nowMs - 86400000);
+    const behind = Math.round((Date.parse(expected) - Date.parse(dailyDate)) / 86400000);
+    level = behind <= 0 ? 'ok' : behind === 1 ? 'amber' : 'red';
+  } else level = ageH > 24 ? 'red' : ageH > 3 ? 'amber' : 'ok';
   const age = ageH == null ? '' : ageH < 1 ? '<1 h old' : ageH < 48 ? `${Math.round(ageH)} h old` : `${Math.round(ageH / 24)} d old`;
   const parts = [];
   if (src) parts.push(src);
