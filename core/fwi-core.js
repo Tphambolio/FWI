@@ -580,6 +580,331 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
   }
 }
 
+// ─── CWFIS WFS fetch ──────────────────────────────────────────────────────────
+/**
+ * Fetch live fire weather from CWFIS WFS (NRCan/MSC physical sensors).
+ * Returns observed weather + pre-computed FWI codes when in-season (Apr–Oct).
+ * Returns null on failure — caller falls back to Open-Meteo.
+ *
+ * Layer: public:firewx_stns_current (GeoServer WFS 2.0.0)
+ * Reference: CWFIS, Natural Resources Canada
+ */
+async function fetchCWFIS(lat, lng, idwMode = false) {
+  const bbox = 2.0; // ±2 degrees ≈ 220 km
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=50` +
+    `&CQL_FILTER=lat+BETWEEN+${lat - bbox}+AND+${lat + bbox}` +
+    `+AND+lon+BETWEEN+${lng - bbox}+AND+${lng + bbox}`;
+
+  try {
+    // Non-OK status / timeout throw → null (caller falls back).
+    const res = await fetchWithTimeout(url, PROVINCE.cwfisNoCache ? { cache: 'no-cache' } : {}, 10000);
+    const data = await res.json();
+
+    if (idwMode) {
+      // Start with CWFIS features (may be empty during morning update window ~0800-1000 local)
+      let features = data.features ?? [];
+      // Province augmentation of the blend (AB: Alberta Wildfire AEF pmwx stations,
+      // which use proper Lawson & Armitage overwinter DC initialization). Runs
+      // regardless of CWFIS availability — the provincial feed is independent.
+      const extra = await PROVINCE.idwExtraFeatures(lat, lng);
+      if (extra.length) features = [...features, ...extra];
+      if (!features.length) return null;
+      return _computeIDWBlend(features, lat, lng);
+    }
+
+    return _selectCWFIS(data.features, lat, lng);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Select the best CWFIS observation for a point from a feature array.
+ * Shared by fetchCWFIS (per-point query) and buildStationMap (one province
+ * query reused for all stations). Prefers the nearest station with an active
+ * FWI chain; falls back to nearest weather-only within +200 km.
+ */
+function _selectCWFIS(features, lat, lng) {
+  if (!features?.length) return null;
+  let fwiNearest = null, fwiDist = Infinity;
+  let wxNearest  = null, wxDist  = Infinity;
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.temp == null || p.rh == null || p.ws == null) continue;
+    const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+    if (d < wxDist) { wxDist = d; wxNearest = p; }
+    if (p.ffmc != null && p.dc != null && d < fwiDist) { fwiDist = d; fwiNearest = p; }
+  }
+  const nearest = (fwiNearest && fwiDist <= wxDist + 200) ? fwiNearest : wxNearest;
+  if (!nearest) return null;
+
+  // DC divergence check — flag if nearby stations (≤75 km) have DC spread ≥75
+  let dcMin = Infinity, dcMax = -Infinity, dcCount = 0;
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.dc == null) continue;
+    const d = _haversineKm(lat, lng, +p.lat, +p.lon);
+    if (d > 75) continue;
+    dcMin = Math.min(dcMin, +p.dc);
+    dcMax = Math.max(dcMax, +p.dc);
+    dcCount++;
+  }
+  const dcDivergence = dcCount >= 2 && (dcMax - dcMin) >= 75
+    ? { spread: Math.round(dcMax - dcMin), min: Math.round(dcMin), max: Math.round(dcMax) }
+    : null;
+
+  const hasFWI = nearest.ffmc != null && nearest.dmc != null && nearest.dc != null;
+  const stationName = (nearest.name || '').replace(/\+/g, ' ').trim().replace(/\s+/g, ' ');
+
+  // Correct underinitialized spring startup DC (cold-start artifact only)
+  let rawDC = hasFWI ? +nearest.dc : null;
+  let dcUnderinit = false;
+  if (rawDC != null) {
+    const adj = applyDCFloor(rawDC, +nearest.lat, +nearest.lon);
+    rawDC = adj.dc; dcUnderinit = adj.corrected;
+  }
+  // BUI/FWI published by CWFIS were computed from the uncorrected DC; when the
+  // floor raised DC, recompute them (Van Wagner 1987 eqs 27a/b, 28-30) so the
+  // displayed BUI/FWI agree with the displayed DC and with the FBP outputs.
+  let selBUI = hasFWI ? nearest.bui : null;
+  let selFWI = hasFWI ? nearest.fwi : null;
+  if (dcUnderinit && nearest.isi != null) {
+    selBUI = _bui(+nearest.dmc, rawDC);
+    selFWI = _fwi(+nearest.isi, selBUI);
+  }
+
+  return {
+    temp:  nearest.temp,
+    rh:    nearest.rh,
+    wind:  nearest.ws,
+    wdir:  nearest.wdir ?? null,
+    rain:  nearest.precip ?? 0,
+    month: new Date().getMonth() + 1,
+    ffmc: hasFWI ? nearest.ffmc : null,
+    dmc:  hasFWI ? nearest.dmc  : null,
+    dc:   rawDC,
+    isi:  hasFWI ? nearest.isi  : null,
+    bui:  selBUI,
+    fwi:  selFWI,
+    fwiFromCWFIS: hasFWI,
+    repDate: nearest.rep_date || null,
+    source: hasFWI
+      ? `CWFIS · ${stationName}`
+      : `CWFIS · ${stationName} · FWI calc`,
+    stationName,
+    stationLat: +nearest.lat,
+    stationLng: +nearest.lon,
+    distKm: Math.round(nearest === fwiNearest ? fwiDist : wxDist), // distance of the station actually used
+    dcDivergence,
+    dcUnderinit,
+  };
+}
+
+/**
+ * Compute an IDW-blended weather/FWI observation from up to 12 nearest CWFIS stations.
+ *
+ * Weights: 1/d² (d in km, minimum 1 km to avoid division by zero at co-located points).
+ * Scalar fields (temp, RH, wind speed, precip): standard IDW.
+ * Wind direction: vector average via sin/cos components → atan2.
+ * FFMC + DMC: IDW from chain-active stations only (short-to-medium memory, spatially continuous).
+ * DC: IDW from chain stations only IF spread < 75 DC units; otherwise use nearest chain station
+ *     DC and flag dcDivergence (DC has ~53-day memory, discontinuous across precip boundaries).
+ *
+ * Reference: Snyder (1992), Luo et al. (2008) — IDW on meteorological inputs prior to
+ * FWI calculation is methodologically equivalent to the CWFIS gridded interpolation approach.
+ */
+function _computeIDWBlend(features, lat, lng, maxStations = 12) {
+  // Build candidate list with distances; require valid weather obs
+  const cands = [];
+  for (const feat of features) {
+    const p = feat.properties;
+    if (p.temp == null || p.rh == null || p.ws == null) continue;
+    const d = Math.max(_haversineKm(lat, lng, +p.lat, +p.lon), 1);
+    cands.push({ p, d });
+  }
+  if (!cands.length) return null;
+  cands.sort((a, b) => a.d - b.d);
+  const used = cands.slice(0, maxStations);
+
+  // Normalised IDW weights
+  const w   = used.map(c => 1 / (c.d * c.d));
+  const wS  = w.reduce((s, v) => s + v, 0);
+  const wN  = w.map(v => v / wS);
+  const idw = key => used.reduce((s, c, i) => s + (+(c.p[key] ?? 0)) * wN[i], 0);
+
+  // Scalar fields
+  const temp = idw('temp');
+  const rh   = Math.min(100, Math.max(0, idw('rh')));
+  const wind = idw('ws');
+  const rain = idw('precip');
+
+  // Wind direction — circular mean
+  let sinSum = 0, cosSum = 0, wdirCount = 0;
+  used.forEach((c, i) => {
+    if (c.p.wdir == null) return;
+    const rad = (+c.p.wdir) * Math.PI / 180;
+    sinSum += Math.sin(rad) * wN[i]; cosSum += Math.cos(rad) * wN[i]; wdirCount++;
+  });
+  const wdir = wdirCount ? Math.round(((Math.atan2(sinSum, cosSum) * 180 / Math.PI) + 360) % 360) : null;
+
+  // FWI chain IDW — chain-active stations only (ffmc + dmc + dc all non-null)
+  const chain = used.filter(c => c.p.ffmc != null && c.p.dmc != null && c.p.dc != null);
+  let ffmc = null, dmc = null, dc = null, isi = null, bui = null, fwi = null;
+  let fwiFromCWFIS = false, dcUnderinit = false;
+  let dcDivergence = null;
+
+  if (chain.length >= 1) {
+    fwiFromCWFIS = true;
+    const cw  = chain.map(c => 1 / (c.d * c.d));
+    const cwS = cw.reduce((s, v) => s + v, 0);
+    const cwN = cw.map(v => v / cwS);
+    const cidw = key => chain.reduce((s, c, i) => s + (+c.p[key]) * cwN[i], 0);
+
+    ffmc = cidw('ffmc');
+    dmc  = cidw('dmc');
+    isi  = cidw('isi');
+    bui  = cidw('bui');
+    fwi  = cidw('fwi');
+
+    // Apply regional DC floor before blending — corrects stations that used DC=15
+    // spring startup instead of the Lawson & Armitage overwinter equation.
+    const correctedChain = chain.map(c => {
+      const adj = applyDCFloor(+c.p.dc, +c.p.lat, +c.p.lon);
+      if (adj.corrected) {
+        return { ...c, p: { ...c.p, dc: adj.dc }, _dcCorrected: true };
+      }
+      return c;
+    });
+    if (correctedChain.some(c => c._dcCorrected)) dcUnderinit = true;
+
+    // DC: IDW only if corrected chain stations agree within 75 units
+    const dcVals = correctedChain.map(c => +c.p.dc);
+    const dcSpread = Math.max(...dcVals) - Math.min(...dcVals);
+    if (chain.length >= 2 && dcSpread >= 75) {
+      // Divergent DC fallback is province policy (PROVINCE.idwDivergentDC):
+      // 'max' — highest corrected DC (AB: the nearest is likely an
+      // underinitialized airport station); 'nearest' — nearest chain station (BC).
+      dc = PROVINCE.idwDivergentDC === 'nearest' ? dcVals[0] : Math.max(...dcVals);
+      dcDivergence = {
+        spread: Math.round(dcSpread),
+        min: Math.round(Math.min(...dcVals)),
+        max: Math.round(Math.max(...dcVals)),
+      };
+    } else {
+      const cwcS = cw.reduce((s, v) => s + v, 0);
+      const cwcN = cw.map(v => v / cwcS);
+      dc = correctedChain.reduce((s, c, i) => s + (+c.p.dc) * cwcN[i], 0);
+    }
+    // BUI and FWI are nonlinear in their inputs — derive them from the blended
+    // (and DC-floor-corrected) codes rather than averaging station BUI/FWI.
+    bui = _bui(dmc, dc);
+    fwi = _fwi(isi, bui);
+  } else {
+    // No chain — check for DC divergence across all nearby stations anyway
+    let dcMin2 = Infinity, dcMax2 = -Infinity, dcCnt = 0;
+    for (const c of cands) {
+      if (c.p.dc == null || c.d > 75) continue;
+      dcMin2 = Math.min(dcMin2, +c.p.dc); dcMax2 = Math.max(dcMax2, +c.p.dc); dcCnt++;
+    }
+    if (dcCnt >= 2 && (dcMax2 - dcMin2) >= 75)
+      dcDivergence = { spread: Math.round(dcMax2 - dcMin2), min: Math.round(dcMin2), max: Math.round(dcMax2) };
+  }
+
+  const avgDist = Math.round(used.reduce((s, c) => s + c.d, 0) / used.length);
+  const aefCount = used.filter(c => c.p.aef).length;
+  const sourceLabel = aefCount
+    ? `IDW · ${used.length} stations (${aefCount} AEF) · avg ${avgDist} km`
+    : `IDW · ${used.length} stations · avg ${avgDist} km`;
+
+  return {
+    temp, rh, wind, wdir, rain,
+    month: new Date().getMonth() + 1,
+    ffmc, dmc, dc, isi, bui, fwi,
+    fwiFromCWFIS,
+    source: sourceLabel,
+    stationName: null,
+    stationLat: null, stationLng: null,
+    distKm: Math.round(used[0].d),
+    dcDivergence,
+    idwMode: true,
+    idwCount: used.length,
+    idwAvgDist: avgDist,
+  };
+}
+
+/**
+ * Fetch weather from MSC SWOB realtime (api.weather.gc.ca).
+ * Real sensor data — used as Tier 2 between CWFIS and Open-Meteo NWP.
+ * Targets noon LST (19:00 UTC) when available; uses latest obs otherwise.
+ * CORS: Access-Control-Allow-Origin: * confirmed on MSC open data API.
+ */
+async function fetchSWOB(lat, lng) {
+  const bbox = 1.5; // ±1.5° ≈ 150 km
+  // Without a datetime filter the endpoint returns stale archived records.
+  // Request a 3-hour window ending now to ensure fresh observations only.
+  const now  = new Date();
+  const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const fmt  = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
+  // Request only the properties we read — full SWOB records carry hundreds of
+  // fields each (~411 KB for 50); the subset is ~10× smaller. Province flag
+  // (PROVINCE.trimFeedProperties). 8 s timeout: SWOB can hang for 13 s+, which
+  // previously stalled the whole tier chain.
+  const props = ['air_temp','avg_air_temp_pst1hr','rel_hum','avg_rel_hum_pst1hr',
+    'avg_wnd_spd_10m_pst1hr','avg_wnd_spd_10m_pst10mts','avg_wnd_dir_10m_pst1hr',
+    'avg_wnd_dir_10m_pst10mts','pcpn_amt_pst1hr','pcpn_amt_pst6hrs','pcpn_amt_pst24hrs',
+    'date_tm-value','obs_date_tm','stn_nam-value'].join(',');
+  const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
+    `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
+    `&datetime=${fmt(past)}/${fmt(now)}&limit=50${PROVINCE.trimFeedProperties ? `&properties=${props}` : ''}&f=json`;
+  let res;
+  try { res = await fetchWithTimeout(url, {}, 8000); } catch (_) { return null; }
+  const d = await res.json();
+  if (!d.features?.length) return null;
+
+  // Find nearest station by geometry
+  let nearest = null, minDist = Infinity;
+  for (const f of d.features) {
+    if (!f.geometry?.coordinates) continue;
+    const [fLng, fLat] = f.geometry.coordinates;
+    const dist = _haversineKm(lat, lng, fLat, fLng);
+    if (dist < minDist) { minDist = dist; nearest = f; }
+  }
+  if (!nearest) return null;
+
+  const p = nearest.properties;
+  const temp = p['air_temp']                    ?? p['avg_air_temp_pst1hr'];
+  const rh   = p['rel_hum']                     ?? p['avg_rel_hum_pst1hr'];
+  const wind = p['avg_wnd_spd_10m_pst1hr']      ?? p['avg_wnd_spd_10m_pst10mts'];
+  const wdir = p['avg_wnd_dir_10m_pst1hr']      ?? p['avg_wnd_dir_10m_pst10mts'];
+  // Daily FWI needs 24-h precip accumulated to noon — prefer the synoptic
+  // 24-h field; the 1-h amount alone made rain events nearly invisible.
+  const rain = p['pcpn_amt_pst24hrs'] ?? p['pcpn_amt_pst6hrs'] ?? p['pcpn_amt_pst1hr'] ?? 0;
+  if (temp == null || rh == null || wind == null) return null;
+
+  const obsTime    = new Date(p['date_tm-value'] || p['obs_date_tm']);
+  const obsUTCHour = obsTime.getUTCHours();
+  const isNoonLST  = obsUTCHour >= PROVINCE.noonUTC - 1 && obsUTCHour <= PROVINCE.noonUTC + 1; // ±1 hr of noon LST
+  const stnName    = (p['stn_nam-value'] || '').replace(/\+/g,' ').trim();
+  const srcLabel   = isNoonLST
+    ? `MSC SWOB · ${stnName} (noon LST)`
+    : `MSC SWOB · ${stnName} (latest obs)`;
+
+  const [nearestLng, nearestLat] = nearest.geometry.coordinates;
+  return {
+    temp, rh, wind, wdir, rain,
+    month:       new Date().getMonth() + 1,
+    source:      srcLabel,
+    stationName: stnName,
+    stationLat:  nearestLat,
+    stationLng:  nearestLng,
+    fwiFromCWFIS: false,
+    distKm:      Math.round(minDist),
+    obsTime:     obsTime.toISOString(),
+  };
+}
+
 /**
  * Fetch weather — three-tier hierarchy:
  *   1. CWFIS firewx_stns_current — fire weather stations, pre-computed FWI chain
@@ -595,6 +920,284 @@ let _idwMode = false;
 // under whatever station the user selected. Round coords to ~1 km.
 function _holdKey(lat, lng) {
   return `${PROVINCE.holdKeyPrefix}${lat.toFixed(2)},${lng.toFixed(2)}`;
+}
+
+/**
+ * Primary weather + FWI-chain tier chain for a point. The tier order and the
+ * pre-noon policy genuinely differ by province, so the chain itself lives in
+ * the province module (PROVINCE.fetchPrimary): AB — CWFIS (+AEF in IDW) →
+ * SWOB → NWP, pre-noon falls through to the 16:00 peak-burn forecast; BC —
+ * date-checked BCWS noon mirror ∥ CWFIS → SWOB → NWP.
+ */
+async function fetchWeatherPrimary(lat, lng) {
+  return PROVINCE.fetchPrimary(lat, lng);
+}
+
+/**
+ * Cross-validate a chain station's weather against SWOB. If a close (≤ 25 km)
+ * SWOB station disagrees by > 8 °C the chain station's obs is stale or the
+ * sensor is faulty — use SWOB weather values while keeping the FWI chain
+ * (which is based on carry-over, not the instantaneous reading). Otherwise
+ * returns the chain observation unchanged.
+ */
+function _swobCrossCheck(chain, swob) {
+  if (swob?.temp != null && chain.temp != null &&
+      (swob.distKm ?? 999) <= 25 &&
+      Math.abs(chain.temp - swob.temp) > 8) {
+    return {
+      ...swob,
+      ffmc: chain.ffmc,  dmc: chain.dmc,  dc:  chain.dc,
+      isi:  chain.isi,   bui: chain.bui,  fwi: chain.fwi,
+      fwiFromCWFIS: chain.fwiFromCWFIS,
+      chainSource:  chain.source,   // provenance of the FWI chain (BCWS or CWFIS)
+      stationName:  chain.stationName,
+      distKm:       chain.distKm,
+      repDate:      chain.repDate,
+    };
+  }
+  return chain;
+}
+
+/**
+ * Fetch weather from Open-Meteo targeting the noon LST observation.
+ * CFFDRS specifies noon Local Standard Time (UTC−7 AB / UTC−8 BC, year-round)
+ * for daily FWI calculations. We request today's hourly array and select the
+ * PROVINCE.noonUTC hour (= noon LST). Before noon the target is province
+ * policy (PROVINCE.preNoonNWP): 'peak' — today's 16:00 peak-burn forecast
+ * hour (AB); 'latest' — the most recent available hour (BC).
+ */
+async function fetchWeather(lat, lng) {
+  const url = `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lat}&longitude=${lng}` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
+    `&past_days=1&forecast_days=2&timezone=UTC`;
+  const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
+  const d = await res.json();
+  const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
+
+  // Post-noon: noon LST (PROVINCE.noonUTC) — standard CFFDRS input time.
+  // Target the hour by explicit LST-date ISO string: the old UTC-hour index
+  // selected tomorrow's forecast between 17:00 MST and midnight (UTC day rolls
+  // over at 17:00 MST) and could never see a 24-h precip window.
+  const lstNow    = new Date(Date.now() - PROVINCE.lstOffset * 3600000);
+  const lstDate   = lstNow.toISOString().slice(0, 10);   // today's calendar date in LST
+  const isPreNoon = lstNow.getUTCHours() < 12;
+  let targetISO;
+  if (!isPreNoon)                          targetISO = `${lstDate}T${PROVINCE.noonUTC}:00`;
+  else if (PROVINCE.preNoonNWP === 'peak') targetISO = `${lstDate}T${PROVINCE.peakUTC}:00`; // 16:00 local peak burn
+  else                                     targetISO = new Date().toISOString().slice(0, 13) + ':00'; // most recent available hour
+  let i = times.indexOf(targetISO);
+  if (i === -1) i = times.length - 1;
+
+  // 24-h precipitation accumulated to the target hour (CFFDRS daily rain window).
+  // past_days=1 guarantees the full preceding 24 h is in the array.
+  const rain24 = d.hourly.precipitation
+    .slice(Math.max(0, i - 23), i + 1)
+    .reduce((s, v) => s + (v ?? 0), 0);
+
+  const sourceNote = !isPreNoon ? 'Open-Meteo NWP (noon LST)'
+    : PROVINCE.preNoonNWP === 'peak' ? `Open-Meteo NWP (peak burn forecast · 16:00 ${PROVINCE.tzLabel})`
+    : 'Open-Meteo NWP (pre-noon — best available)';
+  return {
+    temp:  d.hourly.temperature_2m[i],
+    rh:    d.hourly.relative_humidity_2m[i],
+    wind:  d.hourly.wind_speed_10m[i],
+    wdir:  d.hourly.wind_direction_10m[i] ?? null,
+    rain:             rain24,
+    thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
+    month: new Date().getMonth() + 1,
+    source: sourceNote,
+    fwiFromCWFIS: false,
+  };
+}
+
+/**
+ * Run FWI equations from weather + optional previous-day state.
+ * When CWFIS provides pre-computed FWI codes (in-season), those are used
+ * directly — they incorporate the proper daily carry-over chain from NRCan.
+ * Van Wagner equations are used only when CWFIS codes are unavailable.
+ */
+function calculateFWI(w, prev = STARTUP) {
+  if (w.fwiFromCWFIS && w.ffmc != null) {
+    // Use CWFIS operational chain values as-is (FFMC/DMC/DC from actual carry-over)
+    const isi = w.isi ?? _isi(w.ffmc, w.wind ?? 0);
+    const bui = w.bui ?? _bui(w.dmc ?? 0, w.dc ?? 0);
+    const fwi = w.fwi ?? _fwi(isi, bui);
+    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
+  }
+  // Van Wagner equations — spring startup constants when no carry-over available.
+  // Clamp sensor/NWP inputs to physical ranges (as cffdrs does): RH > 100 or
+  // wind < 0 make the FFMC drying terms NaN; negative rain is meaningless.
+  w = { ...w, rh: Math.min(100, Math.max(0, w.rh)), wind: Math.max(0, w.wind), rain: Math.max(0, w.rain ?? 0) };
+  const ffmc = _ffmc(w.temp, w.rh, w.wind, w.rain, prev.ffmc);
+  const dmc  = _dmc(w.temp, w.rh, w.rain, w.month, prev.dmc);
+  const dc   = _dc(w.temp, w.rain, w.month, prev.dc);
+  const isi  = _isi(ffmc, w.wind);
+  const bui  = _bui(dmc, dc);
+  const fwi  = _fwi(isi, bui);
+  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
+}
+
+/**
+ * Main entry point. Call from any FWI screen.
+ *
+ * @param {number} lat       Latitude (default: Edmonton)
+ * @param {number} lng       Longitude (default: Edmonton)
+ * @param {string} station   Station label for [data-fwi="station"] elements
+ */
+async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefaults.lng, station = PROVINCE.initDefaults.name) {
+  _stationLat  = lat; // P5: update for seasonal FMC calculation
+  _stationLng  = lng;
+  _stationName = station;
+  const gen = ++_initGeneration; // this call's generation token
+  // Forecast cache is keyed on fuel settings only — a new station (or a new
+  // carry-over chain) must refetch, or the D+1 card shows the previous station.
+  _forecastCache = { days: [], results: [], resultsB: [] };
+  document.querySelectorAll('[data-fwi="station"]').forEach(el => el.textContent = station);
+  document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Loading…');
+
+  try {
+    if (!_cwfisPrev.stations) await loadCWFISPrev();
+    const weather = await fetchWeatherPrimary(lat, lng);
+    if (gen !== _initGeneration) return; // a newer initFWI started; discard stale result
+
+    let result;
+    if (weather.fwiFromCWFIS) {
+      // CWFIS has today's operational FWI chain — use directly
+      result = calculateFWI(weather);
+      result._obsDate = weather.repDate ? String(weather.repDate).slice(0, 10) : _lstDateStr();
+      // Cache only single-station reads; IDW blends are synthetic and should not
+      // be replayed as authoritative chain values in subsequent page loads
+      if (!weather.idwMode) {
+        try {
+          localStorage.setItem(_holdKey(lat, lng), JSON.stringify({
+            ffmc: result.ffmc, dmc: result.dmc, dc: result.dc,
+            isi: result.isi, bui: result.bui, fwi: result.fwi,
+            danger: result.danger,
+            stationName: weather.stationName,
+            distKm: weather.distKm ?? null,
+            repDate: weather.repDate,
+            cachedAt: new Date().toISOString(),
+          }));
+        } catch (_) {}
+      }
+    } else {
+      // CWFIS has no FWI codes for today (pre-noon, layer refresh, processing lag,
+      // end of season). Fall back to the newest real carry-over — holding cache or
+      // the daily cwfis_prev.json mirror — rather than showing PENDING.
+      const co = _carryOverFor(lat, lng, station);
+      if (co) {
+        const dc = applyDCFloor(co.dc, lat, lng).dc;
+        if (co.final) {
+          // Already today's noon codes — ISI/BUI/FWI with today's wind
+          const isi = _isi(co.ffmc, weather.wind ?? 0);
+          const bui = _bui(co.dmc, dc);
+          const fwi = _fwi(isi, bui);
+          result = { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi,
+                     danger: dangerRatingProv(fwi), weather };
+        } else {
+          // Previous day's codes — step one day forward with today's weather (Van Wagner 1987)
+          result = calculateFWI({ ...weather, fwiFromCWFIS: false }, { ffmc: co.ffmc, dmc: co.dmc, dc });
+        }
+        result._cachedFWI = co;
+        result._obsDate   = co.final ? co.obsDate : _lstDateStr();
+      } else {
+        result = { ffmc: null, dmc: null, dc: null, isi: null, bui: null, fwi: null,
+                   danger: null, weather, _inactive: true };
+      }
+    }
+    wireDOM(result, lat, lng);
+    console.log('[FWI]', result);
+  } catch (err) {
+    if (gen !== _initGeneration) return; // stale failure — don't overwrite newer success
+    console.warn('[FWI] Load failed:', err);
+    document.querySelectorAll('[data-fwi="updated"]').forEach(el => el.textContent = 'Data unavailable');
+  }
+}
+
+/**
+ * Fetch weather + calculate FWI for a single station object {name, lat, lng}.
+ * Sets module-level _stationLat/_stationLng/_stationName so that subsequent
+ * calculateFBP() calls use the correct seasonal FMC for that station's latitude.
+ * Returns {station, weather, fwi} — no DOM side effects.
+ * Used by the Fire Safety Briefing builder (briefing/index.html).
+ */
+async function fetchStationData(station) {
+  _stationLat  = station.lat;
+  _stationLng  = station.lng;
+  _stationName = station.name;
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+  const weather = await fetchWeatherPrimary(station.lat, station.lng);
+  let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
+  if (!weather.fwiFromCWFIS) {
+    const co = _carryOverFor(station.lat, station.lng, station.name);
+    if (co) {
+      const dc = applyDCFloor(co.dc, station.lat, station.lng).dc;
+      if (co.final) {
+        // Already today's noon codes — don't step them a second time
+        const isi = _isi(co.ffmc, weather.wind ?? 0), bui = _bui(co.dmc, dc), fwiV = _fwi(isi, bui);
+        return { station, weather, fwi: { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi: fwiV,
+                 danger: dangerRatingProv(fwiV), weather } };
+      }
+      prevFWI = { ffmc: co.ffmc, dmc: co.dmc, dc };
+    }
+  }
+  const fwi = calculateFWI(weather, prevFWI);
+  return { station, weather, fwi };
+}
+
+/**
+ * Fetch D+1 forecast weather for a station using ECMWF IFS via Open-Meteo.
+ * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
+ * FBP wind uses hour-16 (peak burn ~16:00 MDT) — matches the D+1 peak prediction
+ * shown on the station detail page.
+ * Used by the Fire Safety Briefing builder for PM Forecast mode.
+ */
+async function fetchStationDataForecast(station) {
+  _stationLat  = station.lat;
+  _stationLng  = station.lng;
+  _stationName = station.name;
+
+  const days = await fetchForecast(station.lat, station.lng);
+
+  // D+1: next operationally relevant peak burn day (today if before 16:00 local, tomorrow if after)
+  let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
+
+  // Weather: noon (hour 12) for FWI chain; peak wind (hour 16) for FBP
+  const weather = {
+    temp:             day.temp,
+    rh:               day.rh,
+    wind:             day.peak.wind,  // peak burn hour — used by calculateFBP
+    wdir:             day.peak.wdir,
+    rain:             day.rain,
+    thunderstormProb: null,
+    month:            new Date().getMonth() + 1,
+    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~16:00 ${PROVINCE.tzLabel}`,
+    fwiFromCWFIS:     false,
+  };
+
+  // FWI carry-over: use CWFIS yesterday values as starting state
+  if (!_cwfisPrev.stations) await loadCWFISPrev();
+  let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
+  const p = _cwfisPrevFor(station.name, station.lat, station.lng);
+  if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
+    prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: applyDCFloor(p.dc, station.lat, station.lng).dc };
+  }
+
+  // Step the chain through any forecast days between the carry-over obs and
+  // the target day (previously D+1 was stepped straight from D−1, skipping today).
+  const asOf  = p?.repDate ? String(p.repDate).slice(0, 10) : null;
+  const dayIx = days.indexOf(day);
+  if (asOf && dayIx > 0) {
+    const pre = calcMultiDay(days.slice(0, dayIx), getStartupDC(station.name), { ...prevFWI, obsDate: asOf });
+    const last = pre[pre.length - 1];
+    prevFWI = { ffmc: last.ffmc, dmc: last.dmc, dc: last.dc };
+  }
+  const dayDate = day?._ts != null ? new Date(day._ts).toISOString().slice(0, 10) : null;
+  const fwi = (asOf && dayDate && dayDate <= asOf)
+    ? calculateFWI({ ...weather, fwiFromCWFIS: true, ...prevFWI }, prevFWI) // target day already in carry-over
+    : calculateFWI(weather, prevFWI);
+  return { station, weather, fwi, forecastDay: day };
 }
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
@@ -693,6 +1296,34 @@ function _getAlarmThreshold() {
 let _cwfisPrev = {};
 // Cache populated by buildForecastTrends — used by exportForecastReport
 let _forecastCache = { days: [], results: [] };
+
+/**
+ * Load previous-day CWFIS carry-over values from the GitHub-hosted JSON.
+ * Updated daily by .github/workflows/cwfis-daily.yml after 13:00 LST obs.
+ * Used as `prev` in calculateFWI when CWFIS is not the live source (SWOB/NWP),
+ * giving Van Wagner a real carry-over chain rather than spring STARTUP defaults.
+ * Fails silently — any error leaves _cwfisPrev empty and STARTUP is used instead.
+ */
+async function loadCWFISPrev() {
+  try {
+    const res = await fetchWithTimeout(
+      'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/cwfis_prev.json',
+      { cache: 'no-cache' }, PROVINCE.prevTimeoutMs
+    );
+    const data = await res.json();
+    // Reject stale caches: if the daily Action has been broken for 2+ days,
+    // silently replaying week-old codes is worse than a clean cold start.
+    if (data?.generated && (Date.now() - new Date(data.generated).getTime()) > 48 * 3600000) {
+      console.warn(`[FWI] cwfis_prev.json is stale (generated ${data.generated}) — ignoring`);
+      return;
+    }
+    // Each province reads its own section (PROVINCE.prevSection: AB 'stations',
+    // BC 'bcStations'). Previously both engines read `stations`, so BC's
+    // "Red Deer" silently inherited Alberta Red Deer's codes from 600 km away.
+    const section = data?.[PROVINCE.prevSection];
+    if (section) _cwfisPrev = { generated: data.generated, stations: section };
+  } catch (_) { /* network error — fall through to STARTUP defaults */ }
+}
 
 /**
  * Carry-over lookup for a station — case-insensitive name match with a
@@ -821,32 +1452,110 @@ function regionCard(name, sector, r) {
 
 // ─── Forecast & Trends ───────────────────────────────────────────────────────
 
-// NAEFS stations available in CWFIS firewx_naefs WFS layer (Alberta only)
-const NAEFS_AB_STATIONS = [
-  { code: 10160, name: 'Banff',               lat: 51.18, lng: -115.57 },
-  { code: 10161, name: 'Calgary Intl',         lat: 51.12, lng: -114.02 },
-  { code: 10162, name: 'Cold Lake',            lat: 54.42, lng: -110.28 },
-  { code: 10163, name: 'Coronation',           lat: 52.07, lng: -111.45 },
-  { code: 10164, name: 'Edmonton Intl A',      lat: 53.30, lng: -113.58 },
-  { code: 10165, name: 'Edmonton Municipal A', lat: 53.57, lng: -113.52 },
-  { code: 10166, name: 'Edson',                lat: 53.58, lng: -116.47 },
-  { code: 10167, name: 'Fort Chipewyan',       lat: 58.77, lng: -111.12 },
-  { code: 10168, name: 'Fort McMurray',        lat: 56.65, lng: -111.22 },
-  { code: 10169, name: 'Grande Prairie',       lat: 55.18, lng: -118.88 },
-  { code: 10170, name: 'High Level',           lat: 58.62, lng: -117.17 },
-  { code: 10171, name: 'Jasper',               lat: 52.88, lng: -118.07 },
-  { code: 10172, name: 'Lac La Biche',         lat: 54.77, lng: -112.02 },
-  { code: 10173, name: 'Lethbridge',           lat: 49.63, lng: -112.80 },
-  { code: 10174, name: 'Lloydminster',         lat: 53.32, lng: -110.07 },
-  { code: 10175, name: 'Medicine Hat',         lat: 50.02, lng: -110.72 },
-  { code: 10176, name: 'Peace River',          lat: 56.23, lng: -117.43 },
-  { code: 10177, name: 'Pincher Creek',        lat: 49.52, lng: -113.98 },
-  { code: 10178, name: 'Red Deer',             lat: 52.18, lng: -113.90 },
-  { code: 10179, name: 'Rocky Mtn House',      lat: 52.43, lng: -114.92 },
-  { code: 10180, name: 'Slave Lake',           lat: 55.30, lng: -114.78 },
-  { code: 10181, name: 'Vermilion',            lat: 53.35, lng: -110.83 },
-  { code: 10182, name: 'Whitecourt',           lat: 54.15, lng: -115.78 },
-];
+
+/** Return nearest NAEFS station within 150 km, or null. */
+function findNearestNAEFS(lat, lng) {
+  let best = null, bestDist = Infinity;
+  for (const st of PROVINCE.naefsStations) {
+    const d = _haversineKm(lat, lng, st.lat, st.lng);
+    if (d < bestDist) { bestDist = d; best = st; }
+  }
+  return bestDist <= 150 ? best : null;
+}
+
+/** Fetch NAEFS ensemble forecast from CWFIS WFS for a given station code.
+ *  Returns day objects compatible with calcMultiDay: {temp, rh, wind, rain, month, label}
+ *  Uses max_temp + min_rh (fire weather peak) and median_ws, median_pcp. */
+async function fetchForecastNAEFS(code) {
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_naefs` +
+    `&outputFormat=application/json&CQL_FILTER=code=${code}&count=20`;
+  const res = await fetchWithTimeout(url, {}, 15000);
+  const d = await res.json();
+  return d.features
+    .map(f => {
+      const p = f.properties;
+      const dt = new Date(p.date_time);
+      const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      // KNOWN LIMITATION: the CWFIS firewx_naefs layer publishes only ensemble
+      // aggregates (max_temp, min_rh, median_ws, median_pcp). Feeding daily
+      // max-T/min-RH into the noon-calibrated FWI equations overstates drying,
+      // and median precip of a zero-inflated ensemble understates rain — both
+      // bias the 14-day chain toward higher indices. Treat the NAEFS trend as
+      // a conservative (drier) scenario; no member-level data is available to
+      // do better from this layer.
+      const peakTemp = p.max_temp ?? 15;
+      const peakRh   = p.min_rh   ?? 40;
+      const peakWind = p.median_ws ?? 10;
+      // NAEFS date_time is midnight UTC representing that UTC calendar day.
+      // _mdtDateStr subtracts 6h (MDT), so midnight UTC maps to 6pm of the
+      // previous MDT day — off by one. Adding 12h shifts to noon UTC so
+      // _mdtDateStr correctly returns the same calendar date in MDT.
+      return {
+        temp:  peakTemp,
+        rh:    peakRh,
+        wind:  peakWind,
+        rain:  p.median_pcp  ?? 0,
+        month: dt.getUTCMonth() + 1, // dt is midnight UTC — local month is the previous day's in the Americas
+        label,
+        _ts: dt.getTime() + 12 * 3600000,  // midnight UTC → noon UTC → same MDT calendar date
+        peak: { temp: peakTemp, rh: peakRh, wind: peakWind },
+      };
+    })
+    .sort((a, b) => a._ts - b._ts);
+}
+
+/** Fetch 7-day hourly forecast from Open-Meteo using ECMWF IFS 0.25° model.
+ *  ECMWF IFS is the same model ECCC uses for verification — best available global NWP for Canadian latitudes. */
+async function fetchForecast(lat, lng) {
+  const url = `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lat}&longitude=${lng}` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
+    `&timezone=UTC&past_days=2&forecast_days=8`;
+  const res = await fetchWithTimeout(url, {}, 15000);
+  const d = await res.json();
+  const h = d.hourly;
+  const days = [];
+  // The hourly array starts at 00:00 UTC two days ago (past_days=2). For each
+  // forecast day starting today: noon LST = PROVINCE.noonUTC (19:00 UTC AB,
+  // 20:00 UTC BC — CFFDRS chain input), peak burn = noon + 3 h (16:00 local
+  // daylight time, FBP inputs). Daily rain is the CFFDRS
+  // noon-to-noon 24-h accumulation — the old code passed a single hour of
+  // precip, which made forecast rain ≈ 0 and biased the whole chain dry.
+  // (The previous timezone=auto + index-12 selection also sampled 12:00 local
+  // daylight time = 11:00 LST, parsed in the viewer's browser timezone.)
+  // Day 0 is today's LST observation day, located by date. A fixed offset from
+  // the array start broke after UTC midnight (evenings): "today" in UTC is
+  // already tomorrow locally, so days[0] skipped today. past_days=2 keeps a
+  // full 24-h rain window before day 0 in that case too.
+  let base = h.time.indexOf(`${_lstDateStr()}T${PROVINCE.noonUTC}:00`);
+  if (base < 23) base = 48 + PROVINCE.noonUTC;
+  for (let day = 0; day < 7; day++) {
+    const iNoon = base + 24 * day;
+    const iPeak = iNoon + 3;
+    if (iNoon >= (h.time?.length ?? 0)) break;
+    const rain24 = h.precipitation
+      .slice(iNoon - 23, iNoon + 1)
+      .reduce((s, v) => s + (v ?? 0), 0);
+    const date = new Date(h.time[iNoon] + ':00Z'); // explicit UTC parse
+    days.push({
+      temp:  h.temperature_2m[iNoon]       ?? 15,
+      rh:    h.relative_humidity_2m[iNoon] ?? 40,
+      wind:  h.wind_speed_10m[iNoon]       ?? 10,
+      rain:  rain24,
+      month: date.getUTCMonth() + 1,
+      label: date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }),
+      _ts: date.getTime(),
+      peak: {
+        temp: h.temperature_2m[iPeak]        ?? h.temperature_2m[iNoon]        ?? 15,
+        rh:   h.relative_humidity_2m[iPeak]  ?? h.relative_humidity_2m[iNoon]  ?? 40,
+        wind: h.wind_speed_10m[iPeak]        ?? h.wind_speed_10m[iNoon]        ?? 10,
+        wdir: h.wind_direction_10m?.[iPeak]  ?? h.wind_direction_10m?.[iNoon]  ?? null,
+      },
+    });
+  }
+  return days;
+}
 
 /**
  * Fetch the past 23 hours of hourly data for the 24-hour trend chart.
@@ -1005,6 +1714,63 @@ const MARKER_COLORS = {
   'Very High': '#ff8c42',
   'Extreme':   '#ff4d4d',
 };
+
+async function fetchSCRIBE(lat, lng) {
+  try {
+    const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+      `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:firewx_scribe` +
+      `&outputFormat=application/json` +
+      `&CQL_FILTER=latitude+BETWEEN+${(lat-2).toFixed(2)}+AND+${(lat+2).toFixed(2)}` +
+      `+AND+longitude+BETWEEN+${(lng-2).toFixed(2)}+AND+${(lng+2).toFixed(2)}&count=500`;
+    let res;
+    try { res = await fetchWithTimeout(url, {}, 12000); } catch (_) { return null; }
+    const d = await res.json();
+    // Group valid records by station name
+    const byStation = {};
+    for (const f of d.features) {
+      const p = f.properties;
+      if (p.fwi == null || p.fwi < 0) continue; // FWI 0 is a valid forecast
+      if (!byStation[p.name]) byStation[p.name] = { lat: p.latitude, lng: p.longitude, records: [] };
+      byStation[p.name].records.push(p);
+    }
+    // Find nearest station with valid data
+    let best = null, bestDist = Infinity;
+    for (const [name, data] of Object.entries(byStation)) {
+      const dist = _haversineKm(lat, lng, data.lat, data.lng);
+      if (dist < bestDist) { bestDist = dist; best = { name, distKm: Math.round(dist), records: data.records.sort((a,b) => new Date(a.rep_date) - new Date(b.rep_date)) }; }
+    }
+    return best;
+  } catch (e) {
+    console.warn('[FWI SCRIBE]', e);
+    return null;
+  }
+}
+
+async function fetchActiveFires() {
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:activefires_current` +
+    `&outputFormat=application/json&count=200`;
+  try {
+    const res = await fetchWithTimeout(url, {}, 12000);
+    const d = await res.json();
+    return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
+  } catch (_) { return []; }
+}
+
+async function fetchHotspots() {
+  // Filter to Canada/northern US bbox. With PROVINCE.trimFeedProperties, request
+  // only the fields we render — the full GeoJSON is ~468 KB for 500 dots; the
+  // property subset is ~10× smaller.
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs` +
+    `?service=WFS&version=2.0.0&request=GetFeature&typeNames=public:hotspots_24h` +
+    `&outputFormat=application/json${PROVINCE.trimFeedProperties ? '&propertyName=lat,lon,satellite,sensor,hfi' : ''}` +
+    `&CQL_FILTER=lat+BETWEEN+48+AND+70+AND+lon+BETWEEN+-140+AND+-50&count=500`;
+  try {
+    const res = await fetchWithTimeout(url, {}, 12000);
+    const d = await res.json();
+    return d.features.map(f => f.properties).filter(p => p.lat && p.lon);
+  } catch (_) { return []; }
+}
 
 window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, _updateAlarmStrip,
   get _idwMode() { return _idwMode; },
