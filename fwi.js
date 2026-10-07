@@ -781,11 +781,11 @@ const PROVINCE = {
   dangerClassNum: fwi => dangerClassNum(fwi),                      // {num,label,bg,text} for briefing badges
   dangerClasses: ['Low', 'Moderate', 'High', 'Very High', 'Extreme'], // classes low → high (briefing tallies)
   dangerLegend: [                                                  // provincial briefing legend: label, colour, FWI, behaviour
-    ['Low',       '#2d9e5f', '0–8',   'Isolated fires; initial attack effective'],
-    ['Moderate',  '#2980b9', '9–17',  'Fires start easily; control feasible'],
-    ['High',      '#f5c518', '18–32', 'Intense surface fire; difficult to control'],
-    ['Very High', '#e67e22', '33–49', 'Spotting likely; indirect attack only'],
-    ['Extreme',   '#c0392b', '≥ 50',  'Crown fire conditions; evacuate'],
+    ['Low',       '#4ae176', '0–5',   'Isolated fires; initial attack effective'],
+    ['Moderate',  '#7bd0ff', '6–15',  'Fires start easily; control feasible'],
+    ['High',      '#f5c518', '16–22', 'Intense surface fire; difficult to control'],
+    ['Very High', '#f97316', '23–29', 'Spotting likely; indirect attack only'],
+    ['Extreme',   '#ef4444', '≥ 30',  'Crown fire conditions; evacuate'],
   ],
   // ── Briefings ──
   briefingTitle: 'Pyra · Alberta Fire Weather Index — Provincial Briefing',

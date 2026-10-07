@@ -1545,7 +1545,7 @@ async function fetchStationDataForecast(station) {
   const fwi = (asOf && dayDate && dayDate <= asOf)
     ? calculateFWI({ ...weather, fwiFromCWFIS: true, ...prevFWI }, prevFWI) // target day already in carry-over
     : calculateFWI(weather, prevFWI);
-  return { station, weather, fwi, forecastDay: day };
+  return { station, weather, fwi, forecastDay: day, chainDate: asOf, chainStation: p?.name ?? null };
 }
 
 /** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null.
@@ -2955,7 +2955,7 @@ function printProvincialBriefing(mode = 'provincial') {
 
   // FWI danger-rating legend rows (PROVINCE.dangerLegend: label, colour, FWI range, behaviour)
   const legendRows = PROVINCE.dangerLegend.map(([label, color, range, desc], i) =>
-    `<tr style="background:${i % 2 ? '#f7f8f9' : '#fff'}"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:3px;vertical-align:middle"></span><b>${label}</b></td><td style="padding:2px 4px;text-align:center">${range}</td><td style="padding:2px 5px;color:#555">${desc}</td></tr>`
+    `<tr style="background:${i % 2 ? '#f7f8f9' : '#fff'}"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${(DANGER_TOKENS[label] || {}).solid || color};border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>${label}</b></td><td style="padding:2px 4px;text-align:center">${range}</td><td style="padding:2px 5px;color:#555">${desc}</td></tr>`
   ).join('\n      ');
 
   const html = `<!DOCTYPE html>
@@ -2999,7 +2999,8 @@ function printProvincialBriefing(mode = 'provincial') {
   <div class="hdr-title">${briefingTitle}</div>
   <div class="hdr-meta">
     ${today} · 0600–1800 ${PROVINCE.tzLabel}<br>
-    Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP
+    Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP · FWI = daily value at noon LST<br>
+    <strong>Pyra (unofficial — verify with FBAN)</strong>
   </div>
 </div>
 
@@ -3008,8 +3009,11 @@ function printProvincialBriefing(mode = 'provincial') {
 <script>
 setTimeout(function() {
 (function() {
-  const FWI_COLORS = { 'Very Low':'#a7f3d0', Low:'#2d9e5f', Moderate:'#2980b9', High:'#f5c518', 'Very High':'#e67e22', Extreme:'#c0392b' };
-  const HFI_COLORS = { '1-Low':'#27ae60','2-Mod':'#2574a9','3-High':'#c9a800','4-VH':'#d4660a','5-Ext':'#c62828','6-Cat':'#7b0000','—':'#9e9e9e' };
+  // Same palettes as the live site: danger tokens (left half) and the HFI
+  // card palette (right half) — previously a third, different set.
+  const FWI_COLORS = ${JSON.stringify(Object.fromEntries(Object.entries(DANGER_TOKENS).map(([k, t]) => [k, t.solid])))};
+  const HFI_COLORS = { '1-Low':'#1a3a7a','2-Mod':'#5bb8d4','3-High':'#1e6b35','4-VH':'#f5c518','5-Ext':'#e07820','6-Cat':'#cc2200','—':'#9e9e9e' };
+  const HFI_TEXT   = { '1-Low':'#ffffff','2-Mod':'#0a2a50','3-High':'#ffffff','4-VH':'#2a1a00','5-Ext':'#2a1a00','6-Cat':'#ffffff','—':'#000000' };
   const PRINT_COLORS = ${JSON.stringify(PRINT_DANGER_COLORS)};
   const CLASSES = ${JSON.stringify(PROVINCE.dangerClasses)}; // province danger classes, low → high
   const allStations = ${allStationData};
@@ -3041,8 +3045,8 @@ setTimeout(function() {
         + '<line x1="' + r + '" y1="0" x2="' + r + '" y2="' + d + '" stroke="rgba(0,0,0,0.2)" stroke-width="0.8"/>'
         + '<text x="' + (r*0.52) + '" y="' + (r*0.72) + '" font-size="' + (r*0.48) + '" font-weight="700" fill="rgba(0,0,0,0.5)" text-anchor="middle">FWI</text>'
         + '<text x="' + (r*0.52) + '" y="' + (r*1.38) + '" font-size="' + (r*0.72) + '" font-weight="800" fill="rgba(0,0,0,0.85)" text-anchor="middle">' + label + '</text>'
-        + '<text x="' + (r*1.48) + '" y="' + (r*0.72) + '" font-size="' + (r*0.48) + '" font-weight="700" fill="rgba(0,0,0,0.5)" text-anchor="middle">HFI</text>'
-        + '<text x="' + (r*1.48) + '" y="' + (r*1.38) + '" font-size="' + (r*0.68) + '" font-weight="800" fill="rgba(0,0,0,0.85)" text-anchor="middle">' + hn + '</text>'
+        + '<text x="' + (r*1.48) + '" y="' + (r*0.72) + '" font-size="' + (r*0.48) + '" font-weight="700" fill="' + (HFI_TEXT[s.hfiClass] || '#000') + '" text-anchor="middle">HFI</text>'
+        + '<text x="' + (r*1.48) + '" y="' + (r*1.38) + '" font-size="' + (r*0.68) + '" font-weight="800" fill="' + (HFI_TEXT[s.hfiClass] || '#000') + '" text-anchor="middle">' + hn + '</text>'
         + '</svg>',
       iconSize: [d, d], iconAnchor: [r, r], className: ''
     });
@@ -3073,7 +3077,7 @@ setTimeout(function() {
       + '<td style="padding:2px 3px;text-align:center">'
       + '<span style="display:inline-flex;border-radius:3px;overflow:hidden;font-size:7.5pt;font-weight:800;line-height:1.35;box-shadow:0 1px 3px rgba(0,0,0,0.25)">'
       + '<span style="padding:0 4px;background:' + fc + ';color:rgba(0,0,0,0.78)">' + (s.fwi != null ? (+s.fwi).toFixed(1) : '—') + '</span>'
-      + '<span style="padding:0 4px;background:' + hc + ';color:rgba(0,0,0,0.78)">' + hn + '</span>'
+      + '<span style="padding:0 4px;background:' + hc + ';color:' + (HFI_TEXT[s.hfiClass] || '#000') + (/^[56]/.test(s.hfiClass) ? ';outline:1.5px solid #000;outline-offset:-1.5px' : '') + '">' + hn + '</span>'
       + '</span></td>'
       + '<td style="padding:2px 5px;text-align:center;background:' + dc.bg + ';color:' + dc.text + ';font-weight:700;font-size:7pt">' + s.danger + '</td>'
       + '</tr>';
@@ -3129,12 +3133,12 @@ setTimeout(function() {
       <th style="padding:2px 5px;text-align:left">Suppression</th>
     </tr></thead>
     <tbody>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27ae60;margin-right:3px;vertical-align:middle"></span><b>1-Low</b></td><td style="padding:2px 4px;text-align:center">&lt; 10</td><td style="padding:2px 4px;text-align:center">&lt; 0.2 m</td><td style="padding:2px 5px;color:#555">Hand tools</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2574a9;margin-right:3px;vertical-align:middle"></span><b>2-Mod</b></td><td style="padding:2px 4px;text-align:center">10–500</td><td style="padding:2px 4px;text-align:center">0.2–1.5 m</td><td style="padding:2px 5px;color:#555">Hand tools / ground tanker</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c9a800;margin-right:3px;vertical-align:middle"></span><b>3-High</b></td><td style="padding:2px 4px;text-align:center">500–2,000</td><td style="padding:2px 4px;text-align:center">1.5–2.5 m</td><td style="padding:2px 5px;color:#555">Pump/hose or air support</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4660a;margin-right:3px;vertical-align:middle"></span><b>4-VH</b></td><td style="padding:2px 4px;text-align:center">2,000–4,000</td><td style="padding:2px 4px;text-align:center">2.5–3.5 m</td><td style="padding:2px 5px;color:#555">Indirect — air on head still effective</td></tr>
-      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c62828;margin-right:3px;vertical-align:middle"></span><b>5-Ext</b></td><td style="padding:2px 4px;text-align:center">4,000–10,000</td><td style="padding:2px 4px;text-align:center">3.5–5.5 m</td><td style="padding:2px 5px;color:#555">Indirect — suppress flanks; coordinate air</td></tr>
-      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7b0000;margin-right:3px;vertical-align:middle"></span><b>6-Cat</b></td><td style="padding:2px 4px;text-align:center">&gt; 10,000</td><td style="padding:2px 4px;text-align:center">&gt; 5.5 m</td><td style="padding:2px 5px;color:#555">Air attack fails on head — evacuate</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a3a7a;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>1-Low</b></td><td style="padding:2px 4px;text-align:center">&lt; 10</td><td style="padding:2px 4px;text-align:center">&lt; 0.2 m</td><td style="padding:2px 5px;color:#555">Hand tools</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5bb8d4;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>2-Mod</b></td><td style="padding:2px 4px;text-align:center">10–500</td><td style="padding:2px 4px;text-align:center">0.2–1.5 m</td><td style="padding:2px 5px;color:#555">Hand tools / ground tanker</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1e6b35;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>3-High</b></td><td style="padding:2px 4px;text-align:center">500–2,000</td><td style="padding:2px 4px;text-align:center">1.5–2.5 m</td><td style="padding:2px 5px;color:#555">Pump/hose or air support</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5c518;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>4-VH</b></td><td style="padding:2px 4px;text-align:center">2,000–4,000</td><td style="padding:2px 4px;text-align:center">2.5–3.5 m</td><td style="padding:2px 5px;color:#555">Indirect — air on head still effective</td></tr>
+      <tr style="background:#fff"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e07820;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>5-Ext</b></td><td style="padding:2px 4px;text-align:center">4,000–10,000</td><td style="padding:2px 4px;text-align:center">3.5–5.5 m</td><td style="padding:2px 5px;color:#555">Indirect — suppress flanks; coordinate air</td></tr>
+      <tr style="background:#f7f8f9"><td style="padding:2px 5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#cc2200;border:1px solid #000;margin-right:3px;vertical-align:middle"></span><b>6-Cat</b></td><td style="padding:2px 4px;text-align:center">&gt; 10,000</td><td style="padding:2px 4px;text-align:center">&gt; 5.5 m</td><td style="padding:2px 5px;color:#555">Air attack fails on head — evacuate</td></tr>
     </tbody>
   </table>
 </div>

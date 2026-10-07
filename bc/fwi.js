@@ -844,10 +844,10 @@ const PROVINCE = {
   dangerClasses: ['Very Low', 'Low', 'Moderate', 'High', 'Extreme'], // classes low → high (briefing tallies)
   dangerLegend: [                                                  // provincial briefing legend: label, colour, FWI, behaviour
     ['Very Low', '#a7f3d0', '0–4',   'Fuels wet; spread very unlikely'],
-    ['Low',      '#2d9e5f', '5–11',  'Isolated fires; initial attack effective'],
-    ['Moderate', '#2980b9', '12–20', 'Fires start easily; control feasible'],
+    ['Low',      '#4ae176', '5–11',  'Isolated fires; initial attack effective'],
+    ['Moderate', '#7bd0ff', '12–20', 'Fires start easily; control feasible'],
     ['High',     '#f5c518', '21–33', 'Rapid spread; spotting; control difficult'],
-    ['Extreme',  '#c0392b', '≥ 34',  'Crown fire conditions; evacuate structure zone'],
+    ['Extreme',  '#ef4444', '≥ 34',  'Crown fire conditions; evacuate structure zone'],
   ],
   // ── Briefings ──
   briefingTitle: 'Pyra · BC Wildfire FWI — Provincial Briefing',

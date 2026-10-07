@@ -3,97 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- AB and BC landings behave the same: go straight to the station page (the
+       operational product), keeping any ?stn= deep link. The links below are the
+       no-JS / no-refresh fallback. -->
   <meta http-equiv="refresh" content="0; url=station_detail/code.html" />
-  <title>Alberta FWI</title>
+  <title>Pyra · Alberta FWI</title>
+  <script>location.replace('station_detail/code.html' + location.search + location.hash);</script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      min-height: 100vh;
-      padding: 2rem;
-    }
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-      color: #f0f6fc;
-    }
-    p.subtitle {
-      color: #8b949e;
-      margin-bottom: 2rem;
-      font-size: 0.95rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.25rem;
-    }
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      overflow: hidden;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.2s, transform 0.15s;
-      display: flex;
-      flex-direction: column;
-    }
-    .card:hover {
-      border-color: #58a6ff;
-      transform: translateY(-2px);
-    }
-    .card img {
-      width: 100%;
-      aspect-ratio: 9/16;
-      object-fit: cover;
-      object-position: top;
-      background: #21262d;
-    }
-    .card-body {
-      padding: 0.9rem 1rem;
-    }
-    .card-body h2 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #f0f6fc;
-      text-transform: capitalize;
-    }
-    .card-body span {
-      font-size: 0.78rem;
-      color: #8b949e;
-    }
-    footer {
-      margin-top: 3rem;
-      text-align: center;
-      font-size: 0.78rem;
-      color: #484f58;
-    }
+    body { margin: 0; min-height: 100vh; background: #0b1326; color: #dae2fd; font: 16px/1.5 Inter, system-ui, sans-serif; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+    main { max-width: 26rem; }
+    h1 { color: #7bd0ff; font-size: 1.4rem; margin: 0 0 .5rem; }
+    a { color: #7bd0ff; display: inline-flex; align-items: center; min-height: 44px; }
+    ul { padding-left: 1.2rem; }
   </style>
 </head>
 <body>
-  <h1>FWI Map Dashboard</h1>
-  <p class="subtitle">Fire Weather Index — UI screens</p>
-  <div class="grid">
-    <a class="card" href="station_detail/code.html">
-      <img src="station_detail/screen.png" alt="Station Detail" />
-      <div class="card-body"><h2>Station Detail</h2><span>Live FWI · 39 Alberta stations</span></div>
-    </a>
-    <a class="card" href="regional_summary/code.html">
-      <img src="regional_summary/screen.png" alt="Regional Summary" />
-      <div class="card-body"><h2>Regional Summary</h2><span>Live FWI · 6 Alberta zones</span></div>
-    </a>
-    <a class="card" href="forecast_trends/code.html">
-      <img src="forecast_trends/screen.png" alt="Forecast & Trends" />
-      <div class="card-body"><h2>Forecast &amp; Trends</h2><span>Live FWI · 7-day Van Wagner chain</span></div>
-    </a>
-    <a class="card" href="science_guide/code.html">
-      <img src="science_guide/screen.png" alt="Science Guide" />
-      <div class="card-body"><h2>Science Guide</h2><span>CFFDRS reference</span></div>
-    </a>
-  </div>
-  <footer>FWI Map Dashboard &mdash; exported from Google Stitch</footer>
+  <main id="main">
+    <h1>Pyra · Alberta FWI System</h1>
+    <p>Opening the station page… If nothing happens, choose a page:</p>
+    <ul>
+      <li><a href="station_detail/code.html">Station detail</a></li>
+      <li><a href="regional_summary/code.html">Station map</a></li>
+      <li><a href="forecast_trends/code.html">Forecast trends</a></li>
+      <li><a href="science_guide/code.html">Science guide</a></li>
+      <li><a href="briefing/">Fire safety briefing</a></li>
+      <li><a href="bc/">British Columbia</a></li>
+    </ul>
+  </main>
 </body>
 </html>
