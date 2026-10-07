@@ -34,13 +34,6 @@ function stationSector(lat, lng) { return PROVINCE.stationSector(lat, lng); }
 /** Province regional representative stations for trend/summary displays. */
 function getRegions() { return PROVINCE.regions; }
 
-/**
- * Regional spring DC floor by coordinate (Alberta only, March–June).
- * Based on Lawson & Armitage (2008) overwinter carryover expectations for each
- * climate zone, calibrated against CWFIS April 2026 well-initialized station data.
- * Stations reporting DC below 70% of their regional floor are considered
- * underinitialized (spring startup DC=15 default instead of overwinter equation).
- */
 // Absolute DC below which a spring reading can only be the CWFIS cold-start
 // artifact (MSC airport stations enter CWFIS with DC=15 — Van Wagner 1985
 // "no data" fallback — instead of the Lawson & Armitage 2008 overwinter value).
@@ -48,7 +41,7 @@ function getRegions() { return PROVINCE.regions; }
 // above this, so the floor never overwrites real moisture state.
 const DC_COLDSTART_CEILING = 60;
 
-// ═══ SCIENCE CORE BEGIN: FWI daily equations (shared AB/BC — keep identical; CI-checked) ═══
+// ═══ SCIENCE CORE BEGIN: FWI daily equations (single source for AB + BC — CI-checked) ═══
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
   if (rain > 0.5) {
@@ -241,6 +234,7 @@ const COMPONENT_THRESHOLDS = {
   isi:  [2,  5,  10,  20],
   bui:  [31, 40,  60,  90],
 };
+
 const RATING_LABELS = ['Low', 'Moderate', 'High', 'Very High', 'Extreme'];
 
 function componentRating(key, val) {
@@ -255,7 +249,7 @@ function componentRating(key, val) {
 // (github.com/cran/cffdrs) on 2026-06-10. Validated by tests/science.test.mjs
 // against an independent reference port — run `node --test tests/`.
 
-// ═══ SCIENCE CORE BEGIN: FBP parameters (shared AB/BC — keep identical; CI-checked) ═══
+// ═══ SCIENCE CORE BEGIN: FBP parameters (single source for AB + BC — CI-checked) ═══
 const FUEL_TYPES = {
   // a, b, c — ROS coefficients (ST-X-3 Table 6; M3/M4 per GLC-X-10 Eq. 30)
   // q, bui0 — buildup effect (ST-X-3 Table 7; C4 q=0.80, M1-M4 q=0.80/BUI0=50)
@@ -327,6 +321,7 @@ function calcSFC(fuelCode, ffmc, bui, pc = 50, gfl = 0.35) {
   }
   return Math.max(sfc, 0.000001);
 }
+
 // ═══ SCIENCE CORE END: FBP parameters ═══
 
 
@@ -353,19 +348,21 @@ function _isLeafOn(lat, ts = Date.now()) {
   const shift = 2 * ((lat ?? 53.5) - 53.5);
   return doy >= LEAF_ON_DOY_53_5 + shift && doy < LEAF_OFF_DOY_53_5 - shift;
 }
+
 /** Map an auto-assigned D1/D2 or M1/M2 code to the right leaf state for the date. */
 function _seasonalFuel(code, lat, ts) {
   if (code !== 'D1' && code !== 'D2' && code !== 'M1' && code !== 'M2') return code;
   const on = _isLeafOn(lat, ts);
   return code[0] === 'D' ? (on ? 'D2' : 'D1') : (on ? 'M2' : 'M1');
 }
+
 /** Pin-drop pair: complement of fuel A, never the same fuel once leaf state is applied. */
 function _seasonalPair(fuelA, lat) {
   const b = _seasonalFuel(FUEL_PAIR_COMPLEMENT[fuelA] || 'D1', lat);
   return b === fuelA ? 'C2' : b;
 }
 
-// ═══ SCIENCE CORE BEGIN: FMC + RSI helpers (shared AB/BC — keep identical; CI-checked) ═══
+// ═══ SCIENCE CORE BEGIN: FMC + RSI helpers (single source for AB + BC — CI-checked) ═══
 /**
  * Foliar moisture content — FCFDG 1992 Eqs. 1, 2, 5-8 (no-elevation form;
  * station elevations are not yet plumbed through).
@@ -397,15 +394,16 @@ function _buildupEffect(fuelCode, bui) {
   if (!p || bui <= 0 || p.bui0 <= 0) return 1;
   return Math.exp(50 * Math.log(p.q) * (1 / bui - 1 / p.bui0));
 }
+
 // ═══ SCIENCE CORE END: FMC + RSI helpers ═══
 
 
 let _stationLat = PROVINCE.defaultStation.lat; // module-level; set by initFWI for FMC calculation
 let _stationLng = PROVINCE.defaultStation.lng; // module-level; set by initFWI
-let _stationName = PROVINCE.defaultStation.name; // module-level; set by initFWI // module-level; set by initFWI
+let _stationName = PROVINCE.defaultStation.name; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
 
-// ═══ SCIENCE CORE BEGIN: calculateFBP (shared AB/BC — keep identical; CI-checked) ═══
+// ═══ SCIENCE CORE BEGIN: calculateFBP (single source for AB + BC — CI-checked) ═══
 /**
  * FBP head-fire behaviour from FWI codes + wind.
  * FCFDG 1992 (ST-X-3) with GLC-X-10 (2009) revisions, structured to match the
@@ -525,6 +523,7 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
 
   return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType };
 }
+
 // ═══ SCIENCE CORE END: calculateFBP ═══
 
 /** Render FBP results for both fuels into the station_detail dual-fuel sections. */
@@ -970,6 +969,7 @@ async function fetchSWOB(lat, lng) {
  */
 // IDW blend mode — persisted across page loads
 let _idwMode = false;
+try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 // Per-station holding-cache key. A single shared key was overwritten on every
 // call during the 199-station map loop, so the last station processed won wrote
@@ -1440,7 +1440,6 @@ function _normalizeFuelCode(raw) {
   }
   return null;
 }
-try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 /** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
 async function _queryWMSFuelType(lat, lng) {
@@ -1876,6 +1875,7 @@ function _updateAlarmStrip() {
     </a>`;
   }).join('');
 }
+
 // Previous-day CWFIS carry-over values loaded from GitHub-hosted JSON (see cwfis-daily.yml)
 let _cwfisPrev = {};
 // Cache populated by buildForecastTrends — used by exportForecastReport
@@ -2717,7 +2717,6 @@ function printProvincialBriefing(mode = 'provincial') {
     danger: r.danger,
     hfiClass: r.hfiClass || '—',
   })));
-
 
 
   // FWI danger-rating legend rows (PROVINCE.dangerLegend: label, colour, FWI range, behaviour)
@@ -3832,5 +3831,6 @@ window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegio
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };
-// Province-specific window.FWI members (e.g. BC_STATIONS, dangerRatingBC).
+
+// Province-specific window.FWI members (AB: ALBERTA_STATIONS; BC: BC_STATIONS, dangerRatingBC, …).
 if (typeof PROVINCE.exports === 'function') Object.assign(window.FWI, PROVINCE.exports());

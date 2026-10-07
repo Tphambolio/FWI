@@ -61,7 +61,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 | Sectors | 6 latitude bands: NE Boreal · NW Sector · Lesser Slave · Central-N · Central · Southern |
 | Default fuels | C2 (Boreal Spruce) · D1 (Leafless Aspen) |
 | Noon LST | 19:00 UTC (MST = UTC−7) |
-| Engine | `fwi.js` (root) |
+| Engine | `fwi.js` (AB province module) + `core/fwi-core.js` (shared core) |
 
 ### British Columbia
 
@@ -75,7 +75,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 | Default fuels | C3 (Mature Lodgepole Pine) · C7 (Ponderosa Pine/Douglas-fir) |
 | Noon LST | 20:00 UTC (PST = UTC−8) |
 | Peak burn | ~16:00 PDT |
-| Engine | `bc/fwi.js` (standalone, independent of root) |
+| Engine | `bc/fwi.js` (BC province module) + `core/fwi-core.js` (shared core) |
 
 The BC spring DC startup uses the Van Wagner (1985) overwinter carry-over equation:  
 `DC_spring = DC_fall × e^(−rw/a) + b`  
@@ -128,7 +128,10 @@ Full ST-X-3 parameter tables (a, b, c, q, BUI₀, CBH, CFL, SFC) with operationa
 
 ```
 FWI/
-  fwi.js                     Alberta engine (pure AB — zero BC code)
+  core/fwi-core.js           Shared engine core: science core (FWI/FBP), data tiers,
+                             DOM wiring, map, forecast + briefing builders, window.FWI
+  fwi.js                     Alberta province module (PROVINCE config, stations, fuels,
+                             AEF pmwx tier, DC floors / startup zones)
   fwi-theme.js               Shared Tailwind theme config
   index.html                 Alberta landing (redirects to station_detail)
   station_detail/code.html   AB station picker + FBP + D+1 + trend chart
@@ -136,7 +139,8 @@ FWI/
   forecast_trends/code.html  AB 14-day NAEFS matrix
   science_guide/code.html    AB science reference (full 16-fuel table)
   bc/
-    fwi.js                   BC standalone engine (_province hardcoded 'BC')
+    fwi.js                   BC province module (PROVINCE config, stations, fuels,
+                             BCWS noon-mirror tier, BC danger classes, DC floors)
     index.html               BC landing page
     station_detail/code.html BC station picker (C3/C7 defaults, BC danger scale)
     regional_summary/code.html  BC 6 Fire Centre overview
@@ -144,7 +148,14 @@ FWI/
     science_guide/code.html     BC science reference (BCWS, Van Wagner, full 16-fuel table)
 ```
 
-The BC engine (`bc/fwi.js`) is fully self-contained. `_province` is hardcoded to `'BC'`; the root `fwi.js` (Alberta) has no BC code paths. Neither app can affect the other.
+Each page loads its province module first, then the shared core, as classic scripts (no build step):
+
+```html
+<script src="../fwi.js?v=130"></script><script src="../core/fwi-core.js?v=130"></script>      <!-- AB pages -->
+<script src="../fwi.js?v=130"></script><script src="../../core/fwi-core.js?v=130"></script>   <!-- bc/ pages -->
+```
+
+The province module defines a single `PROVINCE` config object (time offsets, storage keys, station lists, danger classes, tier policy, …) plus genuinely province-specific code; the core reads it at load and call time and never branches on the province name. The science core (FWI equations, FBP parameters, FMC/RSI, `calculateFBP`) exists once, in `core/fwi-core.js` — CI checks that neither province module redefines it.
 
 ---
 

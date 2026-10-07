@@ -7,8 +7,6 @@
  * at the top level here — the core is not loaded yet.
  */
 
-
-
 // P1: Per-station spring startup DC by Alberta fuel/climate zone.
 // Boreal North (high precip, good snowpack) → low carry-over.
 // Southern AB (dry winters, low snowpack) → high carry-over.
@@ -31,6 +29,14 @@ const STATION_STARTUP_DC = {
   'Calgary': 375, 'Lethbridge': 425, 'Medicine Hat': 450, 'Brooks': 425,
   'Cardston': 400, 'Claresholm': 375, 'Drumheller': 425, 'Pincher Creek': 375,
 };
+
+/**
+ * Regional spring DC floor by coordinate (Alberta only, March–June).
+ * Based on Lawson & Armitage (2008) overwinter carryover expectations for each
+ * climate zone, calibrated against CWFIS April 2026 well-initialized station data.
+ * Stations reporting DC below 70% of their regional floor are considered
+ * underinitialized (spring startup DC=15 default instead of overwinter equation).
+ */
 function getRegionalDCFloor(lat, lon) {
   // Month in Mountain Standard Time, NOT the viewer's browser clock — a viewer
   // in another timezone must not flip the correction a day early/late.
@@ -162,6 +168,7 @@ async function fetchAEFStations() {
     return _aefCache ?? [];
   }
 }
+
 /**
  * Station-level dominant FBP fuel type derived from CWFIS WMS
  * cffdrs_fbp_fuel_types (NRCan 30m national grid) — full 199-station table
@@ -378,7 +385,6 @@ function _defaultFuelFor(lat) {
   return lat > 54.5 ? 'C2' : lat > 52 ? 'D1' : 'O1a';
 }
 
-
 /**
  * One province-wide CWFIS query — every station in a single request, instead
  * of one bbox query per station. Returns the raw feature array (cached for the
@@ -395,9 +401,6 @@ async function fetchAllCWFIS(latMin = 48.8, latMax = 60.5, lonMin = -120.5, lonM
   _allCWFISFeatures = data.features ?? [];
   return _allCWFISFeatures;
 }
-
-
-
 
 /**
  * AB tier chain (PROVINCE.fetchPrimary — core fetchWeatherPrimary delegates here).
@@ -458,12 +461,6 @@ async function _fetchWeatherPrimaryAB(lat, lng) {
 
   return fetchWeather(lat, lng);
 }
-
-
-
-
-
-
 
 // Alberta CWFIS fire weather stations — full list from CWFIS WFS (193 stations)
 const ALBERTA_STATIONS = [
@@ -684,11 +681,6 @@ const ALBERTA_STATIONS = [
 
 // ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
 
-
-
-
-
-
 const REGIONS = [
   { name: 'Fort McMurray',  sector: 'Northeast Boreal',  lat: 56.650, lng: -111.217 },
   { name: 'Peace River',    sector: 'Northwest Sector',  lat: 56.233, lng: -117.283 },
@@ -698,37 +690,15 @@ const REGIONS = [
   { name: 'Lethbridge',     sector: 'Southern Alberta',  lat: 49.700, lng: -112.833 },
 ];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ─── Export ──────────────────────────────────────────────────────────────────
 
-
 // ─── ICS Print Briefings ─────────────────────────────────────────────────────
-
-
-
 
 // ─── P4: SCRIBE 48-hr FWI validation ────────────────────────────────────────
 // NRCan SCRIBE gives pre-computed FWI for today / +24h / +48h at met stations.
 // Sentinel value -101 means no data for that station (off-season or not computed).
 
-
-
 // ─── P3: Active fires + satellite hotspot layers ─────────────────────────────
-
-
-
 
 // NAEFS stations available in CWFIS firewx_naefs WFS layer (Alberta only)
 const NAEFS_AB_STATIONS = [

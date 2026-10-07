@@ -7,10 +7,7 @@
  * core functions at the top level here — the core is not loaded yet.
  */
 
-
-
-// Standalone BC app — province is hardcoded. No localStorage, no province switching.
-const _province = 'BC';
+// Standalone BC app — province is fixed (window.FWI keeps the historical API).
 function setProvince(p) {} // no-op in standalone BC build
 function getProvince() { return 'BC'; }
 
@@ -105,6 +102,7 @@ const BC_STATION_STARTUP_DC = {
   'Rory Creek': 150, 'Darkwoods': 175, 'Cariboo Creek': 150,
   'Bigattini': 175, 'Sparwood': 175, 'Little Chopaka': 150, 'Creston': 175,
 };
+
 /**
  * Correct a raw CWFIS DC that is the spring cold-start artifact (BC version).
  * Mirrors the AB applyDCFloor logic with BC-appropriate regional floors.
@@ -125,6 +123,7 @@ function applyDCFloor(rawDC, lat, lon) {
   if (rawDC < floor) return { dc: floor, corrected: true };
   return { dc: rawDC, corrected: false };
 }
+
 // BC display classes — 5 classes, no "Very High", adds "Very Low".
 // CAVEAT: this is a raw-FWI proxy of the BCWS station danger class. BCWS
 // actually derives danger class from BUI×ISI danger-region tables (Lawson &
@@ -135,7 +134,9 @@ function dangerRatingBC(fwi) {
   if (fwi < 21) return 'Moderate';
   if (fwi < 34) return 'High';
   return 'Extreme';
-}/**
+}
+
+/**
  * Station-level dominant FBP fuel type derived from CWFIS WMS
  * cffdrs_fbp_fuel_types (NRCan 30m national grid), sampled Apr 2026.
  * Method: modal fuel type within 5 km radius of each CWFIS station coordinate.
@@ -184,6 +185,7 @@ const STATION_FUEL_TYPES = {
   'Wetaskiwin':     'O1a',  // WMS: agricultural ✓
   'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
 };
+
 // ─── BCWS Datamart fetch (BC Tier 0) ─────────────────────────────────────────
 /**
  * Fetch today's FWI data from BC Wildfire Service Weather Datamart.
@@ -418,10 +420,6 @@ async function fetchBCWSForCoords(lat, lng) {
   };
 }
 
-
-
-
-
 /**
  * BC tier chain (PROVINCE.fetchPrimary — core fetchWeatherPrimary delegates here).
  * Tier 0+1: BCWS noon mirror and CWFIS fetched in parallel. Only a chain dated
@@ -461,59 +459,6 @@ async function _fetchWeatherPrimaryBC(lat, lng) {
   } catch (e) { /* fall through */ }
   return fetchWeather(lat, lng);
 }
-
-
-
-
-
-
-
-// Alberta CWFIS fire weather stations (name, lat, lng)
-const ALBERTA_STATIONS = [
-  // Northern
-  { name: 'High Level',        lat: 58.517, lng: -117.133 },
-  { name: 'Fort Chipewyan',    lat: 58.767, lng: -111.117 },
-  { name: 'Peace River',       lat: 56.233, lng: -117.283 },
-  { name: 'Grande Prairie',    lat: 55.167, lng: -118.883 },
-  { name: 'Valleyview',        lat: 55.083, lng: -117.283 },
-  { name: 'High Prairie',      lat: 55.433, lng: -116.483 },
-  { name: 'Wabasca',           lat: 55.967, lng: -113.833 },
-  { name: 'Slave Lake',        lat: 55.283, lng: -114.767 },
-  { name: 'Fort McMurray',     lat: 56.650, lng: -111.217 },
-  { name: 'Fort Vermilion',    lat: 58.383, lng: -116.017 },
-  { name: 'Manning',           lat: 56.917, lng: -117.617 },
-  // Central-North
-  { name: 'Lac La Biche',      lat: 54.767, lng: -111.967 },
-  { name: 'Athabasca',         lat: 54.717, lng: -113.283 },
-  { name: 'Bonnyville',        lat: 54.267, lng: -110.733 },
-  { name: 'Cold Lake',         lat: 54.417, lng: -110.283 },
-  { name: 'Fox Creek',         lat: 54.400, lng: -116.800 },
-  { name: 'Whitecourt',        lat: 54.150, lng: -115.683 },
-  { name: 'Edson',             lat: 53.583, lng: -116.433 },
-  { name: 'Hinton',            lat: 53.400, lng: -117.567 },
-  { name: 'Jasper',            lat: 52.867, lng: -118.083 },
-  { name: 'Grande Cache',      lat: 53.883, lng: -118.433 }, // shifted east toward Hinton/SWOB corridor
-  // Central
-  { name: 'Edmonton',          lat: 53.534, lng: -113.490 }, // City centre — equidistant from YEG/Blatchford/City AWS SWOB
-  { name: 'Drayton Valley',    lat: 53.217, lng: -114.983 },
-  { name: 'Rocky Mtn House',   lat: 52.367, lng: -114.917 },
-  { name: 'Vegreville',        lat: 53.500, lng: -112.050 },
-  { name: 'Camrose',           lat: 53.017, lng: -112.833 },
-  { name: 'Lloydminster',      lat: 53.283, lng: -110.000 },
-  { name: 'Wetaskiwin',        lat: 52.967, lng: -113.367 },
-  { name: 'Stettler',          lat: 52.317, lng: -112.717 },
-  // South
-  { name: 'Red Deer',          lat: 52.267, lng: -113.800 },
-  { name: 'Drumheller',        lat: 51.467, lng: -112.717 },
-  { name: 'Calgary',           lat: 51.050, lng: -114.067 },
-  { name: 'Banff',             lat: 51.183, lng: -115.567 },
-  { name: 'Claresholm',        lat: 50.017, lng: -113.583 },
-  { name: 'Brooks',            lat: 50.567, lng: -111.900 },
-  { name: 'Medicine Hat',      lat: 50.033, lng: -110.683 },
-  { name: 'Pincher Creek',     lat: 49.483, lng: -113.950 },
-  { name: 'Lethbridge',        lat: 49.700, lng: -112.833 },
-  { name: 'Cardston',          lat: 49.200, lng: -113.300 },
-].sort((a, b) => a.name.localeCompare(b.name));
 
 // BC Wildfire Service fire weather stations — actual BCWS network.
 // Source: openmaps.gov.bc.ca PROT_WEATHER_STATIONS_SP WFS (260 stations);
@@ -772,10 +717,7 @@ const BC_STATIONS = [
   { code: 5858, name: 'Creston',           lat: 49.0650, lng: -116.5500 },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-
 // ─── Pin-Drop Fuel Lookup ─────────────────────────────────────────────────────
-
-
 
 /** Map (lat, lng) to BC Fire Centre name. */
 function _stationFireCentre(lat, lng) {
@@ -789,6 +731,7 @@ function _stationFireCentre(lat, lng) {
   if (lat >= 51.5) return 'Cariboo';                         // Central plateau
   return 'Kamloops';                                         // Southern interior default
 }
+
 const BC_REGIONS = [
   { name: 'Terrace',        sector: 'Northwest Fire Centre',      lat: 54.47, lng: -128.58 },
   { name: 'Prince George',  sector: 'Prince George Fire Centre',  lat: 53.88, lng: -122.68 },
@@ -797,9 +740,6 @@ const BC_REGIONS = [
   { name: 'Cranbrook',      sector: 'Southeast Fire Centre',      lat: 49.60, lng: -115.78 },
   { name: 'Campbell River', sector: 'Coastal Fire Centre',        lat: 50.02, lng: -125.27 },
 ];
-
-
-
 
 // BC NAEFS stations — codes discovered from CWFIS firewx_naefs WFS (province_state='BC')
 const NAEFS_BC_STATIONS = [
@@ -840,31 +780,15 @@ const NAEFS_BC_STATIONS = [
   { code: 10269, name: 'Whistler Mountain',  lat: 50.07, lng: -122.93 },
 ];
 
-
-
-
-
-
-
-
 // ─── Export ──────────────────────────────────────────────────────────────────
 
-
 // ─── ICS Print Briefings ─────────────────────────────────────────────────────
-
-
-
 
 // ─── P4: SCRIBE 48-hr FWI validation ────────────────────────────────────────
 // NRCan SCRIBE gives pre-computed FWI for today / +24h / +48h at met stations.
 // Sentinel value -101 means no data for that station (off-season or not computed).
 
-
-
 // ─── P3: Active fires + satellite hotspot layers ─────────────────────────────
-
-
-
 
 /** "YYYY-MM-DD" in Pacific Daylight Time (UTC−7) — BC name for the core's _localDateStr. */
 function _pdtDateStr(ts) { return _localDateStr(ts); }
