@@ -790,7 +790,6 @@ function _haversineKm(lat1, lon1, lat2, lon2) {
 let _bcwsCache = null;
 let _bcwsCacheDate = '';
 let _bcwsFetchPromise = null; // deduplicates concurrent requests
-let _bcwsCORSFailed = false;  // true if CORS blocked — skip all future attempts this session
 
 // BCWS station coordinates — from openmaps.gov.bc.ca PROT_WEATHER_STATIONS_SP WFS.
 // Used to match a selected station lat/lng to the nearest BCWS STATION_CODE.
@@ -940,118 +939,46 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
 }
 
 async function fetchBCWSDatamart() {
-  // Fast exits — avoid repeated fetch attempts
-  if (_bcwsCORSFailed) return null;
-  const today = new Date();
-  const yyyy  = today.getFullYear();
-  const mm    = String(today.getMonth() + 1).padStart(2, '0');
-  const dd    = String(today.getDate()).padStart(2, '0');
-  const dateStr = `${yyyy}-${mm}-${dd}`;
+  // The Datamart CSV (www.for.gov.bc.ca) sends no CORS header, so browsers can't
+  // read it. The daily Action mirrors today's noon-PST rows — the only rows that
+  // carry the daily FWI codes — into data/bcws_noon.json. Only a mirror dated
+  // today (PST) is used; earlier days are covered by the cwfis_prev carry-over.
+  const today = _lstDateStr();
+  if (_bcwsCache && _bcwsCacheDate === today) return _bcwsCache;
+  if (_bcwsFetchPromise) return _bcwsFetchPromise; // dedupe concurrent callers
 
-  if (_bcwsCache && _bcwsCacheDate === dateStr) return _bcwsCache;
-
-  // Deduplicate concurrent requests — all callers await the same in-flight promise
-  if (_bcwsFetchPromise) return _bcwsFetchPromise;
-
-  const url = `https://www.for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/${yyyy}/${dateStr}.csv`;
   _bcwsFetchPromise = (async () => {
-  try {
-    const res = await fetchWithTimeout(url, {}, 8000);
-    if (!res.ok) return null;
-    const text = await res.text();
-
-    const lines   = text.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
-    const col = name => headers.indexOf(name);
-
-    const idx = {
-      code:  col('STATION_CODE'),
-      name:  col('STATION_NAME'),
-      dt:    col('DATE_TIME'),
-      ffmc:  col('FINE_FUEL_MOISTURE_CODE'),
-      dmc:   col('DUFF_MOISTURE_CODE'),
-      dc:    col('DROUGHT_CODE'),
-      bui:   col('BUILDUP_INDEX'),
-      isi:   col('INITIAL_SPREAD_INDEX'),
-      fwi:   col('FIRE_WEATHER_INDEX'),
-      temp:  col('HOURLY_TEMPERATURE'),
-      rh:    col('HOURLY_RELATIVE_HUMIDITY'),
-      wind:  col('HOURLY_WIND_SPEED'),
-      precip: col('HOURLY_PRECIPITATION'),
-    };
-
-    // Noon LST = 12 in BCWS local time (BC keeps PST = UTC-8 for fire weather year-round)
-    // Compute the PST hour with modulo — the old `getUTCHours() - 8` went negative
-    // between 16:00 and 23:59 PST (UTC day rolls over) and `>= 20` missed those hours.
-    const pstHour    = (new Date().getUTCHours() + 16) % 24;
-    const noonPassed = pstHour >= 12;
-    const targetHour = noonPassed ? 12 : pstHour;
-
-    // Build map: code → best (noon-preferred) record
-    const latestByCode = {};
-    for (let i = 1; i < lines.length; i++) {
-      const p = lines[i].split(',');
-      if (p.length < 10) continue;
-      const dtStr = p[idx.dt]?.trim();
-      if (!dtStr || dtStr.length < 10) continue;
-      const hour = parseInt(dtStr.slice(-2), 10);
-      if (isNaN(hour)) continue;
-
-      // Keep noon row if available, else keep latest prior hour
-      const code = parseInt(p[idx.code]);
-      if (isNaN(code)) continue;
-      const existing = latestByCode[code];
-      const isNoon   = hour === 12;
-      const isBetter = !existing ||
-        (isNoon && existing._hour !== 12) ||
-        (!isNoon && hour > (existing._hour ?? -1) && existing._hour !== 12);
-      if (!isBetter) continue;
-
-      const ffmc = parseFloat(p[idx.ffmc]);
-      const dmc  = parseFloat(p[idx.dmc]);
-      const dc   = parseFloat(p[idx.dc]);
-      if (isNaN(ffmc) || isNaN(dmc) || isNaN(dc)) continue;
-
-      latestByCode[code] = {
-        _hour:  hour,
-        ffmc,
-        dmc,
-        dc,
-        bui:    parseFloat(p[idx.bui])  || null,
-        isi:    parseFloat(p[idx.isi])  || null,
-        fwi:    parseFloat(p[idx.fwi])  || null,
-        temp:   parseFloat(p[idx.temp]) || null,
-        rh:     parseFloat(p[idx.rh])   || null,
-        wind:   parseFloat(p[idx.wind]) || null,
-        rain:   parseFloat(p[idx.precip]) || 0,
-        stationName: p[idx.name]?.trim().replace(/"/g, ''),
-        month:  today.getMonth() + 1,
-        fwiFromCWFIS: true,
-        wdir:   null,
-      };
-    }
-
-    // Post-process: compute missing ISI/BUI/FWI where possible
-    for (const [code, rec] of Object.entries(latestByCode)) {
-      if (rec.fwi == null || isNaN(rec.fwi)) {
-        if (rec.isi == null) rec.isi = _isi(rec.ffmc, rec.wind ?? 0);
-        if (rec.bui == null) rec.bui = _bui(rec.dmc, rec.dc);
-        rec.fwi = _fwi(rec.isi, rec.bui);
+    try {
+      const res = await fetchWithTimeout(
+        'https://raw.githubusercontent.com/Tphambolio/FWI/main/data/bcws_noon.json',
+        { cache: 'no-cache' }, 10000
+      );
+      const data = await res.json();
+      if (data?.date !== today || !data.stations) return null;
+      const byCode = {};
+      for (const [code, r] of Object.entries(data.stations)) {
+        if (r.ffmc == null || r.dmc == null || r.dc == null) continue;
+        const isi = r.isi ?? _isi(r.ffmc, r.wind ?? 0);
+        const bui = r.bui ?? _bui(r.dmc, r.dc);
+        byCode[code] = {
+          _hour: 12,
+          ffmc: r.ffmc, dmc: r.dmc, dc: r.dc,
+          isi, bui, fwi: r.fwi ?? _fwi(isi, bui),
+          temp: r.temp, rh: r.rh, wind: r.wind, wdir: r.wdir ?? null,
+          rain: r.rain ?? 0,
+          stationName: r.name,
+          month: Number(today.slice(5, 7)),
+          fwiFromCWFIS: true,
+        };
       }
+      _bcwsCache     = byCode;
+      _bcwsCacheDate = today;
+      return byCode;
+    } catch (_) {
+      return null;
+    } finally {
+      _bcwsFetchPromise = null;
     }
-
-    _bcwsCache     = latestByCode;
-    _bcwsCacheDate = dateStr;
-    return latestByCode;
-  } catch (e) {
-    // Mark CORS failure so subsequent calls skip immediately without fetching
-    if (e instanceof TypeError && e.message?.toLowerCase().includes('failed to fetch')) {
-      _bcwsCORSFailed = true;
-    }
-    return null;
-  } finally {
-    _bcwsFetchPromise = null; // release after completion so next-day calls work
-  }
   })();
   return _bcwsFetchPromise;
 }
@@ -1351,20 +1278,24 @@ function _holdKey(lat, lng) {
 }
 
 async function fetchWeatherPrimary(lat, lng) {
-  // Tier 0+1 (BC): race BCWS Datamart and CWFIS simultaneously — use whichever returns first.
-  // Sequential cascade was causing 20s+ waits when BCWS was slow/down.
-  // IDW mode skips BCWS (needs multi-station blend) and uses CWFIS IDW-only.
-  // SWOB runs in parallel for cross-validation: if the primary source disagrees by > 8°C
-  // with a close MSC station, the CWFIS/BCWS FWI chain is kept but SWOB weather is used.
+  // Tier 0+1 (BC): BCWS noon mirror and CWFIS fetched in parallel. Only a chain
+  // dated today (PST) counts — before noon CWFIS still serves yesterday's chain,
+  // which initFWI steps forward via the dated carry-over instead. If both have
+  // today's chain, the nearer station wins (deterministic; the old Promise.any
+  // took whichever responded first). SWOB runs alongside for cross-validation:
+  // if the chain station disagrees by > 8 °C with a close MSC station, the
+  // chain is kept but SWOB weather is used.
   if (!_idwMode) {
     try {
-      const [primary, swob] = await Promise.all([
-        Promise.any([
-          fetchBCWSForCoords(lat, lng).then(r => r ?? Promise.reject('no data')),
-          fetchCWFIS(lat, lng, false).then(r => r ?? Promise.reject('no data')),
-        ]).catch(() => null),
+      const today = _lstDateStr();
+      const [bcws, cwfis, swob] = await Promise.all([
+        fetchBCWSForCoords(lat, lng).catch(() => null),
+        fetchCWFIS(lat, lng, false).catch(() => null),
         fetchSWOB(lat, lng).catch(() => null),
       ]);
+      const isToday = r => r?.fwiFromCWFIS && r.repDate && String(r.repDate).slice(0, 10) === today;
+      const primary = [bcws, cwfis].filter(isToday)
+        .sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999))[0] || null;
       if (primary) {
         if (swob?.temp != null && primary.temp != null &&
             (swob.distKm ?? 999) <= 25 &&
@@ -1374,6 +1305,7 @@ async function fetchWeatherPrimary(lat, lng) {
             ffmc: primary.ffmc,  dmc: primary.dmc,  dc:  primary.dc,
             isi:  primary.isi,   bui: primary.bui,  fwi: primary.fwi,
             fwiFromCWFIS: primary.fwiFromCWFIS,
+            chainSource:  primary.source,   // provenance of the FWI chain (BCWS or CWFIS)
             stationName:  primary.stationName,
             distKm:       primary.distKm,
             repDate:      primary.repDate,
@@ -1382,6 +1314,8 @@ async function fetchWeatherPrimary(lat, lng) {
         return primary;
       }
       if (swob) return swob;
+      // CWFIS weather-only obs from today (no codes) are still real observations
+      if (cwfis && !cwfis.fwiFromCWFIS && cwfis.repDate && String(cwfis.repDate).slice(0, 10) === today) return cwfis;
     } catch (e) { /* fall through */ }
   } else {
     try {
@@ -1529,7 +1463,7 @@ function wireDOM(r, lat, lng) {
   const _src = r.weather.source || '';
   const srcLabel = (r.weather.stationName && _src.startsWith('CWFIS'))
     ? `CWFIS · ${r.weather.stationName}${_distStr}`
-    : (_src ? `${_src}${r.weather.stationName ? _distStr : ''}` : 'Open-Meteo NWP');
+    : (_src ? `${_src}${r.weather.stationName && !/\bkm\b/.test(_src) ? _distStr : ''}` : 'Open-Meteo NWP');
 
   set('source-station', srcLabel);
 
@@ -1558,7 +1492,9 @@ function wireDOM(r, lat, lng) {
     } else if (r.weather.fwiFromCWFIS) {
       const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
       const dst = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
-      dcBadge.textContent = 'CWFIS' + stn + dst;
+      // BCWS chains also set fwiFromCWFIS (= "agency chain") — label by actual source
+      const chainSrc = r.weather.chainSource || r.weather.source || '';
+      dcBadge.textContent = (chainSrc.startsWith('BCWS') ? 'BCWS' : 'CWFIS') + stn + dst;
       dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
     } else if (r._cachedFWI) {
       const co = r._cachedFWI;

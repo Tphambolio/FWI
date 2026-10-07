@@ -1566,7 +1566,7 @@ function wireDOM(r, lat, lng) {
   const _src = r.weather.source || '';
   const srcLabel = (r.weather.stationName && _src.startsWith('CWFIS'))
     ? `CWFIS · ${r.weather.stationName}${_distStr}`
-    : (_src ? `${_src}${r.weather.stationName ? _distStr : ''}` : 'Open-Meteo NWP');
+    : (_src ? `${_src}${r.weather.stationName && !/\bkm\b/.test(_src) ? _distStr : ''}` : 'Open-Meteo NWP');
   set('source-station', srcLabel);
 
   // IDW toggle button state sync

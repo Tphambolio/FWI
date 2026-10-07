@@ -107,11 +107,59 @@ jobs:
             rm -f "$tmp"
           fi
 
+      - name: Mirror BCWS Datamart noon rows (CORS proxy)
+        run: |
+          # www.for.gov.bc.ca sends no CORS header, so the BC engine's BCWS tier
+          # could never load in a browser. The hourly CSV is 0.3-0.7 MB; only the
+          # hour-12 (noon PST) rows carry the daily FWI codes, so mirror just those
+          # (~270 stations, ~40 KB). Skips cleanly if noon isn't posted yet.
+          node - <<'EOF'
+          const fs = require('fs');
+          const pst = new Date(Date.now() - 8 * 3600000).toISOString().slice(0, 10);
+          const url = `https://www.for.gov.bc.ca/ftp/HPR/external/!publish/BCWS_DATA_MART/${pst.slice(0, 4)}/${pst}.csv`;
+          // Minimal RFC-4180 line splitter — fields are quoted ("11","SUMMIT",...)
+          const split = line => {
+            const out = []; let cur = '', q = false;
+            for (const ch of line) {
+              if (ch === '"') q = !q;
+              else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+              else cur += ch;
+            }
+            out.push(cur); return out.map(v => v.trim());
+          };
+          (async () => {
+            const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
+            if (!res.ok) { console.log(`::warning::BCWS ${res.status} for ${pst} — keeping previous mirror`); return; }
+            const lines = (await res.text()).replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean);
+            const h = split(lines[0]); const c = n => h.indexOf(n);
+            const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+            const stations = {};
+            for (const line of lines.slice(1)) {
+              const f = split(line);
+              if (!f[c('DATE_TIME')]?.endsWith('12')) continue;          // noon PST row
+              const dc = num(f[c('DROUGHT_CODE')]);
+              if (dc == null) continue;                                    // daily codes only on noon rows
+              stations[f[c('STATION_CODE')]] = {
+                name: f[c('STATION_NAME')],
+                temp: num(f[c('HOURLY_TEMPERATURE')]), rh: num(f[c('HOURLY_RELATIVE_HUMIDITY')]),
+                wind: num(f[c('HOURLY_WIND_SPEED')]), wdir: num(f[c('HOURLY_WIND_DIRECTION')]),
+                rain: num(f[c('PRECIPITATION')]),
+                ffmc: num(f[c('FINE_FUEL_MOISTURE_CODE')]), dmc: num(f[c('DUFF_MOISTURE_CODE')]), dc,
+                isi: num(f[c('INITIAL_SPREAD_INDEX')]), bui: num(f[c('BUILDUP_INDEX')]), fwi: num(f[c('FIRE_WEATHER_INDEX')]),
+              };
+            }
+            const n = Object.keys(stations).length;
+            if (n < 50) { console.log(`::warning::BCWS ${pst}: only ${n} noon rows — keeping previous mirror`); return; }
+            fs.writeFileSync('data/bcws_noon.json', JSON.stringify({ date: pst, generated: new Date().toISOString(), stations }) + '\n');
+            console.log(`bcws_noon.json: ${n} stations for ${pst}`);
+          })().catch(e => console.log(`::warning::BCWS mirror failed: ${e.message}`));
+          EOF
+
       - name: Commit updated cache
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/cwfis_prev.json data/aef_pmwx.csv
+          git add data/cwfis_prev.json data/aef_pmwx.csv data/bcws_noon.json 2>/dev/null || git add data/cwfis_prev.json data/aef_pmwx.csv
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
