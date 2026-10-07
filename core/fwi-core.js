@@ -516,6 +516,52 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
 }
 // ═══ SCIENCE CORE END: calculateFBP ═══
 
+/** Render FBP results for both fuels into the station_detail dual-fuel sections. */
+function wireFBP(weather, fwi) {
+  const fuelA = document.getElementById('fwi-fuel-picker')?.value   || 'C2';
+  const fuelB = document.getElementById('fwi-fuel-picker-2')?.value || 'D1';
+  localStorage.setItem(PROVINCE.storageKeys.fuelA, fuelA);
+  localStorage.setItem(PROVINCE.storageKeys.fuelB, fuelB);
+  const curing = _savedCuring();
+  const ps     = _savedPS();
+
+  const populateSection = (suffix, result) => {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    if (!result) { set('fwi-fbp-hfi-label' + suffix, 'N/A'); return; }
+    set('fwi-fbp-ros'   + suffix, result.ros.toFixed(1) + ' m/min');
+    set('fwi-fbp-hfi'   + suffix, Math.round(result.hfi).toLocaleString() + ' kW/m');
+    set('fwi-fbp-flame' + suffix, result.flameLength.toFixed(1) + ' m');
+    set('fwi-fbp-type'  + suffix, result.fireType);
+    set('fwi-fbp-cfb'   + suffix, (result.cfb * 100).toFixed(0) + '%');
+    const cl    = hfiClassInfo(result.hfi);
+    const numEl = document.getElementById('fwi-fbp-hfi-rating' + suffix);
+    const lblEl = document.getElementById('fwi-fbp-hfi-label'  + suffix);
+    const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
+    const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
+    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
+    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
+    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+    if (dscEl) { dscEl.textContent = cl.desc; }
+    const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
+    if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
+  };
+
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl('fwi-fbp-fuel-name-a', FUEL_TYPES[fuelA]?.name || fuelA);
+  setEl('fwi-fbp-fuel-name-b', FUEL_TYPES[fuelB]?.name || fuelB);
+  // Guard: if the FWI chain has no valid state (CWFIS down, season not started),
+  // ffmc is null. calculateFBP would silently coerce null→0 giving FFMC=0 → ISI≈0
+  // → artificially low/misleading fire behaviour. Show N/A instead.
+  const fbpA = fwi.ffmc != null
+    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    : null;
+  const fbpB = fwi.ffmc != null
+    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    : null;
+  populateSection('-a', fbpA);
+  populateSection('-b', fbpB);
+}
+
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
 let _lastWeather = null;
@@ -1038,6 +1084,171 @@ function calculateFWI(w, prev = STARTUP) {
   return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
 }
 
+/** Fill all [data-fwi="key"] elements with the computed values. */
+function wireDOM(r, lat, lng) {
+  const set = (key, val) =>
+    document.querySelectorAll(`[data-fwi="${key}"]`).forEach(el => el.textContent = val);
+
+  const pct = (key, val, max) =>
+    document.querySelectorAll(`[data-fwi-bar="${key}"]`).forEach(el => {
+      el.style.width = Math.min(100, (val / max) * 100).toFixed(1) + '%';
+    });
+
+  // Weather
+  set('temp',  fmt(r.weather.temp) + '°C');
+  set('rh',    fmt(r.weather.rh, 0) + '%');
+  set('wind',  fmt(r.weather.wind, 0) + ' km/h');
+  set('wdir',  r.weather.wdir != null ? `${compassDir(r.weather.wdir)} (${Math.round(r.weather.wdir)}°)` : '—');
+  set('rain',  fmt(r.weather.rain) + ' mm');
+
+  // FWI components — null means season-start / no data yet
+  if (r.ffmc != null) {
+    set('ffmc', r.ffmc.toFixed(1));
+    set('dmc',  r.dmc.toFixed(1));
+    set('dc',   r.dc.toFixed(1));
+    set('isi',  r.isi.toFixed(1));
+    set('bui',  r.bui.toFixed(1));
+    set('fwi',  r.fwi.toFixed(1));
+    pct('ffmc', r.ffmc, 101);
+    pct('dmc',  r.dmc,  200);
+    pct('dc',   r.dc,   800);
+    pct('isi',  r.isi,  25);
+    pct('bui',  r.bui,  200);
+    pct('fwi',  r.fwi,  50);
+  } else {
+    ['ffmc','dmc','dc','isi','bui','fwi'].forEach(k => set(k, '—'));
+  }
+
+  // Danger labels
+  const dangerText = r.danger || 'Pending';
+  set('danger',       dangerText.toUpperCase() + (r.danger ? ' RISK' : ''));
+  set('danger-label', r.danger ? r.danger + ' Risk Level' : 'Season not started');
+
+  // Hero card colour driven by individual fuel section gradients; outer card stays neutral
+
+  // Rating badges — per-component thresholds
+  document.querySelectorAll('[data-fwi-rating]').forEach(el => {
+    const key = el.dataset.fwiRating;
+    const val = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc, isi: r.isi, bui: r.bui, fwi: r.fwi }[key];
+    el.textContent = val != null ? componentRating(key, val).toUpperCase() : '—';
+  });
+
+  // Timestamp — with PROVINCE.updatedLabel 'obs' (AB), show the actual CWFIS
+  // observation date when available; avoids "Live" labelling yesterday's noon
+  // data as current when the page is loaded before noon today. 'live' (BC)
+  // always shows "Live · <time>".
+  if (PROVINCE.updatedLabel !== 'obs') {
+    set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  } else if (r.weather.repDate) {
+    // CWFIS rep_date is a date stamp (T12:00Z), not an obs time — compare the
+    // calendar date against today's LST date, not the viewer's local clock.
+    const obsDate = String(r.weather.repDate).slice(0, 10);
+    const isToday = obsDate === _lstDateStr();
+    const label = new Date(obsDate + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    set('updated', isToday ? 'Noon LST · today' : `Noon LST · ${label} (not today)`);
+  } else if (r.weather.source?.includes('peak burn forecast')) {
+    set('updated', `Peak Burn Forecast · 16:00 ${PROVINCE.tzLabel}`);
+  } else {
+    set('updated', `Live · ${new Date().toLocaleTimeString()}`);
+  }
+  const _distStr = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
+  // Only CWFIS-sourced weather gets the CWFIS prefix — SWOB results also carry
+  // a stationName, and were mislabelled "CWFIS · <airport>".
+  const _src = r.weather.source || '';
+  const srcLabel = (r.weather.stationName && _src.startsWith('CWFIS'))
+    ? `CWFIS · ${r.weather.stationName}${_distStr}`
+    : (_src ? `${_src}${r.weather.stationName && !/\bkm\b/.test(_src) ? _distStr : ''}` : 'Open-Meteo NWP');
+  set('source-station', srcLabel);
+
+  // IDW toggle button state sync
+  const idwBtn = document.getElementById('fwi-idw-toggle');
+  if (idwBtn) {
+    idwBtn.classList.toggle('bg-primary/20', _idwMode);
+    idwBtn.classList.toggle('text-primary', _idwMode);
+    idwBtn.classList.toggle('border-primary/40', _idwMode);
+    idwBtn.classList.toggle('text-slate-400', !_idwMode);
+    idwBtn.classList.toggle('border-slate-600', !_idwMode);
+    const lbl = idwBtn.querySelector('#fwi-idw-label');
+    if (lbl) lbl.textContent = _idwMode
+      ? `IDW · ${r.weather.idwCount ?? '?'} stn`
+      : 'Single Stn';
+  }
+
+  // DC source indicator
+  const dcBadge = document.getElementById('fwi-dc-source');
+  if (dcBadge) {
+    if (r.weather.idwMode) {
+      const n = r.weather.idwCount ?? '?';
+      const avg = r.weather.idwAvgDist != null ? ` · avg ${r.weather.idwAvgDist} km` : '';
+      dcBadge.textContent = `IDW blend · ${n} stations${avg}`;
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
+    } else if (r.weather.fwiFromCWFIS) {
+      const stn = r.weather.stationName ? ` · ${r.weather.stationName}` : '';
+      const dst = r.weather.distKm != null ? ` · ${r.weather.distKm} km` : '';
+      // BCWS chains also set fwiFromCWFIS (= "agency chain") — label by actual source
+      const chainSrc = r.weather.chainSource || r.weather.source || '';
+      dcBadge.textContent = (chainSrc.startsWith('BCWS') ? 'BCWS' : 'CWFIS') + stn + dst;
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary';
+    } else if (r._cachedFWI) {
+      const co = r._cachedFWI;
+      const stn = co.src === 'holding' ? (co.stationName || '') : _stationName;
+      const dstStr = co.distKm != null ? ` · ${co.distKm} km` : '';
+      const dateStr = co.obsDate
+        ? new Date(co.obsDate + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+        : '';
+      dcBadge.textContent = co.final
+        ? `CWFIS (holding)${stn ? ' · ' + stn : ''}${dstStr} · ${dateStr}`
+        : `Calc from CWFIS ${dateStr} chain${stn ? ' · ' + stn : ''}${dstStr}`;
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400';
+    } else {
+      dcBadge.textContent = 'Season start pending · CWFIS inactive';
+      dcBadge.className = 'mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-500/15 text-slate-400';
+    }
+  }
+
+  // DC divergence warning — shown when nearby stations (≤75 km) differ by ≥75 DC units
+  const divEl = document.getElementById('fwi-dc-divergence');
+  const div = r.weather?.dcDivergence;
+  if (divEl) {
+    if (div) {
+      divEl.textContent = `⚠ DC varies across nearby stations (${div.min}–${div.max}). Local precip event likely — consider selecting a different station.`;
+      divEl.className = 'mt-2 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2 leading-snug';
+    } else {
+      divEl.textContent = '';
+      divEl.className = 'hidden';
+    }
+  }
+
+  // Cache for FBP re-runs on fuel picker change
+  _lastWeather = r.weather;
+  _lastFWI     = r;
+
+  // Always compute Van Wagner cold-start for compare panel (even when CWFIS is primary)
+  const _sel = document.getElementById('fwi-station-picker');
+  const _startupDC = getStartupDC(
+    _sel ? (_sel.options[_sel.selectedIndex]?.textContent?.trim() || '') : ''
+  );
+  _lastVWCalc = calculateFWI({ ...r.weather, fwiFromCWFIS: false }, { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: _startupDC });
+  const cmpSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  cmpSet('fwi-cmp-ffmc', _lastVWCalc.ffmc.toFixed(1));
+  cmpSet('fwi-cmp-dmc',  _lastVWCalc.dmc.toFixed(1));
+  cmpSet('fwi-cmp-dc',   _lastVWCalc.dc.toFixed(1));
+  cmpSet('fwi-cmp-isi',  _lastVWCalc.isi.toFixed(1));
+  cmpSet('fwi-cmp-bui',  _lastVWCalc.bui.toFixed(1));
+  cmpSet('fwi-cmp-fwi',  _lastVWCalc.fwi.toFixed(1));
+  cmpSet('fwi-compare-note', `startup DC ${_startupDC} · ${r.weather.fwiFromCWFIS ? 'CWFIS chain is primary above' : 'same source as above'}`);
+
+  // FBP fire behaviour (station_detail only — skip if no FWI data yet)
+  if (r.ffmc != null) wireFBP(r.weather, r);
+
+  // D+1 tomorrow card (station_detail only — silently no-ops on other pages)
+  if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
+
+  // P4: SCRIBE 48-hr validation — async, non-blocking
+  const _g = _initGeneration;
+  fetchSCRIBE(lat, lng).then(sc => { if (_g === _initGeneration) renderSCRIBE(sc); });
+}
+
 /**
  * Main entry point. Call from any FWI screen.
  *
@@ -1199,6 +1410,25 @@ async function fetchStationDataForecast(station) {
     : calculateFWI(weather, prevFWI);
   return { station, weather, fwi, forecastDay: day };
 }
+
+/** Normalise raw WMS fuel type string to a FUEL_TYPES key, or null.
+ *  Handles "O-1a Matted Grass" → "O1a", "C-2" → "C2", etc. */
+function _normalizeFuelCode(raw) {
+  if (!raw) return null;
+  const token = raw.trim().split(/\s/)[0]; // take code only, strip description
+  const norm = t => t.toUpperCase().replace(/-/g, '').replace(/\/\d+$/, '');
+  const s = norm(token);
+  const match = Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s);
+  if (match) return match;
+  // Handle WMS slash-notation (D-1/D-2 → try the part before the first /).
+  // PROVINCE.fuelSlashNotation: AB only — BC returns null for slash codes.
+  const slash = token.indexOf('/');
+  if (PROVINCE.fuelSlashNotation && slash > 0) {
+    const s2 = norm(token.slice(0, slash));
+    return Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s2) || null;
+  }
+  return null;
+}
 try { _idwMode = localStorage.getItem('fwi_idw_mode') === '1'; } catch (_) {}
 
 /** Query NRCan CWFIS WMS for FBP fuel type at a lat/lng point. */
@@ -1260,6 +1490,243 @@ function _isInEdmontonBounds(lat, lng) {
 // Rough Edmonton bounds for pre-load trigger (before meta is fetched)
 const _EDM_ROUGH = { south: 53.33, north: 53.72, west: -113.72, east: -113.27 };
 
+/**
+ * Replace the station-detail OSM iframe with an interactive Leaflet map.
+ * User clicks anywhere → queries WMS fuel type → sets both fuel pickers
+ * → switches to nearest CWFIS weather station.
+ * Requires Leaflet 1.9.x to be loaded in the page <head>.
+ */
+function _initPinDropMap() {
+  const container = document.getElementById('fwi-map-frame');
+  if (!container || typeof L === 'undefined' || container._leaflet_id) return;
+
+  const map = L.map(container, { zoomControl: true, attributionControl: false });
+  container._leafletMap = map;
+
+  // Esri World Imagery — satellite, no API key, no CSP issues
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18,
+  }).addTo(map);
+  // Esri reference overlay — place names, roads, boundaries on top of satellite
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, opacity: 0.85,
+  }).addTo(map);
+
+  // Station marker dots — store refs for selection highlighting
+  const _pinMarkers = {};
+  getStationList().forEach(s => {
+    const key = `${s.lat},${s.lng}`;
+    _pinMarkers[key] = L.circleMarker([s.lat, s.lng], {
+      radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8,
+    }).addTo(map).bindTooltip(s.name, { permanent: false, direction: 'top' });
+  });
+  container._pinMarkers = _pinMarkers;
+
+  // Initial view — current station picker value
+  const sel = document.getElementById('fwi-station-picker');
+  if (sel?.value) {
+    const [lat, lng] = sel.value.split(',').map(Number);
+    map.setView([lat, lng], 8);
+    if (_pinMarkers[sel.value]) {
+      _pinMarkers[sel.value].setStyle({ radius: 8, fillColor: '#e05030', color: '#fff', weight: 2, fillOpacity: 1 });
+    }
+  } else {
+    map.setView(PROVINCE.pinMapCenter, 6);
+  }
+
+  // Pre-load Edmonton raster in background (PROVINCE.edmontonFuelRaster — AB only;
+  // BC has no Edmonton LiDAR data)
+  if (PROVINCE.edmontonFuelRaster) _loadEdmontonFuelRaster().catch(() => {});
+
+  let pinMarker = null;
+  const statusEl  = document.getElementById('fwi-map-status');
+  const coordsEl  = document.getElementById('fwi-map-coords');
+
+  map.on('click', async e => {
+    const { lat, lng } = e.latlng;
+
+    // Drop / move pin
+    if (pinMarker) pinMarker.setLatLng([lat, lng]);
+    else           pinMarker = L.marker([lat, lng]).addTo(map);
+
+    // Update coords overlay
+    if (coordsEl) coordsEl.textContent =
+      `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}, ` +
+      `${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
+
+    if (statusEl) statusEl.textContent = 'Querying fuel type…';
+
+    // Edmonton LiDAR raster first; fall back to NRCan WMS
+    let fuelA = null;
+    const inEdm = lat >= _EDM_ROUGH.south && lat <= _EDM_ROUGH.north &&
+                  lng >= _EDM_ROUGH.west  && lng <= _EDM_ROUGH.east;
+    if (inEdm) {
+      try { fuelA = await _queryEdmontonFuelType(lat, lng); } catch(e) {}
+    }
+    if (!fuelA) {
+      try { fuelA = await _queryWMSFuelType(lat, lng); } catch (err) {
+        console.warn('[PinDrop] WMS query failed:', err);
+      }
+    }
+
+    if (fuelA) {
+      fuelA = _seasonalFuel(fuelA, lat);           // raster D2/M2 are structural classes
+      const fuelB = _seasonalPair(fuelA, lat);
+      ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = fuelA;
+      });
+      ['fwi-fuel-picker-2', 'fwi-fuel-picker-mobile-2'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = fuelB;
+      });
+      localStorage.setItem(PROVINCE.storageKeys.fuelA, fuelA);
+      localStorage.setItem(PROVINCE.storageKeys.fuelB, fuelB);
+      if (statusEl) statusEl.textContent =
+        `${FUEL_TYPES[fuelA]?.name || fuelA}  ·  ${FUEL_TYPES[fuelB]?.name || fuelB}`;
+
+      // Sync conditional rows
+      if (typeof _syncCuringVisibility === 'function') _syncCuringVisibility();
+      if (typeof _syncPSVisibility     === 'function') _syncPSVisibility();
+      refreshFBP();
+    } else {
+      if (statusEl) statusEl.textContent = 'Fuel type unavailable — using nearest station default';
+    }
+
+    // Switch weather to nearest CWFIS station
+    if (_selectNearestStation) _selectNearestStation(lat, lng);
+  });
+}
+
+/** Placeholder option before geolocation: first PROVINCE.pickerDefaultNames match, else the first option. */
+function _defaultPickerOption(sel) {
+  const opts = Array.from(sel.options);
+  return opts.find(o => PROVINCE.pickerDefaultNames.includes(o.textContent)) || sel.options[0];
+}
+
+/** Populate a <select id="fwi-station-picker"> and wire change events. */
+function buildStationPicker() {
+  const sel = document.getElementById('fwi-station-picker');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+  getStationList().forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = `${s.lat},${s.lng}`;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+
+  function loadStation(save = true) {
+    const [lat, lng] = sel.value.split(',').map(Number);
+    const name = sel.options[sel.selectedIndex].textContent;
+    if (save) {
+      localStorage.setItem(PROVINCE.storageKeys.station, sel.value);
+      history.replaceState(null, '', `${location.pathname}?stn=${encodeURIComponent(name)}`);
+    }
+    const frame = document.getElementById('fwi-map-frame');
+    if (frame?._leafletMap) {
+      frame._leafletMap.setView([lat, lng], 8);
+      if (frame._pinMarkers) {
+        const selKey = sel.value;
+        Object.entries(frame._pinMarkers).forEach(([k, m]) => {
+          m.setStyle(k === selKey
+            ? { radius: 8, fillColor: '#e05030', color: '#fff', weight: 2, fillOpacity: 1 }
+            : { radius: 4, fillColor: '#7bd0ff', color: '#fff', weight: 1, fillOpacity: 0.8 }
+          );
+        });
+      }
+    }
+    const coords = document.getElementById('fwi-map-coords');
+    if (coords) coords.textContent = `${Math.abs(lat).toFixed(4)}° ${lat>=0?'N':'S'}, ${Math.abs(lng).toFixed(4)}° ${lng>=0?'E':'W'}`;
+    const stLabel = document.getElementById('fwi-map-station');
+    if (stLabel) stLabel.textContent = name;
+    // Auto-set fuel type from station lookup; sync both pickers.
+    // PROVINCE.autoFuelOnSelect — AB only; BC respects the user's selection.
+    if (PROVINCE.autoFuelOnSelect) {
+      const derivedFuel = _seasonalFuel(PROVINCE.stationFuel(name, lat), lat);
+      ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
+        const fp = document.getElementById(id);
+        if (fp) fp.value = derivedFuel;
+      });
+      // Seasonal adjustment can make fuel B equal fuel A (e.g. both D1 after leaf
+      // drop) — give B the ecological complement instead of a duplicate panel.
+      const fpB = document.getElementById('fwi-fuel-picker-2');
+      if (fpB && fpB.value === derivedFuel) {
+        const alt = _seasonalPair(derivedFuel, lat);
+        ['fwi-fuel-picker-2', 'fwi-fuel-picker-mobile-2'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = alt;
+        });
+      }
+    }
+    initFWI(lat, lng, name);
+    buildHourlyChart(lat, lng, name);
+  }
+
+  function selectByValue(val) {
+    if (val && Array.from(sel.options).find(o => o.value === val)) {
+      sel.value = val;
+      return true;
+    }
+    return false;
+  }
+
+  function selectNearest(userLat, userLng) {
+    let nearest = null, minDist = Infinity;
+    getStationList().forEach(s => {
+      const d = _haversineKm(userLat, userLng, s.lat, s.lng);
+      if (d < minDist) { minDist = d; nearest = s; }
+    });
+    if (nearest) {
+      const val = `${nearest.lat},${nearest.lng}`;
+      sel.value = val;
+      localStorage.setItem(PROVINCE.storageKeys.station, val);
+      loadStation(false);
+    }
+  }
+  _selectNearestStation = selectNearest; // expose for pin-drop map
+
+  sel.addEventListener('change', () => loadStation(true));
+
+  // URL deep link: ?stn=NAME pre-selects a station for sharing / bookmarking.
+  // Case-insensitive; strips non-alphanumeric so "Fort+McMurray" == "fortmcmurray".
+  // Priority: exact → prefix → substring. Does NOT overwrite localStorage.
+  const _urlStn = new URLSearchParams(location.search).get('stn');
+  if (_urlStn) {
+    const q = _urlStn.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const stationList = getStationList();
+    const norm = s => s.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const stnMatch =
+      stationList.find(s => norm(s) === q) ||
+      stationList.find(s => norm(s).startsWith(q)) ||
+      stationList.find(s => norm(s).includes(q));
+    if (stnMatch && selectByValue(`${stnMatch.lat},${stnMatch.lng}`)) {
+      loadStation(false); // don't overwrite saved station
+      return;
+    }
+  }
+
+  const saved = localStorage.getItem(PROVINCE.storageKeys.station);
+  if (selectByValue(saved)) {
+    // Returning user — load saved station immediately, no geo prompt
+    loadStation(false);
+  } else if (navigator.geolocation) {
+    // First visit — show the province default station as placeholder, then auto-detect
+    const dflt = _defaultPickerOption(sel);
+    if (dflt) sel.value = dflt.value;
+    loadStation(false);
+    navigator.geolocation.getCurrentPosition(
+      pos => selectNearest(pos.coords.latitude, pos.coords.longitude),
+      ()  => loadStation(true),  // denied — save current default
+      { timeout: 8000, maximumAge: 300000 }
+    );
+  } else {
+    const dflt = _defaultPickerOption(sel);
+    if (dflt) sel.value = dflt.value;
+    loadStation(true);
+  }
+
+  _initPinDropMap();
+}
+
 // ─── Regional Summary ────────────────────────────────────────────────────────
 
 /** Map lat to one of 5 Alberta sectors (North→South). */
@@ -1282,6 +1749,87 @@ function _hfiClass(hfi) {
   return '6-Cat';
 }
 
+
+/** Update a single skeleton row in fwi-station-tbody with live data. */
+function _updateStationTableRow(entry) {
+  const id = 'srow-' + entry.name.replace(/\s+/g, '-');
+  const tr = document.getElementById(id);
+  if (!tr) return;
+  const r = entry.result;
+  const fbp = entry.fbp;
+  const srcBadge = entry.srcBadge || 'NWP';
+  const srcStyle = {
+    'BCWS':  'background:#0c304040;color:#7bd0ff;border:1px solid #1e5a7a',
+    'CWFIS': 'background:#14532d40;color:#4ade80;border:1px solid #166534',
+    'CWFIS D-1': 'background:#42200640;color:#fbbf24;border:1px dashed #b45309',
+    'SWOB':  'background:#17255440;color:#93c5fd;border:1px solid #1e40af',
+    'NWP':   'background:#451a0340;color:#fcd34d;border:1px solid #92400e',
+    'Error': 'background:#1c191740;color:#78716c;border:1px solid #44403c',
+  }[srcBadge] || 'background:#1c191740;color:#78716c;border:1px solid #44403c';
+  const dangerColor = {
+    'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#f5c518',
+    'Very Low': '#a7f3d0', 'Very High': '#f97316', 'Extreme': '#ef4444',
+  }[r.danger] || '#7bd0ff';
+  const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
+  const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
+  tr.innerHTML =
+    `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${entry.navLat ?? entry.lat},${entry.navLng ?? entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
+    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(entry.navLat ?? entry.lat, entry.navLng ?? entry.lng)}</td>` +
+    `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
+    `<td class="py-2 pr-2 text-right text-xs">${r.weather?.wind != null ? Math.round(r.weather.wind) : '—'}</td>` +
+    `<td class="py-2 pr-2 text-right text-xs font-bold text-[#dae2fd]">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>` +
+    `<td class="py-2 pr-2 text-xs font-bold" style="color:${dangerColor}">${r.danger}</td>` +
+    `<td class="py-2 pr-3 text-right text-[10px] text-slate-400">${hfiLabel}<br><span class="text-[9px] text-slate-600">${hfiNum!=='—' ? hfiNum+' kW/m' : ''}</span></td>`;
+
+  // Update header stats from running cache
+  const valid = _mapStationCache.filter(e => e.result?.fwi != null);
+  const extCnt = valid.filter(e => e.result.danger === 'Extreme').length;
+  const avgRH  = valid.length ? valid.reduce((s, e) => s + (e.result.weather?.rh ?? 0), 0) / valid.length : null;
+  const el1 = document.getElementById('fwi-extreme-count');
+  const el2 = document.getElementById('fwi-avg-rh');
+  if (el1) el1.textContent = extCnt > 0 ? `${extCnt} Extreme` : extCnt === 0 ? '0' : '—';
+  if (el2 && avgRH != null) el2.textContent = `${avgRH.toFixed(0)}%`;
+  _updateAlarmStrip();
+}
+
+
+/** Sort station table by column key (asc/desc). */
+function _sortStationTable(col, asc) {
+  const tbody = document.getElementById('fwi-station-tbody');
+  if (!tbody) return;
+  const sectorOrder = PROVINCE.sectorOrder;
+  // Union of both provinces' classes, ascending (each province uses a subset).
+  const dangerOrder = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'];
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a, b) => {
+    const na = a.id.replace('srow-', '').replace(/-/g, ' ');
+    const nb = b.id.replace('srow-', '').replace(/-/g, ' ');
+    const ea = _mapStationCache.find(e => e.name === na);
+    const eb = _mapStationCache.find(e => e.name === nb);
+    if (!ea && !eb) return 0;
+    if (!ea) return 1;
+    if (!eb) return -1;
+    let va, vb;
+    switch (col) {
+      case 'sector':  va = sectorOrder.indexOf(stationSector(ea.lat, ea.lng)); vb = sectorOrder.indexOf(stationSector(eb.lat, eb.lng)); break;
+      case 'name':    va = ea.name; vb = eb.name; break;
+      case 'temp':    va = ea.result?.weather?.temp ?? -999; vb = eb.result?.weather?.temp ?? -999; break;
+      case 'rh':      va = ea.result?.weather?.rh ?? -1;   vb = eb.result?.weather?.rh ?? -1; break;
+      case 'wind':    va = ea.result?.weather?.wind ?? -1; vb = eb.result?.weather?.wind ?? -1; break;
+      case 'fwi':     va = ea.result?.fwi ?? -1;           vb = eb.result?.fwi ?? -1; break;
+      case 'danger':  va = dangerOrder.indexOf(ea.result?.danger); vb = dangerOrder.indexOf(eb.result?.danger); break;
+      case 'hfi':     va = ea.fbp?.hfi ?? -1;              vb = eb.fbp?.hfi ?? -1; break;
+      default:        return 0;
+    }
+    if (va < vb) return asc ? -1 : 1;
+    if (va > vb) return asc ? 1 : -1;
+    return 0;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
 // Cache populated by buildRegionalSummary — used by exportRegionalDataset
 let _regionalCache = [];
 // Cache populated by buildStationMap — stores all 39 station FWI results
@@ -1291,6 +1839,31 @@ const FWI_ALARM_KEY = 'fwi-alarm-threshold';
 
 function _getAlarmThreshold() {
   return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5');
+}
+
+function _updateAlarmStrip() {
+  const strip = document.getElementById('fwi-alarm-strip');
+  if (!strip) return;
+  const threshold = _getAlarmThreshold();
+  const alarms = _mapStationCache
+    .filter(e => e.result?.fwi != null && e.result.fwi >= threshold)
+    .sort((a, b) => b.result.fwi - a.result.fwi);
+  const thEl = document.getElementById('fwi-alarm-threshold-label');
+  if (thEl) thEl.textContent = `FWI ≥ ${threshold}`;
+  if (!alarms.length) {
+    strip.innerHTML = `<span class="text-[10px] text-slate-600 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
+    return;
+  }
+  const DANGER_COLORS = { Low:'#2d9e58', Moderate:'#7bd0ff', High:'#f5c518', 'Very High':'#f97316', Extreme:'#ef4444' };
+  strip.innerHTML = alarms.map(e => {
+    const c = DANGER_COLORS[e.result.danger] || '#7bd0ff';
+    const nav = `${e.navLat ?? e.lat},${e.navLng ?? e.lng}`;
+    return `<a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${nav}')"
+      class="inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors hover:brightness-110"
+      style="background:${c}22;border-color:${c}55;color:${c}">
+      <span>${e.name}</span><span class="font-headline">${e.result.fwi.toFixed(1)}</span>
+    </a>`;
+  }).join('');
 }
 // Previous-day CWFIS carry-over values loaded from GitHub-hosted JSON (see cwfis-daily.yml)
 let _cwfisPrev = {};
@@ -1450,6 +2023,64 @@ function regionCard(name, sector, r) {
 </div>`;
 }
 
+async function buildRegionalSummary() {
+  const list = document.getElementById('fwi-region-list');
+  if (!list) return;
+
+  const sectorOrder = PROVINCE.sectorOrder;
+  const sorted = [...getStationList()].sort((a, b) => {
+    const sa = sectorOrder.indexOf(stationSector(a.lat, a.lng));
+    const sb = sectorOrder.indexOf(stationSector(b.lat, b.lng));
+    if (sa !== sb) return sa - sb;
+    return a.name.localeCompare(b.name);
+  });
+
+  let _sortCol = 'sector', _sortAsc = true;
+
+  list.innerHTML = `
+    <div class="overflow-x-auto rounded-xl border border-outline-variant/10">
+      <table id="fwi-station-table" class="w-full text-sm">
+        <thead class="bg-[#131b2e] sticky top-0">
+          <tr>
+            <th class="text-left py-2.5 pl-3 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="name">Station ↕</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="sector">Sector</th>
+            <th class="py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 whitespace-nowrap">Src</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="temp">Temp</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="rh">RH</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="wind">Wind</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="fwi">FWI</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="danger">Danger</th>
+            <th class="text-right py-2.5 pr-3 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="hfi">HFI Cls</th>
+          </tr>
+        </thead>
+        <tbody id="fwi-station-tbody" class="divide-y divide-[#1e2740]">
+          ${sorted.map(s =>
+            `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
+              <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
+              <td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(s.lat, s.lng)}</td>
+              <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
+            </tr>`
+          ).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  // Wire sortable column headers
+  list.querySelectorAll('#fwi-station-table th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (_sortCol === col) _sortAsc = !_sortAsc;
+      else { _sortCol = col; _sortAsc = col !== 'fwi' && col !== 'hfi'; }
+      // Update header indicators
+      list.querySelectorAll('#fwi-station-table th[data-sort]').forEach(h => {
+        const base = h.textContent.replace(/ [↑↓]$/, '');
+        h.textContent = h.dataset.sort === _sortCol ? `${base} ${_sortAsc ? '↑' : '↓'}` : base;
+      });
+      _sortStationTable(_sortCol, _sortAsc);
+    });
+  });
+}
+
 // ─── Forecast & Trends ───────────────────────────────────────────────────────
 
 
@@ -1579,6 +2210,69 @@ async function fetchHourly(lat, lng) {
   }));
 }
 
+/**
+ * Render the 24-hour FWI trend chart into <div id="fwi-chart-bars">.
+ * Hourly FFMC (Van Wagner 1977) chained through the past 24 h of weather,
+ * with DMC/DC held at today's daily values (standard hourly-FWI practice);
+ * hourly ISI/FWI follow from hourly FFMC + hourly wind.
+ * The previous implementation chained the *daily* equations hour-by-hour —
+ * each bar absorbed a full day's drying, which was dimensionally wrong.
+ */
+async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
+  const container = document.getElementById('fwi-chart-bars');
+  if (!container) return;
+
+  let hours;
+  try {
+    hours = await fetchHourly(lat, lng);
+  } catch (e) {
+    console.warn('[FWI Chart]', e);
+    if (container) container.innerHTML =
+      '<div class="text-xs text-slate-500 p-3">Hourly trend unavailable — weather fetch failed.</div>';
+    return;
+  }
+  if (!hours.length) return;
+
+  // Seed from today's daily codes when available; hFFMC equilibrates within
+  // a few hours so a 24-h-old seed converges quickly.
+  const seedFFMC = _lastFWI?.ffmc ?? STARTUP.ffmc;
+  const dmcToday = _lastFWI?.dmc  ?? STARTUP.dmc;
+  const dcToday  = _lastFWI?.dc   ?? getStartupDC(stationName);
+  const buiToday = _bui(dmcToday, dcToday);
+
+  let f = seedFFMC;
+  const results = hours.map(w => {
+    f = _hffmc(w.temp, w.rh, w.wind, w.rain, f);
+    const isi = _isi(f, w.wind);
+    const fwi = _fwi(isi, buiToday);
+    return { fwi, danger: dangerRatingProv(fwi), time: w.time };
+  });
+
+  const maxFWI = Math.max(...results.map(r => r.fwi), 1);
+  const now = new Date();
+
+  container.innerHTML = results.map(r => {
+    const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
+    const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
+    const isPast = r.time <= now;
+    const bg = isPast ? c.bar : c.bar + '/30';
+    const timeLabel = r.time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `<div class="flex-1 ${bg} rounded-t-sm transition-colors cursor-help group relative" style="height:${h}%">` +
+      `<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-surface-container-highest px-2 py-1 rounded text-[10px] whitespace-nowrap z-10">${timeLabel} — ${fmt(r.fwi)}</div>` +
+      `</div>`;
+  }).join('');
+
+  // Render x-axis labels from actual data timestamps (5 evenly spaced)
+  const timesEl = document.getElementById('fwi-chart-times');
+  if (timesEl && results.length) {
+    const n = results.length - 1;
+    const indices = [0, Math.round(n * 0.25), Math.round(n * 0.5), Math.round(n * 0.75), n];
+    timesEl.innerHTML = indices.map(i =>
+      `<span>${results[i].time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`
+    ).join('');
+  }
+}
+
 /** Chain Van Wagner through multiple days, returning FWI result per day.
  *  startState: { ffmc, dmc, dc } — defaults to STARTUP if not provided (e.g. no obs yet).
  *  Pass _lastFWI when available so the chain continues from today's actual values. */
@@ -1675,6 +2369,21 @@ function forecastSummaryText(days, results, stationName = 'Edmonton', source = '
     `Source: ${source} — Van Wagner CFFDRS carry-forward.`;
 }
 
+function exportRegionalDataset() {
+  if (!_regionalCache.length) { alert('Data still loading — try again in a moment.'); return; }
+  const timestamp = new Date().toISOString();
+  const rows = [['Timestamp', 'Station', 'Sector', 'Lat', 'Lng', 'Temp_C', 'RH_pct', 'Wind_kmh', 'Rain_mm', 'FFMC', 'DMC', 'DC', 'ISI', 'BUI', 'FWI', 'Danger']];
+  for (const { name, sector, lat, lng, result: r } of _regionalCache) {
+    rows.push([
+      timestamp, name, sector, lat, lng,
+      r.weather.temp, r.weather.rh, r.weather.wind, r.weather.rain,
+      r.ffmc.toFixed(1), r.dmc.toFixed(1), r.dc.toFixed(1),
+      r.isi.toFixed(1), r.bui.toFixed(1), r.fwi.toFixed(1), r.danger,
+    ]);
+  }
+  _triggerCSVDownload(rows, `fwi-${PROVINCE.csvSlug}-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
 function exportForecastReport() {
   const { days, results } = _forecastCache;
   if (!results.length) { alert('Forecast still loading — try again in a moment.'); return; }
@@ -1744,6 +2453,32 @@ async function fetchSCRIBE(lat, lng) {
     console.warn('[FWI SCRIBE]', e);
     return null;
   }
+}
+
+function renderSCRIBE(scribe) {
+  const el = document.getElementById('fwi-scribe-section');
+  if (!el) return;
+  if (!scribe || !scribe.records.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const nameEl = document.getElementById('fwi-scribe-station');
+  if (nameEl) nameEl.textContent = `${scribe.name} · ${scribe.distKm} km`;
+  const grid = document.getElementById('fwi-scribe-grid');
+  if (!grid) return;
+  grid.innerHTML = scribe.records.map(r => {
+    const dt = new Date(r.rep_date);
+    const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+    const danger = dangerRatingProv(r.fwi);
+    const c = DANGER_COLORS[danger] || DANGER_COLORS['Moderate'];
+    return `<div class="bg-surface-container-lowest rounded-lg p-4">
+      <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">${label}</p>
+      <p class="font-headline text-2xl font-bold text-white">${r.fwi.toFixed(1)}</p>
+      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${danger}</span>
+      <div class="grid grid-cols-2 gap-x-3 mt-2 text-xs text-on-surface-variant">
+        <span>FFMC ${r.ffmc?.toFixed(1) ?? '—'}</span><span>DC ${r.dc?.toFixed(0) ?? '—'}</span>
+        <span>ISI ${r.isi?.toFixed(1) ?? '—'}</span><span>BUI ${r.bui?.toFixed(0) ?? '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function fetchActiveFires() {
