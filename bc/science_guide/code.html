@@ -509,7 +509,7 @@
 <div class="flex items-start gap-4 mb-6">
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">calculate</span>
 <div>
-<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Calculation Pipeline — bc/fwi.js</h4>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Calculation Pipeline — core/fwi-core.js + bc/fwi.js</h4>
 <p class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Standalone BC engine · Province hardcoded · No shared state with AB app</p>
 </div>
 </div>
@@ -525,7 +525,7 @@
 </div>
 <div class="border-l-2 border-outline pl-5">
 <div class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-1">Standalone Architecture</div>
-<p class="text-sm text-on-surface-variant leading-relaxed"><code class="text-primary">bc/fwi.js</code> is a self-contained BC engine. <code class="text-primary">_province</code> is hardcoded to <code class="text-primary">'BC'</code> — no localStorage province switching, no Alberta code paths. The Alberta app (<code class="text-primary">fwi.js</code> in root) is completely independent. Changes to either engine do not affect the other.</p>
+<p class="text-sm text-on-surface-variant leading-relaxed">The CFFDRS equations and the data pipeline live once, in <code class="text-primary">core/fwi-core.js</code>, shared by the BC and Alberta apps. <code class="text-primary">bc/fwi.js</code> is the BC province module: station list, BCWS tier, Fire Centre startup DC, BC danger scale (<code class="text-primary">dangerRatingBC</code>), PST timing (noon LST = 20:00 UTC) and the BC regional DC floor. A science fix therefore applies to both provinces at once; BC-specific behaviour is configured in the module's <code class="text-primary">PROVINCE</code> object.</p>
 </div>
 </div>
 </div>
