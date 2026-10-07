@@ -502,6 +502,32 @@ const FUEL_PAIR_COMPLEMENT = {
   O1a:'O1b', O1b:'O1a',
 };
 
+// Leaf phenology for deciduous / mixedwood fuels. FBP distinguishes leafless
+// (D1, M1 — spring before green-up and fall after leaf drop) from green (D2, M2).
+// Auto-assigned fuels follow the calendar; the dates are an operational
+// approximation for aspen parkland/boreal (central AB green-up ~May 20, leaf
+// drop ~Sep 27), shifted ~2 days per degree latitude (later green-up and
+// earlier leaf drop further north). Tune here, not at the call sites.
+const LEAF_ON_DOY_53_5  = 140; // May 20 (non-leap)
+const LEAF_OFF_DOY_53_5 = 270; // Sep 27
+function _isLeafOn(lat, ts = Date.now()) {
+  const d = new Date(ts - 7 * 3600000); // MST calendar date
+  const doy = Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000);
+  const shift = 2 * ((lat ?? 53.5) - 53.5);
+  return doy >= LEAF_ON_DOY_53_5 + shift && doy < LEAF_OFF_DOY_53_5 - shift;
+}
+/** Map an auto-assigned D1/D2 or M1/M2 code to the right leaf state for the date. */
+function _seasonalFuel(code, lat, ts) {
+  if (code !== 'D1' && code !== 'D2' && code !== 'M1' && code !== 'M2') return code;
+  const on = _isLeafOn(lat, ts);
+  return code[0] === 'D' ? (on ? 'D2' : 'D1') : (on ? 'M2' : 'M1');
+}
+/** Pin-drop pair: complement of fuel A, never the same fuel once leaf state is applied. */
+function _seasonalPair(fuelA, lat) {
+  const b = _seasonalFuel(FUEL_PAIR_COMPLEMENT[fuelA] || 'D1', lat);
+  return b === fuelA ? 'C2' : b;
+}
+
 // ═══ SCIENCE CORE BEGIN: FMC + RSI helpers (shared AB/BC — keep identical; CI-checked) ═══
 /**
  * Foliar moisture content — FCFDG 1992 Eqs. 1, 2, 5-8 (no-elevation form;
@@ -657,7 +683,7 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   let fireType = 'Surface';
   if      (cfb >= 0.9) fireType = 'Active Crown';
   else if (cfb >= 0.1) fireType = 'Passive Crown';
-  else if (cfb > 0)    fireType = 'Torching';
+  else if (cfb > 0)    fireType = 'Torching'; // deliberate: ST-X-3 calls CFB < 0.1 surface fire; kept as an operational cue (2026-10-07)
 
   return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType };
 }
@@ -2211,7 +2237,8 @@ function _initPinDropMap() {
     }
 
     if (fuelA) {
-      const fuelB = FUEL_PAIR_COMPLEMENT[fuelA] || 'D1';
+      fuelA = _seasonalFuel(fuelA, lat);           // raster D2/M2 are structural classes
+      const fuelB = _seasonalPair(fuelA, lat);
       ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = fuelA;
       });
@@ -2275,7 +2302,7 @@ function buildStationPicker() {
     if (stLabel) stLabel.textContent = name;
     // Auto-set fuel type from station lookup — AB only; BC respects user selection
     if (_province === 'AB') {
-      const derivedFuel = STATION_FUEL_TYPES[name] || 'C2';
+      const derivedFuel = _seasonalFuel(STATION_FUEL_TYPES[name] || 'C2', lat);
       ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
         const fp = document.getElementById(id);
         if (fp) fp.value = derivedFuel;
@@ -2402,6 +2429,7 @@ function _updateStationTableRow(entry) {
   const srcStyle = {
     'BCWS':  'background:#0c304040;color:#7bd0ff;border:1px solid #1e5a7a',
     'CWFIS': 'background:#14532d40;color:#4ade80;border:1px solid #166534',
+    'CWFIS D-1': 'background:#42200640;color:#fbbf24;border:1px dashed #b45309',
     'SWOB':  'background:#17255440;color:#93c5fd;border:1px solid #1e40af',
     'NWP':   'background:#451a0340;color:#fcd34d;border:1px solid #92400e',
     'Error': 'background:#1c191740;color:#78716c;border:1px solid #44403c',
@@ -2990,10 +3018,10 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
 
 /** Read persisted fuel type (set by station_detail fuel picker), default C3/C7 (BC defaults). */
 function _savedFuelCode() {
-  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type'))  || 'C3';
+  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type'))  || 'C3');
 }
 function _savedFuelCode2() {
-  return (typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type-2')) || 'C7';
+  return _seasonalFuel((typeof localStorage !== 'undefined' && localStorage.getItem('fwi-bc-fuel-type-2')) || 'C7');
 }
 function _savedCuring() {
   return parseInt((typeof localStorage !== 'undefined' && localStorage.getItem('bc-fwi-grass-curing')) || '80', 10);
@@ -3991,7 +4019,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
     const sz = PILL_SIZES[scale] || PILL_SIZES.md;
     const half = Math.floor(sz.w / 2);
-    const br = (srcType === 'CWFIS' || srcType === 'BCWS') ? 3 : srcType === 'SWOB' ? 8 : sz.r;
+    const br = (srcType === 'CWFIS' || srcType === 'CWFIS D-1' || srcType === 'BCWS') ? 3 : srcType === 'SWOB' ? 8 : sz.r;
     return L.divIcon({
       className: '',
       html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
@@ -4080,18 +4108,26 @@ async function buildStationMap(containerId, mapOpts = {}) {
       let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(s.name) };
       let usedCachedPrev = false;
       let cachedPrevEntry = null;
+      let coFinal = false;
       if (!w.fwiFromCWFIS) {
-        const p = _cwfisPrevFor(s.name, s.lat, s.lng);
-        if (p?.ffmc != null && p?.dmc != null && p?.dc != null) {
-          prevFWI = { ffmc: p.ffmc, dmc: p.dmc, dc: p.dc };
+        // Same dated carry-over as station_detail: today's codes as-is, earlier stepped once
+        const co = _carryOverFor(s.lat, s.lng, s.name);
+        if (co) {
+          prevFWI = { ffmc: co.ffmc, dmc: co.dmc, dc: co.dc };
           usedCachedPrev = true;
-          cachedPrevEntry = p;
+          cachedPrevEntry = { ...co, stationName: co.stationName || s.name };
+          coFinal = co.final;
         }
       }
-      const r        = calculateFWI(w, prevFWI);
-      const fuelCode = STATION_FUEL_TYPES[s.name] || 'C3';
+      const r = coFinal
+        ? calculateFWI({ ...w, fwiFromCWFIS: true, ...prevFWI }, prevFWI)
+        : calculateFWI(w, prevFWI);
+      // Before noon LST the CWFIS layer still serves yesterday's chain — label it
+      // as such instead of presenting it as today's (station_detail steps it forward).
+      const cwfisPrevDay = w.fwiFromCWFIS && w.repDate && String(w.repDate).slice(0, 10) < _lstDateStr();
+      const fuelCode = _seasonalFuel(STATION_FUEL_TYPES[s.name] || 'C3', s.lat);
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
-      const srcBadge = w.fwiFromCWFIS ? 'CWFIS'
+      const srcBadge = w.fwiFromCWFIS ? (cwfisPrevDay ? 'CWFIS D-1' : 'CWFIS')
                      : (w.source?.startsWith('BCWS') ? 'BCWS'
                      : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP'));
 
@@ -4128,7 +4164,10 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const distNote   = w.distKm != null ? ` · ${w.distKm} km offset` : '';
       // Observation/report timestamp — use CWFIS repDate, SWOB obsTime, or current time for NWP
       const rawTs = w.repDate || w.obsTime || null;
-      const obsTs = rawTs
+      // CWFIS rep_date is a date stamp (T12:00Z), not a clock time
+      const obsTs = w.repDate
+        ? new Date(String(w.repDate).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + ' noon LST' + (cwfisPrevDay ? ' (previous day)' : '')
+        : rawTs
         ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Vancouver' }) + ' PDT'
         : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Vancouver' }) + ' PDT (calc)';
       const sourceStnLine = w.stationName
