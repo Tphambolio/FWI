@@ -72,7 +72,7 @@ tailwind.config = {
 (function () {
   if (typeof document === 'undefined') return;
   var css = [
-    '.skip-link{position:fixed;left:8px;top:-80px;z-index:5000;background:#7bd0ff;color:#001e2c;padding:12px 16px;border-radius:8px;font:700 14px Inter,sans-serif;text-decoration:none}',
+    '.skip-link{position:fixed;left:8px;top:-80px;z-index:5000;background:#7bd0ff;color:#001e2c;padding:14px 18px;border-radius:8px;font:700 14px Inter,sans-serif;text-decoration:none}',
     '.skip-link:focus{top:8px}',
     ':where(a,button,select,input,summary,textarea,th[tabindex],[tabindex="0"]):focus-visible{outline:3px solid #7bd0ff !important;outline-offset:2px;border-radius:4px}',
     '.pyra-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;line-height:1.25;font-weight:700;letter-spacing:.03em;padding:3px 8px;border-radius:6px;white-space:nowrap}',

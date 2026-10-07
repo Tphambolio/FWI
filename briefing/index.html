@@ -45,12 +45,12 @@
       <div>
         <label for="bf-zone-name" class="block text-[11px] uppercase tracking-widest text-slate-300 mb-1">Forecast Zone / Location</label>
         <input id="bf-zone-name" type="text" placeholder="e.g. Lac La Biche"
-          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+          class="w-full min-h-[44px] bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
       </div>
       <div>
         <label for="bf-date-label" class="block text-[11px] uppercase tracking-widest text-slate-300 mb-1">Based On (date description)</label>
         <input id="bf-date-label" type="text" placeholder="e.g. PM Forecast for May 30th"
-          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+          class="w-full min-h-[44px] bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
       </div>
     </div>
 
@@ -58,7 +58,7 @@
     <div class="mb-4 p-3 bg-[#0f1829] rounded border border-[#1e2740]">
       <label for="bf-trend" class="block text-[11px] uppercase tracking-widest text-slate-300 mb-2">Trend <span class="text-slate-400 normal-case tracking-normal">(wind · precip · lightning auto-derived on generate)</span></label>
       <select id="bf-trend"
-        class="w-full bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white focus:outline-none">
+        class="w-full min-h-[44px] bg-[#060e20] border border-[#1e2740] rounded px-2 py-1 text-xs text-white">
         <option value="—">—</option>
         <option value="UP">UP</option>
         <option value="DN">DN</option>
@@ -76,14 +76,14 @@
         <div>
           <label for="bf-ps" class="block text-[11px] text-slate-300 mb-0.5">M1/M2 Softwood % (PS)</label>
           <div class="flex items-center gap-2">
-            <input id="bf-ps" type="range" min="0" max="100" value="50" class="flex-1 h-1"/>
+            <input id="bf-ps" type="range" min="0" max="100" value="50" class="flex-1 h-1 min-h-[32px]"/>
             <span id="bf-ps-val" class="text-[11px] text-slate-300 w-9 text-right">50%</span>
           </div>
         </div>
         <div>
           <label for="bf-curing" class="block text-[11px] text-slate-300 mb-0.5">O1a/O1b Curing %</label>
           <div class="flex items-center gap-2">
-            <input id="bf-curing" type="range" min="0" max="100" value="80" class="flex-1 h-1"/>
+            <input id="bf-curing" type="range" min="0" max="100" value="80" class="flex-1 h-1 min-h-[32px]"/>
             <span id="bf-curing-val" class="text-[11px] text-slate-300 w-9 text-right">80%</span>
           </div>
         </div>
@@ -109,12 +109,12 @@
       <div>
         <label for="bf-preparer" class="block text-[11px] uppercase tracking-widest text-slate-300 mb-1">Prepared By (Name)</label>
         <input id="bf-preparer" type="text" placeholder="e.g. McKay, Clifton"
-          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+          class="w-full min-h-[44px] bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
       </div>
       <div>
         <label for="bf-position" class="block text-[11px] uppercase tracking-widest text-slate-300 mb-1">Position</label>
         <input id="bf-position" type="text" placeholder="e.g. Fire Behaviour Analyst"
-          class="w-full bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
+          class="w-full min-h-[44px] bg-[#0f1829] border border-[#1e2740] rounded px-2.5 py-1.5 text-sm text-white placeholder-slate-600 focus:border-[#7bd0ff]/50 focus:outline-none"/>
       </div>
     </div>
 
