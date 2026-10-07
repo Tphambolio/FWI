@@ -4,26 +4,11 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import vm from 'node:vm';
+import { root, makeContext } from './_harness.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const noon = (m, d) => Date.UTC(2026, m - 1, d, 19); // noon MST
 
-function engine(path) {
-  const ctx = {
-    window: {}, console: { log() {}, warn() {}, error() {} },
-    document: { getElementById: () => null, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} },
-    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-    navigator: {}, location: { search: '', href: '', pathname: '/' },
-    setTimeout, clearTimeout, AbortController, URLSearchParams,
-  };
-  ctx.globalThis = ctx; vm.createContext(ctx);
-  vm.runInContext(readFileSync(join(root, path), 'utf8'), ctx);
-  return src => vm.runInContext(src, ctx);
-}
+const engine = path => makeContext(`${root}/${path}`, { now: noon(7, 15) }).run;
 
 for (const [prov, path] of [['AB', 'fwi.js'], ['BC', 'bc/fwi.js']]) {
   const run = engine(path);

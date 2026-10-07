@@ -1163,13 +1163,15 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
     const cwN = cw.map(v => v / cwS);
     const cidw = key => chain.reduce((s, c, i) => s + (+c.p[key]) * cwN[i], 0);
     ffmc = cidw('ffmc'); dmc = cidw('dmc'); isi = cidw('isi'); bui = cidw('bui'); fwi = cidw('fwi');
-    const dcVals = chain.map(c => +c.p.dc);
+    // Apply the regional spring DC floor per station before blending, as the
+    // single-station path does — otherwise a cold-start DC=15 station is blended raw.
+    const dcVals = chain.map(c => applyDCFloor(+c.p.dc, +c.p.lat, +c.p.lon).dc);
     const dcSpread = Math.max(...dcVals) - Math.min(...dcVals);
     if (chain.length >= 2 && dcSpread >= 75) {
       dc = dcVals[0];
       dcDivergence = { spread: Math.round(dcSpread), min: Math.round(Math.min(...dcVals)), max: Math.round(Math.max(...dcVals)) };
     } else {
-      dc = cidw('dc');
+      dc = chain.reduce((s, c, i) => s + dcVals[i] * cwN[i], 0);
     }
     // BUI and FWI are nonlinear — derive from the blended codes, not averaged.
     bui = _bui(dmc, dc);
@@ -2801,19 +2803,25 @@ async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=1&forecast_days=8`;
+    `&timezone=UTC&past_days=2&forecast_days=8`;
   const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
-  // The hourly array starts at 00:00 UTC yesterday (past_days=1). For each
+  // The hourly array starts at 00:00 UTC two days ago (past_days=2). For each
   // forecast day starting today: noon LST = 20:00 UTC (CFFDRS chain input, BC
   // PST), peak burn = 23:00 UTC (16:00 PDT, FBP inputs). Daily rain is the
   // CFFDRS noon-to-noon 24-h accumulation — the old code passed a single hour
   // of precip, which made forecast rain ≈ 0 and biased the whole chain dry.
+  // Day 0 is today's LST observation day, located by date. A fixed offset from
+  // the array start broke after UTC midnight (evenings): "today" in UTC is
+  // already tomorrow locally, so days[0] skipped today. past_days=2 keeps a
+  // full 24-h rain window before day 0 in that case too.
+  let base = h.time.indexOf(`${_lstDateStr()}T20:00`);
+  if (base < 23) base = 48 + 20;
   for (let day = 0; day < 7; day++) {
-    const iNoon = 24 * (day + 1) + 20;
-    const iPeak = 24 * (day + 1) + 23;
+    const iNoon = base + 24 * day;
+    const iPeak = iNoon + 3;
     if (iNoon >= (h.time?.length ?? 0)) break;
     const rain24 = h.precipitation
       .slice(iNoon - 23, iNoon + 1)
@@ -4063,9 +4071,11 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const cwfisPrevDay = w.fwiFromCWFIS && w.repDate && String(w.repDate).slice(0, 10) < _lstDateStr();
       const fuelCode = _seasonalFuel(STATION_FUEL_TYPES[s.name] || 'C3', s.lat);
       const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
-      const srcBadge = w.fwiFromCWFIS ? (cwfisPrevDay ? 'CWFIS D-1' : 'CWFIS')
-                     : (w.source?.startsWith('BCWS') ? 'BCWS'
-                     : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP'));
+      // BCWS chains also set fwiFromCWFIS — check the chain's actual source first
+      const chainSrc = w.chainSource || w.source || '';
+      const srcBadge = chainSrc.startsWith('BCWS') ? 'BCWS'
+                     : w.fwiFromCWFIS ? (cwfisPrevDay ? 'CWFIS D-1' : 'CWFIS')
+                     : (w.source?.startsWith('MSC') ? 'SWOB' : 'NWP');
 
       // Use actual station coords from data response if available; otherwise keep nominal
       const stnLat = w.stationLat ?? s.lat;

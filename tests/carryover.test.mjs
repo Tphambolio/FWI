@@ -12,69 +12,21 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import vm from 'node:vm';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+import { join } from 'node:path';
+import { root, makeContext as baseContext, openMeteoFor, fc } from './_harness.mjs';
 
 // 2026-10-06 19:00 UTC = 13:00 MDT = 12:00 MST — the CWFIS layer-refresh window
 const NOW = Date.UTC(2026, 9, 6, 19, 0);
 
-function makeContext(enginePath, { prev, cwfisFeatures = [] } = {}) {
-  const storage = new Map();
-  const ctx = {
-    window: {},
-    document: {
-      getElementById: () => null, querySelectorAll: () => [], querySelector: () => null,
-      addEventListener: () => {}, body: { appendChild() {} },
-      createElement: () => ({ style: {}, classList: { add() {}, remove() {}, toggle() {} }, setAttribute() {}, appendChild() {} }),
-    },
-    localStorage: {
-      getItem: k => (storage.has(k) ? storage.get(k) : null),
-      setItem: (k, v) => storage.set(k, String(v)),
-      removeItem: k => storage.delete(k),
-    },
-    navigator: { geolocation: { getCurrentPosition() {} }, userAgent: 'node-test' },
-    location: { search: '', href: 'http://localhost/', pathname: '/' },
-    AbortController, URLSearchParams, setTimeout, clearTimeout, setInterval, clearInterval,
-    console: { log() {}, warn() {}, error() {}, info() {} },
-    Math, JSON, Promise,
-  };
-  ctx.fetch = async url => {
-    const body = (() => {
-      if (url.includes('cwfis_prev.json')) return prev;
-      if (url.includes('cwfis.cfs.nrcan.gc.ca')) return { type: 'FeatureCollection', features: cwfisFeatures };
-      if (url.includes('api.open-meteo.com')) return openMeteo();
-      return { features: [] }; // SWOB / anything else: no data
-    })();
-    return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
-  };
-  ctx.globalThis = ctx;
-  ctx.self = ctx.window;
-  vm.createContext(ctx);
-  // Pin the engine's own Date intrinsic
-  vm.runInContext(`Date.now = () => ${NOW};`, ctx);
-  vm.runInContext(readFileSync(enginePath, 'utf8'), ctx, { filename: enginePath });
-  return { ctx, storage, run: src => vm.runInContext(src, ctx) };
-}
-
-// Hourly Open-Meteo payload: past_days=1 + forecast_days=8, dry warm autumn day
-function openMeteo() {
-  const start = Date.UTC(2026, 9, 5, 0);
-  const n = 24 * 9;
-  const time = Array.from({ length: n }, (_, i) => new Date(start + i * 3600000).toISOString().slice(0, 16));
-  const fill = v => Array(n).fill(v);
-  return {
-    hourly: {
-      time,
-      temperature_2m: fill(19), relative_humidity_2m: fill(41), wind_speed_10m: fill(11),
-      wind_direction_10m: fill(270), wind_gusts_10m: fill(20), precipitation: fill(0),
-      thunderstorm_probability: fill(0),
-    },
-  };
-}
+// Dry warm autumn day (Open-Meteo hourly, shaped from the request URL)
+const makeContext = (enginePath, { prev, cwfisFeatures = [] } = {}) => baseContext(enginePath, {
+  now: NOW,
+  mocks: {
+    prev: prev ?? { $status: 404 },
+    cwfis: fc(cwfisFeatures),
+    openmeteo: url => openMeteoFor(url, NOW, { temp: () => 19, rh: () => 41, wind: () => 11 }),
+  },
+});
 
 const prevFor = repDate => ({
   generated: new Date(NOW - 18 * 3600000).toISOString(),

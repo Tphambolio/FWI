@@ -1101,7 +1101,7 @@ function _selectCWFIS(features, lat, lng) {
     stationName,
     stationLat: +nearest.lat,
     stationLng: +nearest.lon,
-    distKm: Math.round(fwiNearest ? fwiDist : wxDist),
+    distKm: Math.round(nearest === fwiNearest ? fwiDist : wxDist), // distance of the station actually used
     dcDivergence,
     dcUnderinit,
   };
@@ -2764,21 +2764,27 @@ async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=1&forecast_days=8`;
+    `&timezone=UTC&past_days=2&forecast_days=8`;
   const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   const h = d.hourly;
   const days = [];
-  // The hourly array starts at 00:00 UTC yesterday (past_days=1). For each
+  // The hourly array starts at 00:00 UTC two days ago (past_days=2). For each
   // forecast day starting today: noon LST = 19:00 UTC (CFFDRS chain input),
   // peak burn = 22:00 UTC (16:00 MDT, FBP inputs). Daily rain is the CFFDRS
   // noon-to-noon 24-h accumulation — the old code passed a single hour of
   // precip, which made forecast rain ≈ 0 and biased the whole chain dry.
   // (The previous timezone=auto + index-12 selection also sampled 12:00 local
   // daylight time = 11:00 LST, parsed in the viewer's browser timezone.)
+  // Day 0 is today's LST observation day, located by date. A fixed offset from
+  // the array start broke after UTC midnight (evenings): "today" in UTC is
+  // already tomorrow locally, so days[0] skipped today. past_days=2 keeps a
+  // full 24-h rain window before day 0 in that case too.
+  let base = h.time.indexOf(`${_lstDateStr()}T19:00`);
+  if (base < 23) base = 48 + 19;
   for (let day = 0; day < 7; day++) {
-    const iNoon = 24 * (day + 1) + 19;
-    const iPeak = 24 * (day + 1) + 22;
+    const iNoon = base + 24 * day;
+    const iPeak = iNoon + 3;
     if (iNoon >= (h.time?.length ?? 0)) break;
     const rain24 = h.precipitation
       .slice(iNoon - 23, iNoon + 1)

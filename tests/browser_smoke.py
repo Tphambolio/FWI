@@ -55,6 +55,16 @@ def check_page(browser, url, label, wait_until):
         resp = page.goto(url, wait_until=wait_until, timeout=30000)
         if wait_until == "load":
             page.wait_for_timeout(JS_PAINT_MS)
+        # networkidle can fire before the engine issues its first request (BC
+        # station_detail: idle at ~1.3 s, first data fetch at ~2.1 s), so also
+        # wait for a danger label to render. Times out quietly; the check below
+        # then reports the failure.
+        try:
+            page.wait_for_function(
+                "labels => labels.some(l => document.body.innerText.includes(l))",
+                arg=sorted(DANGER_LABELS), timeout=25000)
+        except Exception:
+            pass
 
         http_ok = resp is not None and resp.status < 400
         body    = page.inner_text('body')
