@@ -6,7 +6,7 @@
  *
  * Run: node tests/bc_parity.mjs
  */
-import { loadEngine, extractScienceCore } from './load-engine.mjs';
+import { loadEngine, checkScienceCoreSingleSource } from './load-engine.mjs';
 import { readFileSync } from 'fs';
 import vm from 'vm';
 import { fileURLToPath } from 'url';
@@ -31,34 +31,24 @@ const bcSandbox = {
 bcSandbox.globalThis = bcSandbox; bcSandbox.self = bcSandbox.window;
 vm.createContext(bcSandbox);
 vm.runInContext(bcCode, bcSandbox);
+vm.runInContext(readFileSync(path.join(ROOT, 'core', 'fwi-core.js'), 'utf8'), bcSandbox); // shared core after the province module
 
 let pass = 0, fail = 0;
 const issues = [];
 
-// ─── Science core identity ────────────────────────────────────────────────────
-console.log('\n── Science core identity ──');
-const abCore = extractScienceCore(path.join(ROOT, 'fwi.js'));
-const bcCore = extractScienceCore(path.join(ROOT, 'bc', 'fwi.js'));
-
-if (!abCore) {
-  console.log('  FAIL  AB engine has no SCIENCE CORE BEGIN/END markers');
-  issues.push('AB engine missing science core markers');
-  fail++;
-} else if (!bcCore) {
-  console.log('  FAIL  BC engine has no SCIENCE CORE BEGIN/END markers');
-  issues.push('BC engine missing science core markers');
-  fail++;
-} else if (abCore === bcCore) {
-  console.log(`  PASS  Science cores are byte-identical (${abCore.length} chars)`);
-  pass++;
-} else {
-  // Find first difference
-  let diffPos = 0;
-  while (diffPos < Math.min(abCore.length, bcCore.length) && abCore[diffPos] === bcCore[diffPos]) diffPos++;
-  const snippet = JSON.stringify(abCore.slice(Math.max(0, diffPos - 20), diffPos + 20));
-  console.log(`  FAIL  Science cores differ at position ${diffPos}: ${snippet}`);
-  issues.push(`Science core diverges at position ${diffPos}`);
-  fail++;
+// ─── Science core single source ───────────────────────────────────────────────
+// The science core lives once, in core/fwi-core.js (loaded by both province
+// modules) — replaces the old AB↔BC byte-identity check of two copies.
+console.log('\n── Science core single source ──');
+{
+  const { problems, coreChars } = checkScienceCoreSingleSource([path.join(ROOT, 'fwi.js'), path.join(ROOT, 'bc', 'fwi.js')]);
+  if (!problems.length) {
+    console.log(`  PASS  Science core defined once, in core/fwi-core.js (${coreChars} chars); no province redefinitions`);
+    pass++;
+  } else {
+    for (const p of problems) { console.log(`  FAIL  ${p}`); issues.push(p); }
+    fail++;
+  }
 }
 
 // ─── Diverse FWI chain scenarios ─────────────────────────────────────────────

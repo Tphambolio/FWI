@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
+import { runEngine } from './load-engine.mjs';
 
 // Emulate an Alberta viewer's browser so viewer-timezone bugs reproduce the
 // same way on CI (UTC) as on a workstation. Must be set before any Date use.
@@ -247,7 +248,7 @@ export function makeContext(enginePath, { now, mocks = {}, storage: init = {}, i
   })();`);
   const setNow = ms => run(`Date.now = () => ${ms};`);
   if (now != null) setNow(now);
-  vm.runInContext(readFileSync(enginePath, 'utf8'), ctx, { filename: enginePath });
+  runEngine(ctx, enginePath); // province module, then core/fwi-core.js
   return { ctx, run, storage, calls, dom, setNow };
 }
 

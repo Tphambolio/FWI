@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { loadEngine, extractScienceCore } from './load-engine.mjs';
+import { loadEngine, checkScienceCoreSingleSource } from './load-engine.mjs';
 import * as ref from './reference.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -192,14 +192,13 @@ for (const [label, engine] of [['AB', AB], ['BC', BC]]) {
   });
 }
 
-// ─── 4. AB ↔ BC science-core sync check ─────────────────────────────────────
+// ─── 4. Science core single-source check ────────────────────────────────────
+// The science core lives once, in core/fwi-core.js; both province modules load
+// it. (Replaces the old AB↔BC byte-identity check of two duplicated copies.)
 
-test('AB and BC science cores are identical', () => {
-  const ab = extractScienceCore(join(root, 'fwi.js'));
-  const bc = extractScienceCore(join(root, 'bc', 'fwi.js'));
-  assert.ok(ab, 'AB science core markers missing');
-  assert.ok(bc, 'BC science core markers missing');
-  assert.equal(ab, bc, 'science cores have diverged — copy the canonical block to both engines');
+test('science core exists exactly once, in core/fwi-core.js', () => {
+  const { problems } = checkScienceCoreSingleSource([join(root, 'fwi.js'), join(root, 'bc', 'fwi.js')]);
+  assert.deepEqual(problems, []);
 });
 
 // ─── Edmonton LiDAR fuel raster legend ───────────────────────────────────────

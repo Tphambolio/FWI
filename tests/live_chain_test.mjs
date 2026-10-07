@@ -25,6 +25,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
+vm.runInContext(readFileSync(new URL('../core/fwi-core.js', import.meta.url), 'utf8'), sandbox); // shared core after the province module
 const FWI = sandbox.window.FWI;
 
 // Load BC engine (no-network sandbox — chain tests use fetchForecast7 separately)

@@ -17,6 +17,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
+vm.runInContext(readFileSync(new URL('../core/fwi-core.js', import.meta.url), 'utf8'), sandbox); // shared core after the province module
 const FWI = sandbox.window.FWI;
 
 // Load BC engine
@@ -29,6 +30,7 @@ const bcSandbox = {
 };
 vm.createContext(bcSandbox);
 vm.runInContext(bcCode, bcSandbox);
+vm.runInContext(readFileSync(new URL('../core/fwi-core.js', import.meta.url), 'utf8'), bcSandbox); // shared core after the province module
 const BCFWI = bcSandbox.window.FWI;
 
 let pass = 0, fail = 0;
