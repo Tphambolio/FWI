@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="../../fwi-theme.js"></script>
+<script src="../../fwi-theme.js?v=132"></script>
 <style>
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -27,93 +27,95 @@
   </style>
   </head>
 <body class="bg-background text-on-background font-body selection:bg-primary/30">
+<a class="skip-link" href="#main">Skip to main content</a>
 <!-- TopAppBar -->
-<header class="fixed top-0 left-0 w-full z-[60] bg-[#0b1326]/90 backdrop-blur-2xl shadow-[0_20px_40px_rgba(6,14,32,0.4)] flex justify-between items-center px-6 h-16 bg-gradient-to-b from-[#16203a] to-[#0b1326]">
-<div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
-<div>
-  <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">BC Forecast &amp; Risk Trends</h1>
-  <p class="text-[10px] text-slate-400 font-label uppercase tracking-widest" id="forecast-station-label">—</p>
+<header class="fixed top-0 left-0 w-full z-[60] bg-[#0b1326]/90 backdrop-blur-2xl shadow-[0_20px_40px_rgba(6,14,32,0.4)] flex justify-between items-center gap-2 px-3 md:px-6 h-16 bg-gradient-to-b from-[#16203a] to-[#0b1326]">
+<div class="flex items-center gap-2 md:gap-4 min-w-0">
+<button id="pyra-menu-btn" type="button" class="pyra-tap rounded-lg text-[#7bd0ff] hover:bg-[#7bd0ff]/10 shrink-0 -ml-2" aria-label="Open menu" aria-expanded="false" aria-controls="pyra-menu" data-prov="BC" data-page="trends" data-root="../../"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
+<div class="min-w-0">
+  <h1 class="font-headline text-lg md:text-xl font-bold tracking-tight text-[#7bd0ff] truncate">BC Forecast &amp; Risk Trends</h1>
+  <p class="text-[11px] text-slate-300 font-label uppercase tracking-widest truncate" id="forecast-station-label">—</p>
 </div>
 </div>
 <div class="flex items-center gap-3">
-  <div class="flex items-center gap-1">
-    <a href="../../forecast_trends/code.html" class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded text-slate-500 border border-slate-600/60 hover:border-[#7bd0ff]/60 hover:text-[#7bd0ff] transition-colors">AB</a>
-    <span class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#e05030]/20 text-[#e05030] border border-[#e05030]/40">BC</span>
-  </div>
-  <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
+  <nav class="hidden md:flex items-center gap-1" aria-label="Province">
+    <a href="../../forecast_trends/code.html" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded text-slate-300 border border-slate-600 hover:border-[#7bd0ff]/60 hover:text-[#7bd0ff] transition-colors">AB</a>
+    <span aria-current="page" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded bg-[#e05030]/20 text-[#ff8a70] border border-[#e05030]/50">BC</span>
+  </nav>
 </div>
 </header>
-<main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
+<main id="main" tabindex="-1" class="focus:outline-none pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
 <!-- ── Reports ─────────────────────────────────────────────────────────── -->
 <section>
 <h2 class="font-headline text-xl font-bold tracking-tight text-on-surface mb-4">Reports</h2>
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-  <button id="rpt-regional-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
-    <span class="material-symbols-outlined text-2xl">my_location</span>
-    <span class="font-label text-[11px] uppercase tracking-widest">Regional</span>
-    <span class="text-[9px] text-outline text-center leading-tight">Current station summary · all BC</span>
+  <button type="button" id="rpt-regional-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl" aria-hidden="true">my_location</span>
+    <span class="font-label text-[11px] uppercase tracking-wider">Regional</span>
+    <span class="text-[11px] text-slate-300 text-center leading-tight">Current station summary · all BC</span>
   </button>
-  <button id="rpt-provincial-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
-    <span class="material-symbols-outlined text-2xl">print</span>
-    <span class="font-label text-[11px] uppercase tracking-widest">Provincial</span>
-    <span class="text-[9px] text-outline text-center leading-tight">All-station FWI briefing printout</span>
+  <button type="button" id="rpt-provincial-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl" aria-hidden="true">print</span>
+    <span class="font-label text-[11px] uppercase tracking-wider">Provincial</span>
+    <span class="text-[11px] text-slate-300 text-center leading-tight">All-station FWI briefing printout</span>
   </button>
-  <button id="rpt-compare-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
-    <span class="material-symbols-outlined text-2xl">compare_arrows</span>
-    <span class="font-label text-[11px] uppercase tracking-widest">Compare</span>
-    <span class="text-[9px] text-outline text-center leading-tight">CWFIS vs. Van Wagner cold-start</span>
+  <button type="button" id="rpt-compare-btn" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:border-primary/40 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-on-surface-variant hover:text-primary">
+    <span class="material-symbols-outlined text-2xl" aria-hidden="true">compare_arrows</span>
+    <span class="font-label text-[11px] uppercase tracking-wider">Compare</span>
+    <span class="text-[11px] text-slate-300 text-center leading-tight">CWFIS vs. Van Wagner cold-start</span>
   </button>
   <a href="../../forecast_trends/code.html" class="flex flex-col items-center gap-2 surface-container-high p-4 rounded-xl border border-outline-variant/20 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all text-slate-500 hover:text-slate-300">
-    <span class="material-symbols-outlined text-2xl">swap_horiz</span>
-    <span class="font-label text-[11px] uppercase tracking-widest">AB Version</span>
-    <span class="text-[9px] text-outline text-center leading-tight">Switch to Alberta FWI app</span>
+    <span class="material-symbols-outlined text-2xl" aria-hidden="true">swap_horiz</span>
+    <span class="font-label text-[11px] uppercase tracking-wider">AB Version</span>
+    <span class="text-[11px] text-slate-300 text-center leading-tight">Switch to Alberta FWI app</span>
   </a>
 </div>
 </section>
 <!-- D+1 Peak Burn Prediction -->
 <section class="bg-surface-container rounded-lg p-6 border border-[#7bd0ff]/20">
-<div class="flex items-center gap-3 mb-4">
-<span class="material-symbols-outlined text-tertiary" style="font-variation-settings:'FILL' 1">local_fire_department</span>
+<div class="flex flex-wrap items-center gap-3 mb-4">
+<span aria-hidden="true" class="material-symbols-outlined text-[#f97316]" style="font-variation-settings:'FILL' 1">local_fire_department</span>
 <h3 class="font-headline text-xl font-bold text-white" id="fwi-d1-heading">Next Peak Burn Prediction</h3>
-<span class="text-xs font-label text-outline uppercase tracking-widest ml-auto">~16:00 PDT · <span id="fwi-d1-label">D+1</span></span>
+<span class="text-xs font-label text-slate-300 uppercase tracking-widest md:ml-auto">~16:00 PDT · <span id="fwi-d1-label">D+1</span></span>
 </div>
 <div class="flex flex-wrap gap-4 text-sm text-on-surface-variant mb-4">
 <span>Temp: <b id="fwi-d1-temp" class="text-white">—</b></span>
 <span>RH: <b id="fwi-d1-rh" class="text-white">—</b></span>
 <span>Wind: <b id="fwi-d1-wind" class="text-white">—</b></span>
 <span>ISI: <b id="fwi-d1-isi" class="text-white">—</b></span>
-<span class="ml-auto flex items-center gap-2">FWI <b id="fwi-d1-fwi" class="text-white">—</b>
-<span id="fwi-d1-rating" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-outline">—</span>
+<span class="md:ml-auto flex flex-wrap items-center gap-2">FWI <b id="fwi-d1-fwi" class="text-white">—</b>
+<span id="fwi-d1-rating" class="pyra-chip text-[11px] font-bold bg-slate-700 text-slate-200">—</span>
+<span id="fwi-d1-fwi-role" class="text-[11px] text-slate-300 basis-full md:basis-auto">—</span>
 </span>
 </div>
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 <div class="bg-surface-container-high p-4 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Head ROS</p>
+<p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">Head ROS</p>
 <p class="font-headline text-2xl font-bold text-white" id="fwi-d1-ros">—</p>
-<p class="text-[10px] text-outline">m/min</p>
+<p class="text-[11px] text-slate-300">m/min</p>
 </div>
 <div class="bg-surface-container-high p-4 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Head Fire Intensity</p>
+<p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">Head Fire Intensity</p>
 <p class="font-headline text-2xl font-bold text-white" id="fwi-d1-hfi">—</p>
-<p class="text-[10px] text-outline">kW/m · escape ≥ 4,000</p>
+<span id="fwi-d1-hfi-class" class="pyra-chip text-[11px] mt-1"></span>
+<p class="text-[11px] text-slate-300">kW/m · escape ≥ 4,000</p>
 </div>
 <div class="bg-surface-container-high p-4 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Flame Length</p>
+<p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">Flame Length</p>
 <p class="font-headline text-2xl font-bold text-white" id="fwi-d1-flame">—</p>
-<p class="text-[10px] text-outline">Byram 1959</p>
+<p class="text-[11px] text-slate-300">Byram 1959</p>
 </div>
 <div class="bg-surface-container-high p-4 rounded-lg">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Fire Type / CFB</p>
+<p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">Fire Type / CFB</p>
 <p class="font-headline text-lg font-bold text-white" id="fwi-d1-type">—</p>
-<p class="text-[10px] text-outline">CFB: <span id="fwi-d1-cfb">—</span></p>
+<p class="text-[11px] text-slate-300">CFB: <span id="fwi-d1-cfb">—</span></p>
 </div>
 </div>
-<p id="fwi-d1-escape-warn" class="hidden mt-4 p-3 bg-tertiary-container/30 border border-tertiary/50 rounded text-tertiary text-sm font-bold">⚠ HFI ≥ 4,000 kW/m — potential for escaped fire during peak burn period tomorrow</p>
-<div class="flex items-center justify-between mt-4 pt-4 border-t border-outline-variant/20">
-<p class="text-[10px] text-outline/50">Fuel: <span id="fwi-d1-fuel">C3 — Mature Jack/Lodgepole Pine</span> · FBP ST-X-3</p>
-<button id="fwi-report-btn" class="gradient-primary text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-6 py-2.5 rounded-sm active:opacity-70 transition-opacity flex items-center gap-2">
-<span class="material-symbols-outlined text-sm">print</span>Print ICS Station Briefing
+<p id="fwi-d1-escape-warn" class="hidden mt-4 p-3 bg-[#ef4444]/15 border border-[#ef4444]/60 rounded text-[#fecaca] text-sm font-bold" role="alert">⚠ HFI ≥ 4,000 kW/m — potential for escaped fire during peak burn period tomorrow</p>
+<div class="flex flex-wrap gap-3 items-center justify-between mt-4 pt-4 border-t border-outline-variant/20">
+<p class="text-[11px] text-slate-300">Fuel: <span id="fwi-d1-fuel">C3 — Mature Jack/Lodgepole Pine</span> · FBP ST-X-3</p>
+<button id="fwi-report-btn" type="button" class="gradient-primary text-on-primary-fixed font-label text-[11px] font-extrabold uppercase tracking-[0.15em] px-5 min-h-[44px] rounded-sm active:opacity-70 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" aria-hidden="true">print</span>Print ICS Station Briefing
 </button>
 </div>
 </section>
@@ -122,8 +124,8 @@
 <div class="lg:col-span-8 order-2 lg:order-1 bg-surface-container-high rounded-lg p-8 relative overflow-hidden flex flex-col justify-between">
 <div class="relative z-10">
 <div class="flex items-center gap-2 mb-4">
-<span class="material-symbols-outlined text-tertiary" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
-<span class="text-tertiary font-headline font-bold uppercase tracking-[0.2em] text-sm">14-Day Danger Outlook</span>
+<span aria-hidden="true" class="material-symbols-outlined text-[#f97316]" data-icon="priority_high" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+<span class="text-[#f97316] font-headline font-bold uppercase tracking-[0.2em] text-sm">14-Day Danger Outlook</span>
 </div>
 <h2 class="text-display-lg font-headline font-black text-white leading-none mb-2">Peak Risk: <span class="text-primary" id="fwi-peak-label-hero">—</span></h2>
 <p class="text-on-surface-variant max-w-xl body-md mb-8" id="fwi-forecast-summary">Loading forecast summary…</p>
@@ -144,10 +146,11 @@
 </div>
 </div>
 <div class="lg:col-span-4 order-1 lg:order-2 bg-surface-container-low rounded-lg p-6 border-l border-primary/20 flex flex-col">
-<h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-6">FWI Forecast</h3>
-<div class="flex-grow flex items-end gap-1 px-2 h-48" id="fwi-trend-bars"></div>
-<div id="fwi-trend-times" class="flex justify-between text-[10px] text-outline font-label mt-4 px-2"></div>
-<p class="text-[9px] text-outline/50 font-label text-center mt-2 truncate" id="fwi-source-label">—</p>
+<h3 class="font-headline font-bold text-on-surface uppercase tracking-widest mb-1">FWI Forecast</h3>
+<p class="text-[11px] text-slate-300 mb-5">Daily FWI (noon LST) from the forecast chain — not the 16:00 peak-burn headline.</p>
+<div class="flex-grow flex items-end gap-1 px-2 h-48" id="fwi-trend-bars" role="img" aria-label="Bar chart of forecast daily FWI by day, coloured by danger class"></div>
+<div id="fwi-trend-times" class="flex justify-between gap-1 text-[11px] text-slate-300 font-label mt-4 px-2" aria-hidden="true"></div>
+<p class="text-[11px] text-slate-300 font-label text-center mt-2" id="fwi-source-label">—</p>
 </div>
 </section>
 <!-- Outlook Summary Cards -->
@@ -157,13 +160,14 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-primary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Peak FWI</p>
+<p class="text-[11px] font-label uppercase tracking-widest text-slate-300 mb-3">Peak FWI (daily, forecast chain)</p>
 <p class="font-headline text-4xl font-black text-white mb-1" id="fwi-peak-window-fwi">—</p>
 <p class="text-sm text-on-surface-variant mb-3" id="fwi-peak-window-dates">—</p>
-<span id="fwi-peak-window-rating" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-surface-container-highest text-outline">—</span>
+<span id="fwi-peak-window-rating" class="pyra-chip text-[11px] font-bold uppercase bg-slate-700 text-slate-200">—</span>
+<p id="fwi-peak-window-role" class="text-[11px] text-slate-300 mt-2">—</p>
 </div>
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-tertiary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Days High or Above</p>
+<p class="text-[11px] font-label uppercase tracking-widest text-slate-300 mb-3">Days High or Above</p>
 <p class="font-headline font-black text-white mb-1">
 <span class="text-4xl" id="fwi-days-at-risk">—</span>
 <span class="text-on-surface-variant text-xl font-normal"> / <span id="fwi-total-days">—</span></span>
@@ -171,32 +175,33 @@
 <p class="text-sm text-on-surface-variant mt-3">FWI ≥ 21 (High or above — BC scale)</p>
 </div>
 <div class="bg-surface-container rounded-lg p-6 border-t-2 border-secondary/60">
-<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">14-Day Trend</p>
+<p class="text-[11px] font-label uppercase tracking-widest text-slate-300 mb-3">Trend · week 2 vs week 1 average FWI</p>
 <p class="font-headline text-2xl font-black text-white mb-3" id="fwi-outlook-trend-label">—</p>
 <p class="text-sm text-on-surface-variant">
 Wk 1 avg <span class="text-white font-bold" id="fwi-w1-avg">—</span>
 <span class="text-outline mx-1">→</span>
 Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </p>
+<p id="fwi-outlook-trend-note" class="text-[11px] text-slate-300 mt-2"></p>
 </div>
 </div>
 </section>
 <!-- Forecast Days — Fire Behaviour Outlook table -->
 <section class="bg-surface-container-low rounded-lg p-6">
 <h3 class="font-headline text-xl font-bold text-white mb-4">Fire Behaviour Outlook — All Forecast Days</h3>
-<p class="text-on-surface-variant text-sm mb-4">Peak burn conditions (~16:00 PDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 16. FBP chains forward from today's observed FFMC/DMC/DC. Default fuel: C3 lodgepole pine.</p>
+<p class="text-slate-300 text-sm mb-4">FWI column: daily FWI (noon LST) from the forecast chain. HFI class + kW/m at peak burn. Peak burn conditions (~16:00 PDT). Temp/RH/Wind from NAEFS max-temp/min-RH or Open-Meteo hour 16. FBP chains forward from today's observed FFMC/DMC/DC. Default fuel: C3 lodgepole pine.</p>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
 <tr class="border-b border-outline-variant/30">
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Day</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Temp</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">RH</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Wind</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">FWI</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">ROS m/min</th>
-<th class="py-3 pr-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">HFI kW/m</th>
-<th class="py-3 font-headline text-xs font-bold text-outline uppercase tracking-[0.15em]">Fire Type</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Day</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Temp</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">RH</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Wind</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">FWI (daily)</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">ROS m/min</th>
+<th scope="col" class="py-3 pr-4 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">HFI class · kW/m</th>
+<th scope="col" class="py-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Fire Type</th>
 </tr>
 </thead>
 <tbody id="fwi-forecast-fbp-tbody" class="divide-y divide-outline-variant/10">
@@ -207,32 +212,21 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </section>
 <!-- Regional Trend Matrix — BC Fire Centres -->
 <section class="bg-surface-container-low rounded-lg p-8">
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div class="mb-6">
 <div>
 <h3 class="font-headline text-2xl font-bold text-white mb-2">BC Fire Centre Trend Matrix</h3>
-<p class="text-on-surface-variant text-sm">Comparative analysis across BC's 6 Fire Centres — one representative station per centre.</p>
-</div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2">
-<div class="w-3 h-3 rounded-full bg-primary"></div>
-<span class="text-xs font-label text-outline uppercase tracking-widest">Temperature</span>
-</div>
-<div class="flex items-center gap-2">
-<div class="w-3 h-3 rounded-full bg-tertiary"></div>
-<span class="text-xs font-label text-outline uppercase tracking-widest">Humidity</span>
-</div>
-</div>
+<p class="text-slate-300 text-sm">Current weather and daily FWI (noon LST, same carry-over chain as the station map) at key stations. Chips show where each row comes from and its age.</p>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse">
 <thead>
 <tr class="border-b border-outline-variant/30">
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Station Identifier</th>
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Current</th>
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Wind</th>
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">24H Delta</th>
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">FWI Index</th>
-<th class="py-4 font-headline text-xs font-bold text-outline uppercase tracking-[0.2em]">Trend Visualization</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]" style="padding-left:1rem">Station</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Temp</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">RH</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Wind</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">Danger</th>
+<th scope="col" class="py-4 pr-3 font-headline text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">FWI (noon LST)</th>
 </tr>
 </thead>
 <tbody id="fwi-trend-tbody" class="divide-y divide-outline-variant/10"><tr><td colspan="6" class="py-6 text-center text-slate-500 text-sm">Loading…</td></tr></tbody>
@@ -240,27 +234,31 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 </div>
 </section>
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
-<footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
-  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · BC Wildfire FWI</span>
-  <div class="flex gap-4 text-[9px] text-slate-600">
-    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
-    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
-    <a href="../../forecast_trends/code.html" class="hover:text-slate-400 transition-colors">Alberta</a>
+<footer class="mt-8 pb-28 border-t border-[#1e2740] pt-5 flex flex-col gap-2 items-center text-center">
+  <span class="font-['Space_Grotesk'] font-bold text-xs uppercase tracking-[0.2em] text-slate-300">Pyra · BC Wildfire FWI</span>
+  <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-slate-300">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">GitHub</a>
+    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">MIT License</a>
+    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">@lactucafarm</a>
+    <a href="../../station_detail/code.html" class="hover:text-white underline-offset-2 hover:underline">Alberta</a>
   </div>
-    <span class="text-[8px] text-slate-600 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · BC Wildfire Service — OGL-Canada / OGL-BC / CC BY 4.0</span>
-  <span class="text-[8px] text-amber-600/80 font-medium">For informational use only — not for operational fire management decisions</span>
-  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty · BC Wildfire Service CFFDRS danger scale</span>
+  <span class="text-[11px] text-slate-400 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · BC Wildfire Service — OGL-Canada / OGL-BC / CC BY 4.0</span>
+  <span class="text-[11px] text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
+  <span class="text-[11px] text-slate-400">© 2026 Travis Kennedy · Free to use · No warranty · BC Wildfire Service CFFDRS danger scale</span>
+  <form class="donate mt-1" action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank">
+    <button type="submit" class="min-h-[44px] px-4 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold">♥ Donate — keeps the data feeds running</button>
+  </form>
 </footer>
 </main>
 <!-- BottomNavBar -->
-<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
-<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+<nav aria-label="Primary" class="no-print bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/15 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-2 pb-5 pt-2 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../station_detail/code.html"><span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../regional_summary/code.html"><span class="material-symbols-outlined" aria-hidden="true">map</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Map</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#7bd0ff]/15 text-[#7bd0ff] font-bold" href="../forecast_trends/code.html" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Trends</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=131"></script><script src="../../core/fwi-core.js?v=131"></script>
+<script src="../fwi.js?v=132"></script><script src="../../core/fwi-core.js?v=132"></script>
 <script>
   // Default station: Kamloops (Kamloops Fire Centre)
   const _savedStation = localStorage.getItem('bc-fwi-station');

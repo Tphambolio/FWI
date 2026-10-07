@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="../fwi-theme.js"></script>
+<script src="../fwi-theme.js?v=132"></script>
 <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -31,7 +31,9 @@
     @media (max-width: 767px) {
       #fwi-score-card { padding: 0.75rem !important; }
       #fwi-fbp-section-a, #fwi-fbp-section-b { padding: 0.6rem 0.75rem !important; margin-top: 0.4rem !important; }
-      #fwi-fbp-section-a p:first-child, #fwi-fbp-section-b p:first-child { display: none; }
+      /* hide only the card title line — the metric labels (Head ROS, Flame
+         Length, Fire Type, CFB) stay visible on mobile */
+      #fwi-fbp-section-a > p:first-child, #fwi-fbp-section-b > p:first-child { display: none; }
       #fwi-fbp-hfi-rating-a, #fwi-fbp-hfi-rating-b { font-size: 2rem !important; }
       #fwi-fbp-hfi-label-a, #fwi-fbp-hfi-label-b { font-size: 1.1rem !important; }
       #fwi-fbp-hfi-a, #fwi-fbp-hfi-b,
@@ -47,12 +49,38 @@
     .synthetic-gradient {
       background: linear-gradient(135deg, #7bd0ff 0%, #008abb 100%);
     }
-    /* Behaviour card — all children inherit white */
-    .behaviour-card { color: white; }
-    .card-label   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; font-weight: 600; }
-    .card-divider { border-color: rgba(255,255,255,0.15); }
+    /* Behaviour card — text colour is set per HFI class by the engine
+       (_paintHfiSection: dark on 2/4/5, white on 1/3/6); children inherit it */
+    .behaviour-card { color: #dae2fd; }
+    .card-label   { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+    .card-divider { border-color: rgba(148,163,184,0.35); }
+    .behaviour-card .card-divider { border-color: color-mix(in srgb, currentColor 30%, transparent); }
     /* Outer fuel card containers */
-    #fwi-score-card, #fwi-d1-card { color: white; }
+    #fwi-score-card, #fwi-d1-card { color: #dae2fd; }
+
+    /* ── Print: white paper, no chrome; summary row, cards and FWI components legible in greyscale ── */
+    @media print {
+      @page { margin: 12mm; }
+      html, body { background: #fff !important; color: #000 !important; min-height: 0 !important; }
+      body { padding: 0 !important; }
+      header { position: static !important; background: #fff !important; box-shadow: none !important; border-bottom: 2px solid #000; }
+      header select { color: #000 !important; -webkit-appearance: none; appearance: none; background: none !important; }
+      #pyra-menu-btn, #pyra-menu, #pyra-menu-backdrop, .skip-link, nav, .no-print, #fwi-map-section,
+      #fwi-tomorrow-toggle, footer .donate, .leaflet-container { display: none !important; }
+      main { max-width: none !important; padding: 0 !important; }
+      #fwi-summary-row { border-color: #000 !important; }
+      #fwi-summary-row .pyra-chip, .behaviour-card, .pyra-chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #fwi-summary-row .pyra-chip { border: 1.5px solid #000 !important; }
+      #fwi-d1-preview-section { display: block !important; }
+      #fwi-score-card, #fwi-d1-card, #fwi-score-strip, .surface-container-high, .surface-container-low, #fwi-scribe-section > div > div {
+        background: #fff !important; color: #000 !important; border: 1px solid #000 !important; break-inside: avoid; }
+      .behaviour-card { border: 2px solid #000 !important; break-inside: avoid; }
+      .text-white, .text-on-surface, .text-slate-300, .text-slate-400, .text-on-surface-variant, .text-\[\#7bd0ff\], .text-\[\#dae2fd\] { color: #000 !important; }
+      [data-fwi-bar] { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      footer { padding-bottom: 0 !important; color: #000 !important; }
+      footer * { color: #000 !important; }
+      .grid.md\:grid-cols-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+    }
   </style>
 <style>
     body {
@@ -61,20 +89,20 @@
   </style>
   </head>
 <body class="bg-surface text-on-surface font-body min-h-screen pb-24 overflow-x-hidden">
-<!-- TopAppBar -->
-<header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex flex-col w-full px-6 py-4 sticky top-0 z-50">
-<div class="flex justify-between items-center w-full">
-<div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-[#7bd0ff] active:opacity-70 transition-opacity cursor-pointer">menu</span>
-<div class="flex flex-col">
-<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Station</label>
-<select id="fwi-station-picker" class="font-['Space_Grotesk'] text-base font-bold tracking-tight text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer">
+<a class="skip-link" href="#main">Skip to main content</a>
+<!-- TopAppBar — sticky; carries the at-a-glance summary row -->
+<header class="bg-[#0b1326] bg-gradient-to-b from-[#161f35] to-[#0b1326] flex flex-col w-full px-3 md:px-6 py-2 md:py-3 sticky top-0 z-50 shadow-[0_8px_24px_rgba(6,14,32,0.55)]">
+<div class="flex items-center gap-2 md:gap-4 w-full min-w-0">
+<button id="pyra-menu-btn" type="button" class="pyra-tap rounded-lg text-[#7bd0ff] hover:bg-[#7bd0ff]/10 shrink-0" aria-label="Open menu" aria-expanded="false" aria-controls="pyra-menu" data-prov="AB" data-page="station" data-root="../"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
+<div class="flex flex-col min-w-0 flex-1 md:flex-none">
+<label for="fwi-station-picker" class="text-[11px] uppercase tracking-widest text-slate-400">Station</label>
+<select id="fwi-station-picker" class="font-['Space_Grotesk'] text-base font-bold tracking-tight text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer min-h-[44px] max-w-full md:max-w-[18rem] pl-0 pr-7 py-0 truncate">
 <option value="">Loading stations…</option>
 </select>
 </div>
-<div class="hidden md:flex flex-col ml-4 border-l border-[#7bd0ff]/20 pl-4">
-<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel A</label>
-<select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded">
+<div class="hidden md:flex flex-col ml-2 border-l border-[#7bd0ff]/20 pl-4">
+<label for="fwi-fuel-picker" class="text-[11px] uppercase tracking-widest text-slate-400">Fuel A</label>
+<select id="fwi-fuel-picker" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded min-h-[40px] pl-1">
   <option value="C2" selected>C2 — Boreal Spruce</option>
   <option value="C1">C1 — Spruce-Lichen Woodland</option>
   <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
@@ -93,9 +121,9 @@
   <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
 </select>
 </div>
-<div class="hidden md:flex flex-col ml-3 pl-3 border-l border-[#7bd0ff]/10">
-<label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel B</label>
-<select id="fwi-fuel-picker-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff]/70 bg-[#0b1326] border-none outline-none cursor-pointer rounded">
+<div class="hidden md:flex flex-col ml-1 pl-3 border-l border-[#7bd0ff]/10">
+<label for="fwi-fuel-picker-2" class="text-[11px] uppercase tracking-widest text-slate-400">Fuel B</label>
+<select id="fwi-fuel-picker-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-[#0b1326] border-none outline-none cursor-pointer rounded min-h-[40px] pl-1">
   <option value="C2">C2 — Boreal Spruce</option>
   <option value="C1">C1 — Spruce-Lichen Woodland</option>
   <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
@@ -114,84 +142,71 @@
   <option value="S3">S3 — Cedar/Hemlock/DF Slash</option>
 </select>
 </div>
-</div>
-<div class="flex flex-col items-end gap-0.5">
+<div class="ml-auto flex flex-col items-end shrink-0 min-w-0">
   <div class="flex items-center gap-2">
     <span class="font-['Space_Grotesk'] font-bold text-sm tracking-wide text-[#7bd0ff]">Pyra</span>
-    <div class="flex items-center gap-1">
-      <span class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#7bd0ff]/20 text-[#7bd0ff] border border-[#7bd0ff]/40">AB</span>
-      <a href="../bc/station_detail/code.html" class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded text-slate-500 border border-slate-600/60 hover:border-[#e05030]/60 hover:text-[#e05030] transition-colors">BC</a>
-    </div>
-    <div class="flex items-center gap-1">
-      <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-      <span class="text-[9px] uppercase tracking-widest text-green-400 font-bold">Live</span>
-    </div>
-    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" title="About · GitHub" class="text-slate-500 hover:text-[#7bd0ff] transition-colors"><span class="material-symbols-outlined" style="font-size:17px;line-height:1">info</span></a>
+    <nav class="hidden md:flex items-center gap-1" aria-label="Province">
+      <span aria-current="page" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded bg-[#7bd0ff]/20 text-[#7bd0ff] border border-[#7bd0ff]/50">AB</span>
+      <a href="../bc/station_detail/code.html" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded text-slate-300 border border-slate-600 hover:border-[#e05030]/60 hover:text-[#ff8a70] transition-colors">BC</a>
+    </nav>
   </div>
-  <span class="hidden md:block font-['Space_Grotesk'] font-bold text-[10px] text-[#7bd0ff] tracking-wide">Pyra AB Wildfire FWI</span>
-  <span class="hidden md:block text-[9px] text-slate-500">Built by Travis Kennedy · Claude · Glenn · <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:text-white transition-colors">DM on X</a> · <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener" class="text-[#7bd0ff] hover:text-white transition-colors">GitHub issues</a></span>
-  <span class="font-label text-[9px] text-slate-500" data-fwi="updated">—</span>
+  <span class="hidden md:block font-label text-[11px] text-slate-300 text-right leading-tight" data-fwi="updated" aria-live="polite">—</span>
 </div>
 </div><!-- /main header row -->
-<!-- Developer strip — mobile only -->
-<div class="md:hidden flex items-center justify-between pt-2 mt-1.5 border-t border-[#1e2740]/60">
-  <span class="text-[10px] text-slate-500 leading-snug">
-    By <a href="https://x.com/lactucafarm" target="_blank" rel="noopener"
-          class="text-[#7bd0ff] hover:text-white transition-colors">Travis Kennedy</a>
-    · <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener"
-          class="text-[#7bd0ff] hover:text-white transition-colors">GitHub</a>
-    · Glenn on WhatsApp
+<!-- At-a-glance summary row — sticky with the header. Computed from the SAME
+     values the Today peak-burn cards render (core: _renderPeakSummary). -->
+<section id="fwi-summary-row" aria-label="Today at a glance" class="mt-1.5 pt-1.5 border-t border-[#1e2740] flex flex-wrap items-center gap-x-3 gap-y-1">
+  <span id="fwi-summary-danger"><span class="pyra-chip" style="background:#1e293b;color:#cbd5e1;border:1px solid #475569">Loading…</span></span>
+  <span id="fwi-summary-fwi" class="inline-flex items-baseline gap-1.5"></span>
+  <span id="fwi-summary-hfi" class="inline-flex items-center gap-1.5"></span>
+  <span class="inline-flex items-center gap-1.5 md:ml-auto">
+    <span id="fwi-summary-age"></span><span id="fwi-summary-src"></span>
   </span>
-  <form action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank" style="display:inline">
-    <button type="submit"
-            class="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-bold px-3 py-1 rounded-full transition-colors">
-      ♥ Donate
-    </button>
-  </form>
-</div>
+  <span id="fwi-summary-live" class="sr-only" aria-live="polite"></span>
+</section>
 </header>
-<main class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:block">
+<main id="main" tabindex="-1" class="max-w-7xl mx-auto px-4 py-5 flex flex-col md:block focus:outline-none">
 
-<!-- ── HFI Class Scale Bar ───────────────────────────────────────────────── -->
-<div class="flex rounded-xl overflow-hidden mb-5 text-center text-white" style="min-height:54px">
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#2952a3 0%,#1a3a7a 100%)">
+<!-- ── HFI Class Scale Bar (card palette; dark text on 2/4/5; hatch on 5/6) ── -->
+<ol class="flex rounded-xl overflow-hidden mb-5 text-center" style="min-height:54px" aria-label="Head fire intensity class scale, 1 low to 6 catastrophic">
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:linear-gradient(135deg,#2952a3 0%,#1a3a7a 100%);color:#ffffff">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">1</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Low</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">&lt;10 kW/m</span>
-  </div>
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#7bd4f0 0%,#3a9ccc 100%);color:#0a2a50">
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5">Low</span>
+    <span class="text-[11px] mt-0.5 hidden md:block">&lt;10 kW/m</span>
+  </li>
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:linear-gradient(135deg,#7bd4f0 0%,#3a9ccc 100%);color:#0a2a50">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">2</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Moderate</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">10–500</span>
-  </div>
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#2d8b48 0%,#1a5428 100%)">
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5"><span class="md:hidden">Mod</span><span class="hidden md:inline">Moderate</span></span>
+    <span class="text-[11px] mt-0.5 hidden md:block">10–500</span>
+  </li>
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:linear-gradient(135deg,#23783c 0%,#1a5428 100%);color:#ffffff">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">3</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">High</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">500–2,000</span>
-  </div>
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#c8980a 0%,#8a6200 100%)">
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5">High</span>
+    <span class="text-[11px] mt-0.5 hidden md:block">500–2,000</span>
+  </li>
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:linear-gradient(135deg,#e0b012 0%,#c8980a 100%);color:#2a1a00">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">4</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Very High</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">2,000–4,000</span>
-  </div>
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#e07820 0%,#9e4800 100%)">
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5"><span class="md:hidden">V.High</span><span class="hidden md:inline">Very High</span></span>
+    <span class="text-[11px] mt-0.5 hidden md:block">2,000–4,000</span>
+  </li>
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:repeating-linear-gradient(45deg,rgba(0,0,0,0.20) 0 2px,transparent 2px 7px),linear-gradient(135deg,#e8822a 0%,#d26e18 100%);color:#2a1a00">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">5</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Extreme</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">4,000–10,000</span>
-  </div>
-  <div class="flex-1 flex flex-col items-center justify-center py-2 px-1" style="background:linear-gradient(135deg,#e03030 0%,#8c0a0a 100%)">
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5"><span class="md:hidden">Extr</span><span class="hidden md:inline">Extreme</span></span>
+    <span class="text-[11px] mt-0.5 hidden md:block">4,000–10,000</span>
+  </li>
+  <li class="flex-1 flex flex-col items-center justify-center py-2 px-0.5" style="background:repeating-linear-gradient(45deg,rgba(0,0,0,0.28) 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,rgba(0,0,0,0.28) 0 2px,transparent 2px 7px),linear-gradient(135deg,#e03030 0%,#8c0a0a 100%);color:#ffffff">
     <span class="font-['Space_Grotesk'] font-black text-base leading-none">6</span>
-    <span class="text-[9px] font-bold uppercase tracking-wide mt-0.5 opacity-90">Catastrophic</span>
-    <span class="text-[8px] opacity-55 mt-0.5 hidden sm:block">&gt;10,000</span>
-  </div>
-</div>
+    <span class="text-[11px] font-bold uppercase tracking-wide mt-0.5"><span class="md:hidden">Cat</span><span class="hidden md:inline">Catastrophic</span></span>
+    <span class="text-[11px] mt-0.5 hidden md:block">&gt;10,000</span>
+  </li>
+</ol>
 
 <!-- ── Mobile Fuel Picker ──────────────────────────────────────────────── -->
-<div class="md:hidden flex items-center gap-3 mb-5 bg-[#1e2740] p-3 rounded-xl">
-  <span class="material-symbols-outlined text-[#7bd0ff] text-sm">forest</span>
+<div class="md:hidden flex items-center gap-3 mb-2 bg-[#1e2740] px-3 py-1 rounded-xl">
+  <span class="material-symbols-outlined text-[#7bd0ff] text-sm" aria-hidden="true">forest</span>
   <div class="flex flex-col flex-1">
-    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type</label>
-    <select id="fwi-fuel-picker-mobile" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full">
+    <label for="fwi-fuel-picker-mobile" class="text-[11px] uppercase tracking-widest text-slate-400">Fuel A</label>
+    <select id="fwi-fuel-picker-mobile" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full min-h-[44px] pl-0">
       <option value="C2" selected>C2 — Boreal Spruce</option>
       <option value="C1">C1 — Spruce-Lichen Woodland</option>
       <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
@@ -213,11 +228,11 @@
 </div>
 
 <!-- ── Mobile Fuel Picker 2 (Fuel B) ──────────────────────────────────── -->
-<div class="md:hidden flex items-center gap-3 mb-3 bg-[#1a2236] p-3 rounded-xl">
-  <span class="material-symbols-outlined text-[#7bd0ff]/60 text-sm">forest</span>
+<div class="md:hidden flex items-center gap-3 mb-4 bg-[#1a2236] px-3 py-1 rounded-xl">
+  <span class="material-symbols-outlined text-[#7bd0ff]/70 text-sm" aria-hidden="true">forest</span>
   <div class="flex flex-col flex-1">
-    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Fuel Type B</label>
-    <select id="fwi-fuel-picker-mobile-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full">
+    <label for="fwi-fuel-picker-mobile-2" class="text-[11px] uppercase tracking-widest text-slate-400">Fuel B</label>
+    <select id="fwi-fuel-picker-mobile-2" class="font-['Space_Grotesk'] text-sm font-bold text-[#7bd0ff] bg-transparent border-none outline-none cursor-pointer w-full min-h-[44px] pl-0">
       <option value="C2">C2 — Boreal Spruce</option>
       <option value="C1">C1 — Spruce-Lichen Woodland</option>
       <option value="C3">C3 — Mature Jack/Lodgepole Pine</option>
@@ -240,33 +255,33 @@
 
 <!-- ── Grass Curing Stepper — shown only for O1a / O1b ─────────────────── -->
 <div id="fwi-curing-row" class="hidden flex items-center gap-3 mb-4 bg-[#1e2740] p-3 rounded-xl">
-  <span class="material-symbols-outlined text-amber-400 text-base">grass</span>
+  <span class="material-symbols-outlined text-amber-400 text-base" aria-hidden="true">grass</span>
   <div class="flex flex-col flex-1">
-    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Grass Curing — % Dead / Dry</label>
+    <label for="fwi-curing-slider" class="text-[11px] uppercase tracking-widest text-slate-400 mb-1">Grass Curing — % Dead / Dry</label>
     <div class="flex items-center gap-2">
-      <button id="fwi-curing-dec" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
+      <button id="fwi-curing-dec" type="button" aria-label="Decrease" class="w-11 h-11 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
       <span class="font-headline text-2xl font-bold text-amber-400 w-14 text-center" id="fwi-curing-display">80%</span>
-      <button id="fwi-curing-inc" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
+      <button id="fwi-curing-inc" type="button" aria-label="Increase" class="w-11 h-11 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
       <input type="range" id="fwi-curing-slider" min="0" max="100" step="5" value="80"
              class="flex-1 h-1 accent-amber-400 cursor-pointer">
     </div>
-    <p class="text-[9px] text-slate-500 mt-1">CF = <span id="fwi-curing-cf">0.649</span> · FBP ST-X-3 O1 curing factor</p>
+    <p class="text-[11px] text-slate-400 mt-1">CF = <span id="fwi-curing-cf">0.649</span> · FBP ST-X-3 O1 curing factor</p>
   </div>
 </div>
 
 <!-- ── % Softwood Stepper — shown only for M1 / M2 ──────────────────────── -->
 <div id="fwi-ps-row" class="hidden flex items-center gap-3 mb-4 bg-[#1e2740] p-3 rounded-xl">
-  <span class="material-symbols-outlined text-[#7bd0ff] text-base">forest</span>
+  <span class="material-symbols-outlined text-[#7bd0ff] text-base" aria-hidden="true">forest</span>
   <div class="flex flex-col flex-1">
-    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">% Softwood (C2 component)</label>
+    <label for="fwi-ps-slider" class="text-[11px] uppercase tracking-widest text-slate-400 mb-1">% Softwood (C2 component)</label>
     <div class="flex items-center gap-2">
-      <button id="fwi-ps-dec" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
+      <button id="fwi-ps-dec" type="button" aria-label="Decrease" class="w-11 h-11 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">−</button>
       <span class="font-headline text-2xl font-bold text-[#7bd0ff] w-14 text-center" id="fwi-ps-display">50%</span>
-      <button id="fwi-ps-inc" class="w-8 h-8 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
+      <button id="fwi-ps-inc" type="button" aria-label="Increase" class="w-11 h-11 rounded-lg bg-[#131b2e] text-[#7bd0ff] font-bold text-lg flex items-center justify-center select-none">+</button>
       <input type="range" id="fwi-ps-slider" min="0" max="100" step="5" value="50"
              class="flex-1 h-1 accent-[#7bd0ff] cursor-pointer">
     </div>
-    <p class="text-[9px] text-slate-500 mt-1">ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2 · FBP ST-X-3 §M1/M2</p>
+    <p class="text-[11px] text-slate-400 mt-1">ROS = PS% × ROS_C2 + (1−PS%) × ROS_D1/D2 · FBP ST-X-3 §M1/M2</p>
   </div>
 </div>
 
@@ -280,17 +295,18 @@
      style="background:#0f1829; border:1px solid #1e2740">
 
   <!-- Card header -->
-  <div class="flex justify-between items-baseline mb-2">
-    <span class="text-xs font-bold uppercase tracking-widest opacity-80">Today · Peak Burn · ~16:00 MDT</span>
-    <div class="flex items-center gap-3">
-      <button id="fwi-tomorrow-toggle"
-              class="md:hidden flex items-center gap-0.5 text-[10px] font-bold text-[#e07820] bg-[#e07820]/15 border border-[#e07820]/40 px-2 py-0.5 rounded-full transition-colors hover:bg-[#e07820]/30">
-        <span class="material-symbols-outlined" id="fwi-tomorrow-chevron" style="font-size:13px">expand_more</span>
+  <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-200">Today · Peak Burn · ~16:00 MDT</h2>
+    <div class="flex flex-wrap items-center gap-2 justify-end">
+      <span id="fwi-today-prov" class="hidden md:flex flex-wrap gap-1 justify-end"></span>
+      <button id="fwi-tomorrow-toggle" type="button" aria-expanded="false" aria-controls="fwi-d1-preview-section"
+              class="md:hidden flex items-center gap-1 min-h-[44px] text-xs font-bold text-[#ffa45c] bg-[#e07820]/15 border border-[#e07820]/50 px-3 rounded-full transition-colors hover:bg-[#e07820]/30">
+        <span class="material-symbols-outlined" id="fwi-tomorrow-chevron" style="font-size:16px" aria-hidden="true">expand_more</span>
         <span>Tomorrow</span>
       </button>
-      <span class="text-[10px] opacity-60" data-fwi="source-station">—</span>
     </div>
   </div>
+  <p class="text-[11px] text-slate-300 mb-2">FBP at the 16:00 peak burn: today's fuel-moisture codes + forecast 16:00 wind. Weather row = latest station data.</p>
 
   <!-- Weather row -->
   <div class="grid grid-cols-5 gap-x-2 gap-y-2 pt-2 mb-4 border-t card-divider border-t">
@@ -317,16 +333,16 @@
   </div>
 
   <!-- Fuel A section -->
-  <div id="fwi-fbp-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
-    <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
-    <p class="text-sm font-bold opacity-90 mb-2" id="fwi-fbp-fuel-name-a">—</p>
+  <div id="fwi-fbp-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:#1e2740">
+    <p class="text-[11px] font-semibold uppercase tracking-widest mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-sm font-bold mb-2" id="fwi-fbp-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
-      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label-a">—</span>
+      <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label-a" aria-live="polite">—</span>
       <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating-a">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi-a">— kW/m</p>
+    <p class="text-sm font-medium" id="fwi-fbp-hfi-a">— kW/m</p>
     <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size-a">—</p>
-    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-fbp-hfi-desc-a">—</p>
+    <p class="text-xs mt-0.5 mb-3" id="fwi-fbp-hfi-desc-a">—</p>
     <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
       <div>
         <p class="card-label mb-0.5">Head ROS</p>
@@ -348,16 +364,16 @@
   </div>
 
   <!-- Fuel B section -->
-  <div id="fwi-fbp-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
-    <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
-    <p class="text-sm font-bold opacity-90 mb-2" id="fwi-fbp-fuel-name-b">—</p>
+  <div id="fwi-fbp-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:#1e2740">
+    <p class="text-[11px] font-semibold uppercase tracking-widest mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-sm font-bold mb-2" id="fwi-fbp-fuel-name-b">—</p>
     <div class="flex items-baseline gap-3 mb-1">
       <span class="font-headline text-2xl font-bold" id="fwi-fbp-hfi-label-b">—</span>
       <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-fbp-hfi-rating-b">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-fbp-hfi-b">— kW/m</p>
+    <p class="text-sm font-medium" id="fwi-fbp-hfi-b">— kW/m</p>
     <p class="text-sm font-semibold mt-1" id="fwi-fbp-hfi-size-b">—</p>
-    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-fbp-hfi-desc-b">—</p>
+    <p class="text-xs mt-0.5 mb-3" id="fwi-fbp-hfi-desc-b">—</p>
     <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
       <div>
         <p class="card-label mb-0.5">Head ROS</p>
@@ -387,8 +403,8 @@
 
   <!-- Card header -->
   <div class="flex justify-between items-baseline mb-2">
-    <span id="fwi-d1-peak-label" class="text-xs font-bold uppercase tracking-widest opacity-80">Next Peak Burn · ~16:00 MDT</span>
-    <span class="text-[10px] opacity-60" id="fwi-d1-preview-date">Loading…</span>
+    <h2 id="fwi-d1-peak-label" class="text-xs font-bold uppercase tracking-widest text-slate-200">Next Peak Burn · ~16:00 MDT</h2>
+    <span class="text-[11px] text-slate-300" id="fwi-d1-preview-date">Loading…</span>
   </div>
 
   <!-- Weather row -->
@@ -412,16 +428,16 @@
   </div>
 
   <!-- Fuel A section -->
-  <div id="fwi-d1-preview-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #2d9e58 0%, #175c30 100%)">
-    <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
-    <p class="text-sm font-bold opacity-90 mb-2" id="fwi-d1-preview-fuel-name-a">—</p>
+  <div id="fwi-d1-preview-section-a" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:#1e2740">
+    <p class="text-[11px] font-semibold uppercase tracking-widest mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-sm font-bold mb-2" id="fwi-d1-preview-fuel-name-a">—</p>
     <div class="flex items-baseline gap-3 mb-1">
       <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label-a">—</span>
       <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num-a">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm-a">— kW/m</p>
+    <p class="text-sm font-medium" id="fwi-d1-preview-hfi-kwm-a">— kW/m</p>
     <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size-a">—</p>
-    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-a">—</p>
+    <p class="text-xs mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-a">—</p>
     <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
       <div>
         <p class="card-label mb-0.5">Head ROS</p>
@@ -443,16 +459,16 @@
   </div>
 
   <!-- Fuel B section -->
-  <div id="fwi-d1-preview-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)">
-    <p class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-0.5">FBP System HFI Class · Class 1–6</p>
-    <p class="text-sm font-bold opacity-90 mb-2" id="fwi-d1-preview-fuel-name-b">—</p>
+  <div id="fwi-d1-preview-section-b" class="behaviour-card rounded-xl p-4 mt-3 transition-all" style="background:#1e2740">
+    <p class="text-[11px] font-semibold uppercase tracking-widest mb-0.5">FBP System HFI Class · Class 1–6</p>
+    <p class="text-sm font-bold mb-2" id="fwi-d1-preview-fuel-name-b">—</p>
     <div class="flex items-baseline gap-3 mb-1">
       <span class="font-headline text-2xl font-bold" id="fwi-d1-preview-hfi-label-b">—</span>
       <span class="font-headline font-black leading-none" style="font-size:3rem" id="fwi-d1-preview-hfi-num-b">—</span>
     </div>
-    <p class="text-sm opacity-70 font-medium" id="fwi-d1-preview-hfi-kwm-b">— kW/m</p>
+    <p class="text-sm font-medium" id="fwi-d1-preview-hfi-kwm-b">— kW/m</p>
     <p class="text-sm font-semibold mt-1" id="fwi-d1-preview-hfi-size-b">—</p>
-    <p class="text-xs opacity-70 mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-b">—</p>
+    <p class="text-xs mt-0.5 mb-3" id="fwi-d1-preview-hfi-desc-b">—</p>
     <div class="grid grid-cols-2 gap-3 pt-3 border-t card-divider border-t">
       <div>
         <p class="card-label mb-0.5">Head ROS</p>
@@ -481,101 +497,77 @@
 <!-- ── FWI Score ───────────────────────────────────────────────────────── -->
 <div id="fwi-score-strip" class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5 flex flex-wrap items-center gap-x-8 gap-y-3 transition-all">
   <div>
-    <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Fire Weather Index · Today</p>
+    <p id="fwi-daily-role" class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">CFFDRS daily FWI · noon LST</p>
     <div class="flex items-baseline gap-3">
-      <span class="font-headline text-4xl font-black text-white" data-fwi="fwi">—</span>
-      <span class="font-headline text-xl font-extrabold uppercase tracking-wide text-white" data-fwi="danger">—</span>
+      <span class="font-headline text-4xl font-black text-white" data-fwi="fwi" aria-live="polite">—</span>
+      <span class="font-headline text-xl font-extrabold uppercase tracking-wide text-white" data-fwi="danger" aria-live="polite">—</span>
     </div>
   </div>
   <div class="flex gap-6 text-sm">
     <div>
-      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">ISI</p>
+      <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">ISI</p>
       <p class="font-headline font-bold text-white" data-fwi="isi">—</p>
     </div>
     <div>
-      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">BUI</p>
+      <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">BUI</p>
       <p class="font-headline font-bold text-white" data-fwi="bui">—</p>
     </div>
     <div>
-      <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">FFMC</p>
+      <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">FFMC</p>
       <p class="font-headline font-bold text-white" data-fwi="ffmc">—</p>
     </div>
   </div>
-  <div class="ml-auto text-right">
-    <p class="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Source</p>
-    <p class="text-sm font-bold text-white" data-fwi="source-station">—</p>
-  </div>
-</div>
-
-<!-- ── Fuel the Mission ────────────────────────────────────────────────── -->
-<div class="hidden md:block bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5">
-  <div class="flex flex-wrap items-center gap-4">
-    <div class="flex-1 min-w-0">
-      <h2 class="font-['Space_Grotesk'] font-bold uppercase tracking-widest text-white text-sm border-b border-amber-500/40 pb-1.5 mb-2">Fuel the Mission</h2>
-      <p class="text-[11px] text-slate-500">Keep the data flowing. Contributions fund server costs and ongoing development.</p>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 shrink-0">
-      <style>.pp-8TN6C4ATZYXZY{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-      <form action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-        <input class="pp-8TN6C4ATZYXZY" type="submit" value="Donate" />
-        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
-        <section style="font-size:0.75rem;">Powered by <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-      </form>
-      <a href="https://x.com/lactucafarm" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-2 bg-[#1e2740] hover:bg-[#263354] text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-        <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        @lactucafarm
-      </a>
-    </div>
+  <div class="md:ml-auto md:text-right min-w-0">
+    <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">Source detail</p>
+    <p class="text-sm font-bold text-white break-words" data-fwi="source-station">—</p>
   </div>
 </div>
 
 <!-- ── FWI Components ─────────────────────────────────────────────────── -->
 <section class="mb-10">
-<div class="flex items-center justify-between mb-6">
-<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">FWI Components</h2>
-<div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
-<button id="fwi-idw-toggle" title="Toggle between nearest single station and 12-station IDW blend" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-slate-600 text-slate-400 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">blur_on</span><span id="fwi-idw-label">Single Stn</span>
+<div class="flex flex-wrap items-center gap-2 mb-6">
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface mr-auto">FWI Components</h2>
+<button id="fwi-idw-toggle" type="button" title="Toggle between nearest single station and 12-station IDW blend" class="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-slate-500 text-slate-300 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span aria-hidden="true" class="material-symbols-outlined text-[15px]">blur_on</span><span id="fwi-idw-label">Single Stn</span>
 </button>
-<button id="fwi-compare-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">compare_arrows</span>Compare
+<button id="fwi-compare-btn" type="button" aria-expanded="false" aria-controls="fwi-compare-panel" class="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-outline-variant/30 text-slate-300 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span aria-hidden="true" class="material-symbols-outlined text-[15px]">compare_arrows</span>Compare
 </button>
-<button id="fwi-print-regional-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">my_location</span>Regional
+<button id="fwi-print-regional-btn" type="button" title="Print a regional briefing around this station" class="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-outline-variant/30 text-slate-300 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span aria-hidden="true" class="material-symbols-outlined text-[15px]">my_location</span>Regional
 </button>
-<button id="fwi-print-btn" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">print</span>Provincial
+<button id="fwi-print-btn" type="button" title="Print the provincial all-station briefing" class="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-outline-variant/30 text-slate-300 hover:border-primary/50 hover:text-primary transition-colors shrink-0">
+  <span aria-hidden="true" class="material-symbols-outlined text-[15px]">print</span>Provincial
 </button>
-<a href="../briefing/" target="_blank" class="flex items-center gap-1.5 font-label text-[9px] uppercase tracking-wider px-2.5 py-1.5 rounded border border-[#e05030]/50 text-[#e05030] hover:bg-[#e05030]/10 transition-colors shrink-0">
-  <span class="material-symbols-outlined text-[13px]">assignment</span>Briefing
+<a href="../briefing/" target="_blank" class="flex items-center gap-1.5 font-label text-[11px] uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-[#e05030]/50 text-[#e05030] hover:bg-[#e05030]/10 transition-colors shrink-0">
+  <span aria-hidden="true" class="material-symbols-outlined text-[15px]">assignment</span>Briefing
 </a>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 <div class="surface-container-high p-4 rounded-lg">
-  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">FFMC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Fine Fuel Moisture</p></div><span class="px-1.5 py-0.5 bg-tertiary-container text-tertiary rounded text-[9px] font-bold" data-fwi-rating="ffmc">—</span></div>
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">FFMC</h3><p class="text-[11px] text-slate-300 font-label uppercase">Fine Fuel Moisture</p></div><span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-700 text-slate-200" data-fwi-rating="ffmc">—</span></div>
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="ffmc">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary" data-fwi-bar="ffmc"></div></div>
 </div>
 <div class="surface-container-high p-4 rounded-lg">
-  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DMC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Duff Moisture</p></div><span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[9px] font-bold" data-fwi-rating="dmc">—</span></div>
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DMC</h3><p class="text-[11px] text-slate-300 font-label uppercase">Duff Moisture</p></div><span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-700 text-slate-200" data-fwi-rating="dmc">—</span></div>
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="dmc">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-secondary" data-fwi-bar="dmc"></div></div>
 </div>
 <div class="surface-container-high p-4 rounded-lg">
-  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DC</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Drought Code</p></div><span class="px-1.5 py-0.5 bg-[#fbabff]/10 text-tertiary rounded text-[9px] font-bold" data-fwi-rating="dc">—</span></div>
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">DC</h3><p class="text-[11px] text-slate-300 font-label uppercase">Drought Code</p></div><span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-700 text-slate-200" data-fwi-rating="dc">—</span></div>
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="dc">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary-fixed-dim" data-fwi-bar="dc"></div></div>
-  <span id="fwi-dc-source" class="mt-2 inline-block text-[9px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded">—</span>
+  <span id="fwi-dc-source" class="mt-2 inline-block text-[11px] font-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded">—</span>
   <div id="fwi-dc-divergence" class="hidden"></div>
 </div>
 <div class="surface-container-high p-4 rounded-lg">
-  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">ISI</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Initial Spread</p></div><span class="px-1.5 py-0.5 bg-tertiary-container text-tertiary rounded text-[9px] font-bold" data-fwi-rating="isi">—</span></div>
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">ISI</h3><p class="text-[11px] text-slate-300 font-label uppercase">Initial Spread</p></div><span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-700 text-slate-200" data-fwi-rating="isi">—</span></div>
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="isi">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary" data-fwi-bar="isi"></div></div>
 </div>
 <div class="surface-container-high p-4 rounded-lg">
-  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">BUI</h3><p class="text-[9px] text-on-surface-variant font-label uppercase">Build-up Index</p></div><span class="px-1.5 py-0.5 bg-[#fbabff]/10 text-tertiary rounded text-[9px] font-bold" data-fwi-rating="bui">—</span></div>
+  <div class="flex justify-between items-start mb-3"><div><h3 class="font-headline font-bold text-base">BUI</h3><p class="text-[11px] text-slate-300 font-label uppercase">Build-up Index</p></div><span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-700 text-slate-200" data-fwi-rating="bui">—</span></div>
   <div class="font-headline text-3xl font-bold mb-2" data-fwi="bui">—</div>
   <div class="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden"><div class="h-full bg-tertiary-fixed-dim" data-fwi-bar="bui"></div></div>
 </div>
@@ -583,33 +575,33 @@
 
 <!-- Compare panel — Van Wagner cold-start vs primary source, hidden by default -->
 <div id="fwi-compare-panel" class="hidden mt-4 rounded-lg border border-[#7bd0ff]/20 p-4" style="background:#1e2740">
-  <div class="flex items-center justify-between mb-3">
-    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Van Wagner cold-start — regional startup DC, our equations</span>
-    <span class="text-[9px] font-label text-outline italic" id="fwi-compare-note">—</span>
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <span class="text-[11px] font-label uppercase tracking-widest text-slate-300">Van Wagner cold-start — regional startup DC, our equations</span>
+    <span class="text-[11px] font-label text-slate-300 italic" id="fwi-compare-note">—</span>
   </div>
   <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
     <div class="text-center p-2 rounded" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">FFMC</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">FFMC</p>
       <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-ffmc">—</p>
     </div>
     <div class="text-center p-2 rounded" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">DMC</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">DMC</p>
       <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-dmc">—</p>
     </div>
     <div class="text-center p-2 rounded" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">DC</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">DC</p>
       <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-dc">—</p>
     </div>
     <div class="text-center p-2 rounded" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">ISI</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">ISI</p>
       <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-isi">—</p>
     </div>
     <div class="text-center p-2 rounded" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">BUI</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">BUI</p>
       <p class="font-headline text-lg font-bold text-on-surface" id="fwi-cmp-bui">—</p>
     </div>
     <div class="text-center p-2 rounded border border-[#7bd0ff]/30" style="background:#131b2e">
-      <p class="text-[8px] font-label uppercase tracking-wider text-on-surface-variant mb-1">FWI</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">FWI</p>
       <p class="font-headline text-lg font-bold text-[#7bd0ff]" id="fwi-cmp-fwi">—</p>
     </div>
   </div>
@@ -618,65 +610,70 @@
 
 <!-- ── SCRIBE 48-hr NRCan Validation ──────────────────────────────────── -->
 <section class="mb-10" id="fwi-scribe-section" style="display:none">
-<div class="flex items-baseline justify-between mb-4">
+<div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
 <h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">NRCan SCRIBE Forecast</h2>
-<div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
-<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant" id="fwi-scribe-station">—</span>
+<span class="font-label text-[11px] uppercase tracking-widest text-slate-300" id="fwi-scribe-station">—</span>
 </div>
+<p class="text-[11px] text-slate-300 mb-4">Independent NRCan forecast of the daily FWI (valid noon LST each day) — a cross-check, not the 16:00 peak-burn headline above.</p>
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="fwi-scribe-grid"></div>
 </section>
 
 <!-- ── 24-Hour Trend ──────────────────────────────────────────────────── -->
 <section class="mb-10">
 <div class="surface-container-low p-6 rounded-xl">
-<h3 class="font-headline text-base font-bold mb-4">24-Hour FWI Trend</h3>
+<h2 class="font-headline text-base font-bold">Hourly FWI · last 24 h</h2>
+<p class="text-[11px] text-slate-300 mb-4">Hourly FFMC on Open-Meteo model weather with today's BUI — indicative trend, not the daily CFFDRS value.</p>
 <div id="fwi-chart-bars" class="h-40 w-full flex items-end justify-between gap-1">
-  <div class="w-full flex items-center justify-center text-slate-600 text-xs gap-2">
-    <span class="material-symbols-outlined animate-pulse text-primary text-sm">sync</span> Loading hourly data…
+  <div class="w-full flex items-center justify-center text-slate-400 text-xs gap-2">
+    <span class="material-symbols-outlined animate-pulse text-primary text-sm" aria-hidden="true">sync</span> Loading hourly data…
   </div>
 </div>
-<div id="fwi-chart-times" class="flex justify-between mt-3 text-[10px] font-label uppercase tracking-widest text-on-surface-variant"></div>
+<div id="fwi-chart-times" class="flex justify-between mt-3 text-[11px] font-label uppercase tracking-widest text-slate-300"></div>
 </div>
 </section>
 
 <!-- ── Fuel Lookup Map ────────────────────────────────────────────────── -->
-<section class="mb-10">
+<section class="mb-10" id="fwi-map-section" aria-label="Fuel lookup map">
 <div class="h-[380px] rounded-xl overflow-hidden relative surface-container-low" style="isolation:isolate;z-index:0">
-<div id="fwi-map-frame" class="w-full h-full"></div>
+<div id="fwi-map-frame" class="w-full h-full" role="application" aria-label="Map: click or tap to set the fuel type and nearest station"></div>
 <div class="absolute inset-0 bg-gradient-to-t from-surface/60 via-transparent to-transparent pointer-events-none"></div>
 <div class="absolute bottom-4 left-4 glass-panel p-3 rounded-lg pointer-events-none">
   <div class="flex items-center gap-2 mb-1">
-    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-    <span class="text-[9px] font-label uppercase tracking-widest text-on-surface-variant">Click map · Set fuel + station</span>
+    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" aria-hidden="true"></span>
+    <span class="text-[11px] font-label uppercase tracking-widest text-slate-200">Click map · Set fuel + station</span>
   </div>
   <div class="font-headline text-sm font-bold" id="fwi-map-coords">—</div>
-  <div class="text-[10px] text-on-surface-variant font-label mt-0.5" id="fwi-map-status">Drop a pin to query fuel type</div>
+  <div class="text-[11px] text-slate-200 font-label mt-0.5" id="fwi-map-status" aria-live="polite">Drop a pin to query fuel type</div>
 </div>
 </div>
 </section>
 
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
-<footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
-  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · Alberta FWI System</span>
-  <div class="flex gap-4 text-[9px] text-slate-600">
-    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
-    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
-    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+<footer class="mt-8 pb-28 border-t border-[#1e2740] pt-5 flex flex-col gap-2 items-center text-center">
+  <span class="font-['Space_Grotesk'] font-bold text-xs uppercase tracking-[0.2em] text-slate-300">Pyra · Alberta FWI System</span>
+  <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-slate-300">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">GitHub</a>
+    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">MIT License</a>
+    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">@lactucafarm</a>
+    <a href="../bc/station_detail/code.html" class="hover:text-white underline-offset-2 hover:underline">British Columbia</a>
   </div>
-    <span class="text-[8px] text-slate-600 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
-  <span class="text-[8px] text-amber-600/80 font-medium">For informational use only — not for operational fire management decisions</span>
-  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  <span class="text-[11px] text-slate-400 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
+  <span class="text-[11px] text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
+  <span class="text-[11px] text-slate-400">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  <form class="donate mt-1" action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank">
+    <button type="submit" class="min-h-[44px] px-4 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold">♥ Donate — keeps the data feeds running</button>
+  </form>
 </footer>
 </main>
 <!-- BottomNavBar -->
-<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
-<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+<nav aria-label="Primary" class="no-print bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/15 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-2 pb-5 pt-2 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#7bd0ff]/15 text-[#7bd0ff] font-bold" href="../station_detail/code.html" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../regional_summary/code.html"><span class="material-symbols-outlined" aria-hidden="true">map</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Map</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../forecast_trends/code.html"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Trends</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=131"></script><script src="../core/fwi-core.js?v=131"></script>
+<script src="../fwi.js?v=132"></script><script src="../core/fwi-core.js?v=132"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
@@ -685,6 +682,7 @@
     const chev = document.getElementById('fwi-tomorrow-chevron');
     const nowHidden = sec.classList.toggle('hidden');
     btn.classList.toggle('open', !nowHidden);
+    btn.setAttribute('aria-expanded', String(!nowHidden));
     if (!nowHidden) {
       sec.classList.remove('tomorrow-slide-in');
       void sec.offsetWidth; // force reflow to restart animation
@@ -713,6 +711,7 @@
     const btn   = document.getElementById('fwi-compare-btn');
     const open  = panel.classList.toggle('hidden');
     btn.classList.toggle('border-primary/50', !open);
+    btn.setAttribute('aria-expanded', String(!open));
     btn.classList.toggle('text-primary', !open);
   });
   // Deep link from forecast_trends "Compare" button

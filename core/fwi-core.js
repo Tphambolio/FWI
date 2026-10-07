@@ -202,29 +202,81 @@ function hfiClassInfo(hfi) {
   if (hfi <  500) return { num: 2, label: 'Moderate',   size: 'Flame length 0.2 – 1.5 m · Tallest firefighter', desc: 'Direct attack with hand tools · Should anchor',             bg: '#5bb8d4', text: '#0a2a50' };
   if (hfi < 2000) return { num: 3, label: 'High',       size: 'Flame length 1.5 – 2.5 m · Tallest firefighter', desc: 'Direct attack with pump and hose · Should anchor',          bg: '#1e6b35', text: '#ffffff' };
   if (hfi < 4000) return { num: 4, label: 'Very High',  size: 'Flame length 2.5 – 3.5 m · Fire engine',        desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#f5c518', text: '#2a1a00' };
-  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#e07820', text: '#ffffff' };
+  if (hfi <10000) return { num: 5, label: 'Extreme',    size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'Indirect attack · Direct attack on less intense area · Must anchor', bg: '#e07820', text: '#2a1a00' };
   return           { num: 6, label: 'Catastrophic', size: 'Flame length 3.5 m+ · Peak of a bungalow',      desc: 'No direct attack — evacuate structure zone',               bg: '#cc2200', text: '#ffffff' };
 }
 
-// Behaviour card gradient per danger level — used on full-height cards so keep tones rich, not neon
+// ─── Danger colour tokens — ONE set used everywhere (badges, chips, map pills,
+// table cells, alarm strip, print). Low green · Moderate blue · High yellow ·
+// Very High orange · Extreme red (BC adds Very Low; AB has no Very Low).
+// `fg` = text on the dark UI surfaces (≥ 4.5:1 on #0b1326–#171f33);
+// `solid` = fill for markers/chips; `on` = text on `solid` (≥ 4.5:1).
+// Print-paper chips use PRINT_DANGER_COLORS (same hues, light tints).
+const DANGER_TOKENS = {
+  'Very Low':  { fg: '#a7f3d0', solid: '#a7f3d0', on: '#0b1326' },
+  'Low':       { fg: '#4ae176', solid: '#4ae176', on: '#0b1326' },
+  'Moderate':  { fg: '#7bd0ff', solid: '#7bd0ff', on: '#0b1326' },
+  'High':      { fg: '#f5c518', solid: '#f5c518', on: '#0b1326' },
+  'Very High': { fg: '#f97316', solid: '#f97316', on: '#0b1326' },
+  'Extreme':   { fg: '#f87171', solid: '#ef4444', on: '#140a0a' },
+};
+const _NO_DANGER = { fg: '#94a3b8', solid: '#94a3b8', on: '#0b1326' };
+function _dangerTok(d) { return DANGER_TOKENS[d] || _NO_DANGER; }
+/** Inline style for a tinted danger chip on the dark UI. */
+function dangerChipStyle(d) {
+  const t = _dangerTok(d);
+  return `background:${t.solid}26;color:${t.fg};border:1px solid ${t.solid}66`;
+}
+
+// Behaviour card gradient per danger level — same hues as DANGER_TOKENS
+// (the old purple 'High' disagreed with every other High on the site).
 const DANGER_GRADIENTS = {
   'Low':       'linear-gradient(135deg, #2d9e58 0%, #175c30 100%)',
   'Moderate':  'linear-gradient(135deg, #7bd0ff 0%, #008abb 100%)',
-  'High':      'linear-gradient(135deg, #c97ae0 0%, #7a28a8 100%)',
+  'High':      'linear-gradient(135deg, #f5c518 0%, #c8980a 100%)',
   'Very High': 'linear-gradient(135deg, #f07030 0%, #9e3800 100%)',
   'Extreme':   'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',
 };
 
-// HFI class gradients for independent fuel section colouring (class 1–6)
-const HFI_GRADIENTS = [
+// HFI class 1–6 card palette — owner decision: KEEP these fills (Alberta WUI
+// Pocket Guide: 1 navy · 2 sky · 3 green · 4 yellow · 5 orange · 6 red).
+// `text` is the contrast-safe text colour on the fill (WCAG AA ≥ 4.5:1 at BOTH
+// gradient stops): dark on 2 / 4 / 5, white on 1 / 3 / 6. Gradient stops on 3, 4
+// and 5 were nudged within the same hue so one text colour passes end to end.
+// `fill` is the flat colour for map pills, table chips, legends and print;
+// `pattern` is a non-colour cue on 5 / 6 (deuteranopia collapses 4/5/6).
+const HFI_STYLE = [
   null,
-  'linear-gradient(135deg, #2952a3 0%, #1a3a7a 100%)',  // 1 Low          — navy blue (GoA official)
-  'linear-gradient(135deg, #7bd4f0 0%, #3a9ccc 100%)',  // 2 Moderate     — sky blue  (GoA official)
-  'linear-gradient(135deg, #2d8b48 0%, #1a5428 100%)',  // 3 High         — dark green (GoA official)
-  'linear-gradient(135deg, #c8980a 0%, #8a6200 100%)',  // 4 Very High    — amber/gold (GoA official)
-  'linear-gradient(135deg, #e07820 0%, #9e4800 100%)',  // 5 Extreme      — orange    (GoA official)
-  'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)',  // 6 Catastrophic — red       (GoA official)
+  { grad: 'linear-gradient(135deg, #2952a3 0%, #1a3a7a 100%)', fill: '#1a3a7a', text: '#ffffff', pattern: '' },
+  { grad: 'linear-gradient(135deg, #7bd4f0 0%, #3a9ccc 100%)', fill: '#5bb8d4', text: '#0a2a50', pattern: '' },
+  { grad: 'linear-gradient(135deg, #23783c 0%, #1a5428 100%)', fill: '#1e6b35', text: '#ffffff', pattern: '' },
+  { grad: 'linear-gradient(135deg, #e0b012 0%, #c8980a 100%)', fill: '#f5c518', text: '#2a1a00', pattern: '' },
+  { grad: 'linear-gradient(135deg, #e8822a 0%, #d26e18 100%)', fill: '#e07820', text: '#2a1a00',
+    pattern: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.20) 0 2px, transparent 2px 7px)' },
+  { grad: 'linear-gradient(135deg, #e03030 0%, #8c0a0a 100%)', fill: '#cc2200', text: '#ffffff',
+    pattern: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.28) 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.28) 0 2px, transparent 2px 7px)' },
 ];
+// HFI class gradients for independent fuel section colouring (class 1–6)
+const HFI_GRADIENTS = HFI_STYLE.map(s => s && s.grad);
+/** HFI class number (1–6) from the regional "N-Word" label, or 0. */
+function _hfiNumOf(lbl) { return parseInt(String(lbl || '').split('-')[0], 10) || 0; }
+/** Inline style for a flat HFI chip / cell: card fill + safe text, plus a
+ *  pattern and heavy border on 5 / 6 so they never rely on colour alone. */
+function hfiChipStyle(num) {
+  const s = HFI_STYLE[num];
+  if (!s) return 'background:#334155;color:#e2e8f0';
+  const bg = s.pattern ? `background:${s.pattern},${s.fill}` : `background:${s.fill}`;
+  const border = num >= 5 ? `;box-shadow:inset 0 0 0 2px ${num === 6 ? '#000000' : '#2a1a00'}` : '';
+  return `${bg};color:${s.text}${border}`;
+}
+/** Apply an HFI class to a fuel card section: gradient fill + safe text colour. */
+function _paintHfiSection(el, num) {
+  if (!el) return;
+  const s = HFI_STYLE[num] || HFI_STYLE[1];
+  el.style.background = s.grad;
+  el.style.color = s.text;
+  el.dataset.hfi = String(num);
+}
 
 // Per-component thresholds (CFFDRS operational scale)
 const COMPONENT_THRESHOLDS = {
@@ -548,12 +600,12 @@ function wireFBP(weather, fwi) {
     const lblEl = document.getElementById('fwi-fbp-hfi-label'  + suffix);
     const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
     const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
-    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
-    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+    if (numEl) { numEl.textContent = cl.num; numEl.style.color = ''; }
+    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = ''; }
+    if (szEl)  { szEl.textContent  = cl.size; szEl.style.color = ''; }
     if (dscEl) { dscEl.textContent = cl.desc; }
     const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
-    if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
+    _paintHfiSection(sectionEl, cl.num);
   };
 
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -570,7 +622,63 @@ function wireFBP(weather, fwi) {
     : null;
   populateSection('-a', fbpA);
   populateSection('-b', fbpB);
+  // Provisional summary row from exactly what the cards now show; buildD1Card
+  // replaces it with the 16:00 peak-burn values when it repaints the cards.
+  _renderPeakSummary({ ffmc: fwi.ffmc, dmc: fwi.dmc, dc: fwi.dc, wind: weather.wind,
+    fbpA, fbpB, fuelA, fuelB, peak: false });
 }
+
+// ─── Station summary row (station_detail) ────────────────────────────────────
+// Danger + FWI + worst HFI are computed from the SAME inputs the Today
+// peak-burn cards render (FFMC/DMC/DC + the wind the cards' FBP used), so the
+// row can never disagree with the cards. FWI here = standard ISI/BUI/FWI from
+// those inputs — display only, the FWI/FBP science is untouched.
+let _summaryProv = null;
+function _renderPeakSummary(o) {
+  const row = document.getElementById('fwi-summary-row');
+  if (!row) return;
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  if (o.ffmc == null) {
+    set('fwi-summary-danger', `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">PENDING</span>`);
+    set('fwi-summary-fwi', '<span class="text-slate-300">FWI —</span>');
+    set('fwi-summary-hfi', '');
+    return;
+  }
+  const isi = _isi(o.ffmc, o.wind ?? 0);
+  const fwi = _fwi(isi, _bui(o.dmc, o.dc));
+  const danger = dangerRatingProv(fwi);
+  const t = _dangerTok(danger);
+  const when = o.peak ? `16:00 ${PROVINCE.tzLabel} peak burn` : 'current weather (peak-burn forecast loading…)';
+  set('fwi-summary-danger',
+    `<span class="pyra-chip pyra-chip-lg font-black uppercase tracking-wide" style="background:${t.solid};color:${t.on}">${danger}</span>`);
+  set('fwi-summary-fwi',
+    `<span class="font-headline text-xl font-black text-white">FWI ${fwi.toFixed(1)}</span> <span class="text-[11px] text-slate-300">${when}</span>`);
+  const cands = [[o.fbpA, o.fuelA], [o.fbpB, o.fuelB]].filter(([f]) => f);
+  if (cands.length) {
+    const [wf, wFuel] = cands.reduce((a, b) => (b[0].hfi > a[0].hfi ? b : a));
+    const cl = hfiClassInfo(wf.hfi);
+    set('fwi-summary-hfi',
+      `<span class="pyra-chip pyra-chip-lg font-bold" style="${hfiChipStyle(cl.num)}" title="Worst of the two selected fuels: ${_esc(FUEL_TYPES[wFuel]?.name || wFuel)} · ${Math.round(wf.hfi).toLocaleString()} kW/m">HFI ${cl.num} · ${cl.label}</span>` +
+      `<span class="text-[11px] text-slate-300">${_esc(FUEL_TYPES[wFuel]?.name || wFuel)}</span>`);
+  } else {
+    set('fwi-summary-hfi', '');
+  }
+  const live = document.getElementById('fwi-summary-live');
+  if (live) live.textContent = `${danger}, FWI ${fwi.toFixed(1)} at ${when}`;
+}
+
+/** Data-age + source chips (summary row and Today card); re-run every minute. */
+function _renderSummaryProv() {
+  const p = _summaryProv;
+  if (!p) return;
+  const fresh = _provenance(p.w, p.co);
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  set('fwi-summary-age', provenanceChipHTML(fresh));
+  set('fwi-summary-src',
+    `<span class="pyra-chip" title="${_esc(fresh.detail)}" style="${PROV_LEVEL_STYLE.neutral}">${fresh.network}</span>`);
+  set('fwi-today-prov', `${provenanceChipHTML(fresh, true)} <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="${_esc(fresh.detail)}">${fresh.network}</span>`);
+}
+let _summaryTimer = null;
 
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
@@ -1141,7 +1249,10 @@ function wireDOM(r, lat, lng) {
   document.querySelectorAll('[data-fwi-rating]').forEach(el => {
     const key = el.dataset.fwiRating;
     const val = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc, isi: r.isi, bui: r.bui, fwi: r.fwi }[key];
-    el.textContent = val != null ? componentRating(key, val).toUpperCase() : '—';
+    const rating = val != null ? componentRating(key, val) : null;
+    el.textContent = rating ? rating.toUpperCase() : '—';
+    // Same danger token colours as every other rating on the site (was pink/purple)
+    if (el.style) el.style.cssText = rating ? dangerChipStyle(rating) : '';
   });
 
   // Timestamp — show the actual CWFIS/BCWS observation date when available;
@@ -1166,6 +1277,24 @@ function wireDOM(r, lat, lng) {
     ? `CWFIS · ${r.weather.stationName}${_distStr}`
     : (_src ? `${_src}${r.weather.stationName && !/\bkm\b/.test(_src) ? _distStr : ''}` : 'Open-Meteo NWP');
   set('source-station', srcLabel);
+
+  // Plain-language provenance chips (summary row + Today card) and the role /
+  // valid-time label of the daily FWI in the components strip.
+  _summaryProv = { w: r.weather, co: r._cachedFWI || null };
+  _renderSummaryProv();
+  if (!_summaryTimer && document.getElementById('fwi-summary-row') && typeof setInterval === 'function') {
+    _summaryTimer = setInterval(_renderSummaryProv, 60000);
+  }
+  const roleEl = document.getElementById('fwi-daily-role');
+  if (roleEl) {
+    const fmtD = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const src = r.weather.source || '';
+    roleEl.textContent = r.ffmc == null ? 'CFFDRS daily FWI · pending (no chain yet)'
+      : src.includes('peak burn forecast') ? `CFFDRS daily FWI · stepped with 16:00 ${PROVINCE.tzLabel} model weather (pre-noon) · ${fmtD(_lstDateStr())}`
+      : r.weather.repDate ? `CFFDRS daily FWI · noon LST ${fmtD(r.weather.repDate)}`
+      : r._cachedFWI && !r._cachedFWI.final ? `CFFDRS daily FWI · noon LST ${fmtD(_lstDateStr())} · carried from ${fmtD(r._cachedFWI.obsDate)} chain`
+      : `CFFDRS daily FWI · noon LST ${fmtD(_lstDateStr())}`;
+  }
 
   // IDW toggle button state sync
   const idwBtn = document.getElementById('fwi-idw-toggle');
@@ -1247,6 +1376,7 @@ function wireDOM(r, lat, lng) {
 
   // FBP fire behaviour (station_detail only — skip if no FWI data yet)
   if (r.ffmc != null) wireFBP(r.weather, r);
+  else _renderPeakSummary({ ffmc: null });
 
   // D+1 tomorrow card (station_detail only — silently no-ops on other pages)
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
@@ -1754,6 +1884,81 @@ function _hfiClass(hfi) {
   return '6-Cat';
 }
 
+/**
+ * Plain-language provenance for a weather / FWI-chain result — shared by the
+ * station_detail summary row and the regional table + map popups.
+ *   kind     OBSERVED · MODEL FORECAST · CARRIED FROM YESTERDAY
+ *   network  CWFIS · BCWS · MSC SWOB · Open-Meteo (station network or model)
+ *   obsMs    observation time (CWFIS/BCWS rep_date = noon LST of that date; SWOB obs time)
+ *   level    'ok' ≤ 3 h · 'amber' > 3 h · 'red' > 24 h · 'neutral' (model, no obs time)
+ *   detail   technical detail for the chip title (source, station, distance, chain date)
+ * `co` = the dated carry-over that was used (from _carryOverFor), if any.
+ * Display only — it never changes which tier or carry-over the engine picked.
+ */
+function _provenance(w, co = null, nowMs = Date.now()) {
+  w = w || {};
+  const src = w.source || '';
+  const chainSrc = w.chainSource || src;
+  const network = chainSrc.startsWith('BCWS') ? 'BCWS'
+    : (w.fwiFromCWFIS || w.idwMode) ? 'CWFIS'
+    : src.startsWith('MSC') ? 'MSC SWOB'
+    : 'Open-Meteo';
+  const noonMs = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000;
+  let kind, obsMs = null;
+  if (co) {
+    kind = co.final ? 'OBSERVED' : 'CARRIED FROM YESTERDAY';
+    obsMs = co.obsDate ? noonMs(co.obsDate) : null;
+  } else if (w.fwiFromCWFIS && w.repDate) {
+    obsMs = noonMs(w.repDate);
+    kind = String(w.repDate).slice(0, 10) < _lstDateStr(nowMs) ? 'CARRIED FROM YESTERDAY' : 'OBSERVED';
+  } else if (network === 'MSC SWOB') {
+    kind = 'OBSERVED';
+    obsMs = w.obsTime ? Date.parse(w.obsTime) : null;
+  } else if (network === 'Open-Meteo') {
+    kind = 'MODEL FORECAST';
+  } else {
+    kind = 'OBSERVED';
+  }
+  const ageH = obsMs != null && isFinite(obsMs) ? Math.max(0, (nowMs - obsMs) / 3600000) : null;
+  const level = ageH == null ? 'neutral' : ageH > 24 ? 'red' : ageH > 3 ? 'amber' : 'ok';
+  const age = ageH == null ? '' : ageH < 1 ? '<1 h old' : ageH < 48 ? `${Math.round(ageH)} h old` : `${Math.round(ageH / 24)} d old`;
+  const parts = [];
+  if (src) parts.push(src);
+  if (w.stationName && !src.includes(w.stationName)) parts.push(w.stationName);
+  if (w.distKm != null && !/\bkm\b/.test(src)) parts.push(`${w.distKm} km away`);
+  if (w.repDate) parts.push(`chain date ${String(w.repDate).slice(0, 10)} (noon LST)`);
+  if (co) parts.push(`carry-over from the ${co.src === 'holding' ? 'holding cache' : 'daily CWFIS mirror'}, ${co.obsDate || '?'}${co.stationName ? ' · ' + co.stationName : ''}${co.final ? '' : ' — stepped one day with today’s weather'}`);
+  if (w.obsTime && !w.repDate) parts.push(`obs ${String(w.obsTime).slice(0, 16).replace('T', ' ')} UTC`);
+  if (w.idwMode) parts.push(`IDW blend of ${w.idwCount ?? '?'} stations`);
+  return { kind, network, obsMs, ageH, age, level, detail: parts.join(' · ') };
+}
+
+const PROV_LEVEL_STYLE = {
+  ok:      'background:#14532d66;color:#bbf7d0;border:1px solid #22c55e88',
+  amber:   'background:#78350f66;color:#fde68a;border:1px solid #f59e0b99',
+  red:     'background:#7f1d1d80;color:#fecaca;border:1px solid #ef4444aa',
+  neutral: 'background:#1e293b;color:#cbd5e1;border:1px solid #475569',
+};
+/** Plain-language provenance chip HTML. `short` uses the compact table face. */
+function provenanceChipHTML(p, short = false) {
+  const face = !short ? (p.kind === 'OBSERVED' ? 'OBSERVED (station sensor)' : p.kind)
+    : p.kind === 'CARRIED FROM YESTERDAY' ? 'CARRIED' : p.kind === 'MODEL FORECAST' ? 'MODEL' : p.kind;
+  const title = `${p.kind}${p.age ? ' — ' + p.age : ''} · ${p.network}${p.detail ? ' · ' + p.detail : ''}`;
+  return `<span class="pyra-chip" title="${_esc(title)}" style="${PROV_LEVEL_STYLE[p.level]}">${face}${p.age ? ' · ' + p.age : ''}</span>`;
+}
+
+/** Grey "No data" state for table rows still loading (slow) or never loaded (final). */
+function _markUnloadedRows(final = false) {
+  const tbody = document.getElementById('fwi-station-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr[data-state="loading"]').forEach(tr => {
+    const cell = tr.querySelector('td[data-cell="pending"]');
+    if (!cell) return;
+    cell.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">No data</span>` +
+      `<span class="ml-2 text-[11px] text-slate-400">${final ? 'the station feed returned nothing usable' : 'no response yet — still trying'}</span>`;
+    if (final) tr.dataset.state = 'nodata';
+  });
+}
 
 /** Update a single skeleton row in fwi-station-tbody with live data. */
 function _updateStationTableRow(entry) {
@@ -1762,31 +1967,21 @@ function _updateStationTableRow(entry) {
   if (!tr) return;
   const r = entry.result;
   const fbp = entry.fbp;
-  const srcBadge = entry.srcBadge || 'NWP';
-  const srcStyle = {
-    'BCWS':  'background:#0c304040;color:#7bd0ff;border:1px solid #1e5a7a',
-    'CWFIS': 'background:#14532d40;color:#4ade80;border:1px solid #166534',
-    'CWFIS D-1': 'background:#42200640;color:#fbbf24;border:1px dashed #b45309',
-    'SWOB':  'background:#17255440;color:#93c5fd;border:1px solid #1e40af',
-    'NWP':   'background:#451a0340;color:#fcd34d;border:1px solid #92400e',
-    'Error': 'background:#1c191740;color:#78716c;border:1px solid #44403c',
-  }[srcBadge] || 'background:#1c191740;color:#78716c;border:1px solid #44403c';
-  const dangerColor = {
-    'Low': '#2d9e58', 'Moderate': '#7bd0ff', 'High': '#f5c518',
-    'Very Low': '#a7f3d0', 'Very High': '#f97316', 'Extreme': '#ef4444',
-  }[r.danger] || '#7bd0ff';
+  const prov = entry.prov || _provenance(r.weather);
   const hfiLabel = fbp ? _hfiClass(fbp.hfi) : '—';
+  const hfiN     = _hfiNumOf(hfiLabel);
   const hfiNum   = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() : '—';
+  if (tr.dataset) tr.dataset.state = 'loaded';
   tr.innerHTML =
     `<td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${entry.navLat ?? entry.lat},${entry.navLng ?? entry.lng}')" class="text-[#7bd0ff] hover:underline">${entry.name}</a></td>` +
-    `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(entry.navLat ?? entry.lat, entry.navLng ?? entry.lng)}</td>` +
-    `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;${srcStyle}">${srcBadge}</span></td>` +
+    `<td class="py-2 pr-2 text-slate-400 text-[11px]">${stationSector(entry.navLat ?? entry.lat, entry.navLng ?? entry.lng)}</td>` +
+    `<td class="py-2 pr-2 whitespace-nowrap">${provenanceChipHTML(prov, true)}<span class="block text-[11px] text-slate-400 mt-0.5">${prov.network}</span></td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.temp != null ? (+r.weather.temp).toFixed(1) : '—'}°</td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.rh != null ? Math.round(r.weather.rh) : '—'}%</td>` +
     `<td class="py-2 pr-2 text-right text-xs">${r.weather?.wind != null ? Math.round(r.weather.wind) : '—'}</td>` +
     `<td class="py-2 pr-2 text-right text-xs font-bold text-[#dae2fd]">${r.fwi != null ? r.fwi.toFixed(1) : '—'}</td>` +
-    `<td class="py-2 pr-2 text-xs font-bold" style="color:${dangerColor}">${r.danger}</td>` +
-    `<td class="py-2 pr-3 text-right text-[10px] text-slate-400">${hfiLabel}<br><span class="text-[9px] text-slate-600">${hfiNum!=='—' ? hfiNum+' kW/m' : ''}</span></td>`;
+    `<td class="py-2 pr-2 text-xs whitespace-nowrap"><span class="pyra-chip font-bold" style="${dangerChipStyle(r.danger)}">${r.danger}</span></td>` +
+    `<td class="py-2 pr-3 text-right whitespace-nowrap">${hfiN ? `<span class="pyra-chip font-bold" style="${hfiChipStyle(hfiN)}" title="HFI class ${hfiLabel}">${hfiLabel}</span>` : '—'}<span class="block text-[11px] text-slate-400 mt-0.5">${hfiNum !== '—' ? hfiNum + ' kW/m' : ''}</span></td>`;
 
   // Update header stats from running cache
   const valid = _mapStationCache.filter(e => e.result?.fwi != null);
@@ -1856,18 +2051,28 @@ function _updateAlarmStrip() {
   const thEl = document.getElementById('fwi-alarm-threshold-label');
   if (thEl) thEl.textContent = `FWI ≥ ${threshold}`;
   if (!alarms.length) {
-    strip.innerHTML = `<span class="text-[10px] text-slate-600 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
+    strip.innerHTML = `<span class="text-[11px] text-slate-400 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
     return;
   }
-  const DANGER_COLORS = { Low:'#2d9e58', Moderate:'#7bd0ff', High:'#f5c518', 'Very High':'#f97316', Extreme:'#ef4444' };
-  strip.innerHTML = alarms.map(e => {
-    const c = DANGER_COLORS[e.result.danger] || '#7bd0ff';
-    const nav = `${e.navLat ?? e.lat},${e.navLng ?? e.lng}`;
-    return `<a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${nav}')"
-      class="inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors hover:brightness-110"
-      style="background:${c}22;border-color:${c}55;color:${c}">
-      <span>${e.name}</span><span class="font-headline">${e.result.fwi.toFixed(1)}</span>
-    </a>`;
+  // Grouped by danger class (highest first) with counts; each group expands to
+  // its station links. Open groups survive the per-row re-render.
+  const open = new Set([...strip.querySelectorAll('details[open]')].map(d => d.dataset.danger));
+  const order = ['Extreme', 'Very High', 'High', 'Moderate', 'Low', 'Very Low'];
+  const groups = order.map(d => [d, alarms.filter(e => e.result.danger === d)]).filter(([, l]) => l.length);
+  strip.innerHTML = groups.map(([d, list]) => {
+    const t = _dangerTok(d);
+    const links = list.map(e => {
+      const nav = `${e.navLat ?? e.lat},${e.navLng ?? e.lng}`;
+      return `<a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${nav}')"
+        class="inline-flex items-center gap-1.5 min-h-[32px] px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-colors hover:brightness-110"
+        style="${dangerChipStyle(d)}"><span>${e.name}</span><span class="font-headline">${e.result.fwi.toFixed(1)}</span></a>`;
+    }).join('');
+    return `<details data-danger="${d}" class="w-full sm:w-auto"${open.has(d) ? ' open' : ''}>
+      <summary class="inline-flex items-center gap-2 min-h-[44px] px-3 rounded-lg cursor-pointer text-xs font-bold" style="background:${t.solid};color:${t.on}">
+        <span>${d}</span><span class="font-headline text-sm">${list.length}</span><span class="font-normal">station${list.length === 1 ? '' : 's'}</span>
+      </summary>
+      <div class="flex flex-wrap gap-2 mt-2">${links}</div>
+    </details>`;
   }).join('');
 }
 
@@ -1985,7 +2190,7 @@ const DANGER_COLORS = {
   'Moderate':  { bar: 'bg-primary',            badge: 'bg-primary-container border border-primary/20 text-primary', dot: 'bg-primary shadow-[0_0_8px_#7bd0ff]' },
   'High':      { bar: 'bg-[#f5c518]',  badge: 'bg-[#f5c518]/10 text-[#f5c518]',   dot: 'bg-[#f5c518] shadow-[0_0_8px_#f5c518]' },
   'Very High': { bar: 'bg-[#f97316]',  badge: 'bg-[#f97316]/10 text-[#f97316]',   dot: 'bg-[#f97316] shadow-[0_0_8px_#f97316]' },
-  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/10 text-[#ef4444]',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
+  'Extreme':   { bar: 'bg-[#ef4444]',  badge: 'bg-[#ef4444]/15 text-[#f87171] border border-[#ef4444]/40',   dot: 'bg-[#ef4444] shadow-[0_0_8px_#ef4444]' },
 };
 
 function regionCard(name, sector, r) {
@@ -2048,23 +2253,23 @@ async function buildRegionalSummary() {
       <table id="fwi-station-table" class="w-full text-sm">
         <thead class="bg-[#131b2e] sticky top-0">
           <tr>
-            <th class="text-left py-2.5 pl-3 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="name">Station ↕</th>
-            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="sector">Sector</th>
-            <th class="py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 whitespace-nowrap">Src</th>
-            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="temp">Temp</th>
-            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="rh">RH</th>
-            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="wind">Wind</th>
-            <th class="text-right py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="fwi">FWI</th>
-            <th class="text-left py-2.5 pr-2 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="danger">Danger</th>
-            <th class="text-right py-2.5 pr-3 font-label text-[9px] uppercase tracking-widest text-slate-500 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="hfi">HFI Cls</th>
+            <th class="text-left py-2.5 pl-3 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="name">Station ↕</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="sector">Sector</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 whitespace-nowrap">Source</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="temp">Temp</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="rh">RH</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="wind">Wind</th>
+            <th class="text-right py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="fwi">FWI</th>
+            <th class="text-left py-2.5 pr-2 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none" data-sort="danger">Danger</th>
+            <th class="text-right py-2.5 pr-3 font-label text-[11px] uppercase tracking-wider text-slate-400 cursor-pointer hover:text-[#7bd0ff] select-none whitespace-nowrap" data-sort="hfi">HFI Cls</th>
           </tr>
         </thead>
         <tbody id="fwi-station-tbody" class="divide-y divide-[#1e2740]">
           ${sorted.map(s =>
-            `<tr id="srow-${s.name.replace(/\s+/g,'-')}" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
+            `<tr id="srow-${s.name.replace(/\s+/g,'-')}" data-state="loading" class="bg-[#0f1829] hover:bg-[#131b2e] transition-colors">
               <td class="py-2 pl-3 pr-2 font-semibold text-xs"><a href="../station_detail/code.html" onclick="localStorage.setItem('${PROVINCE.storageKeys.station}','${s.lat},${s.lng}')" class="text-[#7bd0ff] hover:underline">${s.name}</a></td>
-              <td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(s.lat, s.lng)}</td>
-              <td colspan="7" class="py-2 pr-3 text-slate-700 text-[10px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse inline-block"></span>loading</span></td>
+              <td class="py-2 pr-2 text-slate-400 text-[11px]">${stationSector(s.lat, s.lng)}</td>
+              <td colspan="7" data-cell="pending" class="py-2 pr-3 text-slate-400 text-[11px]"><span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse inline-block" aria-hidden="true"></span>Loading…</span></td>
             </tr>`
           ).join('')}
         </tbody>
@@ -2072,7 +2277,14 @@ async function buildRegionalSummary() {
     </div>`;
 
   // Wire sortable column headers
+  // Rows the map loop has not reached yet get an explicit grey state after 20 s
+  // (BC runs the full tier chain per station, so late rows are normal); rows
+  // still empty when the map loop finishes are marked "No data" there.
+  setTimeout(() => _markUnloadedRows(false), 20000);
   list.querySelectorAll('#fwi-station-table th[data-sort]').forEach(th => {
+    th.tabIndex = 0;
+    th.setAttribute('aria-label', `Sort by ${th.textContent.replace(/[↕↑↓]/g, '').trim()}`);
+    th.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); th.click(); } });
     th.addEventListener('click', () => {
       const col = th.dataset.sort;
       if (_sortCol === col) _sortAsc = !_sortAsc;
@@ -2264,7 +2476,7 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
     const bg = isPast ? c.bar : c.bar + '/30';
     const timeLabel = r.time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false });
     return `<div class="flex-1 ${bg} rounded-t-sm transition-colors cursor-help group relative" style="height:${h}%">` +
-      `<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-surface-container-highest px-2 py-1 rounded text-[10px] whitespace-nowrap z-10">${timeLabel} — ${fmt(r.fwi)}</div>` +
+      `<div class="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-surface-container-highest px-2 py-1 rounded text-[11px] whitespace-nowrap z-10">${timeLabel} — ${fmt(r.fwi)}</div>` +
       `</div>`;
   }).join('');
 
@@ -2410,10 +2622,16 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elPWF) elPWF.textContent = peakDay.fwi.toFixed(1);
     if (elPWD) elPWD.textContent = winLabel;
     if (elPWR) {
-      const c = DANGER_COLORS[peakDay.danger] || DANGER_COLORS['Moderate'];
       elPWR.textContent = peakDay.danger;
-      elPWR.className   = `text-[10px] font-bold uppercase px-2 py-1 rounded-full ${c.badge}`;
+      elPWR.className   = 'pyra-chip text-[11px] font-bold uppercase';
+      if (elPWR.style) elPWR.style.cssText = dangerChipStyle(peakDay.danger);
     }
+    // Role + valid time for every forecast FWI on this page (owner rule: no
+    // unlabelled FWI numbers). These are daily noon-LST chain values, not the
+    // station page's 16:00 peak-burn headline.
+    const chainRole = naefsSt && /^NAEFS/.test(forecastSource) ? 'NAEFS ensemble chain' : 'ECMWF via Open-Meteo chain';
+    const elRole = document.getElementById('fwi-peak-window-role');
+    if (elRole) elRole.textContent = `${chainRole} · daily FWI, valid noon LST ${peakDay.label}`;
 
     // Days at elevated risk — FWI at or above the province's "High" class
     // (PROVINCE.highDangerFWI: AB 15.5 on the CWFIS FWI map intervals, BC 21)
@@ -2436,10 +2654,17 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     if (elTL) elTL.textContent = wTrend;
     if (elW1) elW1.textContent = w1avg.toFixed(1);
     if (elW2) elW2.textContent = w2avg.toFixed(1);
+    // The trend compares period averages; say where the peak falls so "Peak
+    // EXTREME" beside "IMPROVING" reads as consistent, not contradictory.
+    const elTN = document.getElementById('fwi-outlook-trend-note');
+    if (elTN) {
+      const peakWk = peakIdx < half ? 'first' : 'second';
+      elTN.textContent = `Compares average FWI, not the peak. Peak ${peakDay.fwi.toFixed(1)} (${peakDay.danger}) falls in the ${peakWk} half of the outlook.`;
+    }
 
     // Data source pill
     const elSrc = document.getElementById('fwi-source-label');
-    if (elSrc) elSrc.textContent = forecastSource;
+    if (elSrc) elSrc.textContent = `${chainRole} · daily FWI, valid noon LST · ${forecastSource}`;
 
     // Forecast summary paragraph
     const sumEl = document.getElementById('fwi-forecast-summary');
@@ -2470,7 +2695,6 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       const d1 = results[d1SafeIdx];
       const d1fbp = d1.fbp;
       const d1pw  = d1.peakWeather || d1;
-      const d1c   = DANGER_COLORS[d1.danger] || DANGER_COLORS['Moderate'];
       const setD1 = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setD1('fwi-d1-label', d1.label || 'D+1');
       setD1('fwi-d1-temp',  fmt(d1pw.temp) + '°C');
@@ -2478,22 +2702,30 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       setD1('fwi-d1-wind',  fmt(d1pw.wind, 0) + ' km/h');
       setD1('fwi-d1-isi',   d1.isi.toFixed(1));
       setD1('fwi-d1-fwi',   d1.fwi.toFixed(1));
+      setD1('fwi-d1-fwi-role', `${chainRole} · daily FWI, valid noon LST ${d1.label || ''}`);
       const d1RatingEl = document.getElementById('fwi-d1-rating');
-      if (d1RatingEl) { d1RatingEl.textContent = d1.danger; d1RatingEl.className = `ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${d1c.badge}`; }
+      if (d1RatingEl) { d1RatingEl.textContent = d1.danger; d1RatingEl.className = 'pyra-chip ml-1 text-[11px] font-bold'; if (d1RatingEl.style) d1RatingEl.style.cssText = dangerChipStyle(d1.danger); }
       if (d1fbp) {
-        const hfiColour = d1fbp.hfi >= 4000 ? 'text-tertiary' : d1fbp.hfi >= 2000 ? 'text-orange-400' : d1fbp.hfi >= 500 ? 'text-yellow-400' : 'text-secondary';
+        const d1cl = hfiClassInfo(d1fbp.hfi);
         setD1('fwi-d1-ros',   d1fbp.ros.toFixed(1));
         const d1HfiEl = document.getElementById('fwi-d1-hfi');
-        if (d1HfiEl) { d1HfiEl.textContent = Math.round(d1fbp.hfi).toLocaleString(); d1HfiEl.className = `font-headline text-2xl font-bold ${hfiColour}`; }
+        if (d1HfiEl) { d1HfiEl.textContent = Math.round(d1fbp.hfi).toLocaleString(); d1HfiEl.className = 'font-headline text-2xl font-bold text-white'; }
+        const d1HfiCls = document.getElementById('fwi-d1-hfi-class');
+        if (d1HfiCls) { d1HfiCls.textContent = `HFI ${d1cl.num} · ${d1cl.label}`; if (d1HfiCls.style) d1HfiCls.style.cssText = hfiChipStyle(d1cl.num); }
         setD1('fwi-d1-flame', d1fbp.flameLength.toFixed(1) + ' m');
         setD1('fwi-d1-type',  d1fbp.fireType);
         setD1('fwi-d1-cfb',   (d1fbp.cfb * 100).toFixed(0) + '%');
       }
       const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
       setD1('fwi-d1-fuel', `${fuelCode} — ${fuelName}`);
-      // Escape warning
+      // Escape warning — names the day the prediction is for (was always "tomorrow")
       const d1WarnEl = document.getElementById('fwi-d1-escape-warn');
-      if (d1WarnEl) d1WarnEl.style.display = (d1fbp && d1fbp.hfi >= 4000) ? 'block' : 'none';
+      if (d1WarnEl) {
+        const dl = days[d1SafeIdx]?._ts ? _localDateStr(days[d1SafeIdx]._ts) : null;
+        const whenTxt = dl && dl > _localDateStr() ? `tomorrow (${d1.label})` : `today (${d1.label})`;
+        d1WarnEl.textContent = `⚠ HFI ≥ 4,000 kW/m — potential for escaped fire during the peak burn period ${whenTxt}`;
+        d1WarnEl.style.display = (d1fbp && d1fbp.hfi >= 4000) ? 'block' : 'none';
+      }
     }
 
     // Bar chart — all 7 days, coloured by danger rating
@@ -2503,7 +2735,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
         const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
         const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
         return `<div class="w-full ${c.bar} rounded-t-sm transition-colors relative group cursor-help" style="height:${h}%">` +
-          `<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[9px] text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">${r.label} — ${r.fwi.toFixed(1)} (${r.danger})</div>` +
+          `<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[11px] text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded hidden group-hover:block whitespace-nowrap z-10">${r.label} — ${r.fwi.toFixed(1)} (${r.danger})</div>` +
           `</div>`;
       }).join('');
     }
@@ -2526,17 +2758,18 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       fbpTbody.innerHTML = results.map((r, i) => {
         const pw  = days[i]?.peak || days[i];
         const fbp = r.fbp;
-        const dc  = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
-        const hfiColour = !fbp ? '' : fbp.hfi >= 4000 ? 'color:#ff4d4d' : fbp.hfi >= 2000 ? 'color:#fb923c' : fbp.hfi >= 500 ? 'color:#facc15' : 'color:#4ae176';
-        const isD1 = i === 0;
+        const hn  = fbp ? hfiClassInfo(fbp.hfi).num : 0;
+        const dl  = days[i]?._ts ? _localDateStr(days[i]._ts) : null;
+        const tag = dl === _localDateStr() ? 'Today' : dl === _localDateStr(Date.now() + 86400000) ? 'Tomorrow' : '';
+        const isD1 = i === d1SafeIdx;
         return `<tr class="hover:bg-surface-container transition-colors ${isD1 ? 'bg-surface-container/50' : ''}">
-  <td class="py-3 pl-4 font-headline font-bold text-white text-sm">${r.label}${isD1 ? ' <span class="text-[9px] font-label text-primary ml-1">D+1</span>' : ''}</td>
+  <td class="py-3 pl-4 pr-3 font-headline font-bold text-white text-sm whitespace-nowrap">${r.label}${tag ? ` <span class="text-[11px] font-label text-primary ml-1">${tag}</span>` : ''}</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.temp ?? days[i]?.temp)}°C</td>
-  <td class="py-3 text-sm ${(pw?.rh ?? days[i]?.rh) < 30 ? 'text-tertiary font-bold' : 'text-on-surface-variant'}">${fmt(pw?.rh ?? days[i]?.rh, 0)}%</td>
+  <td class="py-3 text-sm ${(pw?.rh ?? days[i]?.rh) < 30 ? 'text-amber-300 font-bold' : 'text-on-surface-variant'}">${fmt(pw?.rh ?? days[i]?.rh, 0)}%</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.wind ?? days[i]?.wind, 0)} km/h${pw?.wdir != null ? ' ' + compassDir(pw.wdir) : ''}</td>
-  <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${dc.badge}">${r.fwi.toFixed(1)}</span></td>
+  <td class="py-3"><span class="pyra-chip text-[11px] font-bold" style="${dangerChipStyle(r.danger)}" title="${r.danger}">${r.fwi.toFixed(1)}</span></td>
   <td class="py-3 text-sm text-on-surface-variant">${fbp ? fbp.ros.toFixed(1) : '—'}</td>
-  <td class="py-3 text-sm font-bold" style="${hfiColour}">${fbp ? Math.round(fbp.hfi).toLocaleString() : '—'}</td>
+  <td class="py-3 text-sm whitespace-nowrap">${fbp ? `<span class="pyra-chip font-bold" style="${hfiChipStyle(hn)}">${hn}</span> <span class="text-on-surface-variant">${Math.round(fbp.hfi).toLocaleString()}</span>` : '—'}</td>
   <td class="py-3 text-sm text-on-surface-variant">${fbp ? fbp.fireType : '—'}</td>
 </tr>`;
       }).join('');
@@ -2550,29 +2783,41 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       for (const reg of tableStations) {
         try {
           const w = await fetchWeatherPrimary(reg.lat, reg.lng);
-          const r = calculateFWI(w);
+          // Same dated carry-over as the station map (no cold-start STARTUP
+          // codes, which made every row read MODERATE).
+          let prev = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(reg.name) };
+          let co = null;
+          if (!w.fwiFromCWFIS) {
+            co = _carryOverFor(reg.lat, reg.lng, reg.name);
+            if (co) prev = { ffmc: co.ffmc, dmc: co.dmc, dc: co.dc };
+          }
+          const r = co?.final
+            ? calculateFWI({ ...w, fwiFromCWFIS: true, ...prev }, prev)
+            : calculateFWI(w, prev);
+          const prov = _provenance(w, co);
           const name = reg.name.toUpperCase();
           tableHTML += `
 <tr class="hover:bg-surface-container transition-colors">
-  <td class="py-5 pl-6">
+  <td class="py-4 pl-4 pr-3">
     <span class="block text-white font-bold font-headline">${name}</span>
+    <span class="block mt-1 whitespace-nowrap">${provenanceChipHTML(prov, true)} <span class="text-[11px] text-slate-400">${prov.network}</span></span>
   </td>
-  <td class="py-5 font-headline font-bold text-white">${fmt(r.weather.temp)}°C</td>
-  <td class="py-5 font-bold ${r.weather.rh < 30 ? 'text-tertiary' : 'text-secondary'}">RH ${fmt(r.weather.rh, 0)}%</td>
-  <td class="py-5 text-sm text-on-surface-variant">${fmt(r.weather.wind, 0)} km/h${r.weather.wdir != null ? ' ' + compassDir(r.weather.wdir) : ''}</td>
-  <td class="py-5">
-    <span class="px-3 py-1 rounded-full text-[10px] font-bold" style="${r.danger === 'Extreme' ? 'background:#ef444420;color:#ef4444' : r.danger === 'Very High' ? 'background:#f9731620;color:#f97316' : r.danger === 'High' ? 'background:#f5c51820;color:#f5c518' : r.danger === 'Moderate' ? 'background:#7bd0ff20;color:#7bd0ff' : 'background:#4ae17620;color:#4ae176'}">${r.danger.toUpperCase()}</span>
+  <td class="py-4 pr-3 font-headline font-bold text-white whitespace-nowrap">${fmt(r.weather.temp)}°C</td>
+  <td class="py-4 pr-3 font-bold whitespace-nowrap ${r.weather.rh < 30 ? 'text-amber-300' : 'text-on-surface'}">${fmt(r.weather.rh, 0)}%</td>
+  <td class="py-4 pr-3 text-sm text-on-surface-variant whitespace-nowrap">${fmt(r.weather.wind, 0)} km/h${r.weather.wdir != null ? ' ' + compassDir(r.weather.wdir) : ''}</td>
+  <td class="py-4 pr-3">
+    <span class="pyra-chip text-[11px] font-bold" style="${dangerChipStyle(r.danger)}">${r.danger.toUpperCase()}</span>
   </td>
-  <td class="py-5 pr-6">
-    <div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
-      <div class="h-full bg-primary" style="width:${Math.min(100, r.fwi * 2).toFixed(1)}%"></div>
+  <td class="py-4 pr-4">
+    <span class="text-sm font-bold text-white block">${fmt(r.fwi)}</span>
+    <div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden mt-1" aria-hidden="true">
+      <div class="h-full" style="background:${_dangerTok(r.danger).solid};width:${Math.min(100, r.fwi * 2).toFixed(1)}%"></div>
     </div>
-    <span class="text-xs text-outline mt-1 block">${fmt(r.fwi)}</span>
   </td>
 </tr>`;
         } catch (e) {
           console.warn(`[FWI Trend Table] ${reg.name}:`, e);
-          tableHTML += `<tr><td colspan="5" class="py-3 pl-6 text-slate-600 text-xs">${reg.name} — unavailable</td></tr>`;
+          tableHTML += `<tr><td colspan="6" class="py-3 pl-4 text-slate-400 text-xs"><span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">No data</span> ${reg.name} — unavailable</td></tr>`;
         }
       }
       tbody.innerHTML = tableHTML;
@@ -2580,7 +2825,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
   } catch (e) {
     console.warn('[FWI Forecast]', e);
     const tbody = document.getElementById('fwi-trend-tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-500 py-6">Forecast unavailable — check connection</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Forecast unavailable — check connection</td></tr>`;
   }
 }
 
@@ -3154,7 +3399,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
-    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg === '#d4edda' ? '#28a745' : hfiClassInfo(fbp.hfi).bg === '#cce5ff' ? '#0066cc' : hfiClassInfo(fbp.hfi).bg === '#fff3cd' ? '#856404' : hfiClassInfo(fbp.hfi).bg === '#ffe5cc' ? '#d35400' : '#c0392b'};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
+    ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
     ${escapedNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
   </div>
@@ -3197,14 +3442,15 @@ ${d1Section}
       </tr>
     </thead>
     <tbody>
-      ${[{n:1,r:'< 200',        d:'Walk-in direct attack',                           bg:'#d4edda',t:'#155724'},
-         {n:2,r:'200 – 500',    d:'Direct attack with hand tools',                   bg:'#cce5ff',t:'#004085'},
-         {n:3,r:'500 – 2,000',  d:'Tallest firefighter flame length — direct attack limit', bg:'#fff3cd',t:'#856404'},
-         {n:4,r:'2,000 – 4,000',d:'Fire truck height — consider indirect attack',    bg:'#ffe5cc',t:'#7d3200'},
-         {n:5,r:'4,000 – 10,000',d:'Bungalow roofline — aircraft ineffective at the head', bg:'#f8d7da',t:'#721c24'},
-         {n:6,r:'10,000+',      d:'Catastrophic — uncontrollable',                   bg:'#4a0010',t:'#ffccdd'}]
+      ${[{n:1,r:'< 10',          h:5},
+         {n:2,r:'10 – 500',      h:200},
+         {n:3,r:'500 – 2,000',   h:1000},
+         {n:4,r:'2,000 – 4,000', h:3000},
+         {n:5,r:'4,000 – 10,000',h:6000},
+         {n:6,r:'10,000+',       h:20000}]
+        .map(c => { const ci = hfiClassInfo(c.h); return { ...c, d: `${ci.label} — ${ci.size} · ${ci.desc}` }; })
         .map((c,i)=>`<tr style="background:${i%2===0?'#fff':'#fafafa'}">
-          <td style="padding:4px 8px;text-align:center;border-bottom:1px solid #eee"><span style="display:inline-block;min-width:24px;padding:2px 6px;border-radius:3px;background:${c.bg};color:${c.t};font-weight:900;font-size:9.5pt;text-align:center">${c.n}</span></td>
+          <td style="padding:4px 8px;text-align:center;border-bottom:1px solid #eee"><span style="display:inline-block;min-width:24px;padding:2px 6px;border-radius:3px;${hfiChipStyle(c.n)};font-weight:900;font-size:9.5pt;text-align:center">${c.n}</span></td>
           <td style="padding:4px 8px;border-bottom:1px solid #eee;font-weight:600">${c.r} kW/m</td>
           <td style="padding:4px 8px;border-bottom:1px solid #eee">${c.d}</td>
         </tr>`).join('')}
@@ -3230,13 +3476,8 @@ ${d1Section}
 
 // ─── Live Station Map (Leaflet) ───────────────────────────────────────────────
 
-const MARKER_COLORS = {
-  'Low':       '#4ae176',
-  'Moderate':  '#7bd0ff',
-  'High':      '#f5c518',
-  'Very High': '#ff8c42',
-  'Extreme':   '#ff4d4d',
-};
+// Marker fills come from DANGER_TOKENS (solid) — kept as a lookup for callers.
+const MARKER_COLORS = Object.fromEntries(Object.entries(DANGER_TOKENS).map(([k, t]) => [k, t.solid]));
 
 /**
  * Build a Leaflet map with CartoDB Voyager tiles.
@@ -3251,42 +3492,44 @@ async function buildStationMap(containerId, mapOpts = {}) {
   // Pre-load yesterday's CWFIS carry-over values for Van Wagner accuracy
   if (!_cwfisPrev.stations) await loadCWFISPrev();
 
-  // HFI class → right-half pill color (muted palette — always visually distinct from vivid FWI left half)
-  const HFI_CLASS_COLORS = {
-    '1-Low':'#a8f0c0','2-Mod':'#b8e2f9','3-High':'#ffe082',
-    '4-VH':'#ffb74d','5-Ext':'#ff7043','6-Cat':'#b71c1c','—':'#d1d5db',
-  };
-
   // Zoom-responsive pill sizes: sm=provincial, md=regional, lg=municipal
   const PILL_SIZES = {
-    sm: { w:46, h:30, r:15, lbl:5,  fv:10, hn:9,  hw:0  },
-    md: { w:60, h:40, r:20, lbl:6,  fv:13, hn:11, hw:5.5},
-    lg: { w:72, h:48, r:24, lbl:7,  fv:15, hn:13, hw:7  },
+    sm: { w:46, h:30, r:15, lbl:6,  fv:11, hn:11, hw:0  },
+    md: { w:60, h:40, r:20, lbl:7,  fv:13, hn:12, hw:6.5},
+    lg: { w:72, h:48, r:24, lbl:8,  fv:15, hn:14, hw:7.5},
   };
   function _zoomScale(zoom) { return zoom <= 5 ? 'sm' : zoom <= 7 ? 'md' : 'lg'; }
 
-  // Bicolor pill: left half = FWI danger color, right half = HFI class color
-  function _makeIcon(fwiColor, hfiColor, fwiVal, hfiCls, scale, srcType) {
+  // Bicolor pill: left half = FWI danger (DANGER_TOKENS), right half = HFI class
+  // (card palette HFI_STYLE, safe text; classes 5/6 add a hatch + black outline
+  // so they never rely on colour alone). Shape encodes the source tier:
+  // square = agency chain (CWFIS/BCWS), rounded = SWOB sensor, pill = model.
+  function _makeIcon(danger, fwiVal, hfiCls, scale, srcType) {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
+    const hn = _hfiNumOf(hfiCls);
+    const hs = HFI_STYLE[hn] || { fill: '#d1d5db', text: '#0b1326', pattern: '' };
+    const dt = _dangerTok(danger);
     const sz = PILL_SIZES[scale] || PILL_SIZES.md;
     const half = Math.floor(sz.w / 2);
     const br = (srcType === 'CWFIS' || srcType === 'CWFIS D-1' || srcType === 'BCWS') ? 3 : srcType === 'SWOB' ? 8 : sz.r;
+    const ring = hn >= 6 ? '0 0 0 2.5px #000,0 0 0 4px #fff' : hn === 5 ? '0 0 0 2px #2a1a00' : '0 0 0 1.5px rgba(0,0,0,0.25)';
+    const hfiBg = hs.pattern ? `${hs.pattern},${hs.fill}` : hs.fill;
     return L.divIcon({
       className: '',
-      html: `<div style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
-            `box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 1.5px rgba(0,0,0,0.12);` +
+      html: `<div role="img" aria-label="FWI ${fwiVal} ${danger || ''}, HFI class ${hfiCls || 'unknown'}" style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
+            `box-shadow:0 2px 8px rgba(0,0,0,0.4),${ring};` +
             `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
-            `<div style="width:${half}px;height:100%;background:${fwiColor};display:flex;flex-direction:column;` +
+            `<div style="width:${half}px;height:100%;background:${dt.solid};color:${dt.on};display:flex;flex-direction:column;` +
             `align-items:center;justify-content:center;gap:1px">` +
-            `<span style="font-size:${sz.lbl}px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
-            `<span style="font-size:${sz.fv}px;font-weight:800;color:rgba(0,0,0,0.8);letter-spacing:-.03em;line-height:1">${fwiVal}</span>` +
+            `<span style="font-size:${sz.lbl}px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:1">FWI</span>` +
+            `<span style="font-size:${sz.fv}px;font-weight:800;letter-spacing:-.03em;line-height:1">${fwiVal}</span>` +
             `</div>` +
-            `<div style="width:1px;background:rgba(0,0,0,0.15);flex-shrink:0"></div>` +
-            `<div style="width:${sz.w - half - 1}px;height:100%;background:${hfiColor};display:flex;flex-direction:column;` +
+            `<div style="width:1px;background:rgba(0,0,0,0.25);flex-shrink:0"></div>` +
+            `<div style="width:${sz.w - half - 1}px;height:100%;background:${hfiBg};color:${hs.text};display:flex;flex-direction:column;` +
             `align-items:center;justify-content:center;gap:1px">` +
-            `<span style="font-size:${sz.lbl}px;font-weight:700;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
-            `<span style="font-size:${sz.hn}px;font-weight:800;color:rgba(0,0,0,0.8);line-height:1">${hfiNum || '—'}</span>` +
-            (sz.hw ? `<span style="font-size:${sz.hw}px;font-weight:600;color:rgba(0,0,0,0.6);line-height:1">${hfiWord || ''}</span>` : '') +
+            `<span style="font-size:${sz.lbl}px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:1">HFI</span>` +
+            `<span style="font-size:${sz.hn}px;font-weight:900;line-height:1">${hfiNum || '—'}</span>` +
+            (sz.hw ? `<span style="font-size:${sz.hw}px;font-weight:700;line-height:1">${hfiWord || ''}</span>` : '') +
             `</div>` +
             `</div>`,
       iconSize: [sz.w, sz.h], iconAnchor: [sz.w/2, sz.h/2], popupAnchor: [0, -(sz.h/2 + 4)],
@@ -3408,8 +3651,9 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // the NOMINAL picker coords (navLat/navLng) — station_detail resolves the
       // saved station by matching the station list within 0.01°, which the
       // CWFIS-corrected sensor coords would miss, landing on the wrong station.
-      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
-      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge });
+      const prov = _provenance(w, usedCachedPrev ? cachedPrevEntry : null);
+      _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge, prov });
+      _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge, prov });
 
       // Move marker to actual station position.
       // markerClusterGroup requires remove→setLatLng→add to re-index spatial position.
@@ -3422,10 +3666,9 @@ async function buildStationMap(containerId, mapOpts = {}) {
       }
 
       const scale    = _zoomScale(map.getZoom());
-      const fwiColor = MARKER_COLORS[r.danger] || '#7bd0ff';
       const hfiCls   = fbp ? _hfiClass(fbp.hfi) : '—';
-      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[s.name].setIcon(_makeIcon(fwiColor, hfiColor, r.fwi.toFixed(1), hfiCls, scale, srcBadge));
+      markers[s.name].setIcon(_makeIcon(r.danger, r.fwi.toFixed(1), hfiCls, scale, srcBadge));
+      const dTok = _dangerTok(r.danger);
 
       // Popup — full station detail card
       const hfiNumStr  = fbp?.hfi != null ? Math.round(fbp.hfi).toLocaleString() + ' kW/m' : '—';
@@ -3441,38 +3684,39 @@ async function buildStationMap(containerId, mapOpts = {}) {
         ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: PROVINCE.tzName }) + ` ${PROVINCE.tzLabel}`
         : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: PROVINCE.tzName }) + ` ${PROVINCE.tzLabel} (calc)`;
       const sourceStnLine = w.stationName
-        ? `<div style="font-size:9px;color:#64748b;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
+        ? `<div style="font-size:11px;color:#475569;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
         : '';
       markers[s.name].setPopupContent(
         `<div style="font-family:'Space Grotesk',sans-serif;min-width:220px">` +
         `<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:1px">${s.name}</div>` +
         sourceStnLine +
-        `<div style="font-size:9px;color:#94a3b8;font-family:monospace;margin-bottom:1px">${coordStr}</div>` +
-        `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
-        `<div style="font-size:8px;color:#64748b;margin-bottom:${usedCachedPrev ? '2' : '6'}px">Obs: <strong>${obsTs}</strong></div>` +
+        `<div style="font-size:11px;color:#475569;font-family:monospace;margin-bottom:1px">${coordStr}</div>` +
+        `<div style="margin:3px 0 4px"><span title="${_esc(prov.detail)}" style="display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:${prov.level === 'red' ? '#fee2e2' : prov.level === 'amber' ? '#fef3c7' : prov.level === 'ok' ? '#dcfce7' : '#f1f5f9'};color:${prov.level === 'red' ? '#7f1d1d' : prov.level === 'amber' ? '#78350f' : prov.level === 'ok' ? '#14532d' : '#334155'}">${prov.kind}${prov.age ? ' · ' + prov.age : ''}</span> <span style="font-size:11px;color:#475569">${prov.network}</span></div>` +
+        `<div style="font-size:11px;color:#475569;margin-bottom:2px">${srcBadge}${distNote} · ${fuelCode} fuel · ${fwiMethod}</div>` +
+        `<div style="font-size:11px;color:#475569;margin-bottom:${usedCachedPrev ? '2' : '6'}px">Obs: <strong>${obsTs}</strong></div>` +
         (usedCachedPrev ? (() => {
           const cp = cachedPrevEntry;
           const cdStr = cp.repDate
             ? new Date(cp.repDate).toLocaleString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })
             : 'prev day';
-          return `<div style="font-size:8px;color:#6b7280;margin-bottom:6px">` +
+          return `<div style="font-size:11px;color:#475569;margin-bottom:6px">` +
                  `Carry-over: <strong>${cp.stationName || 'CWFIS'}</strong> · ${cdStr}</div>`;
         })() : '') +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;margin-bottom:6px">` +
-        `<div><span style="color:#94a3b8">FWI</span><br><strong style="color:${fwiColor};font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
-        `<div><span style="color:#94a3b8">Danger</span><br><strong style="color:${fwiColor}">${r.danger}</strong></div>` +
-        `<div><span style="color:#94a3b8">HFI</span><br><span style="color:#1e293b">${hfiNumStr}</span></div>` +
-        `<div><span style="color:#94a3b8">HFI Class</span><br><strong style="color:#1e293b">${hfiCls}</strong></div>` +
+        `<div><span style="color:#475569">FWI (noon LST)</span><br><strong style="color:#0f172a;font-size:17px">${r.fwi.toFixed(1)}</strong></div>` +
+        `<div><span style="color:#475569">Danger</span><br><strong style="display:inline-block;padding:1px 6px;border-radius:4px;background:${dTok.solid};color:${dTok.on}">${r.danger}</strong></div>` +
+        `<div><span style="color:#475569">HFI</span><br><span style="color:#1e293b">${hfiNumStr}</span></div>` +
+        `<div><span style="color:#475569">HFI Class</span><br><strong style="display:inline-block;padding:1px 6px;border-radius:4px;${hfiChipStyle(_hfiNumOf(hfiCls))}">${hfiCls}</strong></div>` +
         `</div>` +
-        `<div style="border-top:1px solid #e2e8f0;padding-top:5px;display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:10px">` +
-        `<div><span style="color:#94a3b8">Temp</span> <span style="color:#1e293b">${fmt(w.temp)}°C</span></div>` +
-        `<div><span style="color:#94a3b8">RH</span> <span style="color:#1e293b">${fmt(w.rh,0)}%</span></div>` +
-        `<div><span style="color:#94a3b8">Wind</span> <span style="color:#1e293b">${fmt(w.wind,0)} km/h</span></div>` +
-        `<div><span style="color:#94a3b8">Rain</span> <span style="color:#1e293b">${fmt(w.rain)} mm</span></div>` +
-        `<div><span style="color:#94a3b8">FFMC</span> <span style="color:#1e293b">${r.ffmc?.toFixed(1) ?? '—'}</span></div>` +
-        `<div><span style="color:#94a3b8">DMC</span> <span style="color:#1e293b">${r.dmc?.toFixed(1) ?? '—'}</span></div>` +
-        `<div><span style="color:#94a3b8">DC</span> <span style="color:#1e293b">${r.dc?.toFixed(0) ?? '—'}</span></div>` +
-        `<div><span style="color:#94a3b8">BUI</span> <span style="color:#1e293b">${r.bui?.toFixed(1) ?? '—'}</span></div>` +
+        `<div style="border-top:1px solid #e2e8f0;padding-top:5px;display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-size:11px">` +
+        `<div><span style="color:#475569">Temp</span> <span style="color:#1e293b">${fmt(w.temp)}°C</span></div>` +
+        `<div><span style="color:#475569">RH</span> <span style="color:#1e293b">${fmt(w.rh,0)}%</span></div>` +
+        `<div><span style="color:#475569">Wind</span> <span style="color:#1e293b">${fmt(w.wind,0)} km/h</span></div>` +
+        `<div><span style="color:#475569">Rain</span> <span style="color:#1e293b">${fmt(w.rain)} mm</span></div>` +
+        `<div><span style="color:#475569">FFMC</span> <span style="color:#1e293b">${r.ffmc?.toFixed(1) ?? '—'}</span></div>` +
+        `<div><span style="color:#475569">DMC</span> <span style="color:#1e293b">${r.dmc?.toFixed(1) ?? '—'}</span></div>` +
+        `<div><span style="color:#475569">DC</span> <span style="color:#1e293b">${r.dc?.toFixed(0) ?? '—'}</span></div>` +
+        `<div><span style="color:#475569">BUI</span> <span style="color:#1e293b">${r.bui?.toFixed(1) ?? '—'}</span></div>` +
         `</div></div>`
       );
     } catch (e) {
@@ -3480,25 +3724,28 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // Mark the row as errored instead of leaving an infinite loading shimmer
       {
         const tr = document.getElementById('srow-' + s.name.replace(/\s+/g, '-'));
-        if (tr) tr.innerHTML =
-          `<td class="py-2 pl-3 pr-2 font-semibold text-xs">${s.name}</td>` +
-          `<td class="py-2 pr-2 text-slate-500 text-[10px]">${stationSector(s.lat, s.lng)}</td>` +
-          `<td class="py-2 pr-2"><span style="font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:4px;background:#1c191740;color:#78716c;border:1px solid #44403c">ERR</span></td>` +
-          `<td colspan="6" class="py-2 pr-3 text-right text-[10px] text-slate-600">data unavailable</td>`;
+        if (tr) {
+          tr.dataset.state = 'error';
+          tr.innerHTML =
+            `<td class="py-2 pl-3 pr-2 font-semibold text-xs">${s.name}</td>` +
+            `<td class="py-2 pr-2 text-slate-400 text-[11px]">${stationSector(s.lat, s.lng)}</td>` +
+            `<td colspan="7" class="py-2 pr-3 text-[11px] text-slate-400"><span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">No data</span><span class="ml-2">data unavailable from every source</span></td>`;
+        }
         markers[s.name]?.setPopupContent(`<b>${s.name}</b><br><small style="color:#9ca3af">Data unavailable</small>`);
       }
     }
   }
+
+  // Any table row the loop never reached gets an explicit grey "No data" state
+  _markUnloadedRows(true);
 
   // Final sweep — ensure all markers reflect current zoom after async loading completes
   {
     const finalScale = _zoomScale(map.getZoom());
     for (const entry of _mapStationCache) {
       if (!entry.result) continue;
-      const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
-      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, finalScale, entry.srcBadge));
+      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, finalScale, entry.srcBadge));
     }
   }
 
@@ -3507,10 +3754,8 @@ async function buildStationMap(containerId, mapOpts = {}) {
     const scale = _zoomScale(map.getZoom());
     for (const entry of _mapStationCache) {
       if (!entry.result) continue;
-      const fwiColor = MARKER_COLORS[entry.result.danger] || '#7bd0ff';
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
-      const hfiColor = HFI_CLASS_COLORS[hfiCls] || '#d1d5db';
-      markers[entry.name]?.setIcon(_makeIcon(fwiColor, hfiColor, entry.result.fwi.toFixed(1), hfiCls, scale, entry.srcBadge));
+      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, scale, entry.srcBadge));
     }
   });
 
@@ -3594,11 +3839,10 @@ function renderSCRIBE(scribe) {
     const dt = new Date(r.rep_date);
     const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
     const danger = dangerRatingProv(r.fwi);
-    const c = DANGER_COLORS[danger] || DANGER_COLORS['Moderate'];
     return `<div class="bg-surface-container-lowest rounded-lg p-4">
-      <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">${label}</p>
+      <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">NRCan SCRIBE forecast · valid noon LST ${label}</p>
       <p class="font-headline text-2xl font-bold text-white">${r.fwi.toFixed(1)}</p>
-      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${danger}</span>
+      <span class="pyra-chip text-[11px] font-bold" style="${dangerChipStyle(danger)}">${danger}</span>
       <div class="grid grid-cols-2 gap-x-3 mt-2 text-xs text-on-surface-variant">
         <span>FFMC ${r.ffmc?.toFixed(1) ?? '—'}</span><span>DC ${r.dc?.toFixed(0) ?? '—'}</span>
         <span>ISI ${r.isi?.toFixed(1) ?? '—'}</span><span>BUI ${r.bui?.toFixed(0) ?? '—'}</span>
@@ -3727,9 +3971,9 @@ async function buildD1Card() {
       const lblEl = document.getElementById('fwi-fbp-hfi-label'  + suffix);
       const szEl  = document.getElementById('fwi-fbp-hfi-size'   + suffix);
       const dscEl = document.getElementById('fwi-fbp-hfi-desc'   + suffix);
-      if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-      if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
-      if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+      if (numEl) { numEl.textContent = cl.num; numEl.style.color = ''; }
+      if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = ''; }
+      if (szEl)  { szEl.textContent  = cl.size; szEl.style.color = ''; }
       if (dscEl) { dscEl.textContent = cl.desc; }
       setEl2('fwi-fbp-hfi'   + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
       setEl2('fwi-fbp-ros'   + suffix, `${fbp.ros.toFixed(1)} m/min`);
@@ -3737,7 +3981,7 @@ async function buildD1Card() {
       setEl2('fwi-fbp-type'  + suffix, fbp.fireType);
       setEl2('fwi-fbp-cfb'   + suffix, `${(fbp.cfb*100).toFixed(0)}%`);
       const sectionEl = document.getElementById('fwi-fbp-section' + suffix);
-      if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
+      _paintHfiSection(sectionEl, cl.num);
     };
     // Show today's FBP only when the FWI chain has real data; otherwise N/A
     // (consistent with the main wireDOM/wireFBP guard for null ffmc).
@@ -3745,6 +3989,15 @@ async function buildD1Card() {
     const todayFBPB = (_lastFWI?.ffmc != null) ? resultsB?.[todayIdx] : null;
     populateTodaySection('-a', todayFBPA);
     populateTodaySection('-b', todayFBPB);
+    // Summary row = exactly the inputs these Today cards just rendered:
+    // the day's chain codes + its 16:00 peak wind (calcMultiDayFBP).
+    if (todayFBPA?.fbp) {
+      _renderPeakSummary({
+        ffmc: todayFBPA.ffmc, dmc: todayFBPA.dmc, dc: todayFBPA.dc,
+        wind: todayFBPA.peakWeather?.wind ?? todayFBPA.weather?.wind ?? 10,
+        fbpA: todayFBPA.fbp, fbpB: todayFBPB?.fbp || null, fuelA: fuelA0, fuelB: fuelB0, peak: true,
+      });
+    }
   }
 
   // RIGHT card — always tomorrow
@@ -3777,9 +4030,9 @@ async function buildD1Card() {
     const lblEl = document.getElementById('fwi-d1-preview-hfi-label' + suffix);
     const szEl  = document.getElementById('fwi-d1-preview-hfi-size'  + suffix);
     const dscEl = document.getElementById('fwi-d1-preview-hfi-desc'  + suffix);
-    if (numEl) { numEl.textContent = cl.num;   numEl.style.color = 'white'; }
-    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = 'rgba(255,255,255,0.9)'; }
-    if (szEl)  { szEl.textContent  = cl.size;  szEl.style.color  = 'rgba(255,255,255,0.85)'; }
+    if (numEl) { numEl.textContent = cl.num; numEl.style.color = ''; }
+    if (lblEl) { lblEl.textContent = 'HFI'; lblEl.style.color = ''; }
+    if (szEl)  { szEl.textContent  = cl.size; szEl.style.color = ''; }
     if (dscEl) { dscEl.textContent = cl.desc; }
     set('fwi-d1-preview-hfi-kwm' + suffix, `${Math.round(fbp.hfi).toLocaleString()} kW/m`);
     set('fwi-d1-preview-ros'     + suffix, `${fbp.ros.toFixed(1)} m/min`);
@@ -3787,7 +4040,7 @@ async function buildD1Card() {
     set('fwi-d1-preview-type'    + suffix, fbp.fireType);
     set('fwi-d1-preview-cfb'     + suffix, `${(fbp.cfb*100).toFixed(0)}%`);
     const sectionEl = document.getElementById('fwi-d1-preview-section' + suffix);
-    if (sectionEl) sectionEl.style.background = HFI_GRADIENTS[cl.num] || HFI_GRADIENTS[1];
+    _paintHfiSection(sectionEl, cl.num);
   };
 
   const fuelA = _savedFuelCode();

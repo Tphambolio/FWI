@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="../fwi-theme.js"></script>
+<script src="../fwi-theme.js?v=132"></script>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -39,61 +39,61 @@
   </style>
   </head>
 <body class="bg-surface text-on-surface font-body min-h-screen selection:bg-primary/30">
+<a class="skip-link" href="#main">Skip to main content</a>
 <!-- TopAppBar -->
 <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-gradient-to-b from-[#161f35] to-[#0b1326] transition-opacity active:opacity-70">
 <div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-[#7bd0ff]">menu</span>
+<button id="pyra-menu-btn" type="button" class="pyra-tap rounded-lg text-[#7bd0ff] hover:bg-[#7bd0ff]/10 shrink-0 -ml-2" aria-label="Open menu" aria-expanded="false" aria-controls="pyra-menu" data-prov="AB" data-page="map" data-root="../"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
 <h1 class="font-headline text-xl font-bold tracking-tight text-[#7bd0ff]">Regional Summary</h1>
 </div>
 <div class="flex items-center gap-4">
-  <div class="flex items-center gap-1">
-    <span class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#7bd0ff]/20 text-[#7bd0ff] border border-[#7bd0ff]/40">AB</span>
-    <a href="../bc/regional_summary/code.html" class="font-bold text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded text-slate-500 border border-slate-600/60 hover:border-[#e05030]/60 hover:text-[#e05030] transition-colors">BC</a>
-  </div>
-  <span class="material-symbols-outlined text-[#7bd0ff]">calendar_today</span>
+  <nav class="hidden md:flex items-center gap-1" aria-label="Province">
+    <span aria-current="page" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded bg-[#7bd0ff]/20 text-[#7bd0ff] border border-[#7bd0ff]/50">AB</span>
+    <a href="../bc/regional_summary/code.html" class="pyra-tap md:min-h-[32px] md:min-w-[36px] font-bold text-[11px] uppercase tracking-widest px-2 rounded text-slate-300 border border-slate-600 hover:border-[#e05030]/60 hover:text-[#ff8a70] transition-colors">BC</a>
+  </nav>
 </div>
 </header>
-<main class="pt-20 pb-32 px-4 max-w-5xl mx-auto">
+<main id="main" tabindex="-1" class="focus:outline-none pt-20 pb-32 px-4 max-w-5xl mx-auto">
 <!-- Live Station Map -->
 <section class="mb-6">
 <!-- Compact header: title + live stat chips -->
 <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
   <h4 class="font-headline text-lg font-bold text-on-surface">Pyra · Live</h4>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap items-center gap-2">
     <div class="bg-surface-container px-3 py-1.5 rounded-lg border-b border-primary/30 flex items-center gap-2">
-      <span class="font-label text-[9px] uppercase text-on-surface-variant tracking-wider">Alerts</span>
-      <span class="font-headline text-base font-bold text-tertiary" id="fwi-extreme-count">—</span>
+      <span class="font-label text-[11px] uppercase text-slate-300 tracking-wider">Alerts</span>
+      <span class="font-headline text-base font-bold text-[#f87171]" id="fwi-extreme-count" aria-live="polite">—</span>
     </div>
     <div class="bg-surface-container px-3 py-1.5 rounded-lg border-b border-secondary/30 flex items-center gap-2">
-      <span class="font-label text-[9px] uppercase text-on-surface-variant tracking-wider">Avg RH</span>
+      <span class="font-label text-[11px] uppercase text-slate-300 tracking-wider">Avg RH</span>
       <span class="font-headline text-base font-bold text-secondary" id="fwi-avg-rh">—%</span>
     </div>
-    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#4ae176"></span>Low</span>
-    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#7bd0ff"></span>Mod</span>
-    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#f5c518"></span>High</span>
-    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#ff8c42"></span>VH</span>
-    <span class="flex items-center gap-1 text-[9px] font-label text-slate-500"><span class="w-2 h-2 rounded-full inline-block" style="background:#ff4d4d"></span>Ext</span>
+    <span class="flex items-center gap-1 text-[11px] font-label text-slate-300"><span aria-hidden="true" class="w-2 h-2 rounded-full inline-block" style="background:#4ae176"></span>Low</span>
+    <span class="flex items-center gap-1 text-[11px] font-label text-slate-300"><span aria-hidden="true" class="w-2 h-2 rounded-full inline-block" style="background:#7bd0ff"></span>Mod</span>
+    <span class="flex items-center gap-1 text-[11px] font-label text-slate-300"><span aria-hidden="true" class="w-2 h-2 rounded-full inline-block" style="background:#f5c518"></span>High</span>
+    <span class="flex items-center gap-1 text-[11px] font-label text-slate-300"><span aria-hidden="true" class="w-2 h-2 rounded-full inline-block" style="background:#f97316"></span>VH</span>
+    <span class="flex items-center gap-1 text-[11px] font-label text-slate-300"><span aria-hidden="true" class="w-2 h-2 rounded-full inline-block" style="background:#ef4444"></span>Ext</span>
   </div>
 </div>
 <div class="rounded-2xl overflow-hidden border border-outline-variant/10 relative" style="height:420px">
-<div id="fwi-station-map" style="height:100%;width:100%;"></div>
+<div id="fwi-station-map" style="height:100%;width:100%;" role="application" aria-label="Station map: left half of each marker = FWI danger, right half = HFI class (hatched + outlined at 5 and 6)"></div>
 <div class="absolute top-3 right-3 z-[500] flex gap-2">
-<button id="btn-activefires" class="map-layer-btn font-label text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-[#1e2740]/90 border border-[#ff3333]/40 text-[#ff8888] hover:bg-[#ff3333]/20 transition-colors">
+<button id="btn-activefires" type="button" class="map-layer-btn min-h-[44px] font-label text-[11px] font-bold uppercase tracking-wider px-3 rounded-lg bg-[#1e2740]/90 border border-[#ff3333]/40 text-[#ff8888] hover:bg-[#ff3333]/20 transition-colors">
   🔥 Active Fires
 </button>
-<button id="btn-hotspots" class="map-layer-btn font-label text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-[#1e2740]/90 border border-[#ff8c00]/40 text-[#ffaa44] hover:bg-[#ff8c00]/20 transition-colors">
+<button id="btn-hotspots" type="button" class="map-layer-btn min-h-[44px] font-label text-[11px] font-bold uppercase tracking-wider px-3 rounded-lg bg-[#1e2740]/90 border border-[#ff8c00]/40 text-[#ffaa44] hover:bg-[#ff8c00]/20 transition-colors">
   🛰 Hotspots 24h
 </button>
 </div>
 </div>
 <!-- Slim footer: source note + print button -->
-<div class="flex justify-between items-center mt-2">
-  <p class="text-[9px] text-slate-600 font-label">All AB CWFIS stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
+<div class="flex flex-wrap gap-2 justify-between items-center mt-2">
+  <p class="text-[11px] text-slate-300 font-label">All AB CWFIS stations · Left pill = FWI danger · Right pill = HFI class · Click for detail</p>
   <div class="flex gap-2">
-    <button id="fwi-export-regional-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-4 py-2 rounded-sm active:opacity-70 transition-opacity">
+    <button type="button" id="fwi-export-regional-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[11px] font-extrabold uppercase tracking-[0.2em] px-4 min-h-[44px] rounded-sm active:opacity-70 transition-opacity">
       Regional
     </button>
-    <button id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[10px] font-extrabold uppercase tracking-[0.2em] px-4 py-2 rounded-sm active:opacity-70 transition-opacity">
+    <button type="button" id="fwi-export-btn" class="synthetic-gradient text-on-primary-fixed font-label text-[11px] font-extrabold uppercase tracking-[0.2em] px-4 min-h-[44px] rounded-sm active:opacity-70 transition-opacity">
       Provincial
     </button>
   </div>
@@ -106,19 +106,19 @@
   <!-- FWI Danger Rating -->
   <div class="bg-surface-container rounded-xl p-4">
     <h5 class="font-headline text-sm font-bold text-on-surface mb-1">Fire Weather Index — Danger Rating</h5>
-    <p class="text-[10px] text-on-surface-variant mb-3 leading-relaxed">The FWI is a unitless index combining fuel moisture and wind. The <strong class="text-on-surface">left half</strong> of each map marker shows the danger class.</p>
-    <table class="w-full text-[10px]">
-      <thead><tr class="text-[9px] uppercase tracking-wider text-on-surface-variant">
+    <p class="text-[12px] text-slate-300 mb-3 leading-relaxed">The FWI is a unitless index combining fuel moisture and wind. The <strong class="text-on-surface">left half</strong> of each map marker shows the danger class.</p>
+    <table class="w-full text-[11px]">
+      <thead><tr class="text-[11px] uppercase tracking-wider text-slate-400">
         <th class="text-left pb-1 font-label">Class</th>
         <th class="text-left pb-1 font-label">FWI Range</th>
         <th class="text-left pb-1 font-label">Meaning</th>
       </tr></thead>
       <tbody class="font-label divide-y divide-outline-variant/10">
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#4ae17622;color:#4ae176">Low</span></td><td class="py-1.5 pr-3 text-on-surface-variant">0 – 5</td><td class="py-1.5 text-on-surface-variant">Fuels moist, spread unlikely</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#7bd0ff22;color:#7bd0ff">Moderate</span></td><td class="py-1.5 pr-3 text-on-surface-variant">6 – 15</td><td class="py-1.5 text-on-surface-variant">Some fire activity possible</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#f5c51822;color:#f5c518">High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">16 – 22</td><td class="py-1.5 text-on-surface-variant">Rapid spread, control difficult</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff8c4222;color:#ff8c42">Very High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">23 – 29</td><td class="py-1.5 text-on-surface-variant">Intense fire, suppression limited</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff4d4d22;color:#ff4d4d">Extreme</span></td><td class="py-1.5 pr-3 text-on-surface-variant">30+</td><td class="py-1.5 text-on-surface-variant">Crown fire conditions, evacuate</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#4ae17626;color:#4ae176;border:1px solid #4ae17666">Low</span></td><td class="py-1.5 pr-3 text-slate-300">0 – 5</td><td class="py-1.5 text-slate-300">Fuels moist, spread unlikely</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#7bd0ff26;color:#7bd0ff;border:1px solid #7bd0ff66">Moderate</span></td><td class="py-1.5 pr-3 text-slate-300">6 – 15</td><td class="py-1.5 text-slate-300">Some fire activity possible</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#f5c51826;color:#f5c518;border:1px solid #f5c51866">High</span></td><td class="py-1.5 pr-3 text-slate-300">16 – 22</td><td class="py-1.5 text-slate-300">Rapid spread, control difficult</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#f9731626;color:#f97316;border:1px solid #f9731666">Very High</span></td><td class="py-1.5 pr-3 text-slate-300">23 – 29</td><td class="py-1.5 text-slate-300">Intense fire, suppression limited</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#ef444426;color:#f87171;border:1px solid #ef444466">Extreme</span></td><td class="py-1.5 pr-3 text-slate-300">30+</td><td class="py-1.5 text-slate-300">Crown fire conditions, evacuate</td></tr>
       </tbody>
     </table>
   </div>
@@ -126,20 +126,20 @@
   <!-- HFI Class -->
   <div class="bg-surface-container rounded-xl p-4">
     <h5 class="font-headline text-sm font-bold text-on-surface mb-1">Head Fire Intensity — Byram Class</h5>
-    <p class="text-[10px] text-on-surface-variant mb-3 leading-relaxed">HFI (kW/m) is the energy output at the fire front from FBP. The <strong class="text-on-surface">right half</strong> of each marker shows the intensity class. Click any marker for the kW/m value.</p>
-    <table class="w-full text-[10px]">
-      <thead><tr class="text-[9px] uppercase tracking-wider text-on-surface-variant">
+    <p class="text-[12px] text-slate-300 mb-3 leading-relaxed">HFI (kW/m) is the energy output at the fire front from FBP. The <strong class="text-on-surface">right half</strong> of each marker shows the intensity class. Click any marker for the kW/m value.</p>
+    <table class="w-full text-[11px]">
+      <thead><tr class="text-[11px] uppercase tracking-wider text-slate-400">
         <th class="text-left pb-1 font-label">Class</th>
         <th class="text-left pb-1 font-label">HFI (kW/m)</th>
         <th class="text-left pb-1 font-label">Meaning</th>
       </tr></thead>
       <tbody class="font-label divide-y divide-outline-variant/10">
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#a8f0c022;color:#4ae176">1-Low</span></td><td class="py-1.5 pr-3 text-on-surface-variant">&lt; 10</td><td class="py-1.5 text-on-surface-variant">Direct attack with hand tools · Should anchor</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#b8e2f922;color:#7bd0ff">2-Mod</span></td><td class="py-1.5 pr-3 text-on-surface-variant">10 – 499</td><td class="py-1.5 text-on-surface-variant">Direct attack with hand tools · Should anchor</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ffe08222;color:#c9a800">3-High</span></td><td class="py-1.5 pr-3 text-on-surface-variant">500 – 1 999</td><td class="py-1.5 text-on-surface-variant">Direct attack with pump and hose · Should anchor</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ffb74d22;color:#ff8c42">4-VH</span></td><td class="py-1.5 pr-3 text-on-surface-variant">2 000 – 3 999</td><td class="py-1.5 text-on-surface-variant">Indirect attack · Direct on less intense area · Must anchor</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#ff704322;color:#ff7043">5-Ext</span></td><td class="py-1.5 pr-3 text-on-surface-variant">4 000 – 9 999</td><td class="py-1.5 text-on-surface-variant">Indirect attack · Direct on less intense area · Must anchor</td></tr>
-        <tr><td class="py-1.5 pr-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold" style="background:#b71c1c22;color:#ff4d4d">6-Cat</span></td><td class="py-1.5 pr-3 text-on-surface-variant">≥ 10 000</td><td class="py-1.5 text-on-surface-variant">No direct attack — evacuate structure zone</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#1a3a7a;color:#ffffff">1-Low</span></td><td class="py-1.5 pr-3 text-slate-300">&lt; 10</td><td class="py-1.5 text-slate-300">Direct attack with hand tools · Should anchor</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#5bb8d4;color:#0a2a50">2-Mod</span></td><td class="py-1.5 pr-3 text-slate-300">10 – 499</td><td class="py-1.5 text-slate-300">Direct attack with hand tools · Should anchor</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#1e6b35;color:#ffffff">3-High</span></td><td class="py-1.5 pr-3 text-slate-300">500 – 1 999</td><td class="py-1.5 text-slate-300">Direct attack with pump and hose · Should anchor</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:#f5c518;color:#2a1a00">4-VH</span></td><td class="py-1.5 pr-3 text-slate-300">2 000 – 3 999</td><td class="py-1.5 text-slate-300">Indirect attack · Direct on less intense area · Must anchor</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:repeating-linear-gradient(45deg,rgba(0,0,0,0.20) 0 2px,transparent 2px 7px),#e07820;color:#2a1a00;box-shadow:inset 0 0 0 2px #2a1a00">5-Ext</span></td><td class="py-1.5 pr-3 text-slate-300">4 000 – 9 999</td><td class="py-1.5 text-slate-300">Indirect attack · Direct on less intense area · Must anchor</td></tr>
+        <tr><td class="py-1.5 pr-2"><span class="pyra-chip" style="background:repeating-linear-gradient(45deg,rgba(0,0,0,0.28) 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,rgba(0,0,0,0.28) 0 2px,transparent 2px 7px),#cc2200;color:#ffffff;box-shadow:inset 0 0 0 2px #000">6-Cat</span></td><td class="py-1.5 pr-3 text-slate-300">≥ 10 000</td><td class="py-1.5 text-slate-300">No direct attack — evacuate structure zone</td></tr>
       </tbody>
     </table>
   </div>
@@ -149,19 +149,19 @@
 
 <!-- Alarm Strip -->
 <div class="mb-4 bg-[#0f1829] border border-[#1e2740] rounded-xl px-4 py-3">
-  <div class="flex items-center justify-between mb-2 gap-3">
-    <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.15em] text-slate-500">
+  <div class="flex flex-wrap items-center justify-between mb-2 gap-3">
+    <span class="font-['Space_Grotesk'] font-bold text-[11px] uppercase tracking-[0.15em] text-slate-300">
       Stations in Alarm · <span id="fwi-alarm-threshold-label">FWI ≥ 15.5</span>
     </span>
     <div class="flex items-center gap-2">
-      <span class="text-[9px] text-slate-600">Threshold:</span>
+      <label for="fwi-alarm-slider" class="text-[11px] text-slate-300">Threshold:</label>
       <input type="range" id="fwi-alarm-slider" min="5" max="50" step="0.5" value="15.5"
-        class="w-20 accent-amber-400" style="height:3px"
+        class="w-28 accent-amber-400 min-h-[44px]"
         oninput="localStorage.setItem('fwi-alarm-threshold',this.value);document.getElementById('fwi-alarm-threshold-label').textContent='FWI ≥ '+this.value;FWI._updateAlarmStrip()" />
     </div>
   </div>
-  <div id="fwi-alarm-strip" class="flex flex-wrap gap-2 min-h-[1.5rem]">
-    <span class="text-[10px] text-slate-700 italic">Loading…</span>
+  <div id="fwi-alarm-strip" class="flex flex-wrap gap-2 min-h-[1.5rem]" aria-live="polite">
+    <span class="text-[11px] text-slate-400 italic">Loading…</span>
   </div>
 </div>
 
@@ -170,10 +170,10 @@
 <div class="flex items-baseline justify-between mb-2">
   <h4 id="fwi-station-network-heading" class="font-headline text-xl font-bold text-on-surface">Station Network</h4>
   <div class="h-px flex-1 mx-6 bg-outline-variant/15"></div>
-  <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Click headers to sort</span>
+  <span class="font-label text-[11px] uppercase tracking-widest text-slate-300">Click headers to sort</span>
 </div>
-<p class="text-[10px] text-on-surface-variant mb-4 leading-relaxed">
-  Live observations from Alberta fire weather stations (CWFIS WFS + AEF network). <strong class="text-on-surface">SRC</strong> shows the data source — <span class="text-green-400">CWFIS</span> uses the pre-computed FWI carry-over chain; <span class="text-blue-400">SWOB</span> is real-time MSC sensor data with Van Wagner calculation; <span class="text-amber-400">NWP</span> is Open-Meteo model output used when live observations are unavailable. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
+<p class="text-[12px] text-slate-300 mb-4 leading-relaxed">
+  Live observations from Alberta fire weather stations (CWFIS WFS + AEF network). <strong class="text-on-surface">Source</strong> says where each row's FWI comes from, in plain language: <span class="text-green-300">OBSERVED</span> (station sensor or today's agency chain), <span class="text-amber-300">CARRIED</span> (yesterday's chain stepped forward one day) or <span class="text-slate-200">MODEL</span> (Open-Meteo forecast weather), with its age — amber over 3 h, red over 24 h — and the network (CWFIS · BCWS · MSC SWOB · Open-Meteo) underneath. Hover or long-press a chip for the technical detail. FWI is the daily value at noon LST. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
 </p>
 <div id="fwi-region-list"></div>
 </section>
@@ -187,27 +187,31 @@
   .map-layer-btn.map-layer-active { background: rgba(255,255,255,0.15) !important; }
 </style>
 <!-- ── Footer ──────────────────────────────────────────────────────────── -->
-<footer class="mt-8 pb-20 border-t border-[#1e2740] pt-4 flex flex-col gap-1 items-center text-center">
-  <span class="font-['Space_Grotesk'] font-bold text-[10px] uppercase tracking-[0.2em] text-slate-500">Pyra · Alberta FWI System</span>
-  <div class="flex gap-4 text-[9px] text-slate-600">
-    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">GitHub</a>
-    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">MIT License</a>
-    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-slate-400 transition-colors">@lactucafarm</a>
+<footer class="mt-8 pb-28 border-t border-[#1e2740] pt-5 flex flex-col gap-2 items-center text-center">
+  <span class="font-['Space_Grotesk'] font-bold text-xs uppercase tracking-[0.2em] text-slate-300">Pyra · Alberta FWI System</span>
+  <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-slate-300">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">GitHub</a>
+    <a href="https://github.com/Tphambolio/FWI/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">MIT License</a>
+    <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="hover:text-white underline-offset-2 hover:underline">@lactucafarm</a>
+    <a href="../bc/station_detail/code.html" class="hover:text-white underline-offset-2 hover:underline">British Columbia</a>
   </div>
-    <span class="text-[8px] text-slate-600 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
-  <span class="text-[8px] text-amber-600/80 font-medium">For informational use only — not for operational fire management decisions</span>
-  <span class="text-[8px] text-slate-700">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  <span class="text-[11px] text-slate-400 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
+  <span class="text-[11px] text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
+  <span class="text-[11px] text-slate-400">© 2026 Travis Kennedy · Free to use · No warranty</span>
+  <form class="donate mt-1" action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank">
+    <button type="submit" class="min-h-[44px] px-4 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold">♥ Donate — keeps the data feeds running</button>
+  </form>
 </footer>
 </main>
 <!-- BottomNavBar -->
-<nav class="bg-[#0b1326]/90 backdrop-blur-xl border-t border-[#7bd0ff]/10 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../station_detail/code.html"><span class="material-symbols-outlined mb-1">local_fire_department</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Home</span></a>
-<a class="flex flex-col items-center justify-center bg-[#7bd0ff]/10 text-[#7bd0ff] rounded-xl px-3 py-1.5 active:scale-95 transition-all" href="../regional_summary/code.html"><span class="material-symbols-outlined mb-1">map</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Station</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../forecast_trends/code.html"><span class="material-symbols-outlined mb-1">trending_up</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Reports</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#7bd0ff]/5 active:scale-95 transition-all" href="../science_guide/code.html"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Science</span></a>
-<a class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:bg-[#e05030]/5 active:scale-95 transition-all" href="../briefing/"><span class="material-symbols-outlined mb-1">assignment</span><span class="font-['Inter'] text-[10px] font-medium uppercase tracking-wider">Briefing</span></a>
+<nav aria-label="Primary" class="no-print bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/15 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-2 pb-5 pt-2 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../station_detail/code.html"><span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Station</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#7bd0ff]/15 text-[#7bd0ff] font-bold" href="../regional_summary/code.html" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">map</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Map</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../forecast_trends/code.html"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Trends</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=131"></script><script src="../core/fwi-core.js?v=131"></script>
+<script src="../fwi.js?v=132"></script><script src="../core/fwi-core.js?v=132"></script>
 <script>
   const _h = document.getElementById('fwi-station-network-heading');
   if (_h) _h.textContent = `Station Network — All ${FWI.ALBERTA_STATIONS.length} Stations`;
