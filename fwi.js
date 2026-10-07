@@ -741,7 +741,6 @@ const PROVINCE = {
   peakUTC: 22,           // UTC hour of 16:00 MDT peak burn
   tzLabel: 'MDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Edmonton', // IANA zone for map popup obs times
-  updatedLabel: 'obs',   // station 'updated' line: CWFIS obs date / peak-burn forecast / live time
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryAB(lat, lng),   // tier chain + pre-noon policy
   preNoonNWP: 'peak',    // Open-Meteo hour before noon: today's 16:00 peak-burn forecast
@@ -768,19 +767,15 @@ const PROVINCE = {
   // ── Fuels / pin-drop ──
   stationFuel: (name, lat) => STATION_FUEL_TYPES[name] || _defaultFuelFor(lat), // station's FBP fuel (before leaf-state)
   autoFuelOnSelect: true,       // picking a station sets fuel A/B from the station table
-  fuelSlashNotation: true,      // WMS "D-1/D-2" codes resolve to the part before "/"
   edmontonFuelRaster: true,     // pin-drop queries the Edmonton LiDAR fuel raster first
   pinMapCenter: [54.5, -115],   // pin-drop map view with no station selected
   csvSlug: 'alberta',           // regional CSV export filename part
   // ── Station map ──
   mapCenter: [54.5, -114.5],    // buildStationMap default centre
   mapBulkCWFIS: () => fetchAllCWFIS(), // one province-wide CWFIS query for all map stations
-  mapRowErrors: true,           // failed stations get an ERR table row + popup
   // ── Forecast / D+1 ──
   highDangerFWI: 15.5,          // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: 5,           // regions shown in the forecast trend table (first N)
-  localDateLabels: false,       // Today/Tomorrow labels from the 16:00 clock (not the day's date)
-  forecastCacheByStation: false, // D+1 forecast cache keyed on fuel/curing/PS only
   // ── Danger classes ──
   dangerRating: fwi => dangerRating(fwi),                          // CWFIS FWI-map 5-class
   dangerClassNum: fwi => dangerClassNum(fwi),                      // {num,label,bg,text} for briefing badges
@@ -796,6 +791,5 @@ const PROVINCE = {
   briefingTitle: 'Pyra · Alberta Fire Weather Index — Provincial Briefing',
   briefingBounds: '[[49.0, -120.0], [60.0, -110.0]]',             // provincial briefing map fitBounds
   stationFallbackName: 'Alberta Station',                          // station briefing name when none loaded
-  briefingEmptyColspan: 9,                                         // "forecast not loaded" row span
   exports: () => ({ ALBERTA_STATIONS }),                           // province extras on window.FWI
 };

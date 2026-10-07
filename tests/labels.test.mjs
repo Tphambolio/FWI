@@ -103,9 +103,11 @@ test('AB: pre-noon peak-burn forecast → updated "Peak Burn Forecast · 16:00 M
   assert.equal(updated, 'Peak Burn Forecast · 16:00 MDT');
 });
 
-test('BC: updated label is always "Live · <time>" (BC has no Noon-LST label — current divergence from AB)', async () => {
+// BC used to show "Live · <time>" even for yesterday's data; since the core merge
+// both provinces label the observation date (2026-10-07).
+test('BC: updated label shows the obs date — "Noon LST · today" for today\'s chain', async () => {
   const { updated } = await render(BC, { now: lstClock(BC, 7, 15, 13), mocks: { cwfis: fc([stationFeature(BC, { rep_date: rep(TODAY) })]) } });
-  assert.match(updated, /^Live · /);
+  assert.equal(updated, 'Noon LST · today');
 });
 
 // ─── BCWS provenance ─────────────────────────────────────────────────────────

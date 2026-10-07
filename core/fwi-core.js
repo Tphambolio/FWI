@@ -1144,13 +1144,9 @@ function wireDOM(r, lat, lng) {
     el.textContent = val != null ? componentRating(key, val).toUpperCase() : '—';
   });
 
-  // Timestamp — with PROVINCE.updatedLabel 'obs' (AB), show the actual CWFIS
-  // observation date when available; avoids "Live" labelling yesterday's noon
-  // data as current when the page is loaded before noon today. 'live' (BC)
-  // always shows "Live · <time>".
-  if (PROVINCE.updatedLabel !== 'obs') {
-    set('updated', `Live · ${new Date().toLocaleTimeString()}`);
-  } else if (r.weather.repDate) {
+  // Timestamp — show the actual CWFIS/BCWS observation date when available;
+  // avoids "Live" labelling yesterday's noon data as current before noon today.
+  if (r.weather.repDate) {
     // CWFIS rep_date is a date stamp (T12:00Z), not an obs time — compare the
     // calendar date against today's LST date, not the viewer's local clock.
     const obsDate = String(r.weather.repDate).slice(0, 10);
@@ -1432,9 +1428,8 @@ function _normalizeFuelCode(raw) {
   const match = Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s);
   if (match) return match;
   // Handle WMS slash-notation (D-1/D-2 → try the part before the first /).
-  // PROVINCE.fuelSlashNotation: AB only — BC returns null for slash codes.
   const slash = token.indexOf('/');
-  if (PROVINCE.fuelSlashNotation && slash > 0) {
+  if (slash > 0) {
     const s2 = norm(token.slice(0, slash));
     return Object.keys(FUEL_TYPES).find(k => k.toUpperCase() === s2) || null;
   }
@@ -2466,15 +2461,9 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     const d1SafeIdx = _nextPeakDayIdx(days);
     const d1HeadEl = document.getElementById('fwi-d1-heading');
     if (d1HeadEl) {
-      // PROVINCE.localDateLabels: label from the selected day's local date (BC);
-      // otherwise from the local clock vs the 16:00 peak (AB).
-      let lbl;
-      if (PROVINCE.localDateLabels) {
-        const dayLocal = days[d1SafeIdx]?._ts ? _localDateStr(days[d1SafeIdx]._ts) : null;
-        lbl = dayLocal && dayLocal > _localDateStr() ? 'Tomorrow' : 'Today';
-      } else {
-        lbl = new Date(Date.now() - PROVINCE.localOffset * 3600000).getUTCHours() >= 16 ? 'Tomorrow' : 'Today';
-      }
+      // Label from the selected day's local date, not the clock.
+      const dayLocal = days[d1SafeIdx]?._ts ? _localDateStr(days[d1SafeIdx]._ts) : null;
+      const lbl = dayLocal && dayLocal > _localDateStr() ? 'Tomorrow' : 'Today';
       d1HeadEl.textContent = lbl + ' — Peak Burn Prediction';
     }
     if (results.length > 0) {
@@ -2954,7 +2943,7 @@ async function printStationBriefing() {
       const printCuring = _savedCuring ? _savedCuring() : 100;
       const printPS = _savedPS ? _savedPS() : 50;
       const results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, printFuelCode, printCuring, printPS);
-      _forecastCache = { days, results, fuelCode: printFuelCode, curing: printCuring, ps: printPS };
+      _forecastCache = { days, results, fuelCode: printFuelCode, curing: printCuring, ps: printPS, lat: _stationLat, lng: _stationLng };
     } catch (e) {
       console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
     }
@@ -3015,16 +3004,10 @@ async function printStationBriefing() {
       const ffbp = fr.fbp;
       const hfiTxt = ffbp ? Math.round(ffbp.hfi).toLocaleString() : '—';
       const hfiClassTxt = !ffbp ? '—' : (() => { const cl = hfiClassInfo(ffbp.hfi); return `<span style="display:inline-block;min-width:20px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-weight:900;font-size:9pt;text-align:center">${cl.num}</span>`; })();
-      // PROVINCE.localDateLabels: skip past days and tag TOMORROW by local date
-      // (BC); otherwise the first row is tagged (AB).
-      let isD1;
-      if (PROVINCE.localDateLabels) {
-        const dayLocal = fd._ts ? _localDateStr(fd._ts) : null;
-        if (dayLocal && dayLocal < _todayLocal) return ''; // skip past days
-        isD1 = dayLocal === _tomorrowLocal;
-      } else {
-        isD1 = i === 0;
-      }
+      // Skip past days and tag TOMORROW by local date
+      const dayLocal = fd._ts ? _localDateStr(fd._ts) : null;
+      if (dayLocal && dayLocal < _todayLocal) return '';
+      const isD1 = dayLocal === _tomorrowLocal;
       return `<tr style="background:${isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9'}">
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
@@ -3038,21 +3021,13 @@ async function printStationBriefing() {
       </tr>`;
     }).join('\n');
   } else {
-    forecastRows = `<tr><td colspan="${PROVINCE.briefingEmptyColspan}" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>`;
+    forecastRows = `<tr><td colspan="9" style="padding:8px;text-align:center;color:#888">Forecast data not loaded — visit Forecast page first</td></tr>`;
   }
 
-  // D+1 peak burn block — find first day strictly after today: by local
-  // daylight-time date with PROVINCE.localDateLabels (BC), else by the
-  // viewer's local midnight (AB).
-  let _pd1Idx;
-  if (PROVINCE.localDateLabels) {
-    const _pTodayLocal = _localDateStr();
-    _pd1Idx = fDays.findIndex(d => d._ts && _localDateStr(d._ts) > _pTodayLocal);
-  } else {
-    const _pTodayMid = new Date(); _pTodayMid.setHours(0,0,0,0);
-    const _pTomMid   = new Date(_pTodayMid); _pTomMid.setDate(_pTomMid.getDate() + 1);
-    _pd1Idx = fDays.findIndex(d => d._ts && d._ts >= _pTomMid.getTime());
-  }
+  // D+1 peak burn block — first day strictly after today by local date
+  // (not the viewer's local midnight).
+  const _pTodayLocal = _localDateStr();
+  const _pd1Idx = fDays.findIndex(d => d._ts && _localDateStr(d._ts) > _pTodayLocal);
   const _pd1Safe   = _pd1Idx >= 0 ? _pd1Idx : 0;
   const d1r  = fResults[_pd1Safe];
   const d1d  = fDays[_pd1Safe];
@@ -3503,8 +3478,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     } catch (e) {
       console.warn(`[FWI Map] ${s.name}:`, e);
       // Mark the row as errored instead of leaving an infinite loading shimmer
-      // (PROVINCE.mapRowErrors — AB only; BC leaves the row loading).
-      if (PROVINCE.mapRowErrors) {
+      {
         const tr = document.getElementById('srow-' + s.name.replace(/\s+/g, '-'));
         if (tr) tr.innerHTML =
           `<td class="py-2 pl-3 pr-2 font-semibold text-xs">${s.name}</td>` +
@@ -3671,10 +3645,8 @@ async function buildD1Card() {
     const fuelCodeB = _savedFuelCode2();
     const curing    = _savedCuring();
     const ps        = _savedPS();
-    // PROVINCE.forecastCacheByStation: the cache only hits for the station it was
-    // built for (BC). AB matches on fuel/curing/PS only.
-    const sameStation = !PROVINCE.forecastCacheByStation ||
-                        (_forecastCache.lat === _stationLat && _forecastCache.lng === _stationLng);
+    // The cache only hits for the station it was built for
+    const sameStation = _forecastCache.lat === _stationLat && _forecastCache.lng === _stationLng;
     const cacheHit  = _forecastCache.results?.length && sameStation &&
                       _forecastCache.fuelCode  === fuelCode  &&
                       _forecastCache.fuelCodeB === fuelCodeB &&

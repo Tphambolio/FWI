@@ -804,7 +804,6 @@ const PROVINCE = {
   peakUTC: 23,           // UTC hour of 16:00 PDT peak burn
   tzLabel: 'PDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Vancouver', // IANA zone for map popup obs times
-  updatedLabel: 'live',  // station 'updated' line: always "Live · <time>"
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryBC(lat, lng),   // tier chain (BCWS ∥ CWFIS, date-checked)
   preNoonNWP: 'latest',  // Open-Meteo hour before noon: most recent available hour
@@ -830,19 +829,15 @@ const PROVINCE = {
   // ── Fuels / pin-drop ──
   stationFuel: (name, lat) => STATION_FUEL_TYPES[name] || 'C3',   // station's FBP fuel (before leaf-state)
   autoFuelOnSelect: false,      // picking a station keeps the user's fuel selection
-  fuelSlashNotation: false,     // WMS "D-1/D-2" codes are not resolved (null)
   edmontonFuelRaster: false,    // no Edmonton LiDAR raster in BC
   pinMapCenter: [52.5, -122.5], // pin-drop map view with no station selected
   csvSlug: 'bc',                // regional CSV export filename part
   // ── Station map ──
   mapCenter: [52.5, -122.5],    // buildStationMap default centre
   mapBulkCWFIS: null,           // no bulk query — every map station runs the tier chain
-  mapRowErrors: false,          // failed stations keep the loading row
   // ── Forecast / D+1 ──
   highDangerFWI: 21,            // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: undefined,   // regions shown in the forecast trend table (all)
-  localDateLabels: true,        // Today/Tomorrow labels + briefing rows from local (PDT) dates
-  forecastCacheByStation: true, // D+1 forecast cache also keyed on station lat/lng
   // ── Danger classes ──
   dangerRating: fwi => dangerRatingBC(fwi),                        // BC 5-class (Very Low … Extreme)
   dangerClassNum: fwi => _dangerClassNumBC(fwi),                   // {num,label,bg,text} for briefing badges
@@ -858,6 +853,5 @@ const PROVINCE = {
   briefingTitle: 'Pyra · BC Wildfire FWI — Provincial Briefing',
   briefingBounds: '[[48.0, -140.0], [60.0, -114.0]]',             // provincial briefing map fitBounds
   stationFallbackName: 'BC Station',                               // station briefing name when none loaded
-  briefingEmptyColspan: 8,                                         // "forecast not loaded" row span (table has 9 columns)
   exports: () => ({ dangerRatingBC, dangerRatingProv, BC_STATIONS, getStationList, stationSector, getRegions, setProvince, getProvince }),
 };
