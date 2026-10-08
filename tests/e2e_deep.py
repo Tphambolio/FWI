@@ -41,7 +41,7 @@ BOUNDS = {
 }
 
 DANGER_LABELS  = {'Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'}
-SOURCE_LABELS  = {'CWFIS', 'SWOB', 'Open-Meteo', 'NWP', 'MSC', 'NAEFS'}
+SOURCE_LABELS  = {'CWFIS', 'BCWS', 'SWOB', 'Open-Meteo', 'NWP', 'MSC', 'NAEFS'}  # BCWS: noon mirror live since 2026-10-07
 NETWORK_WAIT   = 30_000   # ms
 PAINT_WAIT     = 4_000    # ms extra after "load" pages
 FWI_CALC_WAIT  = 20_000   # ms to wait for FWI chain to finish (PENDING → value)
