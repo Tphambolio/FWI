@@ -384,41 +384,6 @@ const STATION_FUEL_TYPES = {
   "Sparwood": 'C4',
   "Little Chopaka": 'D1',
   "Creston": 'O1a',
-  "Abbotsford": 'C5',  // 2 km modal
-  "Blue River": 'C3',
-  "Cape St. James": 'C5',  // 2 km modal
-  "Castlegar": 'C3',  // 2 km modal
-  "Clinton": 'C5',
-  "Comox": 'O1a',  // 2 km modal
-  "Cranbrook": 'C7',  // 2 km modal
-  "Dease Lake": 'C4',
-  "Estevan Point": 'C5',  // 2 km modal
-  "Fort Nelson": 'D1',
-  "Fort St. John": 'O1a',
-  "Hope": 'C5',
-  "Kamloops": 'O1a',
-  "Kelowna": 'C5',  // 2 km modal
-  "Lytton": 'D1',
-  "Nanaimo": 'C5',  // 2 km modal
-  "Penticton": 'O1a',
-  "Port Alberni": 'C5',
-  "Port Hardy": 'C5',  // 2 km modal
-  "Prince George": 'O1a',  // 2 km modal
-  "Prince Rupert": 'D1',
-  "Puntzi Mountain": 'C4',
-  "Quesnel": 'M1',
-  "Revelstoke": 'M1',
-  "Sandspit": 'C5',  // 2 km modal
-  "Smithers": 'D1',  // 2 km modal
-  "Terrace": 'M1',
-  "Tofino": 'C5',
-  "Vancouver Intl": 'O1a',  // 2 km modal
-  "Victoria Intl": 'O1a',  // 2 km modal
-  "Williams Lake": 'C4',  // 2 km modal
-  "Callaghan Valley": 'C5',
-  "West Vancouver": 'D1',  // 2 km modal
-  "Whistler": 'C5',  // 2 km modal
-  "Whistler Mountain": 'C5',
 };
 
 // ─── BCWS Datamart fetch (BC Tier 0) ─────────────────────────────────────────

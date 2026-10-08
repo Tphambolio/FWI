@@ -2646,7 +2646,7 @@ function calcMultiDay(days, startupDC = 300, startState = null) {
       ? calculateFWI({ ...safe, fwiFromCWFIS: true, ffmc: prev.ffmc, dmc: prev.dmc, dc: prev.dc }, prev)
       : calculateFWI(safe, prev);
     prev = { ffmc: r.ffmc, dmc: r.dmc, dc: r.dc };
-    return { ...r, label: w.label };
+    return { ...r, label: w.label, ensembleTail: !!w.ensembleTail };
   });
 }
 
@@ -2877,8 +2877,11 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       barContainer.innerHTML = results.map(r => {
         const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
         const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
-        return `<div class="w-full ${c.bar} rounded-t-sm transition-colors relative group cursor-help" style="height:${h}%">` +
-          `<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[11px] text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded hidden group-hover:block whitespace-nowrap z-10">${r.label} — ${r.fwi.toFixed(1)} (${r.danger})</div>` +
+        // NAEFS days beyond the ECMWF horizon: hatched + faded = lower confidence
+        const tail = r.ensembleTail;
+        const tailStyle = tail ? ';opacity:.45;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.35) 0 2px,transparent 2px 6px)' : '';
+        return `<div class="w-full ${c.bar} rounded-t-sm transition-colors relative group cursor-help" style="height:${h}%${tailStyle}">` +
+          `<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[11px] text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded hidden group-hover:block whitespace-nowrap z-10">${r.label} — ${r.fwi.toFixed(1)} (${r.danger})${tail ? ' · NAEFS ensemble median, lower confidence' : ''}</div>` +
           `</div>`;
       }).join('');
     }
@@ -2906,7 +2909,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
         const tag = dl === _localDateStr() ? 'Today' : dl === _localDateStr(Date.now() + 86400000) ? 'Tomorrow' : '';
         const isD1 = i === d1SafeIdx;
         return `<tr class="hover:bg-surface-container transition-colors ${isD1 ? 'bg-surface-container/50' : ''}">
-  <td class="py-3 pl-4 pr-3 font-headline font-bold text-white text-sm whitespace-nowrap">${r.label}${tag ? ` <span class="text-[11px] font-label text-primary ml-1">${tag}</span>` : ''}</td>
+  <td class="py-3 pl-4 pr-3 font-headline font-bold text-white text-sm whitespace-nowrap">${r.label}${tag ? ` <span class="text-[11px] font-label text-primary ml-1">${tag}</span>` : ''}${r.ensembleTail ? ` <span class="text-[11px] font-label text-amber-300 ml-1" title="Beyond the ECMWF horizon: NAEFS ensemble median, lower confidence">NAEFS · low conf.</span>` : ''}</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.temp ?? days[i]?.temp)}°C</td>
   <td class="py-3 text-sm ${(pw?.rh ?? days[i]?.rh) < 30 ? 'text-amber-300 font-bold' : 'text-on-surface-variant'}">${fmt(pw?.rh ?? days[i]?.rh, 0)}%</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.wind ?? days[i]?.wind, 0)} km/h${pw?.wdir != null ? ' ' + compassDir(pw.wdir) : ''}</td>
@@ -3351,8 +3354,17 @@ async function printStationBriefing() {
   // FBP prediction
   const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, 0);
 
-  // DC source
-  const dcSource = w?.fwiFromCWFIS ? 'CWFIS carry-over' : 'Regional estimate';
+  // DC / chain source and plain-language provenance (same logic as the station page)
+  const co = r._cachedFWI || null;
+  const prov = _provenance(r.weather || w, co);
+  const dcSource = w?.fwiFromCWFIS
+    ? `${(w.chainSource || w.source || '').startsWith('BCWS') ? 'BCWS' : 'CWFIS'} chain (${String(w.repDate || '').slice(0, 10) || 'today'})`
+    : co ? (co.final ? `CWFIS chain (${co.obsDate}, holding)` : `CWFIS chain from ${co.obsDate}, stepped with today's weather`)
+    : 'Startup estimate (no carry-over available)';
+  const provLine = `${prov.kind}${prov.age ? ' · ' + prov.age : ''} · ${prov.network}`;
+  const wxIsPeak = (w?.source || '').includes('peak burn forecast');
+  const wxLabel = wxIsPeak ? `Weather (16:00 ${PROVINCE.tzLabel} forecast)` : (w?.source || '').startsWith('MSC') ? 'Weather (station obs)' : 'Weather (noon LST)';
+  const fireSize = f => f?.area60 != null ? `${f.area60 < 10 ? f.area60.toFixed(1) : Math.round(f.area60).toLocaleString()} ha` : '—';
 
   // Danger colour for print
   const PRINT_BG = PRINT_DANGER_COLORS;
@@ -3377,7 +3389,10 @@ async function printStationBriefing() {
 
   // Forecast source label — NAEFS days carry a stationName; Open-Meteo/ECMWF days do not
   const { days: fDays, results: fResults } = _forecastCache;
-  const fSrcLabel = fDays[0]?.stationName ? 'NAEFS CDA' : 'ECMWF IFS 0.25° · Open-Meteo';
+  const nEc = fResults.filter(x => !x.ensembleTail).length;
+  const fSrcLabel = fResults.some(x => x.ensembleTail)
+    ? `ECMWF IFS 0.25° (days 1–${nEc}) + NAEFS ensemble median (later days, lower confidence, marked *)`
+    : 'ECMWF IFS 0.25° · Open-Meteo';
   let forecastRows = '';
   if (fResults.length > 0) {
     const _todayLocal    = _localDateStr();
@@ -3394,7 +3409,7 @@ async function printStationBriefing() {
       if (dayLocal && dayLocal < _todayLocal) return '';
       const isD1 = dayLocal === _tomorrowLocal;
       return `<tr style="background:${isD1 ? '#f0f4ff' : i % 2 === 0 ? '#fff' : '#f9f9f9'}">
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${fr.label || `D+${i+1}`}${fr.ensembleTail ? ' *' : ''}${isD1 ? ' <span style="font-size:7pt;color:#0066cc;font-weight:400">← TOMORROW</span>' : ''}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.rh != null ? Math.round(fpw.rh) + '%' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${Math.round(fr.fwi)}</td>
@@ -3429,10 +3444,11 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (~16:00 ${PROVINCE.tzLabel})</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${Math.round(d1r.fwi)} — ${d1r.danger}</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${d1r.fwi.toFixed(1)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
-      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
+      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span>${d1fbp ? `<br><span style="font-size:7pt;color:#777">${d1fbp.flameModel}</span>` : ''}</p>
+      <p class="kv"><span class="label">Fire Size at 60 min</span><br><span class="val">${fireSize(d1fbp)}</span><br><span style="font-size:7pt;color:#777">point ignition · cffdrs</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
@@ -3486,6 +3502,7 @@ async function printStationBriefing() {
 <body>
 <div class="header-box">
   <p class="header-title">Fire Weather — Station Briefing</p>
+  <p style="font-size:8pt;color:#555;margin:0 0 2px">Pyra (unofficial — verify with your FBAN / agency) · CFFDRS FWI + FBP (ST-X-3, cffdrs)</p>
   <p class="header-meta">
     Station: <strong>${stationDisplayName}</strong> &nbsp;·&nbsp; ${Math.abs(lat).toFixed(4)}°N ${Math.abs(lng).toFixed(4)}°W<br>
     Operational Period: ${today} 0600–1800 ${PROVINCE.tzLabel}<br>
@@ -3494,7 +3511,7 @@ async function printStationBriefing() {
 </div>
 
 <div class="section">
-  <div class="section-title">Current Conditions</div>
+  <div class="section-title">${wxIsPeak ? `Today's Weather — 16:00 ${PROVINCE.tzLabel} forecast` : 'Current Conditions'}</div>
   <div class="section-body">
     <div class="grid-3">
       <p class="kv"><span class="label">Temp</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) + '°C' : '—'}</span></p>
@@ -3510,7 +3527,7 @@ async function printStationBriefing() {
 </div>
 
 <div class="section">
-  <div class="section-title">FWI System (Van Wagner CFFDRS)</div>
+  <div class="section-title">FWI System — Daily (noon LST) · Van Wagner 1987</div>
   <div class="section-body">
     <div class="fwi-grid">
       <div class="fwi-cell"><div class="label">FFMC</div><div class="val">${r.ffmc.toFixed(1)}</div></div>
@@ -3521,7 +3538,8 @@ async function printStationBriefing() {
       <div class="fwi-cell"><div class="label">FWI</div><div class="val" style="font-size:16pt">${r.fwi.toFixed(1)}</div></div>
     </div>
     <div>
-      <span class="danger-badge" style="background:${dc.bg};color:${dc.text}">${r.danger} Risk</span>
+      <span class="danger-badge" style="background:${dc.bg};color:${dc.text}">${r.danger}</span>
+      <span style="font-size:8pt;color:#555;margin-left:6px">${r.dangerSource === 'official' ? 'Official BCWS daily danger rating' : `Daily FWI ${r.fwi.toFixed(1)} (noon LST) · FWI-based class — not an agency rating`} · ${provLine}</span>
     </div>
   </div>
 </div>
@@ -3532,16 +3550,17 @@ async function printStationBriefing() {
   <div class="section-title">Current Fire Behaviour · ${fuelCode} — ${fuelName} · Today · ${today}</div>
   <div class="section-body">
     <div class="grid-2">
-      <p class="kv"><span class="label">Weather (Noon LST)</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val">${Math.round(r.fwi)} — ${r.danger}</span></p>
+      <p class="kv"><span class="label">${wxLabel}</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
+      <p class="kv"><span class="label">FWI</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
-      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span></p>
+      <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span>${fbp ? `<br><span style="font-size:7pt;color:#777">${fbp.flameModel}</span>` : ''}</p>
+      <p class="kv"><span class="label">Fire Size at 60 min</span><br><span class="val">${fireSize(fbp)}</span><br><span style="font-size:7pt;color:#777">point ignition · cffdrs</span></p>
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${fbp ? fbp.fireType + ' / ' + (fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid ${hfiClassInfo(fbp.hfi).bg};background:#fafafa"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(fbp.hfi)}</div>` : ''}
     ${escapedNote}
-    <p style="font-size:7.5pt;color:#888;margin-top:4px">Observed: 12:00 noon LST (CFFDRS standard) · ${srcLabel} · Prepared: ${prepared}</p>
+    <p style="font-size:7.5pt;color:#888;margin-top:4px">Data: ${provLine} · ${srcLabel} · Chain: ${dcSource} · Prepared: ${prepared}</p>
   </div>
 </div>
 
@@ -3644,7 +3663,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
   // (card palette HFI_STYLE, safe text; classes 5/6 add a hatch + black outline
   // so they never rely on colour alone). Shape encodes the source tier:
   // square = agency chain (CWFIS/BCWS), rounded = SWOB sensor, pill = model.
-  function _makeIcon(danger, fwiVal, hfiCls, scale, srcType) {
+  function _makeIcon(danger, fwiVal, hfiCls, scale, srcType, name = '') {
     const [hfiNum, hfiWord] = (hfiCls || '—').split('-');
     const hn = _hfiNumOf(hfiCls);
     const hs = HFI_STYLE[hn] || { fill: '#d1d5db', text: '#0b1326', pattern: '' };
@@ -3656,7 +3675,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     const hfiBg = hs.pattern ? `${hs.pattern},${hs.fill}` : hs.fill;
     return L.divIcon({
       className: '',
-      html: `<div role="img" aria-label="FWI ${fwiVal} ${danger || ''}, HFI class ${hfiCls || 'unknown'}" style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
+      html: `<div role="img" aria-label="${_esc(name ? name + ': ' : '')}FWI ${fwiVal} ${danger || ''}, HFI class ${hfiCls || 'unknown'}${srcType ? ', source ' + srcType : ''}" style="width:${sz.w}px;height:${sz.h}px;border-radius:${br}px;overflow:hidden;display:flex;` +
             `box-shadow:0 2px 8px rgba(0,0,0,0.4),${ring};` +
             `font-family:'Space Grotesk',sans-serif;cursor:pointer">` +
             `<div style="width:${half}px;height:100%;background:${dt.solid};color:${dt.on};display:flex;flex-direction:column;` +
@@ -3813,7 +3832,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
 
       const scale    = _zoomScale(map.getZoom());
       const hfiCls   = fbp ? _hfiClass(fbp.hfi) : '—';
-      markers[s.name].setIcon(_makeIcon(r.danger, r.fwi.toFixed(1), hfiCls, scale, srcBadge));
+      markers[s.name].setIcon(_makeIcon(r.danger, r.fwi.toFixed(1), hfiCls, scale, srcBadge, s.name));
       const dTok = _dangerTok(r.danger);
 
       // Popup — full station detail card
@@ -3891,7 +3910,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     for (const entry of _mapStationCache) {
       if (!entry.result) continue;
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
-      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, finalScale, entry.srcBadge));
+      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, finalScale, entry.srcBadge, entry.name));
     }
   }
 
@@ -3901,7 +3920,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
     for (const entry of _mapStationCache) {
       if (!entry.result) continue;
       const hfiCls   = entry.fbp ? _hfiClass(entry.fbp.hfi) : '—';
-      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, scale, entry.srcBadge));
+      markers[entry.name]?.setIcon(_makeIcon(entry.result.danger, entry.result.fwi.toFixed(1), hfiCls, scale, entry.srcBadge, entry.name));
     }
   });
 
@@ -4081,12 +4100,12 @@ async function buildD1Card() {
   const tomorrowIdx = days.findIndex(d => d._ts && _localDateStr(d._ts) > _nowLocal);
 
   // Populate LEFT card (today peak burn).
-  // Weather display uses _lastWeather (from fetchWeatherPrimary) — already the peak
-  // burn forecast when pre-noon, or real obs when post-noon. NAEFS/forecast peak
-  // values are NOT used for display because NAEFS uses daily max-T (biased high)
-  // and its date_time is UTC-keyed, making it unreliable for same-day display.
+  // Weather row shows the same 16:00 values the card's FBP uses — today's ECMWF
+  // peak-burn hour from fetchForecastDays (exact LST-dated hours) — so the row and
+  // the fire behaviour below it can't disagree. Falls back to the latest
+  // observation only if the forecast has no peak values for today.
   if (todayIdx >= 0) {
-    const t0pw = _lastWeather || days[todayIdx]?.peak || days[todayIdx] || {};
+    const t0pw = days[todayIdx]?.peak || _lastWeather || days[todayIdx] || {};
     const setW = (attr, val) => { const el = document.querySelector(`[data-fwi="${attr}"]`); if (el) el.textContent = val; };
     setW('temp', `${(+(t0pw.temp)||0).toFixed(1)}°C`);
     setW('rh',   `${Math.round(+(t0pw.rh)||0)}%`);
