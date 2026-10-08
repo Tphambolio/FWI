@@ -115,3 +115,29 @@ test('BC: fetchWeather pre-noon PST targets the 23 UTC peak-burn hour of today',
   assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 PDT)');
 });
 
+
+// ─── Forecast composition (2026-10-08) ───────────────────────────────────────
+// ECMWF (exact noon-LST/16:00 hours) first; NAEFS only beyond its horizon, using
+// ensemble medians (max_temp/min_rh biased the chain dry).
+for (const e of ENGINES) {
+  test(`${e.prov}: fetchForecastDays — ECMWF days first, NAEFS medians only beyond the ECMWF horizon`, async () => {
+    const now = lstClock(e, 7, 15, 9);
+    const naefsDay = (d, extra = {}) => ({ type: 'Feature', geometry: null, properties: {
+      date_time: `2026-07-${String(d).padStart(2, '0')}Z`, max_temp: 30, median_temp: 20, min_temp: 8,
+      max_rh: 90, median_rh: 45, min_rh: 20, median_ws: 12, median_pcp: 0, ...extra } });
+    const feats = Array.from({ length: 16 }, (_, i) => naefsDay(15 + i));
+    const h = makeContext(e.path, { now, mocks: { naefs: { type: 'FeatureCollection', features: feats } } });
+    const st = h.run(`JSON.stringify(PROVINCE.defaultStation)`);
+    const { lat, lng } = JSON.parse(st);
+    const out = await h.run(`fetchForecastDays(${lat}, ${lng})`);
+    const ec = out.days.filter(d => !d.ensembleTail), tail = out.days.filter(d => d.ensembleTail);
+    assert.ok(ec.length >= 6, `ECMWF days ${ec.length}`);
+    const lastEc = new Date(ec[ec.length - 1]._ts).toISOString().slice(0, 10);
+    for (const d of tail) {
+      assert.ok(new Date(d._ts).toISOString().slice(0, 10) > lastEc, 'NAEFS only after ECMWF');
+      assert.equal(d.temp, 20, 'median_temp, not max_temp');
+      assert.equal(d.rh, 45, 'median_rh, not min_rh');
+    }
+    if (h.run('findNearestNAEFS(' + lat + ',' + lng + ')')) assert.ok(tail.length > 0, 'tail present when NAEFS station exists');
+  });
+}

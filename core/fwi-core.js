@@ -2457,16 +2457,15 @@ async function fetchForecastNAEFS(code) {
       const p = f.properties;
       const dt = new Date(p.date_time);
       const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
-      // KNOWN LIMITATION: the CWFIS firewx_naefs layer publishes only ensemble
-      // aggregates (max_temp, min_rh, median_ws, median_pcp). Feeding daily
-      // max-T/min-RH into the noon-calibrated FWI equations overstates drying,
-      // and median precip of a zero-inflated ensemble understates rain — both
-      // bias the 14-day chain toward higher indices. Treat the NAEFS trend as
-      // a conservative (drier) scenario; no member-level data is available to
-      // do better from this layer.
-      const peakTemp = p.max_temp ?? 15;
-      const peakRh   = p.min_rh   ?? 40;
-      const peakWind = p.median_ws ?? 10;
+      // The CWFIS firewx_naefs layer publishes daily statistics only
+      // (max/min/median/pct25/pct75 of temp, rh, ws, pcp) — no noon-LST value.
+      // Using max_temp/min_rh (the driest statistic of each) biased the chain
+      // strongly dry (e.g. 17.4 vs median 9.7 °C). Use the medians as the central
+      // estimate. NAEFS now only extends the trend beyond the ECMWF horizon
+      // (fetchForecastDays); ECMWF supplies exact noon-LST/16:00 values first.
+      const peakTemp = p.median_temp ?? 15;
+      const peakRh   = p.median_rh   ?? 40;
+      const peakWind = p.median_ws   ?? 10;
       // NAEFS date_time is midnight UTC representing that UTC calendar day.
       // _mdtDateStr subtracts 6h (MDT), so midnight UTC maps to 6pm of the
       // previous MDT day — off by one. Adding 12h shifts to noon UTC so
@@ -2704,25 +2703,38 @@ function trendLabel(fwi, prevFwi) {
   return 'STABLE';
 }
 
+/**
+ * Forecast days for the FWI/FBP chain: ECMWF IFS via Open-Meteo (exact noon-LST
+ * and 16:00 hours, ~7 days) first, extended with NAEFS ensemble medians beyond
+ * the ECMWF horizon (flagged ensembleTail — lower confidence). NAEFS alone only
+ * if ECMWF fails. Returns { days, source }.
+ */
+async function fetchForecastDays(lat, lng) {
+  const naefsSt = findNearestNAEFS(lat, lng);
+  const [ec, na] = await Promise.all([
+    fetchForecast(lat, lng).catch(() => null),
+    naefsSt ? fetchForecastNAEFS(naefsSt.code).catch(() => null) : Promise.resolve(null),
+  ]);
+  const dateOf = d => new Date(d._ts).toISOString().slice(0, 10);
+  if (ec?.length) {
+    const last = dateOf(ec[ec.length - 1]);
+    const tail = (na || []).filter(d => dateOf(d) > last).map(d => ({ ...d, ensembleTail: true }));
+    return {
+      days: [...ec, ...tail],
+      source: tail.length
+        ? `ECMWF IFS noon LST (days 1–${ec.length}) + NAEFS ensemble median${naefsSt ? ' · ' + naefsSt.name : ''} (days ${ec.length + 1}–${ec.length + tail.length}, lower confidence)`
+        : 'ECMWF IFS 0.25° (Open-Meteo) · noon LST',
+    };
+  }
+  if (na?.length) return { days: na, source: `NAEFS ensemble median (${naefsSt.name}) — ECMWF unavailable` };
+  throw new Error('[FWI] no forecast available (ECMWF and NAEFS failed)');
+}
+
 async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
   try {
     // Prefer NAEFS (Environment Canada 14-day ensemble at fire weather stations)
     // Fall back to Open-Meteo if no NAEFS station within 150 km
-    let days, forecastSource;
-    const naefsSt = findNearestNAEFS(lat, lng);
-    if (naefsSt) {
-      try {
-        days = await fetchForecastNAEFS(naefsSt.code);
-        forecastSource = `NAEFS 14-day ensemble (${naefsSt.name})`;
-      } catch (e) {
-        console.warn('[FWI] NAEFS fetch failed, falling back to Open-Meteo:', e);
-        days = await fetchForecast(lat, lng);
-        forecastSource = 'ECMWF IFS 0.25° (Open-Meteo)';
-      }
-    } else {
-      days = await fetchForecast(lat, lng);
-      forecastSource = 'Open-Meteo NWP';
-    }
+    const { days, source: forecastSource } = await fetchForecastDays(lat, lng);
     // Start the chain from today's observed FFMC/DMC/DC if available; otherwise cold-start.
     // Apply DC floor so a cold-start artifact in _lastFWI.dc doesn't suppress the 14-day trend.
     const chainStart = (_lastFWI?.ffmc != null) ? {
@@ -3305,14 +3317,7 @@ async function printStationBriefing() {
   // Fetch forecast on-demand if not yet loaded (user printing from station detail without visiting forecast page)
   if (_forecastCache.results.length === 0) {
     try {
-      const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
-      let days;
-      if (naefsSt) {
-        try { days = await fetchForecastNAEFS(naefsSt.code); }
-        catch (e) { days = await fetchForecast(_stationLat, _stationLng); }
-      } else {
-        days = await fetchForecast(_stationLat, _stationLng);
-      }
+      const { days } = await fetchForecastDays(_stationLat, _stationLng);
       const chainStart = (_lastFWI?.ffmc != null) ? {
         ffmc: _lastFWI.ffmc,
         dmc:  _lastFWI.dmc,
@@ -4041,16 +4046,7 @@ async function buildD1Card() {
       ({ days, results, resultsB } = _forecastCache);
     } else {
       if (!(_forecastCache.days?.length && sameStation)) {
-        const naefsSt = findNearestNAEFS(_stationLat, _stationLng);
-        if (naefsSt) {
-          try { days = await fetchForecastNAEFS(naefsSt.code); }
-          catch(e) {
-            console.warn('[D+1] NAEFS failed, trying Open-Meteo:', e);
-            days = await fetchForecast(_stationLat, _stationLng);
-          }
-        } else {
-          days = await fetchForecast(_stationLat, _stationLng);
-        }
+        ({ days } = await fetchForecastDays(_stationLat, _stationLng));
       } else {
         days = _forecastCache.days; // reuse weather; only recalc FBP
       }
