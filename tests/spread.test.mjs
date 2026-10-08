@@ -68,3 +68,18 @@ for (const e of ENGINES) {
     assert.ok(r.area60 < 0.001, `${r.area60}`);
   });
 }
+
+for (const e of ENGINES) {
+  const h = makeContext(e.path);
+  test(`${e.prov}: flame length — Byram for surface fires, Thomas (1963) when crowning`, () => {
+    const O = JSON.stringify(OPTS);
+    const surf = h.run(`calculateFBP('D1', 90, 40, 300, 15, 0, 100, 50, ${O})`);
+    assert.equal(surf.cfb, 0);
+    assert.ok(Math.abs(surf.flameLength - 0.0775 * surf.hfi ** 0.46) < 1e-12);
+    assert.equal(surf.flameModel, 'Byram 1959 (surface)');
+    const crown = h.run(`calculateFBP('C2', 94, 90, 450, 25, 0, 100, 50, ${O})`);
+    assert.ok(crown.cfb >= 0.1);
+    assert.ok(Math.abs(crown.flameLength - 0.0266 * crown.hfi ** (2 / 3)) < 1e-12);
+    assert.ok(crown.flameLength > 0.0775 * crown.hfi ** 0.46, 'crown flames exceed the surface relation');
+  });
+}

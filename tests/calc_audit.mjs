@@ -839,7 +839,8 @@ console.log('\n── Crown-fire initiation (Eqs. 56-58) ──');
 
 // ─── TFC / HFI / flame length chain (ST-X-3 Eqs. 66-69, Byram 1959) ─────────
 // TFC = SFC + CFB·CFL (Eq.66a/67), HFI = 300·TFC·ROS (Eq.69)
-// Flame length: L = 0.0775·HFI^0.46 (Byram 1959, applied to total HFI)
+// Flame length: surface (CFB < 0.1) Byram 1959 L = 0.0775·HFI^0.46; crowning
+// (CFB ≥ 0.1) Thomas 1963 L = 0.0266·HFI^(2/3) (2026-10-08)
 console.log('\n── TFC / HFI / flame length chain ──');
 {
   const TOL = 0.001;
@@ -849,7 +850,7 @@ console.log('\n── TFC / HFI / flame length chain ──');
   const cfl_c2 = 0.80; // C2 CFL from FUEL_TYPES
   const tfc_c2 = c2.sfc + c2.cfb * cfl_c2;
   const hfi_c2 = 300 * c2.tfc * c2.ros;
-  const fl_c2  = 0.0775 * Math.pow(c2.hfi, 0.46);
+  const fl_c2  = c2.cfb >= 0.1 ? 0.0266 * Math.pow(c2.hfi, 2 / 3) : 0.0775 * Math.pow(c2.hfi, 0.46);
   const tfc_ok = Math.abs(c2.tfc - tfc_c2) < TOL;
   const hfi_ok = Math.abs(c2.hfi - hfi_c2) < 0.1;
   const fl_ok  = Math.abs(c2.flameLength - fl_c2) < TOL;
@@ -857,7 +858,7 @@ console.log('\n── TFC / HFI / flame length chain ──');
   if (tfc_ok) pass++; else { issues.push(`  C2 TFC mismatch: got ${c2.tfc} expected ${tfc_c2}`); fail++; }
   console.log(`  ${hfi_ok ? 'PASS' : 'FAIL'}  C2 HFI=300·TFC·ROS: ${c2.hfi.toFixed(1)} kW/m (Eq.69)`);
   if (hfi_ok) pass++; else { issues.push(`  C2 HFI mismatch: got ${c2.hfi} expected ${hfi_c2}`); fail++; }
-  console.log(`  ${fl_ok  ? 'PASS' : 'FAIL'}  C2 FL=0.0775·HFI^0.46: ${c2.flameLength.toFixed(4)} m (Byram 1959)`);
+  console.log(`  ${fl_ok  ? 'PASS' : 'FAIL'}  C2 FL (${c2.flameModel}): ${c2.flameLength.toFixed(4)} m`);
   if (fl_ok)  pass++; else { issues.push(`  C2 FL mismatch: got ${c2.flameLength} expected ${fl_c2}`); fail++; }
 
   // D1 surface fire — cfb=0 so CFC=0, TFC=SFC
@@ -896,7 +897,7 @@ console.log('\n── TFC / HFI / flame length chain ──');
     const cfl_c7 = 0.50;
     const tfc_c7exp = c7.sfc + c7.cfb * cfl_c7;
     const hfi_c7exp = 300 * c7.tfc * c7.ros;
-    const fl_c7exp  = 0.0775 * Math.pow(c7.hfi, 0.46);
+    const fl_c7exp  = c7.cfb >= 0.1 ? 0.0266 * Math.pow(c7.hfi, 2 / 3) : 0.0775 * Math.pow(c7.hfi, 0.46);
     const tfc_c7_ok = Math.abs(c7.tfc - tfc_c7exp) < TOL;
     const hfi_c7_ok = Math.abs(c7.hfi - hfi_c7exp) < 0.1;
     const fl_c7_ok  = Math.abs(c7.flameLength - fl_c7exp) < TOL;
@@ -904,7 +905,7 @@ console.log('\n── TFC / HFI / flame length chain ──');
     if (tfc_c7_ok) pass++; else { issues.push(`  C7 TFC mismatch: got ${c7.tfc} expected ${tfc_c7exp}`); fail++; }
     console.log(`  ${hfi_c7_ok ? 'PASS' : 'FAIL'}  C7 HFI=300·TFC·ROS: ${c7.hfi.toFixed(1)} kW/m`);
     if (hfi_c7_ok) pass++; else { issues.push(`  C7 HFI mismatch: got ${c7.hfi} expected ${hfi_c7exp}`); fail++; }
-    console.log(`  ${fl_c7_ok  ? 'PASS' : 'FAIL'}  C7 FL=0.0775·HFI^0.46: ${c7.flameLength.toFixed(6)} m`);
+    console.log(`  ${fl_c7_ok  ? 'PASS' : 'FAIL'}  C7 FL (${c7.flameModel}): ${c7.flameLength.toFixed(6)} m`);
     if (fl_c7_ok)  pass++; else { issues.push(`  C7 FL mismatch: got ${c7.flameLength} expected ${fl_c7exp}`); fail++; }
   }
 

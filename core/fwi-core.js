@@ -597,8 +597,15 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   const hfi = 300 * tfc * ros;                                          // Eq. 69 (kW/m)
   const sfi = 300 * sfc * (fuelCode === 'C6' ? rss : ros);              // surface-only intensity
 
-  // Flame length — Byram (1959): L = 0.0775 × I^0.46 (applied to total HFI)
-  const flameLength = hfi > 0 ? 0.0775 * Math.pow(hfi, 0.46) : 0.0;
+  // Flame length (m). Byram (1959) L = 0.0775·I^0.46 is a surface-fire relation;
+  // applied to crown-fire intensities it understates flames (10 000 kW/m → 5.4 m).
+  // For crowning (CFB ≥ 0.1) use Thomas (1963) L = 0.0266·I^(2/3) (~12 m at
+  // 10 000 kW/m), the crown-fire relation used by Rothermel (1991) and discussed
+  // by Alexander & Cruz (2012, IJWF 21:95-113).
+  const flameLength = hfi <= 0 ? 0.0
+    : cfb >= 0.1 ? 0.0266 * Math.pow(hfi, 2 / 3)
+    : 0.0775 * Math.pow(hfi, 0.46);
+  const flameModel = cfb >= 0.1 ? 'Thomas 1963 (crown)' : 'Byram 1959 (surface)';
 
   // Fire type classification (ST-X-3 CFB convention)
   let fireType = 'Surface';
@@ -632,7 +639,7 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
     area60 = Math.PI / (4 * lbt) * Math.pow(dh + db, 2) / 10000;       // ha
   }
 
-  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType, bros, lb, dh, db, area60 };
+  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, flameModel, fireType, bros, lb, dh, db, area60 };
 }
 
 // ═══ SCIENCE CORE END: calculateFBP ═══
