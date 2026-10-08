@@ -386,23 +386,6 @@ function _defaultFuelFor(lat) {
 }
 
 /**
- * One province-wide CWFIS query — every station in a single request, instead
- * of one bbox query per station. Returns the raw feature array (cached for the
- * page session) so buildStationMap can resolve all 199 stations locally.
- */
-let _allCWFISFeatures = null;
-async function fetchAllCWFIS(latMin = 48.8, latMax = 60.5, lonMin = -120.5, lonMax = -109.5) {
-  if (_allCWFISFeatures) return _allCWFISFeatures;
-  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
-    `?service=WFS&version=2.0.0&request=GetFeature` +
-    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000` +
-    `&CQL_FILTER=lat+BETWEEN+${latMin}+AND+${latMax}+AND+lon+BETWEEN+${lonMin}+AND+${lonMax}`;
-  const data = await fetchWithTimeout(url, { cache: 'no-cache' }, 20000).then(r => r.json());
-  _allCWFISFeatures = data.features ?? [];
-  return _allCWFISFeatures;
-}
-
-/**
  * AB tier chain (PROVINCE.fetchPrimary — core fetchWeatherPrimary delegates here).
  * CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
  * Before noon, the layer serves yesterday's obs — use chain values for holding
@@ -773,6 +756,7 @@ const PROVINCE = {
   // ── Station map ──
   mapCenter: [54.5, -114.5],    // buildStationMap default centre
   mapBulkCWFIS: () => fetchAllCWFIS(), // one province-wide CWFIS query for all map stations
+  cwfisBBox: [48.8, 60.5, -120.5, -109.5], // province-wide CWFIS query box [latMin, latMax, lonMin, lonMax]
   // ── Forecast / D+1 ──
   highDangerFWI: 15.5,          // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: 5,           // regions shown in the forecast trend table (first N)

@@ -785,6 +785,24 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
 }
 
 /**
+ * One province-wide CWFIS query — every station in a single request, instead
+ * of one bbox query per station. Returns the raw feature array (cached for the
+ * page session) so buildStationMap can resolve all stations locally.
+ * Bounding box from PROVINCE.cwfisBBox [latMin, latMax, lonMin, lonMax].
+ */
+let _allCWFISFeatures = null;
+async function fetchAllCWFIS([latMin, latMax, lonMin, lonMax] = PROVINCE.cwfisBBox) {
+  if (_allCWFISFeatures) return _allCWFISFeatures;
+  const url = `https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows` +
+    `?service=WFS&version=2.0.0&request=GetFeature` +
+    `&typeName=public:firewx_stns_current&outputFormat=application/json&count=2000` +
+    `&CQL_FILTER=lat+BETWEEN+${latMin}+AND+${latMax}+AND+lon+BETWEEN+${lonMin}+AND+${lonMax}`;
+  const data = await fetchWithTimeout(url, { cache: 'no-cache' }, 20000).then(r => r.json());
+  _allCWFISFeatures = data.features ?? [];
+  return _allCWFISFeatures;
+}
+
+/**
  * Select the best CWFIS observation for a point from a feature array.
  * Shared by fetchCWFIS (per-point query) and buildStationMap (one province
  * query reused for all stations). Prefers the nearest station with an active
@@ -3613,11 +3631,10 @@ async function buildStationMap(containerId, mapOpts = {}) {
     if (clusterGroup) clusterGroup.addLayer(m); else m.addTo(map);
   }
 
-  // PROVINCE.mapBulkCWFIS (AB): one province-wide CWFIS query, reused for all
-  // stations — replaces 199 sequential per-station bbox queries (minutes of
-  // serial network → ~2 s). Stations with no local CWFIS match fall back to
-  // the per-station tier chain. Without it (BC) every station runs the full
-  // tier chain (fetchWeatherPrimary).
+  // PROVINCE.mapBulkCWFIS: one province-wide CWFIS query, reused for all
+  // stations — replaces ~200 sequential per-station tier chains (a minute+ of
+  // serial network → seconds). Stations with no usable bulk match fall back
+  // to the per-station tier chain (fetchWeatherPrimary).
   let allFeatures = null;
   if (PROVINCE.mapBulkCWFIS) {
     if (!_cwfisPrev.stations) await loadCWFISPrev();
@@ -3629,7 +3646,11 @@ async function buildStationMap(containerId, mapOpts = {}) {
   // Fetch data and update each marker as it arrives
   for (const s of getStationList()) {
     try {
-      let w = allFeatures ? _selectCWFIS(allFeatures, s.lat, s.lng) : null;
+      // PROVINCE.mapPick applies the province's tier rule to the bulk data
+      // (BC: today-dated BCWS or CWFIS, nearest wins); default nearest CWFIS.
+      let w = allFeatures
+        ? await (PROVINCE.mapPick ? PROVINCE.mapPick(allFeatures, s.lat, s.lng) : _selectCWFIS(allFeatures, s.lat, s.lng))
+        : null;
       // Fall back to the full per-station tier chain only when the province
       // query found nothing usable nearby (rare — off-season or sparse north).
       if (!w) w = await fetchWeatherPrimary(s.lat, s.lng);

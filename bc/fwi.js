@@ -421,6 +421,23 @@ async function fetchBCWSForCoords(lat, lng) {
 }
 
 /**
+ * BC map picker (PROVINCE.mapPick) — the tier rule of _fetchWeatherPrimaryBC
+ * applied to the bulk data, so ~240 map stations need no per-station network:
+ * today-dated BCWS (cached mirror) or CWFIS chain, nearest wins; otherwise the
+ * latest CWFIS chain within 100 km (badged "CWFIS D-1" before noon, as on the
+ * AB map). null → the map falls back to the per-station tier chain.
+ */
+async function _mapPickBC(features, lat, lng) {
+  const today = _lstDateStr();
+  const bcws = await fetchBCWSForCoords(lat, lng).catch(() => null);
+  const cw = _selectCWFIS(features, lat, lng);
+  const isToday = r => r?.fwiFromCWFIS && r.repDate && String(r.repDate).slice(0, 10) === today;
+  const todays = [bcws, cw].filter(isToday).sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999))[0];
+  if (todays) return todays;
+  return (cw?.fwiFromCWFIS && (cw.distKm ?? 999) <= 100) ? cw : null;
+}
+
+/**
  * BC tier chain (PROVINCE.fetchPrimary — core fetchWeatherPrimary delegates here).
  * Tier 0+1: BCWS noon mirror and CWFIS fetched in parallel. Only a chain dated
  * today (PST) counts — before noon CWFIS still serves yesterday's chain, which
@@ -834,7 +851,9 @@ const PROVINCE = {
   csvSlug: 'bc',                // regional CSV export filename part
   // ── Station map ──
   mapCenter: [52.5, -122.5],    // buildStationMap default centre
-  mapBulkCWFIS: null,           // no bulk query — every map station runs the tier chain
+  mapBulkCWFIS: () => fetchAllCWFIS(), // one province-wide CWFIS query for all map stations
+  cwfisBBox: [48.2, 60.05, -139.1, -114.0], // province-wide CWFIS query box [latMin, latMax, lonMin, lonMax]
+  mapPick: (features, lat, lng) => _mapPickBC(features, lat, lng), // BC tier rule on bulk data
   // ── Forecast / D+1 ──
   highDangerFWI: 21,            // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: undefined,   // regions shown in the forecast trend table (all)
