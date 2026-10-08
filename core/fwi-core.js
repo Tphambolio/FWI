@@ -460,6 +460,95 @@ function _buildupEffect(fuelCode, bui) {
 let _stationLat = PROVINCE.defaultStation.lat; // module-level; set by initFWI for FMC calculation
 let _stationElev = null; // station elevation (m ASL) for the FMC elevation form; null → Eqs. 1-2
 
+// ─── Site terrain (slope / aspect) for the station page's fire behaviour ──────
+// The FBP slope effect (cffdrs wind–slope vector, calculateFBP) needs the slope
+// at the fire site, not the weather station (usually a flat airport). The site
+// terrain comes from a map pin (DEM) or manual entry, persists per province,
+// and applies to the Today/Tomorrow cards, summary row and print — never to the
+// regional map (station points). aspect = direction the slope FACES (°).
+const _COMPASS8 = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+const _compass8 = deg => deg == null ? '—' : _COMPASS8[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+let _siteTerrain = { slope: 0, aspect: null, src: 'flat' };
+function _terrainStorageKey() { return `${PROVINCE.storageKeys.fuelA}-site-terrain`; }
+try {
+  const t = JSON.parse(localStorage.getItem(_terrainStorageKey()));
+  if (t && typeof t.slope === 'number' && t.slope >= 0) _siteTerrain = t;
+} catch (_) {}
+function _terrainKey() { return `${_siteTerrain.slope}|${_siteTerrain.aspect}`; }
+/** calculateFBP opts for the site terrain (+ optional wind-from direction). */
+function _terrainOpts(windDir = null) {
+  return { slope: _siteTerrain.slope || 0, aspect: _siteTerrain.aspect, windDir };
+}
+
+/**
+ * Slope (%) and aspect (direction faced, °) at a point from the Copernicus
+ * 90 m DEM (Open-Meteo elevation API): centre-difference gradient over ±100 m.
+ * Slopes < 2 % are treated as flat (aspect null). null on failure.
+ */
+async function _terrainAt(lat, lng) {
+  const d = 100, dLat = d / 111320, dLng = d / (111320 * Math.cos(lat * Math.PI / 180));
+  const pts = [[lat, lng], [lat + dLat, lng], [lat - dLat, lng], [lat, lng + dLng], [lat, lng - dLng]];
+  try {
+    const url = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p => p[0].toFixed(6)).join(',')}` +
+                `&longitude=${pts.map(p => p[1].toFixed(6)).join(',')}`;
+    const z = (await fetchWithTimeout(url, {}, 8000).then(r => r.json()))?.elevation;
+    if (!Array.isArray(z) || z.length !== 5 || z.some(v => typeof v !== 'number')) return null;
+    const [, zN, zS, zE, zW] = z;
+    const dzdx = (zE - zW) / (2 * d), dzdy = (zN - zS) / (2 * d);
+    const slope = Math.round(Math.hypot(dzdx, dzdy) * 100);
+    const aspect = slope < 2 ? null : Math.round((Math.atan2(-dzdx, -dzdy) * 180 / Math.PI + 360) % 360);
+    return { slope: slope < 2 ? 0 : slope, aspect, elev: z[0] };
+  } catch (_) { return null; }
+}
+
+function _setSiteTerrain(t, { refresh = true } = {}) {
+  const slope = Math.max(0, Math.min(100, Math.round(+t.slope || 0)));
+  // Keep the aspect even at slope 0 so the order the two inputs are set in doesn't matter
+  _siteTerrain = { slope, aspect: t.aspect != null && t.aspect !== '' ? ((+t.aspect % 360) + 360) % 360 : null, src: t.src || 'manual',
+                   lat: t.lat ?? null, lng: t.lng ?? null };
+  try { localStorage.setItem(_terrainStorageKey(), JSON.stringify(_siteTerrain)); } catch (_) {}
+  const sl = document.getElementById('fwi-terrain-slope');
+  const as = document.getElementById('fwi-terrain-aspect');
+  if (sl) sl.value = String(_siteTerrain.slope);
+  if (as) as.value = _siteTerrain.aspect == null ? '' : String(Math.round(_siteTerrain.aspect / 45) * 45 % 360);
+  _renderTerrainStatus();
+  if (refresh && typeof refreshFBP === 'function') refreshFBP();
+}
+
+/** Plain-language terrain line for crews: slope, source, effective wind, head direction. */
+function _renderTerrainStatus(fbp = null) {
+  const el = document.getElementById('fwi-terrain-status');
+  if (!el) return;
+  const t = _siteTerrain;
+  if (!t.slope) { el.textContent = 'Flat ground assumed. Drop a pin on the map to read the site slope from terrain, or enter it.'; return; }
+  const src = t.src === 'pin' ? 'from map pin (90 m DEM — check on site)' : 'entered manually';
+  let line = `Slope ${t.slope}%${t.aspect != null ? ` facing ${_compass8(t.aspect)}` : ''} · ${src}.`;
+  if (fbp && fbp.wsv != null) {
+    line += ` Fire behaviour includes slope: effective wind ${Math.round(fbp.wsv)} km/h` +
+            (fbp.raz != null ? `, head fire runs toward ${_compass8(fbp.raz)}` : '') +
+            (fbp.slopeAssumed ? ' (wind or slope direction unknown — wind assumed blowing upslope, worst case)' : '') + '.';
+  }
+  el.textContent = line;
+}
+
+/** Wire the Site terrain controls (station_detail only; no-op elsewhere). */
+function _wireTerrainControls() {
+  const sl = document.getElementById('fwi-terrain-slope');
+  const as = document.getElementById('fwi-terrain-aspect');
+  const fl = document.getElementById('fwi-terrain-clear');
+  if (!sl || sl.dataset.wired) return;
+  sl.dataset.wired = '1';
+  const fromInputs = () => _setSiteTerrain({ slope: +sl.value, aspect: as?.value === '' ? null : +as.value, src: 'manual' });
+  sl.addEventListener('change', fromInputs);
+  as?.addEventListener('change', fromInputs);
+  fl?.addEventListener('click', () => _setSiteTerrain({ slope: 0, aspect: null, src: 'flat' }));
+  _setSiteTerrain(_siteTerrain, { refresh: false });
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wireTerrainControls);
+  else _wireTerrainControls();
+}
+
 /**
  * Ground elevation (m ASL) at a point — Open-Meteo elevation API (Copernicus
  * 90 m DEM), cached per point. null on failure (FMC then uses the no-elevation
@@ -746,10 +835,10 @@ function wireFBP(weather, fwi) {
   // ffmc is null. calculateFBP would silently coerce null→0 giving FFMC=0 → ISI≈0
   // → artificially low/misleading fire behaviour. Show N/A instead.
   const fbpA = fwi.ffmc != null
-    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, _siteTerrain.slope, curing, ps, _terrainOpts(weather.wdir))
     : null;
   const fbpB = fwi.ffmc != null
-    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, 0, curing, ps)
+    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, _siteTerrain.slope, curing, ps, _terrainOpts(weather.wdir))
     : null;
   populateSection('-a', fbpA);
   populateSection('-b', fbpB);
@@ -757,6 +846,7 @@ function wireFBP(weather, fwi) {
   // replaces it with the 16:00 peak-burn values when it repaints the cards.
   _renderPeakSummary({ ffmc: fwi.ffmc, dmc: fwi.dmc, dc: fwi.dc, wind: weather.wind,
     fbpA, fbpB, fuelA, fuelB, peak: false });
+  _renderTerrainStatus(fbpA);
 }
 
 // ─── Station summary row (station_detail) ────────────────────────────────────
@@ -1906,6 +1996,9 @@ function _initPinDropMap() {
       if (statusEl) statusEl.textContent = 'Fuel type unavailable — using nearest station default';
     }
 
+    // Site slope/aspect at the pin (DEM) → fire behaviour on the cards
+    _terrainAt(lat, lng).then(t => { if (t) _setSiteTerrain({ ...t, src: 'pin', lat, lng }); });
+
     // Switch weather to nearest CWFIS station
     if (_selectNearestStation) _selectNearestStation(lat, lng);
   });
@@ -2756,7 +2849,8 @@ function calcMultiDayFBP(days, startupDC = 300, startState = null, fuelCode = 'C
   const results = calcMultiDay(days, startupDC, startState);
   return results.map((r, i) => {
     const pw = days[i]?.peak || days[i]; // peak = 16:00; fallback to noon
-    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, 0, curing, ps, opts);
+    const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, pw.wind ?? r.weather?.wind ?? 10, opts.slope ?? 0, curing, ps,
+      { ...opts, windDir: pw.wdir ?? opts.windDir ?? null });
     return { ...r, fbp, peakWeather: pw };
   });
 }
@@ -3395,7 +3489,7 @@ async function printStationBriefing() {
       const printFuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || PROVINCE.fuelDefaults.a;
       const printCuring = _savedCuring ? _savedCuring() : 100;
       const printPS = _savedPS ? _savedPS() : 50;
-      const results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, printFuelCode, printCuring, printPS);
+      const results = calcMultiDayFBP(days, getStartupDC(_stationName), chainStart, printFuelCode, printCuring, printPS, _terrainOpts());
       _forecastCache = { days, results, fuelCode: printFuelCode, curing: printCuring, ps: printPS, lat: _stationLat, lng: _stationLng };
     } catch (e) {
       console.warn('[FWI] printStationBriefing: forecast fetch failed', e);
@@ -3417,7 +3511,10 @@ async function printStationBriefing() {
   const fmc = calcFMC(lat, lng, doy, _stationElev ?? 0);
 
   // FBP prediction
-  const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, 0);
+  const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, _siteTerrain.slope, _savedCuring(), _savedPS(), _terrainOpts(w?.wdir));
+  const terrainLine = _siteTerrain.slope
+    ? `Site slope ${_siteTerrain.slope}%${_siteTerrain.aspect != null ? ' facing ' + _compass8(_siteTerrain.aspect) : ''} (${_siteTerrain.src === 'pin' ? 'map pin, 90 m DEM' : 'entered'})${fbp?.raz != null ? ` · head fire toward ${_compass8(fbp.raz)}, effective wind ${Math.round(fbp.wsv)} km/h` : ''}`
+    : 'Flat ground (no site slope entered)';
 
   // DC / chain source and plain-language provenance (same logic as the station page)
   const co = r._cachedFWI || null;
@@ -3610,6 +3707,7 @@ async function printStationBriefing() {
 </div>
 
 <p style="font-size:8pt;color:#444;margin:0 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Fuel Model: ${fuelCode} — ${fuelName} &nbsp;·&nbsp; FBP ST-X-3 &nbsp;·&nbsp; FMC: ${fmc.toFixed(0)}% (seasonal · DOY ${doy})${(fuelCode==='O1a'||fuelCode==='O1b') ? ` &nbsp;·&nbsp; Curing: ${_savedCuring()}% (CF=${(_savedCuring() < 58.8 ? 0.005*(Math.exp(0.061*_savedCuring())-1) : 0.176+0.02*(_savedCuring()-58.8)).toFixed(3)})` : ''}</p>
+<p style="font-size:8pt;color:#444;margin:-4px 0 6px;padding:4px 10px;background:#f6f6f6;border-left:3px solid #888">Terrain: ${terrainLine}</p>
 
 <div class="section">
   <div class="section-title">Current Fire Behaviour · ${fuelCode} — ${fuelName} · Today · ${today}</div>
@@ -4125,7 +4223,8 @@ async function buildD1Card() {
                       _forecastCache.fuelCode  === fuelCode  &&
                       _forecastCache.fuelCodeB === fuelCodeB &&
                       _forecastCache.curing    === curing    &&
-                      _forecastCache.ps        === ps;
+                      _forecastCache.ps        === ps &&
+                      _forecastCache.terrain   === _terrainKey();
     if (cacheHit) {
       ({ days, results, resultsB } = _forecastCache);
     } else {
@@ -4144,9 +4243,10 @@ async function buildD1Card() {
         obsDate: _lastFWI._obsDate ?? null,
       } : null;
       const startupDC  = getStartupDC(_stationName);
-      results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps);
-      resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps);
-      _forecastCache = { days, results, resultsB, fuelCode, fuelCodeB, curing, ps, lat: _stationLat, lng: _stationLng };
+      const tOpts = _terrainOpts();
+      results  = calcMultiDayFBP(days, startupDC, chainStart, fuelCode,  curing, ps, tOpts);
+      resultsB = calcMultiDayFBP(days, startupDC, chainStart, fuelCodeB, curing, ps, tOpts);
+      _forecastCache = { days, results, resultsB, fuelCode, fuelCodeB, curing, ps, lat: _stationLat, lng: _stationLng, terrain: _terrainKey() };
     }
   } catch(e) {
     console.error('[D+1] Forecast fetch failed:', e);

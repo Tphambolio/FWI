@@ -290,6 +290,26 @@
   </div>
 </div>
 
+<!-- ── Site terrain (slope) — applies to the Today / Tomorrow fire behaviour ── -->
+<section id="fwi-terrain" aria-label="Site terrain" class="mb-4 rounded-xl p-3" style="background:#0f1829;border:1px solid #1e2740">
+  <div class="flex flex-wrap items-end gap-3">
+    <div>
+      <label for="fwi-terrain-slope" class="block text-[11px] font-label uppercase tracking-widest text-slate-200 mb-1">Site slope %</label>
+      <input id="fwi-terrain-slope" type="number" min="0" max="100" step="1" value="0" inputmode="numeric"
+             class="w-24 h-11 rounded-lg bg-[#131b2e] text-white px-2 border border-[#2a3550]">
+    </div>
+    <div>
+      <label for="fwi-terrain-aspect" class="block text-[11px] font-label uppercase tracking-widest text-slate-200 mb-1">Slope faces</label>
+      <select id="fwi-terrain-aspect" class="h-11 rounded-lg bg-[#131b2e] text-white px-2 border border-[#2a3550]">
+        <option value="">—</option><option value="0">N</option><option value="45">NE</option><option value="90">E</option><option value="135">SE</option>
+        <option value="180">S</option><option value="225">SW</option><option value="270">W</option><option value="315">NW</option>
+      </select>
+    </div>
+    <button id="fwi-terrain-clear" type="button" class="h-11 px-4 rounded-lg bg-[#131b2e] text-slate-200 border border-[#2a3550]">Flat</button>
+    <p id="fwi-terrain-status" class="text-[12px] text-slate-200 flex-1 min-w-[220px] leading-snug" aria-live="polite">Flat ground assumed. Drop a pin on the map to read the site slope from terrain, or enter it.</p>
+  </div>
+</section>
+
 <!-- ══════════════════════════════════════════════════════════════════════
      TODAY + TOMORROW — side-by-side on md+
      ══════════════════════════════════════════════════════════════════════ -->
@@ -678,7 +698,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=137"></script><script src="../core/fwi-core.js?v=137"></script>
+<script src="../fwi.js?v=138"></script><script src="../core/fwi-core.js?v=138"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {

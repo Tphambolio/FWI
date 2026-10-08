@@ -49,3 +49,32 @@ for (const e of ENGINES) {
     assert.ok(Math.abs(u.wsv - aligned.wsv) < 1e-9);
   });
 }
+
+// ─── Site terrain from the DEM + plumbing into the station-page chain ────────
+for (const e of ENGINES) {
+  test(`${e.prov}: _terrainAt derives slope % and the direction the slope faces from 5 DEM samples`, async () => {
+    // order: centre, N, S, E, W (±100 m). N higher than S by 20 m over 200 m → 10 %, faces S
+    const h = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 110, 90, 100, 100] } } });
+    const t = await h.run('_terrainAt(53.5, -113.5)');
+    assert.equal(t.slope, 10);
+    assert.equal(t.aspect, 180);
+    const h2 = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 100, 100, 92, 108] } } }); // W higher → faces E
+    const t2 = await h2.run('_terrainAt(53.5, -113.5)');
+    assert.equal(t2.slope, 8); assert.equal(t2.aspect, 90);
+    const h3 = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 100.5, 100, 100, 100] } } }); // < 2 % → flat
+    const t3 = await h3.run('_terrainAt(53.5, -113.5)');
+    assert.equal(t3.slope, 0); assert.equal(t3.aspect, null);
+  });
+
+  test(`${e.prov}: site terrain feeds the forecast chain (calcMultiDayFBP) with each day's wind direction`, () => {
+    const h = makeContext(e.path);
+    const day = { temp: 25, rh: 25, wind: 15, rain: 0, month: 7, _ts: Date.UTC(2026, 6, 15, 19), label: 'd',
+                  peak: { temp: 26, rh: 22, wind: 15, wdir: 225 } };
+    const flat = h.run(`calcMultiDayFBP([${JSON.stringify(day)}], 300, { ffmc: 92, dmc: 60, dc: 350 }, 'C2', 100, 50, {})`)[0].fbp;
+    h.run(`_setSiteTerrain({ slope: 40, aspect: 225, src: 'manual' }, { refresh: false })`);
+    const s = h.run(`calcMultiDayFBP([${JSON.stringify(day)}], 300, { ffmc: 92, dmc: 60, dc: 350 }, 'C2', 100, 50, _terrainOpts())`)[0].fbp;
+    assert.ok(s.ros > flat.ros, `${s.ros} > ${flat.ros}`);
+    assert.ok(Math.abs(s.raz - 45) < 1e-6, 'SW wind + SW-facing slope → head toward NE');
+    assert.equal(s.slopeAssumed, false);
+  });
+}
