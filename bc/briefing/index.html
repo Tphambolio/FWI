@@ -709,7 +709,7 @@ function renderPreview(d) {
           ).join('');
           const areaCells = r.fbp.map((fb, fi) => {
             if (!fb) return `<td class="border border-[#2a3550] px-1 py-1 text-center text-slate-300">—</td>`;
-            const ha = FWI._calcFireArea60(fb.ros, r.weather?.wind ?? 10);
+            const ha = fb.area60 ?? 0; // 60-min point-ignition size (cffdrs ST-X-3 Eqs. 70-81)
             const cl = FWI.hfiClassInfo(fb.hfi);
             return `<td class="border border-[#2a3550] px-1 py-1 text-center" style="background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}${cl.num >= 5 ? ";outline:2px solid #000;outline-offset:-2px;font-weight:900" : ""}">${ha.toFixed(1)}</td>`;
           }).join('');
@@ -805,7 +805,7 @@ function printBriefing() {
     }).join('');
     const areaCells = r.fbp.map(fb => {
       if (!fb) return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;color:#999">—</td>`;
-      const ha = FWI._calcFireArea60(fb.ros, r.weather?.wind ?? 10);
+      const ha = fb.area60 ?? 0; // 60-min point-ignition size (cffdrs ST-X-3 Eqs. 70-81)
       const cl = FWI.hfiClassInfo(fb.hfi);
       return `<td style="border:1px solid #ccc;padding:2px 4px;font-size:7.5pt;text-align:center;background:${HFI_PRINT_BG[cl.num]};color:${HFI_PRINT_TX[cl.num]}${cl.num >= 5 ? ";outline:2px solid #000;outline-offset:-2px;font-weight:900" : ""}">${ha.toFixed(1)}</td>`;
     }).join('');

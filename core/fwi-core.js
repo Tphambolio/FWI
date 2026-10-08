@@ -510,10 +510,15 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   const gfl = opts.gfl ?? 0.35;   // GLC-X-10 default grass fuel load
   const pdf = opts.pdf ?? 35;     // default % dead balsam fir for M3/M4
 
-  // ISI — Van Wagner (1987), identical to the FWI-system form
+  // ISI for FBP spread — Van Wagner (1987) form with the FBP high-wind
+  // modification (ST-X-3 Eq. 53a; cffdrs initial_spread_index(fbpMod = TRUE)):
+  // at WSV ≥ 40 km/h f(W) = 12·(1 − e^{−0.0818·(WSV−28)}) instead of e^{0.05039·WSV},
+  // which otherwise nearly doubles ISI (and ROS) by 60 km/h. The daily FWI-system
+  // ISI does not use 53a. A negative windSpeed (back-fire ISI) uses the exponential.
   const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
   const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
-  const isi = 0.208 * ff * Math.exp(0.05039 * windSpeed);
+  const fw  = windSpeed >= 40 ? 12 * (1 - Math.exp(-0.0818 * (windSpeed - 28))) : Math.exp(0.05039 * windSpeed);
+  const isi = 0.208 * ff * fw;
 
   // BUI — same formula as _bui(); guard dmc=dc=0 to avoid 0/0 = NaN
   let bui;
@@ -601,7 +606,33 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   else if (cfb >= 0.1) fireType = 'Passive Crown';
   else if (cfb > 0)    fireType = 'Torching'; // deliberate: ST-X-3 calls CFB < 0.1 surface fire; kept as an operational cue (2026-10-07)
 
-  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType };
+  // ── Fire size at 60 min from a point ignition — as cffdrs ─────────────────
+  // Back-fire ROS (BROS): the same ROS system evaluated at the back-fire ISI,
+  // whose wind function is e^{−0.05039·W} (cffdrs back_rate_of_spread), i.e.
+  // this function with −wind. Head/back distances with point-source
+  // acceleration (ST-X-3 Eqs. 70-72; cffdrs distance_at_time), length-to-
+  // breadth at time t (Eqs. 79-81; length_to_breadth[_at_time]), and the
+  // ellipse area π·a·b with a = (DH + DB)/2, b = a / LB(t).
+  let bros = null, lb = null, area60 = null, dh = null, db = null;
+  if (!opts._back) {
+    const back = calculateFBP(fuelCode, ffmc, dmc, dc, -windSpeed, slope, curing, ps,
+      { ...opts, lat, lng, doy, elev, _back: true });
+    bros = back.ros;
+    const wsv = Math.max(0, windSpeed);
+    lb = (fuelCode === 'O1a' || fuelCode === 'O1b')
+      ? (wsv >= 1 ? 1.1 * Math.pow(wsv, 0.464) : 1.0)                   // Eqs. 80/81 (grass)
+      : 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * wsv), 2.155);         // Eq. 79
+    const openFuel = ['C1', 'O1a', 'O1b', 'S1', 'S2', 'S3', 'D1'].includes(fuelCode);
+    const alpha = openFuel ? 0.115 : 0.115 - 18.8 * Math.pow(cfb, 2.5) * Math.exp(-8 * cfb); // Eq. 72
+    const t = 60;                                                        // minutes
+    const distAt = r => r * (t + Math.exp(-alpha * t) / alpha - 1 / alpha);                 // Eq. 71
+    dh = distAt(ros);
+    db = distAt(bros);
+    const lbt = (lb - 1) * (1 - Math.exp(-alpha * t)) + 1;              // LB at time t
+    area60 = Math.PI / (4 * lbt) * Math.pow(dh + db, 2) / 10000;       // ha
+  }
+
+  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, fireType, bros, lb, dh, db, area60 };
 }
 
 // ═══ SCIENCE CORE END: calculateFBP ═══
@@ -720,19 +751,6 @@ function refreshFBP() {
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
 }
 
-/**
- * Elliptical fire growth area at 60 min (ha) — CFFDRS FBP System.
- * LB = 1 + 8.729 × (1 − e^{−0.030 × WSE})^{2.155}  [length-to-breadth ratio]
- * A60 = π × (ROS × 60 × 1.05)² / (4 × LB × 10000)
- * The 1.05 factor approximates 5% back-spread contribution, calibrated to match
- * Alberta FSB reference values (C2, ROS=28 m/min, W20 → ~96 ha).
- */
-function _calcFireArea60(ros, windSpeed) {
-  if (!ros || ros <= 0) return 0;
-  const lb = 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * (windSpeed || 0)), 2.155);
-  const d  = ros * 60 * 1.05;
-  return (Math.PI * d * d) / (4 * lb * 10000);
-}
 
 /** Null-safe number formatter — returns '—' if value is null/undefined. */
 const fmt = (v, d = 1) => v != null ? (+v).toFixed(d) : '—';
@@ -4142,7 +4160,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _calcFireArea60, _stationSector, _updateAlarmStrip,
+window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _stationSector, _updateAlarmStrip,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };

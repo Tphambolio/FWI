@@ -94,7 +94,7 @@ const CONDITIONS = [
 ];
 
 function refFBP(fuel, { ffmc, dmc, dc, wind }, { curing = 80, ps = 50 } = {}) {
-  const isi = ref.refISI(ffmc, wind);
+  const isi = ref.refISIfbp(ffmc, wind); // cffdrs fbp: initial_spread_index(fbpMod = TRUE), Eq. 53a
   const bui = ref.refBUI(dmc, dc);
   const fmc = ref.refFMC(FBP_OPTS.lat, FBP_OPTS.lng, FBP_OPTS.doy);
   const sfc = ref.refSFC(fuel, ffmc, bui, ps, FBP_OPTS.gfl);

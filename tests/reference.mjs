@@ -281,3 +281,38 @@ export function refHFI(tfc, ros) {
 export const REF_CROWN_PARAMS = CROWN_PARAMS;
 export const REF_ROS_PARAMS = ROS_PARAMS;
 export const REF_BE_PARAMS = BE_PARAMS;
+
+// distance_at_time.r / length_to_breadth.r / length_to_breadth_at_time.r (cffdrs).
+// Fuel codes as the engine spells them (O1a/O1b); cffdrs upper-cases.
+const OPEN_FUELS = ['C1', 'O1a', 'O1b', 'S1', 'S2', 'S3', 'D1'];
+export function refAlpha(fuel, cfb) {
+  return OPEN_FUELS.includes(fuel) ? 0.115 : 0.115 - 18.8 * cfb ** 2.5 * Math.exp(-8 * cfb);
+}
+export function refDistAt(fuel, roseq, hr, cfb) {
+  const a = refAlpha(fuel, cfb);
+  return roseq * (hr + Math.exp(-a * hr) / a - 1 / a);
+}
+export function refLB(fuel, wsv) {
+  if (fuel === 'O1a' || fuel === 'O1b') return wsv >= 1.0 ? 1.1 * wsv ** 0.464 : 1.0;
+  return 1.0 + 8.729 * (1 - Math.exp(-0.030 * wsv)) ** 2.155;
+}
+export function refLBt(fuel, lb, hr, cfb) {
+  return (lb - 1) * (1 - Math.exp(-refAlpha(fuel, cfb) * hr)) + 1;
+}
+// back_rate_of_spread.r: BISI = 0.208 · e^{−0.05039·WSV} · f(F).
+// cffdrs uses FFMC_COEFFICIENT 147.27723 (= 250·59.5/101); this oracle uses the
+// Van Wagner (1987) 147.2 throughout (refISI etc.), as the engine does — the
+// difference is ~1e-4 relative in ISI.
+export function refBISI(ffmc, wsv) {
+  const m = 147.2 * (101 - ffmc) / (59.5 + ffmc);
+  const fF = 91.9 * Math.exp(-0.1386 * m) * (1.0 + m ** 5.31 / 4.93e7);
+  return 0.208 * Math.exp(-0.05039 * wsv) * fF;
+}
+
+// initial_spread_index.r with fbpMod = TRUE (ST-X-3 Eq. 53a) — the ISI used for FBP spread.
+export function refISIfbp(ffmc, wind) {
+  const m = 147.2 * (101 - ffmc) / (59.5 + ffmc);
+  const fF = 91.9 * Math.exp(-0.1386 * m) * (1 + m ** 5.31 / 4.93e7);
+  const fW = wind >= 40 ? 12 * (1 - Math.exp(-0.0818 * (wind - 28))) : Math.exp(0.05039 * wind);
+  return 0.208 * fW * fF;
+}
