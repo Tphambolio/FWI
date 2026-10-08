@@ -916,6 +916,7 @@ let _selectNearestStation = null; // set by buildStationPicker; used by pin-drop
 function refreshFBP() {
   if (_lastWeather && _lastFWI) wireFBP(_lastWeather, _lastFWI);
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
+  if (document.getElementById('fwi-ops-outlook')) buildOpsOutlook();
 }
 
 
@@ -1646,6 +1647,7 @@ function wireDOM(r, lat, lng) {
 
   // D+1 tomorrow card (station_detail only — silently no-ops on other pages)
   if (document.getElementById('fwi-d1-preview-section')) buildD1Card();
+  if (document.getElementById('fwi-ops-outlook')) buildOpsOutlook();
 
   // P4: SCRIBE 48-hr validation — async, non-blocking
   const _g = _initGeneration;
@@ -2777,6 +2779,179 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
       `<span>${results[i].time.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`
     ).join('');
   }
+}
+
+// ─── Operational-period outlook (hourly) ─────
+/**
+ * Render the operational-period outlook on station_detail (#fwi-ops-outlook).
+ * Hourly weather is fetched once per station load (cached); fuel / terrain
+ * changes only recompute. Same chain start, fuels, curing/PS and site terrain
+ * as the Today/Tomorrow cards.
+ */
+let _opsHourly = null;   // { key, hours, dayCodes }
+async function buildOpsOutlook() {
+  const root = document.getElementById('fwi-ops-outlook');
+  if (!root) return;
+  const body = document.getElementById('fwi-ops-body');
+  const note = document.getElementById('fwi-ops-note');
+  if (_lastFWI?.ffmc == null) { if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">Waiting for today\'s fuel-moisture codes…</p>'; return; }
+  const gen = _initGeneration;
+  const key = `${_stationLat},${_stationLng},${_lastFWI._obsDate}`;
+  try {
+    if (_opsHourly?.key !== key) {
+      const [hours, fc] = await Promise.all([fetchHourlyOutlook(_stationLat, _stationLng), fetchForecastDays(_stationLat, _stationLng)]);
+      if (gen !== _initGeneration) return;
+      // Seed hourly FFMC at the last *observed* noon: when today's codes were
+      // stepped from yesterday's chain (pre-noon / carry-over), start from that
+      // chain so the hours between yesterday noon and now are covered too.
+      const co = _lastFWI._cachedFWI;
+      const start = (co && !co.final)
+        ? { ffmc: co.ffmc, dmc: co.dmc, dc: applyDCFloor(co.dc, _stationLat, _stationLng).dc, obsDate: co.obsDate }
+        : { ffmc: _lastFWI.ffmc, dmc: _lastFWI.dmc, dc: _lastFWI.dc, obsDate: _lastFWI._obsDate };
+      const chain = calcMultiDay(fc.days, getStartupDC(_stationName), start);
+      const dayCodes = {};
+      if (co && !co.final) dayCodes[_lastFWI._obsDate] = { dmc: _lastFWI.dmc, dc: _lastFWI.dc };
+      fc.days.forEach((d, i) => { if (d._ts != null) dayCodes[new Date(d._ts).toISOString().slice(0, 10)] = { dmc: chain[i].dmc, dc: chain[i].dc }; });
+      _opsHourly = { key, hours, dayCodes, start };
+    }
+  } catch (e) {
+    console.warn('[FWI] ops outlook:', e);
+    if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">Hourly outlook unavailable — forecast fetch failed.</p>';
+    return;
+  }
+  const fuels = [...new Set([_savedFuelCode(), _savedFuelCode2()])];
+  const nowH = Math.floor(Date.now() / 3600000) * 3600000;
+  const rows = calcHourlyOutlook(_opsHourly.hours, _opsHourly.start, _opsHourly.dayCodes, fuels,
+    { curing: _savedCuring(), ps: _savedPS(), ..._terrainOpts(), lat: _stationLat, lng: _stationLng, fromMs: nowH, toMs: nowH + 47 * 3600000 });
+  if (!rows.length) { if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">No hourly forecast for the next 48 h.</p>'; return; }
+  const periods = summariseOperationalPeriods(rows).slice(0, 4);
+  const tz = PROVINCE.tzName;
+  const hh = ms => new Date(ms).toLocaleTimeString('en-CA', { hour: '2-digit', hour12: false, timeZone: tz }).slice(0, 2);
+  const fuelName = c => FUEL_TYPES[c]?.name || c;
+
+  const cards = periods.map(p => {
+    const pk = p.peak;
+    const cl = pk ? hfiClassInfo(pk.hfi) : null;
+    const win = (w, c) => w ? `<div>HFI ≥ ${c}: <strong class="text-white">${w.from}–${w.to}</strong> <span class="text-slate-400">(${w.hours} h)</span></div>` : '';
+    return `<div class="rounded-xl p-3" style="background:#131b2e;border:1px solid #1e2740">
+      <div class="text-[11px] font-label uppercase tracking-widest text-slate-200">${p.shift} shift · ${_esc(p.label)} <span class="text-slate-400 normal-case tracking-normal">${p.shift === 'Day' ? '06–18' : '18–06'}</span></div>
+      ${pk ? `<div class="mt-2 flex items-center gap-2 flex-wrap">
+        <span class="pyra-chip pyra-chip-lg font-black" style="${hfiChipStyle(cl.num)}">HFI ${cl.num} · ${cl.label}</span>
+        <span class="text-[12px] text-slate-200">peak ${pk.at} · ${_esc(fuelName(pk.fuel))} · ${Math.round(pk.hfi).toLocaleString()} kW/m</span></div>
+      <div class="mt-1 text-[12px] text-slate-300">${_esc(cl.desc)}</div>
+      <div class="mt-2 text-[12px] text-slate-200 space-y-0.5">${win(p.cls3, 3)}${win(p.cls4, 4)}${!p.cls3 ? '<div class="text-slate-300">Below HFI 3 all period</div>' : ''}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const strip = rows.map((r, i) => {
+    const c = r.worst?.cls ?? 0;
+    const st = HFI_STYLE[c] || { fill: '#334155', text: '#fff', pattern: '' };
+    const bg = st.pattern ? `${st.pattern},${st.fill}` : st.fill;
+    const w = r.worst;
+    const tip = `${new Date(r.t).toLocaleString('en-CA', { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz })} · ` +
+      `${Math.round(r.temp)}°C ${Math.round(r.rh)}% · wind ${Math.round(r.wind)} km/h${r.wdir != null ? ' ' + _compass8(r.wdir) : ''} · FFMC ${r.ffmc.toFixed(1)} · FWI ${r.fwi.toFixed(1)}` +
+      (w ? ` · HFI ${c} (${Math.round(w.hfi).toLocaleString()} kW/m, ${fuelName(w.fuel)}) · ROS ${w.ros.toFixed(1)} m/min` : '');
+    const lbl = i % 3 === 0 ? `<span class="block text-center text-[11px] text-slate-300 mt-1">${hh(r.t)}</span>` : '<span class="block text-[11px] mt-1">&nbsp;</span>';
+    return `<div class="flex-1 min-w-[10px]" title="${_esc(tip)}"><div class="h-8 rounded-sm flex items-center justify-center text-[11px] font-black" style="background:${bg};color:${st.text}" aria-hidden="true">${c >= 3 ? c : ''}</div>${lbl}</div>`;
+  }).join('');
+
+  if (body) body.innerHTML =
+    `<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">${cards}</div>
+     <div class="mt-4"><div class="text-[11px] font-label uppercase tracking-widest text-slate-200 mb-1">Next 48 h · worst HFI class of the selected fuels, hourly</div>
+       <div class="flex gap-[2px] overflow-x-auto" role="img" aria-label="Hourly HFI class for the next 48 hours">${strip}</div></div>`;
+  if (note) note.textContent =
+    `Hourly FFMC (Van Wagner 1977) from the ${_opsHourly.start.obsDate} noon-LST chain; DMC/DC switch at noon LST · ECMWF hourly weather (Open-Meteo) · ` +
+    `${fuels.map(fuelName).join(' / ')}${_siteTerrain.slope ? ` · site slope ${_siteTerrain.slope}%` : ''} · informational — verify with your FBAN.`;
+}
+
+/**
+ * Hourly weather for the outlook: Open-Meteo (ECMWF) hourly in UTC from
+ * yesterday 00 UTC to +3 days, as [{ t (ms UTC), temp, rh, wind, wdir, rain }].
+ */
+async function fetchHourlyOutlook(lat, lng) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
+    `&timezone=UTC&past_days=1&forecast_days=3`;
+  const h = (await fetchWithTimeout(url, { cache: 'no-cache' }, 12000).then(r => r.json())).hourly;
+  return (h?.time || []).map((t, i) => ({
+    t: Date.parse(t + ':00Z'),
+    temp: h.temperature_2m[i], rh: h.relative_humidity_2m[i], wind: h.wind_speed_10m[i],
+    wdir: h.wind_direction_10m?.[i] ?? null, rain: h.precipitation[i] ?? 0,
+  })).filter(x => x.temp != null && x.rh != null && x.wind != null);
+}
+
+/**
+ * Hourly fire behaviour for operational planning — pure (no DOM / network).
+ *   hours     [{ t, temp, rh, wind, wdir, rain }] hourly, UTC ms, ascending
+ *   start     { ffmc, dmc, dc, obsDate } — the daily chain state at its noon-LST obs
+ *   dayCodes  { 'YYYY-MM-DD': { dmc, dc } } — daily chain values for later LST dates
+ *   fuels     [codes]; opts { curing, ps, slope, aspect, lat, lng, fromMs, toMs }
+ * FFMC: hourly Van Wagner (1977) from the chain's daily FFMC at its noon-LST obs.
+ * DMC/DC: the daily code valid from noon LST of its date to the next noon.
+ * Returns [{ t, ffmc, isi, bui, fwi, danger, fbp: { [fuel]: calculateFBP result }, worst }]
+ * for hours in [fromMs, toMs] (default: all hours after the seed).
+ */
+function calcHourlyOutlook(hours, start, dayCodes = {}, fuels = ['C2'], opts = {}) {
+  const lstDate = ms => new Date(ms - PROVINCE.lstOffset * 3600000).toISOString().slice(0, 10);
+  const lstHour = ms => new Date(ms - PROVINCE.lstOffset * 3600000).getUTCHours();
+  const seedMs = start?.obsDate ? Date.parse(start.obsDate + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000 : null;
+  let f = start?.ffmc ?? STARTUP.ffmc;
+  const out = [];
+  for (const w of hours) {
+    if (seedMs != null && w.t <= seedMs) continue;            // FFMC state is valid at the seed hour
+    f = _hffmc(w.temp, Math.min(100, Math.max(0, w.rh)), Math.max(0, w.wind), Math.max(0, w.rain), f);
+    // daily DMC/DC valid from noon LST of date D until noon of D+1
+    let d = lstDate(w.t);
+    if (lstHour(w.t) < 12) d = lstDate(w.t - 86400000);
+    const codes = dayCodes[d] || start || { dmc: STARTUP.dmc, dc: STARTUP.dc }; // ≤ obsDate → the start state
+    if ((opts.fromMs != null && w.t < opts.fromMs) || (opts.toMs != null && w.t > opts.toMs)) continue;
+    const bui = _bui(codes.dmc, codes.dc);
+    const isi = _isi(f, w.wind);
+    const fwi = _fwi(isi, bui);
+    const fbp = {};
+    let worst = null;
+    for (const fuel of fuels) {
+      const r = calculateFBP(fuel, f, codes.dmc, codes.dc, w.wind, opts.slope || 0, opts.curing ?? 100, opts.ps ?? 50,
+        { lat: opts.lat, lng: opts.lng, aspect: opts.aspect ?? null, windDir: w.wdir });
+      fbp[fuel] = r;
+      if (r && (!worst || r.hfi > worst.hfi)) worst = { fuel, hfi: r.hfi, cls: hfiClassInfo(r.hfi).num, ros: r.ros };
+    }
+    out.push({ t: w.t, temp: w.temp, rh: w.rh, wind: w.wind, wdir: w.wdir, ffmc: f, isi, bui, fwi,
+               danger: dangerRatingProv(fwi), fbp, worst });
+  }
+  return out;
+}
+
+/**
+ * Summarise hourly outlook rows into ICS operational periods (local time):
+ * day shift 06:00–18:00, night shift 18:00–06:00. For each: peak HFI class
+ * (+ hour, fuel), and the first–last hour at class ≥ 3 and ≥ 4.
+ */
+function summariseOperationalPeriods(rows, tzName = PROVINCE.tzName) {
+  const fmtH = ms => new Date(ms).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzName });
+  const fmtD = ms => new Date(ms).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tzName });
+  const localHour = ms => +new Date(ms).toLocaleString('en-CA', { hour: '2-digit', hour12: false, timeZone: tzName }).slice(0, 2) % 24;
+  const periods = [];
+  for (const r of rows) {
+    const hr = localHour(r.t);
+    const day = hr >= 6 && hr < 18;
+    // period key: date of its start (night 00–06 belongs to the previous evening)
+    const startMs = day || hr >= 18 ? r.t : r.t - 12 * 3600000;
+    const key = `${day ? 'D' : 'N'}|${fmtD(startMs)}`;
+    let p = periods[periods.length - 1];
+    if (!p || p.key !== key) { p = { key, shift: day ? 'Day' : 'Night', label: fmtD(startMs), rows: [] }; periods.push(p); }
+    p.rows.push(r);
+  }
+  return periods.map(p => {
+    const pk = p.rows.reduce((a, b) => ((b.worst?.hfi ?? -1) > (a.worst?.hfi ?? -1) ? b : a));
+    const win = c => {
+      const hit = p.rows.filter(r => (r.worst?.cls ?? 0) >= c);
+      return hit.length ? { from: fmtH(hit[0].t), to: fmtH(hit[hit.length - 1].t + 3600000), hours: hit.length } : null;
+    };
+    return { shift: p.shift, label: p.label, hours: p.rows.length,
+             peak: pk.worst ? { cls: pk.worst.cls, hfi: pk.worst.hfi, fuel: pk.worst.fuel, at: fmtH(pk.t), fwi: pk.fwi } : null,
+             cls3: win(3), cls4: win(4), rows: p.rows };
+  });
 }
 
 /** Chain Van Wagner through multiple days, returning FWI result per day.

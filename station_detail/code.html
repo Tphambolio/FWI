@@ -519,6 +519,14 @@
 
 </div><!-- /today+tomorrow grid -->
 
+<!-- ── Operational-period outlook (hourly) ──────────────────────────────── -->
+<section id="fwi-ops-outlook" aria-labelledby="fwi-ops-title" class="mb-6 rounded-2xl p-5" style="background:#0f1829;border:1px solid #1e2740">
+  <h2 id="fwi-ops-title" class="text-xs font-bold uppercase tracking-widest text-slate-200">Operational period outlook · hourly fire behaviour</h2>
+  <p class="text-[12px] text-slate-300 mt-1 mb-3">When fire behaviour peaks in each shift, for the fuels and site terrain above — for IAP and resource planning.</p>
+  <div id="fwi-ops-body" aria-live="polite"><p class="text-[12px] text-slate-300">Loading hourly outlook…</p></div>
+  <p id="fwi-ops-note" class="text-[11px] text-slate-400 mt-3"></p>
+</section>
+
 <!-- ── FWI Score ───────────────────────────────────────────────────────── -->
 <div id="fwi-score-strip" class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-5 py-4 mb-5 flex flex-wrap items-center gap-x-8 gap-y-3 transition-all">
   <div>
@@ -698,7 +706,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=138"></script><script src="../core/fwi-core.js?v=138"></script>
+<script src="../fwi.js?v=139"></script><script src="../core/fwi-core.js?v=139"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
