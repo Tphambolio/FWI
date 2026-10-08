@@ -191,11 +191,13 @@ export function refSFC(fuel, ffmc, bui, pc = 50, gfl = 0.35) {
   return Math.max(sfc, 0.000001);
 }
 
-// foliar_moisture_content.r — ELV<=0 branch (no elevation data)
-export function refFMC(lat, lng, dj) {
+// foliar_moisture_content.r (cffdrs) — both branches: ELV<=0 → Eqs. 1-2,
+// ELV>0 → Eqs. 3-4. fire_behaviour_prediction.r flips negative LONG to °W positive.
+export function refFMC(lat, lng, dj, elv = 0) {
   const lonW = Math.abs(lng);                      // FCFDG longitude is °W positive
-  const latn = 46 + 23.4 * Math.exp(-0.0360 * (150 - lonW));
-  const d0 = Math.round(151 * (lat / latn));
+  const latn = elv <= 0 ? 46 + 23.4 * Math.exp(-0.0360 * (150 - lonW))
+                        : 43 + 33.7 * Math.exp(-0.0351 * (150 - lonW));
+  const d0 = Math.round(elv <= 0 ? 151 * (lat / latn) : 142.1 * (lat / latn) + 0.0172 * elv);
   const nd = Math.abs(dj - d0);
   if (nd < 30) return 85 + 0.0189 * nd ** 2;
   if (nd < 50) return 32.9 + 3.17 * nd - 0.0288 * nd ** 2;

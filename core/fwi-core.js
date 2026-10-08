@@ -416,18 +416,25 @@ function _seasonalPair(fuelA, lat) {
 
 // ═══ SCIENCE CORE BEGIN: FMC + RSI helpers (single source for AB + BC — CI-checked) ═══
 /**
- * Foliar moisture content — FCFDG 1992 Eqs. 1, 2, 5-8 (no-elevation form;
- * station elevations are not yet plumbed through).
+ * Foliar moisture content — FCFDG 1992 Eqs. 1-8, as cffdrs foliar_moisture_content():
+ * the elevation form (Eqs. 3-4) when elevation (m ASL) is known, else Eqs. 1-2.
+ * Elevation shifts the date of minimum FMC later (~+0.0172 d/m), e.g. Banff
+ * (1388 m) D0 ≈ 161 vs 146 without it.
  * FMC bottoms out (~85) around the date of minimum foliar moisture D0 and
  * saturates at 120 elsewhere. Affects crown-fire initiation via CSI.
  * @param {number} lat  Station latitude (°N)
  * @param {number} lng  Station longitude (°, negative W or positive °W both accepted)
  * @param {number} doy  Day of year (1-366)
  */
-function calcFMC(lat, lng, doy) {
-  const lonW = Math.abs(lng);                                  // Eq. 1 uses °W positive
-  const latn = 46 + 23.4 * Math.exp(-0.0360 * (150 - lonW));   // Eq. 1
-  const d0 = Math.round(151 * (lat / latn));                   // Eq. 2 (rounded — it is a date)
+function calcFMC(lat, lng, doy, elev = 0) {
+  const lonW = Math.abs(lng);                                  // Eqs. 1/3 use °W positive (cffdrs flips negative LONG)
+  const useElev = elev != null && elev > 0;
+  const latn = useElev
+    ? 43 + 33.7 * Math.exp(-0.0351 * (150 - lonW))             // Eq. 3 (elevation known)
+    : 46 + 23.4 * Math.exp(-0.0360 * (150 - lonW));            // Eq. 1
+  const d0 = Math.round(useElev
+    ? 142.1 * (lat / latn) + 0.0172 * elev                     // Eq. 4 (elevation in m)
+    : 151 * (lat / latn));                                     // Eq. 2 (rounded — it is a date)
   const nd = Math.abs(doy - d0);                               // Eq. 5
   if (nd < 30) return 85 + 0.0189 * nd * nd;                   // Eq. 6
   if (nd < 50) return 32.9 + 3.17 * nd - 0.0288 * nd * nd;     // Eq. 7
@@ -451,6 +458,26 @@ function _buildupEffect(fuelCode, bui) {
 
 
 let _stationLat = PROVINCE.defaultStation.lat; // module-level; set by initFWI for FMC calculation
+let _stationElev = null; // station elevation (m ASL) for the FMC elevation form; null → Eqs. 1-2
+
+/**
+ * Ground elevation (m ASL) at a point — Open-Meteo elevation API (Copernicus
+ * 90 m DEM), cached per point. null on failure (FMC then uses the no-elevation
+ * form, as before). Used for foliar moisture content (FCFDG 1992 Eqs. 3-4).
+ */
+const _elevCache = new Map();
+async function _elevationFor(lat, lng) {
+  const key = `${(+lat).toFixed(3)},${(+lng).toFixed(3)}`;
+  if (_elevCache.has(key)) return _elevCache.get(key);
+  let elev = null;
+  try {
+    const d = await fetchWithTimeout(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`, {}, 6000).then(r => r.json());
+    const v = Array.isArray(d?.elevation) ? d.elevation[0] : d?.elevation;
+    if (typeof v === 'number' && isFinite(v) && v > -500 && v < 9000) elev = v;
+  } catch (_) {}
+  _elevCache.set(key, elev);
+  return elev;
+}
 let _stationLng = PROVINCE.defaultStation.lng; // module-level; set by initFWI
 let _stationName = PROVINCE.defaultStation.name; // module-level; set by initFWI
 let _initGeneration = 0; // increments each initFWI call; only latest call writes to DOM
@@ -499,7 +526,8 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   }
   bui = Math.max(0, bui);
 
-  const fmc = calcFMC(lat, lng, doy);
+  const elev = opts.elev ?? _stationElev ?? 0;
+  const fmc = calcFMC(lat, lng, doy, elev);
   const pc  = Math.max(0, Math.min(100, ps));
   const sfc = calcSFC(fuelCode, ffmc, bui, pc, gfl);
 
@@ -889,6 +917,7 @@ function _selectCWFIS(features, lat, lng) {
       ? `CWFIS · ${stationName}`
       : `CWFIS · ${stationName} · FWI calc`,
     stationName,
+    elev: nearest.elev != null && isFinite(+nearest.elev) ? +nearest.elev : null, // station elevation (m) — FMC Eqs. 3-4
     stationLat: +nearest.lat,
     stationLng: +nearest.lon,
     distKm: Math.round(nearest === fwiNearest ? fwiDist : wxDist), // distance of the station actually used
@@ -1437,8 +1466,10 @@ async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefau
 
   try {
     if (!_cwfisPrev.stations) await loadCWFISPrev();
-    const weather = await fetchWeatherPrimary(lat, lng);
+    _stationElev = null;
+    const [weather, elev] = await Promise.all([fetchWeatherPrimary(lat, lng), _elevationFor(lat, lng)]);
     if (gen !== _initGeneration) return; // a newer initFWI started; discard stale result
+    _stationElev = elev;
 
     let result;
     if (weather.fwiFromCWFIS) {
@@ -1506,7 +1537,8 @@ async function fetchStationData(station) {
   _stationLng  = station.lng;
   _stationName = station.name;
   if (!_cwfisPrev.stations) await loadCWFISPrev();
-  const weather = await fetchWeatherPrimary(station.lat, station.lng);
+  const [weather, elev] = await Promise.all([fetchWeatherPrimary(station.lat, station.lng), _elevationFor(station.lat, station.lng)]);
+  _stationElev = elev;
   let prevFWI = { ffmc: STARTUP.ffmc, dmc: STARTUP.dmc, dc: getStartupDC(station.name) };
   if (!weather.fwiFromCWFIS) {
     const co = _carryOverFor(station.lat, station.lng, station.name);
@@ -1537,7 +1569,8 @@ async function fetchStationDataForecast(station) {
   _stationLng  = station.lng;
   _stationName = station.name;
 
-  const days = await fetchForecast(station.lat, station.lng);
+  const [days, elev] = await Promise.all([fetchForecast(station.lat, station.lng), _elevationFor(station.lat, station.lng)]);
+  _stationElev = elev;
 
   // D+1: next operationally relevant peak burn day (today if before 16:00 local, tomorrow if after)
   let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
@@ -3257,7 +3290,7 @@ async function printStationBriefing() {
   const fuelCode = (typeof document !== 'undefined' && document.getElementById('fwi-fuel-picker')?.value) || 'C2';
   const fuelName = FUEL_TYPES[fuelCode]?.name || fuelCode;
   const doy = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-  const fmc = calcFMC(lat, lng, doy);
+  const fmc = calcFMC(lat, lng, doy, _stationElev ?? 0);
 
   // FBP prediction
   const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, 0);
@@ -3690,7 +3723,10 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // as such instead of presenting it as today's (station_detail steps it forward).
       const cwfisPrevDay = w.fwiFromCWFIS && w.repDate && String(w.repDate).slice(0, 10) < _lstDateStr();
       const fuelCode = _seasonalFuel(PROVINCE.stationFuel(s.name, s.lat), s.lat);
-      const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring());
+      // FMC at this map station (its own lat/lng — previously the selected
+      // station's — and the CWFIS station elevation when that station is ≤ 25 km away)
+      const fbp      = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w.wind ?? 10, 0, _savedCuring(), 50,
+        { lat: s.lat, lng: s.lng, elev: (w.distKm ?? 999) <= 25 ? (w.elev ?? 0) : 0 });
       // BCWS chains also set fwiFromCWFIS — check the chain's actual source first
       const chainSrc = w.chainSource || w.source || '';
       const srcBadge = chainSrc.startsWith('BCWS') ? 'BCWS'
