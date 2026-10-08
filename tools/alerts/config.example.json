@@ -1,0 +1,26 @@
+{
+  "_comment": "Copy to tools/alerts/config.json (gitignored) and edit. Station names must match the engine's station list (fwi.js ALBERTA_STATIONS / bc/fwi.js BC_STATIONS); regional names (e.g. BC 'Kamloops') are also accepted, or give lat/lng.",
+  "timezone": "America/Edmonton",
+  "stations": [
+    { "province": "AB", "name": "Edmonton Blatchford" },
+    { "province": "AB", "name": "Fort McMurray A", "fuels": ["C2", "M2"] },
+    { "province": "BC", "name": "Afton", "label_note": "BCWS station 4 km from Kamloops A", "fuels": ["C7", "O1a"] }
+  ],
+  "thresholds": {
+    "fwi": 19,
+    "hfiClass": 4,
+    "bcwsDanger": "High"
+  },
+  "quiet": {
+    "enabled": true,
+    "stateFile": "state.json"
+  },
+  "forecastLookAhead": {
+    "enabled": true
+  },
+  "delivery": {
+    "enabled": false,
+    "command": "openclaw",
+    "agent": "main"
+  }
+}
