@@ -932,7 +932,7 @@ console.log('\n── TFC / HFI / flame length chain ──');
 }
 
 // ─── Slope effect, mixedwood blending, grass curing, D2 aspen ───────────────
-// Slope (ST-X-3 Eq.39 approx): rsi *= min(exp(3.533*(slope/100)^1.2), 10)
+// Slope: cffdrs wind–slope vector (ST-X-3 Eqs. 39-51, Wotton 2009) — invariants here, values in slope.test.mjs
 // M1/M2 (Eq.27/28, GLC-X-10): RSI = pc/100*C2_RSI + hwFactor*(100-pc)/100*D1_RSI
 // O1a/b curing (GLC-X-10 Eq.35b): CF breakpoint at cc=58.8
 // D2 (GLC-X-10): ros=0 below BUI 80, ros=0.2*D1 above
@@ -944,25 +944,27 @@ console.log('\n── Slope / mixedwood / curing / D2 ──');
   const _be   = sandbox._buildupEffect;
 
   // ── Slope ──────────────────────────────────────────────────────────────────
-  const s0  = FWI.calculateFBP('C2', 88, 60, 300, 20, 0,   100, 50, { lat:53.5, lng:-113.5, doy:184 });
-  const s30 = FWI.calculateFBP('C2', 88, 60, 300, 20, 30,  100, 50, { lat:53.5, lng:-113.5, doy:184 });
-  const s70 = FWI.calculateFBP('C2', 88, 60, 300, 20, 70,  100, 50, { lat:53.5, lng:-113.5, doy:184 });
-  const s100= FWI.calculateFBP('C2', 88, 60, 300, 20, 100, 100, 50, { lat:53.5, lng:-113.5, doy:184 });
-  const sf30  = Math.exp(3.533 * Math.pow(0.30, 1.2));        // ~2.3004
-  const sf70c = 10;                                            // capped
-  const ratio30 = s30.ros / s0.ros;
-  const ratio70 = s70.ros / s0.ros;
-  const ratio100= s100.ros / s0.ros;
+  // Since 2026-10-08 slope uses the cffdrs wind–slope vector (ISF → WSE → WSV,
+  // ST-X-3 Eqs. 39-51 / Wotton 2009) instead of ROS × SF. Exact values are
+  // checked against the cffdrs-ported oracle in tests/slope.test.mjs; here,
+  // the method's invariants. Wind from 270° (W), slope facing W (aspect 270 →
+  // upslope toward E = downwind) → aligned.
+  const O = { lat:53.5, lng:-113.5, doy:184, windDir: 270, aspect: 270 };
+  const s0  = FWI.calculateFBP('C2', 88, 60, 300, 20, 0,   100, 50, O);
+  const s30 = FWI.calculateFBP('C2', 88, 60, 300, 20, 30,  100, 50, O);
+  const s70 = FWI.calculateFBP('C2', 88, 60, 300, 20, 70,  100, 50, O);
+  const s100= FWI.calculateFBP('C2', 88, 60, 300, 20, 100, 100, 50, O);
+  const sOpp= FWI.calculateFBP('C2', 88, 60, 300, 20, 30,  100, 50, { ...O, aspect: 90 }); // wind blowing downslope
   let ok;
-  ok = Math.abs(ratio30 - sf30) < TOL;
-  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=30: ROS factor=${ratio30.toFixed(6)} (expected ${sf30.toFixed(6)})`);
-  if (ok) pass++; else { issues.push(`  slope=30 factor wrong: got ${ratio30} expected ${sf30}`); fail++; }
-  ok = Math.abs(ratio70 - sf70c) < TOL;
-  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=70: factor=${ratio70.toFixed(4)} (capped at 10.0)`);
-  if (ok) pass++; else { issues.push(`  slope=70 cap wrong: got ${ratio70} expected 10`); fail++; }
-  ok = Math.abs(ratio100 - sf70c) < TOL;
-  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=100: factor=${ratio100.toFixed(4)} (still capped at 10.0)`);
-  if (ok) pass++; else { issues.push(`  slope=100 cap wrong: got ${ratio100} expected 10`); fail++; }
+  ok = s30.ros > s0.ros && s30.wsv > 20 && Math.abs(s30.raz - 90) < 1e-6;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope=30 aligned: ROS ${s0.ros.toFixed(2)} → ${s30.ros.toFixed(2)}, WSV ${s30.wsv.toFixed(1)}, head toward ${s30.raz.toFixed(0)}°`);
+  if (ok) pass++; else { issues.push(`  slope=30 aligned wrong: ros ${s30.ros} wsv ${s30.wsv} raz ${s30.raz}`); fail++; }
+  ok = Math.abs(s70.ros - s100.ros) < TOL;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  slope ≥70% capped (SF = 10): ROS 70% ${s70.ros.toFixed(3)} = 100% ${s100.ros.toFixed(3)}`);
+  if (ok) pass++; else { issues.push(`  slope cap wrong: ${s70.ros} vs ${s100.ros}`); fail++; }
+  ok = sOpp.wsv < s30.wsv && sOpp.ros < s30.ros;
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  wind against slope weakens the net vector: WSV ${sOpp.wsv.toFixed(1)} < ${s30.wsv.toFixed(1)}`);
+  if (ok) pass++; else { issues.push(`  opposing wind/slope wrong: ${sOpp.wsv} vs ${s30.wsv}`); fail++; }
 
   // ── M1/M2 blending ────────────────────────────────────────────────────────
   const isi20 = _isi(88, 20);

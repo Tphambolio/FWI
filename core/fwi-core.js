@@ -517,7 +517,21 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   // ISI does not use 53a. A negative windSpeed (back-fire ISI) uses the exponential.
   const m   = 147.2 * (101.0 - ffmc) / (59.5 + ffmc);
   const ff  = 91.9 * Math.exp(-0.1386 * m) * (1.0 + Math.pow(m, 5.31) / 4.93e7);
-  const fw  = windSpeed >= 40 ? 12 * (1 - Math.exp(-0.0818 * (windSpeed - 28))) : Math.exp(0.05039 * windSpeed);
+
+  // Slope — net effective wind speed WSV and spread azimuth RAZ from the wind
+  // and slope vectors (ST-X-3 Eqs. 39-51, Wotton 2009 Eqs. 41-44; cffdrs
+  // slope_adjustment). Flat ground: WSV = wind, RAZ = downwind.
+  // opts.windDir = direction the wind blows FROM (°); opts.aspect = direction
+  // the slope faces (downslope, °). Missing direction → assume wind blowing
+  // upslope (worst case), flagged in the result.
+  let wsv = windSpeed;
+  let raz = opts.windDir != null ? (opts.windDir + 180) % 360 : null;
+  let slopeAssumed = false;
+  if (slope > 0 && !opts._back) {
+    const sa = _slopeAdjust(fuelCode, ff, windSpeed, opts.windDir, slope, opts.aspect, curing, ps, pdf);
+    wsv = sa.wsv; raz = sa.raz; slopeAssumed = sa.assumedAligned;
+  }
+  const fw  = wsv >= 40 ? 12 * (1 - Math.exp(-0.0818 * (wsv - 28))) : Math.exp(0.05039 * wsv);
   const isi = 0.208 * ff * fw;
 
   // BUI — same formula as _bui(); guard dmc=dc=0 to avoid 0/0 = NaN
@@ -559,13 +573,6 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
     rsi = 30 * Math.pow(1 - Math.exp(-0.08 * isi), 3.0);  // Eq. 62
   } else {
     rsi = _rsiBasic(fuelCode, isi);                        // Eq. 26
-  }
-
-  // Slope — ST-X-3 Eq. 39 spread factor, capped at 10 (GS ≥ 70%, GLC-X-10).
-  // NOTE: approximation — full ST-X-3 slope treatment vectors slope through an
-  // ISI-equivalent (ISF/WSE); no caller currently passes slope > 0.
-  if (slope > 0) {
-    rsi *= Math.min(Math.exp(3.533 * Math.pow(slope / 100.0, 1.2)), 10.0);
   }
 
   // ── Crown fire — ST-X-3 Eqs. 56-65 ─────────────────────────────────────────
@@ -622,13 +629,14 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
   // ellipse area π·a·b with a = (DH + DB)/2, b = a / LB(t).
   let bros = null, lb = null, area60 = null, dh = null, db = null;
   if (!opts._back) {
-    const back = calculateFBP(fuelCode, ffmc, dmc, dc, -windSpeed, slope, curing, ps,
+    // Back fire: cffdrs back_rate_of_spread uses the net effective wind WSV
+    const back = calculateFBP(fuelCode, ffmc, dmc, dc, -wsv, 0, curing, ps,
       { ...opts, lat, lng, doy, elev, _back: true });
     bros = back.ros;
-    const wsv = Math.max(0, windSpeed);
+    const wsvLB = Math.max(0, wsv);
     lb = (fuelCode === 'O1a' || fuelCode === 'O1b')
-      ? (wsv >= 1 ? 1.1 * Math.pow(wsv, 0.464) : 1.0)                   // Eqs. 80/81 (grass)
-      : 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * wsv), 2.155);         // Eq. 79
+      ? (wsvLB >= 1 ? 1.1 * Math.pow(wsvLB, 0.464) : 1.0)               // Eqs. 80/81 (grass)
+      : 1 + 8.729 * Math.pow(1 - Math.exp(-0.030 * wsvLB), 2.155);       // Eq. 79
     const openFuel = ['C1', 'O1a', 'O1b', 'S1', 'S2', 'S3', 'D1'].includes(fuelCode);
     const alpha = openFuel ? 0.115 : 0.115 - 18.8 * Math.pow(cfb, 2.5) * Math.exp(-8 * cfb); // Eq. 72
     const t = 60;                                                        // minutes
@@ -639,10 +647,67 @@ function calculateFBP(fuelCode, ffmc, dmc, dc, windSpeed, slope = 0, curing = 10
     area60 = Math.PI / (4 * lbt) * Math.pow(dh + db, 2) / 10000;       // ha
   }
 
-  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, flameModel, fireType, bros, lb, dh, db, area60 };
+  return { isi, bui, ros, hfi, cfb, sfc, tfc, fmc, csi, rso, sfi, flameLength, flameModel, fireType, bros, lb, dh, db, area60,
+           wsv, raz, slope, slopeAssumed };
 }
 
 // ═══ SCIENCE CORE END: calculateFBP ═══
+
+/**
+ * Wind–slope vector (cffdrs slope_adjustment; ST-X-3 Eqs. 39-51, Wotton 2009
+ * Eqs. 41-44). Returns { wsv, raz, assumedAligned }:
+ *   SF  = e^{3.533 (GS/100)^1.2}, 10 at GS ≥ 70            (Eq. 39)
+ *   RSF = RSZ · SF, RSZ = zero-wind level RSI (no BUI)      (Eq. 40)
+ *   ISF = inverse of a(1−e^{−b·ISI})^c at RSF               (Eqs. 41a/b; 42a-c M1-M4; 43 grass)
+ *   WSE = ln(ISF/(0.208 f(F)))/0.05039, high-wind branch    (Eqs. 44a-c)
+ *   WSV, RAZ from the wind + slope vectors                  (Eqs. 47-51)
+ * Fuel rules follow cffdrs: M1/M2 weight C2/D1 ISF by PC; M3/M4 weight
+ * M3|M4/D1 by PDF (each at PDF 100); grass divides by CF·a. D2 inverts via D1
+ * (its RSI is 0.2·D1, so the ratio RSF/RSZ — hence ISF — is D1's). C6 uses its
+ * surface RSI here (cffdrs' C6 routine can blend crown spread; negligible at
+ * zero wind).
+ */
+function _slopeAdjust(fuelCode, ff, ws, windDir, gs, aspect, curing = 100, pc = 50, pdf = 35) {
+  const SF  = gs >= 70 ? 10 : Math.exp(3.533 * Math.pow(gs / 100, 1.2));
+  const isz = 0.208 * ff;                                   // ISI at zero wind
+  const P   = k => FUEL_TYPES[k];
+  const rsiB = (k, isi) => P(k).a * Math.pow(1 - Math.exp(-P(k).b * isi), P(k).c);
+  const inv  = (k, rsf, scale = 1) => {
+    const t = 1 - Math.pow(rsf / (scale * P(k).a), 1 / P(k).c);
+    return t >= 0.01 ? Math.log(t) / (-P(k).b) : Math.log(0.01) / (-P(k).b);
+  };
+  let isf;
+  if (fuelCode === 'M1' || fuelCode === 'M2') {
+    isf = pc / 100 * inv('C2', rsiB('C2', isz) * SF) + (1 - pc / 100) * inv('D1', rsiB('D1', isz) * SF);
+  } else if (fuelCode === 'M3' || fuelCode === 'M4') {
+    isf = pdf / 100 * inv(fuelCode, rsiB(fuelCode, isz) * SF) + (1 - pdf / 100) * inv('D1', rsiB('D1', isz) * SF);
+  } else if (fuelCode === 'O1a' || fuelCode === 'O1b') {
+    const cc = Math.max(0, Math.min(100, curing));
+    const cf = cc < 58.8 ? 0.005 * (Math.exp(0.061 * cc) - 1) : 0.176 + 0.02 * (cc - 58.8);
+    isf = cf > 0 ? inv(fuelCode, rsiB(fuelCode, isz) * cf * SF, cf) : 0;
+  } else {
+    const k = fuelCode === 'D2' ? 'D1' : fuelCode;
+    isf = inv(k, rsiB(k, isz) * SF);
+  }
+  let wse = isf > 0 ? Math.log(isf / (0.208 * ff)) / 0.05039 : 0;   // Eq. 44a
+  if (wse > 40) {
+    wse = isf < 0.999 * 2.496 * ff
+      ? 28 - Math.log(1 - isf / (2.496 * ff)) / 0.0818                // Eq. 44b
+      : 112.45;                                                        // Eq. 44c
+  }
+  const rad = d => d * Math.PI / 180;
+  const haveW = windDir != null, haveS = aspect != null;
+  // WAZ = direction wind blows toward; SAZ = upslope direction
+  const waz = haveW ? rad((windDir + 180) % 360) : null;
+  const saz = haveS ? rad((aspect + 180) % 360) : null;
+  const wAz = waz ?? saz ?? 0, sAz = saz ?? waz ?? 0;                  // unknown → aligned (worst case)
+  const wsx = ws * Math.sin(wAz) + wse * Math.sin(sAz);               // Eq. 47
+  const wsy = ws * Math.cos(wAz) + wse * Math.cos(sAz);               // Eq. 48
+  const wsv = Math.sqrt(wsx * wsx + wsy * wsy);                       // Eq. 49
+  let raz = wsv > 0 ? Math.acos(Math.max(-1, Math.min(1, wsy / wsv))) : 0;  // Eq. 50
+  if (wsx < 0) raz = 2 * Math.PI - raz;                              // Eq. 51
+  return { wsv, raz: (raz * 180 / Math.PI) % 360, wse, isf, assumedAligned: !(haveW && haveS) };
+}
 
 /** Render FBP results for both fuels into the station_detail dual-fuel sections. */
 function wireFBP(weather, fwi) {

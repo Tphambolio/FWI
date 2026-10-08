@@ -316,3 +316,46 @@ export function refISIfbp(ffmc, wind) {
   const fW = wind >= 40 ? 12 * (1 - Math.exp(-0.0818 * (wind - 28))) : Math.exp(0.05039 * wind);
   return 0.208 * fW * fF;
 }
+
+// slope_adjustment (Slopecalc.r, cffdrs) — mirrors the R structure. Inputs:
+// fuel, FFMC, WS (km/h), WAZ/SAZ (radians: wind-toward / upslope azimuths),
+// GS (%), PC, PDF, CC (curing). Returns { WSV, RAZ (radians) }.
+// Only deviation: C6 zero-wind RSZ = surface RSI (cffdrs C6calc may blend crown).
+const SLOPE_ABC = {
+  C1: [90, 0.0649, 4.5], C2: [110, 0.0282, 1.5], C3: [110, 0.0444, 3.0], C4: [110, 0.0293, 1.5],
+  C5: [30, 0.0697, 4.0], C6: [30, 0.0800, 3.0], C7: [45, 0.0305, 2.0], D1: [30, 0.0232, 1.6],
+  M3: [120, 0.0572, 1.4], M4: [100, 0.0404, 1.48], S1: [75, 0.0297, 1.3], S2: [40, 0.0438, 1.7],
+  S3: [55, 0.0829, 3.2], O1a: [190, 0.0310, 1.4], O1b: [250, 0.0350, 1.7],
+};
+export function refSlopeAdjust(fuel, FFMC, WS, WAZ, GS, SAZ, { PC = 50, PDF = 35, CC = 100 } = {}) {
+  const SF = GS >= 70 ? 10 : Math.exp(3.533 * (GS / 100) ** 1.2);                 // Eq. 39
+  const m = 147.2 * (101 - FFMC) / (59.5 + FFMC);
+  const fF = 91.9 * Math.exp(-0.1386 * m) * (1 + m ** 5.31 / 4.93e7);
+  const ISZ = 0.208 * fF;                                                            // ISI, 0 wind
+  const ros0 = (k, isi) => { const [a, b, c] = SLOPE_ABC[k]; return a * (1 - Math.exp(-b * isi)) ** c; };
+  const isfOf = (k, RSF, scale = 1) => {                                            // Eqs. 41a/b, 43a/b
+    const [a, b, c] = SLOPE_ABC[k];
+    const t = 1 - (RSF / (scale * a)) ** (1 / c);
+    return t >= 0.01 ? Math.log(t) / -b : Math.log(0.01) / -b;
+  };
+  let ISF;
+  if (['C1','C2','C3','C4','C5','C6','C7','D1','S1','S2','S3'].includes(fuel)) ISF = isfOf(fuel, ros0(fuel, ISZ) * SF);
+  else if (fuel === 'D2') ISF = isfOf('D1', ros0('D1', ISZ) * SF);
+  else if (fuel === 'M1' || fuel === 'M2')                                           // Eq. 42a
+    ISF = PC / 100 * isfOf('C2', ros0('C2', ISZ) * SF) + (1 - PC / 100) * isfOf('D1', ros0('D1', ISZ) * SF);
+  else if (fuel === 'M3' || fuel === 'M4')                                           // Eqs. 42b/c
+    ISF = PDF / 100 * isfOf(fuel, ros0(fuel, ISZ) * SF) + (1 - PDF / 100) * isfOf('D1', ros0('D1', ISZ) * SF);
+  else {                                                                             // grass, Eqs. 35, 43
+    const CF = CC < 58.8 ? 0.005 * (Math.exp(0.061 * CC) - 1) : 0.176 + 0.02 * (CC - 58.8);
+    ISF = isfOf(fuel, ros0(fuel, ISZ) * CF * SF, CF);
+  }
+  let WSE = 1 / 0.05039 * Math.log(ISF / (0.208 * fF));                             // Eq. 44a
+  if (WSE > 40 && ISF < 0.999 * 2.496 * fF) WSE = 28 - (1 / 0.0818 * Math.log(1 - ISF / (2.496 * fF))); // 44b
+  else if (WSE > 40 && ISF >= 0.999 * 2.496 * fF) WSE = 112.45;                      // 44c
+  const WSX = WS * Math.sin(WAZ) + WSE * Math.sin(SAZ);                              // Eq. 47
+  const WSY = WS * Math.cos(WAZ) + WSE * Math.cos(SAZ);                              // Eq. 48
+  const WSV = Math.sqrt(WSX * WSX + WSY * WSY);                                      // Eq. 49
+  let RAZ = Math.acos(WSY / WSV);                                                    // Eq. 50
+  if (WSX < 0) RAZ = 2 * Math.PI - RAZ;                                              // Eq. 51
+  return { WSV, RAZ };
+}
