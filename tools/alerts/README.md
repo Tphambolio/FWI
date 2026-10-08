@@ -83,3 +83,15 @@ directly with `execFile`, without a shell. Exit code 10 means a message was
 handed off.
 
 *Pyra — informational only; verify with your FBAN/agency.*
+
+## Scheduled (workstation crontab)
+Owner's setup (2026-10-08): delivered verbatim to WhatsApp through OpenClaw
+(`delivery.channel` + `delivery.target` in the gitignored `config.json`),
+default stations and thresholds, quiet mode on.
+
+    30 14 * * * /home/rpas/dev/FWI/tools/alerts/run-daily.sh   # pyra_alerts
+
+`run-daily.sh` loads Node 22 through nvm and logs every run to `~/logs/pyra-alerts.log`.
+- Test the cron path without sending: `tools/alerts/run-daily.sh --dry-run`
+- Test delivery end to end, leaving state alone: `node tools/alerts/run.mjs --config tools/alerts/config.json --test --send`
+- Remove the schedule: `crontab -l | grep -v pyra_alerts | crontab -`
