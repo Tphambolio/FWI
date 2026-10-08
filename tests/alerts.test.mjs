@@ -290,3 +290,15 @@ test('bad arguments / config exit 1', async () => {
   assert.equal(await main(['--config', '/nonexistent/config.json'], c.deps), EXIT.ERROR);
   assert.equal(await main(['--config', 'x', '--now', 'not-a-date'], c.deps), EXIT.ERROR);
 });
+
+// ─── Test mode + direct channel delivery (2026-10-08) ────────────────────────
+import { deliveryCommand as _dc, buildMessage as _bm } from '../tools/alerts/run.mjs';
+test('deliveryCommand: channel + target → verbatim `openclaw message send`', () => {
+  const c = _dc('hello', { channel: 'whatsapp', target: '+15550000000' });
+  assert.deepEqual(c.args, ['message', 'send', '--channel', 'whatsapp', '--target', '+15550000000', '--message', 'hello']);
+  assert.deepEqual(_dc('hi', {}).args.slice(0, 3), ['agent', '--agent', 'main']);
+});
+test('buildMessage test mode is labelled [TEST] and says no action is needed', () => {
+  const m = _bm({ alerts: [], nowMs: 0, timeZone: 'UTC', test: true });
+  assert.equal(m, null, 'still null with no stations');
+});

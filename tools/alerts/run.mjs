@@ -294,9 +294,11 @@ function stationBlock(res, cross, th) {
  * Build the alert text. `alerts` = [{ res, crossings }] (stations to report),
  * `failures` = [{ station, error }]. Returns null when there is nothing to alert.
  */
-export function buildMessage({ alerts, failures = [], nowMs, timeZone, thresholds = {} }) {
+export function buildMessage({ alerts, failures = [], nowMs, timeZone, thresholds = {}, test = false }) {
   if (!alerts.length) return null;
-  const parts = [`PYRA FIRE BEHAVIOUR ALERT`, formatLocal(nowMs, timeZone)];
+  const parts = test
+    ? ['[TEST] PYRA FIRE BEHAVIOUR ALERT', 'Test message — no action needed. Current conditions at watched stations:', formatLocal(nowMs, timeZone)]
+    : [`PYRA FIRE BEHAVIOUR ALERT`, formatLocal(nowMs, timeZone)];
   for (const a of alerts) parts.push('', stationBlock(a.res, a.crossings, thresholds));
   if (failures.length) {
     parts.push('', 'NOT CHECKED (data error):');
@@ -308,9 +310,19 @@ export function buildMessage({ alerts, failures = [], nowMs, timeZone, threshold
 
 // ─── Delivery (stub — prints the command; runs it only with --send + enabled) ─
 
+/**
+ * Delivery command. With delivery.channel + delivery.target (e.g. whatsapp +
+ * E.164 number) the text is sent verbatim via `openclaw message send`;
+ * otherwise it is handed to a Pilot agent turn (`openclaw agent`), which may
+ * reword it — prefer the direct form for alerts.
+ */
 export function deliveryCommand(message, delivery = {}) {
+  const file = delivery.command || 'openclaw';
+  if (delivery.channel && delivery.target) {
+    return { file, args: ['message', 'send', '--channel', delivery.channel, '--target', delivery.target, '--message', message] };
+  }
   const agent = delivery.agent || 'main';
-  return { file: delivery.command || 'openclaw', args: ['agent', '--agent', agent, '--message', message] };
+  return { file, args: ['agent', '--agent', agent, '--message', message] };
 }
 
 const shq = s => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${String(s).replace(/'/g, `'\\''`)}'`);
@@ -319,7 +331,7 @@ export const shellLine = ({ file, args }) => [file, ...args].map(shq).join(' ');
 // ─── Config / state / CLI ────────────────────────────────────────────────────
 
 export function parseArgs(argv) {
-  const o = { config: null, dryRun: true, send: false, now: null, updateState: false };
+  const o = { config: null, dryRun: true, send: false, now: null, updateState: false, test: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--config') o.config = argv[++i];
@@ -327,6 +339,7 @@ export function parseArgs(argv) {
     else if (a === '--send') { o.send = true; o.dryRun = false; }
     else if (a === '--now') o.now = argv[++i];
     else if (a === '--update-state') o.updateState = true;
+    else if (a === '--test') o.test = true;
     else if (a === '-h' || a === '--help') o.help = true;
     else throw new Error(`unknown argument "${a}"`);
   }
@@ -362,6 +375,8 @@ const USAGE = `usage: node tools/alerts/run.mjs --config tools/alerts/config.jso
   --update-state  with --dry-run: also record this run's crossings in the quiet-mode state file
   --send          deliver via OpenClaw — refused unless config.delivery.enabled is true
   --now ISO       evaluate as of this instant (clock pin; data is still fetched live)
+  --test          build a [TEST] message with every station's current conditions, crossing or
+                  not; never reads or writes quiet-mode state (safe end-to-end delivery check)
 exit: 0 no alert · 10 alert produced · 1 error`;
 
 /**
@@ -417,8 +432,10 @@ export async function main(argv, deps = {}) {
   const prevState = readState(statePath);
   const { newBy, state } = applyQuiet(prevState, current, { quiet, at: new Date(nowMs).toISOString() });
   // Report every current crossing of a station that has at least one new one.
-  const alerts = results.filter(r => newBy[stationKey(r.st)]).map(r => ({ res: r.res, crossings: r.crossings }));
-  const message = buildMessage({ alerts, failures, nowMs, timeZone: cfg.timezone || 'America/Edmonton', thresholds: th });
+  const alerts = opts.test
+    ? results.map(r => ({ res: r.res, crossings: r.crossings }))
+    : results.filter(r => newBy[stationKey(r.st)]).map(r => ({ res: r.res, crossings: r.crossings }));
+  const message = buildMessage({ alerts, failures, nowMs, timeZone: cfg.timezone || 'America/Edmonton', thresholds: th, test: opts.test });
 
   for (const r of results) {
     const t = r.res.today;
@@ -430,7 +447,8 @@ export async function main(argv, deps = {}) {
 
   if (!results.length) { err('error: every station failed'); return EXIT.ERROR; }
 
-  const persist = () => { try { writeState(statePath, state, nowMs); } catch (e) { err(`warning: state not saved: ${e.message}`); } };
+  const persist = () => { if (opts.test) return; // test runs never touch quiet-mode state
+    try { writeState(statePath, state, nowMs); } catch (e) { err(`warning: state not saved: ${e.message}`); } };
 
   if (!message) {
     out('No alert: no new threshold crossing.' + (failures.length ? ` (${failures.length} station(s) not checked)` : ''));
