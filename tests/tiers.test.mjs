@@ -278,3 +278,21 @@ test('BC: CWFIS weather-only dated yesterday is not used → NWP', async () => {
   const w = await primary(h, BC);
   assert.match(w.source, /^Open-Meteo NWP/);
 });
+
+// ─── SWOB noon-LST record selection (2026-10-08) ─────────────────────────────
+// Daily FWI inputs are the noon-LST obs: after noon, of the nearest station's
+// records the one closest to noon is used (was: whichever came first).
+for (const e of ENGINES) {
+  test(`${e.prov}: SWOB after noon picks the nearest station's record closest to noon LST`, async () => {
+    const noon = Date.UTC(2026, 6, 15, e.prov === 'AB' ? 19 : 20, 0);
+    const now = noon + 2 * 3600000; // 14:00 LST
+    const h = makeContext(e.path, { now, mocks: { swob: fc([
+      swobNear(e, noon - 50 * 60000, { temp: 11 }),   // 11:10 LST
+      swobNear(e, noon + 5 * 60000,  { temp: 22 }),   // 12:05 LST  ← noon obs
+      swobNear(e, noon + 110 * 60000, { temp: 25 }),  // 13:50 LST
+    ]) } });
+    const w = await h.run(`fetchSWOB(${e.lat}, ${e.lng})`);
+    assert.equal(w.temp, 22);
+    assert.match(w.source, /\(noon LST\)$/);
+  });
+}

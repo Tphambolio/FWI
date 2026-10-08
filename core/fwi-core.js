@@ -1096,11 +1096,18 @@ function _computeIDWBlend(features, lat, lng, maxStations = 12) {
  */
 async function fetchSWOB(lat, lng) {
   const bbox = 1.5; // ±1.5° ≈ 150 km
-  // Without a datetime filter the endpoint returns stale archived records.
-  // Request a 3-hour window ending now to ensure fresh observations only.
-  const now  = new Date();
-  const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  const fmt  = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
+  // Daily FWI inputs are the noon-LST observation (CFFDRS). Once today's noon has
+  // passed, request a ±1 h window around it and take, from the nearest station,
+  // the record closest to noon (its pcpn_amt_pst24hrs is then the noon-to-noon
+  // rain). Before noon, or if the noon record isn't published yet, fall back to
+  // a 3-hour window ending now (latest obs). Without a datetime filter the
+  // endpoint returns stale archived records.
+  const now    = new Date();
+  const noonMs = Date.parse(_lstDateStr(now.getTime()) + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000;
+  const fmt    = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
+  const windows = [];
+  if (now.getTime() >= noonMs) windows.push([new Date(noonMs - 3600000), new Date(Math.min(now.getTime(), noonMs + 3600000))]);
+  windows.push([new Date(now.getTime() - 3 * 3600000), now]);
   // Request only the properties we read — full SWOB records carry hundreds of
   // fields each (~411 KB for 50); the subset is ~10× smaller. Province flag
   // (PROVINCE.trimFeedProperties). 8 s timeout: SWOB can hang for 13 s+, which
@@ -1109,21 +1116,29 @@ async function fetchSWOB(lat, lng) {
     'avg_wnd_spd_10m_pst1hr','avg_wnd_spd_10m_pst10mts','avg_wnd_dir_10m_pst1hr',
     'avg_wnd_dir_10m_pst10mts','pcpn_amt_pst1hr','pcpn_amt_pst6hrs','pcpn_amt_pst24hrs',
     'date_tm-value','obs_date_tm','stn_nam-value'].join(',');
-  const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
-    `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
-    `&datetime=${fmt(past)}/${fmt(now)}&limit=50${PROVINCE.trimFeedProperties ? `&properties=${props}` : ''}&f=json`;
-  let res;
-  try { res = await fetchWithTimeout(url, {}, 8000); } catch (_) { return null; }
-  const d = await res.json();
-  if (!d.features?.length) return null;
+  const obsMs = f => Date.parse(f.properties?.['date_tm-value'] || f.properties?.['obs_date_tm']);
+  let d = null;
+  for (const [from, to] of windows) {
+    const url = `https://api.weather.gc.ca/collections/swob-realtime/items` +
+      `?bbox=${(lng-bbox).toFixed(2)},${(lat-bbox).toFixed(2)},${(lng+bbox).toFixed(2)},${(lat+bbox).toFixed(2)}` +
+      `&datetime=${fmt(from)}/${fmt(to)}&limit=200${PROVINCE.trimFeedProperties ? `&properties=${props}` : ''}&f=json`;
+    let res;
+    try { res = await fetchWithTimeout(url, {}, 8000); } catch (_) { continue; }
+    const j = await res.json().catch(() => null);
+    if (j?.features?.length) { d = j; break; }
+  }
+  if (!d) return null;
 
-  // Find nearest station by geometry
+  // Nearest station by geometry, then that station's record closest to noon LST
+  // (all records of one station share its coordinates).
   let nearest = null, minDist = Infinity;
   for (const f of d.features) {
     if (!f.geometry?.coordinates) continue;
     const [fLng, fLat] = f.geometry.coordinates;
     const dist = _haversineKm(lat, lng, fLat, fLng);
-    if (dist < minDist) { minDist = dist; nearest = f; }
+    if (dist < minDist - 1e-9) { minDist = dist; nearest = f; }
+    else if (Math.abs(dist - minDist) <= 1e-9 && nearest &&
+             Math.abs(obsMs(f) - noonMs) < Math.abs(obsMs(nearest) - noonMs)) nearest = f;
   }
   if (!nearest) return null;
 
