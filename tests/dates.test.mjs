@@ -106,10 +106,12 @@ test('AB: fetchWeather pre-noon MST targets the 22 UTC peak-burn hour of today',
   assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)');
 });
 
-test('BC: fetchWeather pre-noon PST uses the current hour as best available', async () => {
+// Headline policy (2026-10-07): before noon both provinces show today's 16:00
+// peak-burn forecast (BC previously used the current hour).
+test('BC: fetchWeather pre-noon PST targets the 23 UTC peak-burn hour of today', async () => {
   const { run } = makeContext(BC.path, { now: lstClock(BC, 7, 15, 9) }); // 17 UTC
   const w = await run(`fetchWeather(${BC.lat}, ${BC.lng})`);
-  assert.equal(w.temp, 17.15);
-  assert.equal(w.source, 'Open-Meteo NWP (pre-noon — best available)');
+  assert.equal(w.temp, 23.15);
+  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 PDT)');
 });
 

@@ -785,6 +785,19 @@ async function fetchCWFIS(lat, lng, idwMode = false) {
 }
 
 /**
+ * Map bulk-path distance cap (km). The province-wide CWFIS query has no bbox
+ * around each station, so without a cap a remote station could take a chain
+ * from 300+ km away. 150 km ≈ the per-station query's ±2° box at these
+ * latitudes; beyond it the map falls back to the per-station tier chain.
+ */
+const MAP_CWFIS_MAX_KM = 150;
+/** Default map picker: nearest CWFIS station from the bulk features, within the cap. */
+function _mapPickNearest(features, lat, lng) {
+  const w = _selectCWFIS(features, lat, lng);
+  return w && (w.distKm ?? 0) <= MAP_CWFIS_MAX_KM ? w : null;
+}
+
+/**
  * One province-wide CWFIS query — every station in a single request, instead
  * of one bbox query per station. Returns the raw feature array (cached for the
  * page session) so buildStationMap can resolve all stations locally.
@@ -3649,7 +3662,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
       // PROVINCE.mapPick applies the province's tier rule to the bulk data
       // (BC: today-dated BCWS or CWFIS, nearest wins); default nearest CWFIS.
       let w = allFeatures
-        ? await (PROVINCE.mapPick ? PROVINCE.mapPick(allFeatures, s.lat, s.lng) : _selectCWFIS(allFeatures, s.lat, s.lng))
+        ? await (PROVINCE.mapPick ? PROVINCE.mapPick(allFeatures, s.lat, s.lng) : _mapPickNearest(allFeatures, s.lat, s.lng))
         : null;
       // Fall back to the full per-station tier chain only when the province
       // query found nothing usable nearby (rare — off-season or sparse north).
@@ -3738,7 +3751,7 @@ async function buildStationMap(containerId, mapOpts = {}) {
         (usedCachedPrev ? (() => {
           const cp = cachedPrevEntry;
           const cdStr = cp.repDate
-            ? new Date(cp.repDate).toLocaleString('en-CA', { month: 'short', day: 'numeric', timeZone: 'America/Edmonton' })
+            ? new Date(String(cp.repDate).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' }) // date stamp, not a clock time
             : 'prev day';
           return `<div style="font-size:11px;color:#475569;margin-bottom:6px">` +
                  `Carry-over: <strong>${cp.stationName || 'CWFIS'}</strong> · ${cdStr}</div>`;

@@ -22,8 +22,13 @@ const badges = async (e, now, repDate) => {
   return new Set(cache.map(c => c.srcBadge));
 };
 
-test('AB: pre-noon CWFIS features with yesterday\'s rep_date → every marker badged "CWFIS D-1"', async () => {
-  assert.deepEqual([...await badges(AB, lstClock(AB, 7, 15, 9), YDAY)], ['CWFIS D-1']);
+// Bulk path is capped at MAP_CWFIS_MAX_KM (2026-10-08): markers far from the one
+// mocked CWFIS station fall back to the per-station chain instead of borrowing it.
+test('AB: pre-noon CWFIS features with yesterday\'s rep_date → flagged "CWFIS D-1", never shown as current', async () => {
+  const b = await badges(AB, lstClock(AB, 7, 15, 9), YDAY);
+  assert.ok(b.has('CWFIS D-1'));
+  assert.ok(!b.has('CWFIS'), "yesterday's chain is never badged as current");
+  for (const x of b) assert.ok(['CWFIS D-1', 'NWP', 'SWOB'].includes(x), `unexpected badge ${x}`);
 });
 
 test('AB: CWFIS features with today\'s rep_date → markers badged "CWFIS"', async () => {

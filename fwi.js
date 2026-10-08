@@ -759,7 +759,7 @@ const PROVINCE = {
   cwfisBBox: [48.8, 60.5, -120.5, -109.5], // province-wide CWFIS query box [latMin, latMax, lonMin, lonMax]
   // ── Forecast / D+1 ──
   highDangerFWI: 15.5,          // FWI where 'High' starts (forecast "days at risk")
-  trendTableCount: 5,           // regions shown in the forecast trend table (first N)
+  trendTableCount: undefined,   // regions shown in the forecast trend table (all — 5 dropped Lethbridge)
   // ── Danger classes ──
   dangerRating: fwi => dangerRating(fwi),                          // CWFIS FWI-map 5-class
   dangerClassNum: fwi => dangerClassNum(fwi),                      // {num,label,bg,text} for briefing badges

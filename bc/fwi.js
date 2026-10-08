@@ -137,53 +137,288 @@ function dangerRatingBC(fwi) {
 }
 
 /**
- * Station-level dominant FBP fuel type derived from CWFIS WMS
- * cffdrs_fbp_fuel_types (NRCan 30m national grid), sampled Apr 2026.
- * Method: modal fuel type within 5 km radius of each CWFIS station coordinate.
- * Corrections: M1/M2 (mixedwood) mapped to C2; northern boreal airport stations
- * where sampled pixel was agricultural grass corrected to regional forest type.
- * Users can override via the fuel picker at any time.
+ * Station FBP fuel types — BC_STATIONS keyed by name. Sampled 2026-10-08 from
+ * NRCan CWFIS public:cffdrs_fbp_fuel_types (national 30 m FBP grid) at each
+ * station's coordinates; where the centre pixel was non-fuel, the modal fuel of
+ * 8 points 2 km away. D-1/D-2 and M-1/M-2 cells map to D1/M1 and follow the
+ * leaf-state calendar (_seasonalFuel). Unlisted stations (non-fuel all round)
+ * fall back to C3. The previous table was keyed by Alberta station names, so
+ * every BC station silently used C3. Users can override via the fuel picker.
  */
 const STATION_FUEL_TYPES = {
-  'Athabasca':      'C2',   // boreal — airport grass corrected
-  'Banff':          'C3',   // WMS: Mature Jack/Lodgepole Pine ✓
-  'Bonnyville':     'O1a',  // WMS: agricultural Peace Country
-  'Brooks':         'O1a',  // WMS: SE Alberta grassland ✓
-  'Calgary':        'D1',   // WMS: Aspen parkland ✓
-  'Camrose':        'O1a',  // WMS: agricultural central AB
-  'Cardston':       'O1a',  // WMS: SW Alberta grassland ✓
-  'Claresholm':     'O1a',  // WMS: foothills grassland ✓
-  'Cold Lake':      'C3',   // WMS: Mature Jack Pine ✓
-  'Drayton Valley': 'D1',   // WMS: Aspen parkland ✓
-  'Drumheller':     'O1a',  // WMS: badlands/grassland ✓
-  'Edmonton':            'D2',   // Aspen parkland WUI context
-  'Edson':          'C2',   // M1→C2: mixedwood boreal ✓
-  'Fort Chipewyan': 'C2',   // WMS: Northern Boreal Spruce ✓
-  'Fort McMurray':  'C4',   // WMS: Immature Jack Pine (post-2016 reburn) ✓
-  'Fort Vermilion': 'C2',   // boreal — airport grass corrected
-  'Fox Creek':      'C2',   // WMS: Boreal Spruce ✓
-  'Grande Cache':   'C2',   // WMS: Boreal Spruce ✓
-  'Grande Prairie': 'O1a',  // WMS: Peace Country grass ✓
-  'High Level':     'C2',   // WMS: Northern Boreal Spruce ✓
-  'High Prairie':   'D2',   // boreal transition — corrected from airport grass
-  'Hinton':         'C2',   // WMS: Boreal Spruce ✓
-  'Jasper':         'C3',   // WMS: Rocky Mountain Jack/Lodgepole ✓
-  'Lac La Biche':   'D1',   // WMS: Leafless Aspen ✓
-  'Lethbridge':     'O1a',  // WMS: Grassland ✓
-  'Lloydminster':   'O1a',  // WMS: agricultural boundary ✓
-  'Manning':        'C2',   // boreal — airport grass corrected
-  'Medicine Hat':   'O1a',  // WMS: SE Alberta grassland ✓
-  'Peace River':    'D2',   // Peace Country transition — corrected
-  'Pincher Creek':  'O1a',  // WMS: foothills grassland ✓
-  'Red Deer':       'D1',   // WMS: Aspen parkland ✓
-  'Rocky Mtn House':'C2',   // M1→C2: mixedwood foothills
-  'Slave Lake':     'C2',   // M1→C2: Lesser Slave mixedwood
-  'Stettler':       'O1a',  // WMS: agricultural ✓
-  'Valleyview':     'D1',   // WMS: Peace Country ✓
-  'Vegreville':     'O1a',  // WMS: agricultural ✓
-  'Wabasca':        'C2',   // M1→C2: boreal mixedwood
-  'Wetaskiwin':     'O1a',  // WMS: agricultural ✓
-  'Whitecourt':     'C2',   // M1→C2: boreal mixedwood ✓
+  "Summit": 'C3',
+  "Menzies Camp": 'C5',
+  "Woss Camp": 'C5',  // 2 km modal
+  "Beaver Creek": 'D1',
+  "Saltspring 2": 'O1a',
+  "Bowser": 'C5',  // 2 km modal
+  "Cedar": 'C5',  // 2 km modal
+  "Haig Camp": 'C7',  // 2 km modal
+  "UBC Research": 'C5',
+  "Toba Camp": 'O1a',
+  "Scar Creek": 'D1',
+  "Honna (Haida Gwaii)": 'C5',  // 2 km modal
+  "Machmell": 'C5',
+  "Theodosia": 'C3',
+  "Big Silver 2": 'C5',
+  "McNabb": 'C3',
+  "Meager Creek": 'M1',
+  "Quinsam Base": 'C5',
+  "Powell River West Lake": 'C5',  // 2 km modal
+  "Mount Cayley": 'M1',
+  "Cheakamus": 'C5',
+  "Boothroyd": 'C5',
+  "Klinaklini": 'C3',
+  "Homathko": 'C3',
+  "Frank Creek": 'D1',
+  "Atluck": 'M1',
+  "Nahmint": 'M1',
+  "Blackwater": 'M1',
+  "Mashiter": 'D1',
+  "Cobble Hill": 'C5',  // 2 km modal
+  "Lillooet": 'C7',  // 2 km modal
+  "Thynne": 'C4',
+  "Brenda Mines": 'C4',
+  "Turtle": 'O1a',
+  "Glimpse": 'C3',
+  "Darcy": 'C3',
+  "Fintry": 'D1',
+  "Pemberton Base": 'D1',
+  "Aspen Grove": 'O1a',
+  "Sparks Lake": 'D1',
+  "Leighton Lake": 'D1',
+  "Gwyneth Lake": 'C3',
+  "McLean Lake": 'C4',
+  "Nahatlatch": 'C7',
+  "Allison Pass": 'C3',  // 2 km modal
+  "Afton": 'D1',
+  "Paska Lake": 'C3',
+  "Penticton RS": 'C5',  // 2 km modal
+  "McCuddy": 'D1',
+  "Revelstoke": 'C2',  // 2 km modal
+  "Five Mile": 'C3',
+  "Splintlum": 'C7',
+  "Mayson": 'C4',
+  "Blue River 2": 'C3',
+  "Mudpit": 'D1',
+  "Larch Hills West": 'M1',
+  "Station Bay 2": 'C5',
+  "Merritt 2 Hub": 'C5',  // 2 km modal
+  "Willis": 'C4',
+  "Xetolacow": 'C5',
+  "Tautri": 'O1a',
+  "Tatla Lake": 'C3',  // 2 km modal
+  "Alexis Creek": 'O1a',  // 2 km modal
+  "Riske Creek": 'D1',
+  "Nazko": 'C4',  // 2 km modal
+  "Place Lake": 'C3',
+  "Anahim Lake": 'C3',  // 2 km modal
+  "Nemiah": 'C3',
+  "Lone Butte": 'C4',
+  "Baldface": 'C3',  // 2 km modal
+  "Gaspard": 'C4',
+  "Knife": 'C3',  // 2 km modal
+  "Middle Lake": 'C3',
+  "Gavin": 'C3',
+  "Benson": 'C3',
+  "Horsefly": 'O1a',
+  "Coldscaur Lake": 'C3',
+  "Talchako": 'C4',
+  "Timothy": 'C3',
+  "Young Lake": 'C3',
+  "Meadow Lake": 'O1a',
+  "Clearwater Hub": 'C5',
+  "East Barriere": 'C5',
+  "Windy Mountain": 'C4',
+  "Deception": 'C3',
+  "Cahilty": 'M1',
+  "Likely RS": 'C3',
+  "Big Valley": 'M1',
+  "Prairie Creek": 'C3',
+  "Wells Gray": 'C2',
+  "Gosnel": 'C3',
+  "French Bar": 'C5',
+  "Churn Creek": 'D1',
+  "Hagensborg 2": 'M1',
+  "Skoonka": 'C4',
+  "Deer Park": 'M1',
+  "Brunson": 'C3',
+  "Bond Lake": 'C3',
+  "Manson": 'M1',
+  "Ingenika Point": 'C3',
+  "Fort St James": 'D1',  // 2 km modal
+  "Blackpine": 'M1',
+  "Bear Lake": 'M1',
+  "Nabeshe": 'C3',
+  "Sifton": 'M1',
+  "McLeod Lake": 'C3',
+  "Witch": 'C3',
+  "Mackenzie FS": 'C3',  // 2 km modal
+  "Vanderhoof Hub": 'O1a',  // 2 km modal
+  "North Chilco": 'C4',
+  "Lovell Cove": 'C3',
+  "Moose Lake": 'C3',
+  "Augier Lake": 'C3',
+  "Bednesti": 'C4',
+  "Peden": 'D1',
+  "Hixon": 'M1',
+  "Chilako": 'C4',
+  "Jerry": 'C4',
+  "McGregor 2": 'M1',
+  "Bowron Haggen": 'D1',
+  "McBride": 'O1a',
+  "Catfish": 'C3',
+  "Valemount 2": 'C3',
+  "Mathew": 'C2',
+  "Holy Cross 2": 'C4',
+  "Osborn": 'O1a',
+  "Severeid": 'M1',
+  "Valemount Airport": 'C5',  // 2 km modal
+  "Ape Lake": 'C3',
+  "Machmell Kliniklini": 'M1',
+  "Goatlick": 'D1',
+  "Chetwynd FB": 'D1',  // 2 km modal
+  "Blueberry": 'C4',
+  "Baker Creek": 'C4',
+  "Rosswood": 'C3',
+  "Kitpark": 'O1a',
+  "Dease Lake FS": 'C3',  // 2 km modal
+  "Atlin": 'M1',
+  "Bob Quinn Lake": 'C2',
+  "Sustut": 'C4',
+  "Grassy Plains Hub": 'D1',
+  "Houston": 'O1a',
+  "Kluskus": 'C3',
+  "Upper Fulton": 'C3',
+  "East Ootsa": 'C4',
+  "Leo Creek": 'C4',
+  "Nilkitkwa": 'C3',
+  "North Babine": 'C3',
+  "Nadina": 'C3',
+  "McBride Lake": 'M1',
+  "Burns Lake 850m": 'C3',  // 2 km modal
+  "Ganokwa": 'C4',
+  "Nass Camp": 'C3',  // 2 km modal
+  "Kispiox Hub": 'M1',
+  "Cedarvale": 'M1',
+  "Van Dyke": 'M1',
+  "Upper Kispiox": 'C5',
+  "Bell-Irving": 'M1',
+  "Cranberry": 'C3',
+  "Pine Creek": 'M1',
+  "Old Faddy": 'M1',
+  "Sawtooth": 'C4',
+  "Terrace": 'C5',
+  "Gitanyow": 'M1',
+  "Telegraph Creek": 'D1',
+  "Iskut": 'D1',
+  "Elk Mountain": 'M1',
+  "Fireside": 'D1',
+  "Boya Lake": 'C3',
+  "Komie": 'C4',
+  "Sierra": 'C2',
+  "Helmut": 'C2',  // 2 km modal
+  "Nelson Forks": 'C2',
+  "Silver": 'M1',
+  "Paddy": 'C2',  // 2 km modal
+  "Graham": 'D1',
+  "Toad River": 'M1',
+  "Tumbler Hub": 'M1',
+  "Pink Mountain": 'O1a',
+  "Muskwa": 'M1',
+  "Hudson Hope": 'D1',  // 2 km modal
+  "Wonowon": 'O1a',
+  "Red Deer": 'C2',
+  "Lemoray": 'D1',
+  "Noel": 'C3',  // 2 km modal
+  "Fort Nelson FS": 'C2',  // 2 km modal
+  "Seymour Arm": 'C3',
+  "Tsar Creek": 'C3',
+  "Mabel Lake 2": 'O1a',
+  "Whiskey": 'M1',
+  "Marion": 'C3',
+  "Succour Creek": 'M1',
+  "Gold Hill": 'M1',
+  "Powder Creek": 'C3',
+  "Falls Creek": 'C3',
+  "Duncan": 'M1',
+  "Trout Lake": 'M1',
+  "Kettle 2": 'C3',
+  "Beaverdell": 'C5',
+  "Eight Mile": 'C4',
+  "Grand Forks": 'D1',
+  "Nicoll": 'C3',
+  "Rock Creek": 'O1a',
+  "Octopus Creek": 'D1',
+  "Goatfell": 'C2',
+  "Pendoreille": 'C5',
+  "Smallwood": 'C3',
+  "Slocan": 'M1',
+  "Nancy Greene": 'C3',
+  "Norns": 'O1a',
+  "Palliser": 'M1',
+  "Elko": 'C7',
+  "Toby Hub": 'C7',
+  "Flathead 2": 'C2',
+  "Johnson Lake": 'D1',
+  "Dewar Creek": 'C3',
+  "Emily Creek": 'C4',
+  "Cranbrook": 'D1',
+  "Cherry Lake": 'M1',
+  "August Lake": 'C5',
+  "Akokli Creek": 'C3',
+  "Brisco": 'C5',
+  "Blaeberry": 'C4',
+  "Big Mouth 2": 'C3',
+  "Crawford": 'M1',
+  "Idabel Lake 3": 'C4',
+  "Sicamous": 'C3',
+  "Goathaven": 'C3',
+  "Downie": 'C2',
+  "Goldstream 2": 'M1',
+  "Koocanusa": 'C7',
+  "Rory Creek": 'C3',
+  "Darkwoods": 'M1',
+  "Cariboo Creek": 'M1',
+  "Bigattini": 'C4',
+  "Sparwood": 'C4',
+  "Little Chopaka": 'D1',
+  "Creston": 'O1a',
+  "Abbotsford": 'C5',  // 2 km modal
+  "Blue River": 'C3',
+  "Cape St. James": 'C5',  // 2 km modal
+  "Castlegar": 'C3',  // 2 km modal
+  "Clinton": 'C5',
+  "Comox": 'O1a',  // 2 km modal
+  "Cranbrook": 'C7',  // 2 km modal
+  "Dease Lake": 'C4',
+  "Estevan Point": 'C5',  // 2 km modal
+  "Fort Nelson": 'D1',
+  "Fort St. John": 'O1a',
+  "Hope": 'C5',
+  "Kamloops": 'O1a',
+  "Kelowna": 'C5',  // 2 km modal
+  "Lytton": 'D1',
+  "Nanaimo": 'C5',  // 2 km modal
+  "Penticton": 'O1a',
+  "Port Alberni": 'C5',
+  "Port Hardy": 'C5',  // 2 km modal
+  "Prince George": 'O1a',  // 2 km modal
+  "Prince Rupert": 'D1',
+  "Puntzi Mountain": 'C4',
+  "Quesnel": 'M1',
+  "Revelstoke": 'M1',
+  "Sandspit": 'C5',  // 2 km modal
+  "Smithers": 'D1',  // 2 km modal
+  "Terrace": 'M1',
+  "Tofino": 'C5',
+  "Vancouver Intl": 'O1a',  // 2 km modal
+  "Victoria Intl": 'O1a',  // 2 km modal
+  "Williams Lake": 'C4',  // 2 km modal
+  "Callaghan Valley": 'C5',
+  "West Vancouver": 'D1',  // 2 km modal
+  "Whistler": 'C5',  // 2 km modal
+  "Whistler Mountain": 'C5',
 };
 
 // ─── BCWS Datamart fetch (BC Tier 0) ─────────────────────────────────────────
@@ -424,7 +659,7 @@ async function fetchBCWSForCoords(lat, lng) {
  * BC map picker (PROVINCE.mapPick) — the tier rule of _fetchWeatherPrimaryBC
  * applied to the bulk data, so ~240 map stations need no per-station network:
  * today-dated BCWS (cached mirror) or CWFIS chain, nearest wins; otherwise the
- * latest CWFIS chain within 100 km (badged "CWFIS D-1" before noon, as on the
+ * latest CWFIS chain within MAP_CWFIS_MAX_KM (badged "CWFIS D-1" before noon, as on the
  * AB map). null → the map falls back to the per-station tier chain.
  */
 async function _mapPickBC(features, lat, lng) {
@@ -434,7 +669,7 @@ async function _mapPickBC(features, lat, lng) {
   const isToday = r => r?.fwiFromCWFIS && r.repDate && String(r.repDate).slice(0, 10) === today;
   const todays = [bcws, cw].filter(isToday).sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999))[0];
   if (todays) return todays;
-  return (cw?.fwiFromCWFIS && (cw.distKm ?? 999) <= 100) ? cw : null;
+  return (cw?.fwiFromCWFIS && (cw.distKm ?? 999) <= MAP_CWFIS_MAX_KM) ? cw : null;
 }
 
 /**
@@ -451,6 +686,7 @@ async function _fetchWeatherPrimaryBC(lat, lng) {
   if (!_idwMode) {
     try {
       const today = _lstDateStr();
+      const preNoon = new Date(Date.now() - PROVINCE.lstOffset * 3600000).getUTCHours() < 12;
       const [bcws, cwfis, swob] = await Promise.all([
         fetchBCWSForCoords(lat, lng).catch(() => null),
         fetchCWFIS(lat, lng, false).catch(() => null),
@@ -460,6 +696,9 @@ async function _fetchWeatherPrimaryBC(lat, lng) {
       const primary = [bcws, cwfis].filter(isToday)
         .sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999))[0] || null;
       if (primary) return _swobCrossCheck(primary, swob);
+      // Before noon LST a morning sensor reading isn't the day's fire weather —
+      // use today's 16:00 peak-burn forecast (headline policy, as AB does).
+      if (preNoon) return fetchWeather(lat, lng);
       if (swob) return swob;
       // CWFIS weather-only obs from today (no codes) are still real observations
       if (cwfis && !cwfis.fwiFromCWFIS && cwfis.repDate && String(cwfis.repDate).slice(0, 10) === today) return cwfis;
@@ -823,12 +1062,12 @@ const PROVINCE = {
   tzName: 'America/Vancouver', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryBC(lat, lng),   // tier chain (BCWS ∥ CWFIS, date-checked)
-  preNoonNWP: 'latest',  // Open-Meteo hour before noon: most recent available hour
-  cwfisNoCache: false,   // CWFIS station query sent with default caching
-  trimFeedProperties: false, // full SWOB / hotspot records
+  preNoonNWP: 'peak',    // Open-Meteo hour before noon: today's 16:00 peak-burn forecast (headline = 16:00, 2026-10-07)
+  cwfisNoCache: true,    // CWFIS station query sent with cache: 'no-cache'
+  trimFeedProperties: true,  // request only the read properties from SWOB / hotspot feeds
   idwExtraFeatures: async () => [],                                // no provincial IDW augmentation
-  idwDivergentDC: 'nearest', // divergent (≥ 75) DC in the IDW blend → nearest chain station's DC
-  prevSection: 'bcStations', prevTimeoutMs: 15000,                 // cwfis_prev.json section, fetch timeout
+  idwDivergentDC: 'max', // divergent (≥ 75) DC in the IDW blend → highest floored chain DC
+  prevSection: 'bcStations', prevTimeoutMs: 10000,                 // cwfis_prev.json section, fetch timeout
   naefsStations: NAEFS_BC_STATIONS,                                // NAEFS ensemble point list
   // ── Defaults / persistence ──
   defaultStation: { lat: 50.70, lng: -120.45, name: 'Kamloops' },  // module-level _station* before initFWI
