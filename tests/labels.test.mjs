@@ -141,3 +141,23 @@ for (const e of [AB, BC]) {
     assert.equal(lvl({ source: 'Open-Meteo NWP (noon LST)' }), 'neutral');
   });
 }
+
+// ─── BCWS official danger rating ─────────────────────────────────────────────
+test('BC: BCWS chain carries the official BCWS danger rating (not the FWI-derived class)', async () => {
+  const now = lstClock(BC, 7, 15, 13);
+  const h = makeContext(BC.path, { now, mocks: {
+    // FWI 6 would be "Low" on the BC FWI scale; BCWS rated the day 4 = High
+    bcws: { date: TODAY, stations: { 322: { name: 'Kamloops BCWS', temp: 26, rh: 25, wind: 10, rain: 0, ffmc: 91, dmc: 60, dc: 400, isi: 3, bui: 90, fwi: 6, danger: 4 } } },
+  } });
+  await h.run(`initFWI(${BC.lat}, ${BC.lng}, 'Kamloops')`);
+  const r = h.run('_lastFWI');
+  assert.equal(r.danger, 'High');
+  assert.equal(r.dangerSource, 'official');
+});
+
+test('AB: CWFIS chain danger is FWI-derived (dangerSource "fwi")', async () => {
+  const now = lstClock(AB, 7, 15, 13);
+  const h = makeContext(AB.path, { now, mocks: { cwfis: fc([stationFeature(AB, { rep_date: rep(TODAY) })]) } });
+  await h.run(`initFWI(${AB.lat}, ${AB.lng}, 'Edmonton')`);
+  assert.equal(h.run('_lastFWI').dangerSource, 'fwi');
+});

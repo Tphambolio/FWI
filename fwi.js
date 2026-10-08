@@ -722,6 +722,7 @@ const PROVINCE = {
   localOffset: 6,        // hours behind UTC for local daylight time (MDT) — Today/Tomorrow, 16:00 peak burn
   noonUTC: 19,           // UTC hour of noon LST (CFFDRS observation hour)
   peakUTC: 22,           // UTC hour of 16:00 MDT peak burn
+  dangerScaleNote: 'CWFIS FWI map classes', // summary-row tooltip: what the FWI-derived danger class is
   tzLabel: 'MDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Edmonton', // IANA zone for map popup obs times
   // ── Data tiers ──

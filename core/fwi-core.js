@@ -715,8 +715,13 @@ function _renderPeakSummary(o) {
   const danger = dangerRatingProv(fwi);
   const t = _dangerTok(danger);
   const when = o.peak ? `16:00 ${PROVINCE.tzLabel} peak burn` : 'current weather (peak-burn forecast loading…)';
+  // Agency rating (BCWS DANGER_RATING) when today's chain came from the agency —
+  // shown beside the FWI-derived class, never replacing the 16:00 headline.
+  const official = _lastFWI?.dangerSource === 'official' ? _lastFWI.danger : null;
+  const ot = official ? _dangerTok(official) : null;
   set('fwi-summary-danger',
-    `<span class="pyra-chip pyra-chip-lg font-black uppercase tracking-wide" style="background:${t.solid};color:${t.on}">${danger}</span>`);
+    `<span class="pyra-chip pyra-chip-lg font-black uppercase tracking-wide" style="background:${t.solid};color:${t.on}" title="FWI-based danger class at ${_esc(when)} (${PROVINCE.dangerScaleNote || 'FWI map classes'}) — not an official agency rating">${danger}</span>` +
+    (official ? ` <span class="pyra-chip font-bold" style="background:${ot.solid};color:${ot.on}" title="Official BC Wildfire Service danger rating for today's noon observation (BCWS Datamart)">BCWS official: ${official}</span>` : ''));
   set('fwi-summary-fwi',
     `<span class="font-headline text-xl font-black text-white">FWI ${fwi.toFixed(1)}</span> <span class="text-[11px] text-slate-300">${when}</span>`);
   const cands = [[o.fbpA, o.fuelA], [o.fbpB, o.fuelB]].filter(([f]) => f);
@@ -1200,6 +1205,7 @@ function _swobCrossCheck(chain, swob) {
       isi:  chain.isi,   bui: chain.bui,  fwi: chain.fwi,
       fwiFromCWFIS: chain.fwiFromCWFIS,
       chainSource:  chain.source,   // provenance of the FWI chain (BCWS or CWFIS)
+      officialDanger: chain.officialDanger ?? null,
       stationName:  chain.stationName,
       distKm:       chain.distKm,
       repDate:      chain.repDate,
@@ -1273,7 +1279,12 @@ function calculateFWI(w, prev = STARTUP) {
     const isi = w.isi ?? _isi(w.ffmc, w.wind ?? 0);
     const bui = w.bui ?? _bui(w.dmc ?? 0, w.dc ?? 0);
     const fwi = w.fwi ?? _fwi(isi, bui);
-    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
+    // An agency's own published rating (BCWS DANGER_RATING) takes precedence over
+    // the FWI-derived class; dangerSource records which one is shown.
+    const official = w.officialDanger ?? null;
+    return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi,
+             danger: official ?? dangerRatingProv(fwi),
+             dangerSource: official ? 'official' : 'fwi', weather: w };
   }
   // Van Wagner equations — spring startup constants when no carry-over available.
   // Clamp sensor/NWP inputs to physical ranges (as cffdrs does): RH > 100 or
@@ -1285,7 +1296,7 @@ function calculateFWI(w, prev = STARTUP) {
   const isi  = _isi(ffmc, w.wind);
   const bui  = _bui(dmc, dc);
   const fwi  = _fwi(isi, bui);
-  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), weather: w };
+  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), dangerSource: 'fwi', weather: w };
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */

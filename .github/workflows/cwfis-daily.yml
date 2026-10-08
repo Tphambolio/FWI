@@ -146,6 +146,7 @@ jobs:
                 rain: num(f[c('PRECIPITATION')]),
                 ffmc: num(f[c('FINE_FUEL_MOISTURE_CODE')]), dmc: num(f[c('DUFF_MOISTURE_CODE')]), dc,
                 isi: num(f[c('INITIAL_SPREAD_INDEX')]), bui: num(f[c('BUILDUP_INDEX')]), fwi: num(f[c('FIRE_WEATHER_INDEX')]),
+                danger: num(f[c('DANGER_RATING')]),   // BCWS official daily danger class 1-5
               };
             }
             const n = Object.keys(stations).length;

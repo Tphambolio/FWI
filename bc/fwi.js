@@ -569,6 +569,10 @@ const BCWS_STATION_COORDS = {
   5916: [52.0830, -122.1217],
 };
 
+// BCWS daily danger rating classes (Datamart DANGER_RATING 1-5). BCWS derives
+// these with its own rating tables — not from FWI alone.
+const BCWS_DANGER_CLASSES = { 1: 'Very Low', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Extreme' };
+
 async function fetchBCWSDatamart() {
   // The Datamart CSV (www.for.gov.bc.ca) sends no CORS header, so browsers can't
   // read it. The daily Action mirrors today's noon-PST rows — the only rows that
@@ -599,6 +603,7 @@ async function fetchBCWSDatamart() {
           rain: r.rain ?? 0,
           stationName: r.name,
           month: Number(today.slice(5, 7)),
+          officialDanger: BCWS_DANGER_CLASSES[r.danger] ?? null, // BCWS's own rating, not FWI-derived
           fwiFromCWFIS: true,
         };
       }
@@ -1058,6 +1063,7 @@ const PROVINCE = {
   localOffset: 7,        // hours behind UTC for local daylight time (PDT) — Today/Tomorrow, 16:00 peak burn
   noonUTC: 20,           // UTC hour of noon LST (CFFDRS observation hour)
   peakUTC: 23,           // UTC hour of 16:00 PDT peak burn
+  dangerScaleNote: 'FWI-based approximation of BC danger classes; BCWS issues the official rating from its own tables', // summary-row tooltip: what the FWI-derived danger class is
   tzLabel: 'PDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Vancouver', // IANA zone for map popup obs times
   // ── Data tiers ──
