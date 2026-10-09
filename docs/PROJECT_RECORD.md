@@ -67,6 +67,12 @@ with today's weather.
 | 2026-10-08 | Forecast chain: ECMWF noon-LST values first; NAEFS medians only beyond the ECMWF horizon | NAEFS max_temp/min_rh biased the chain dry |
 | 2026-10-08 | Slope via the cffdrs wind–slope vector; site terrain from map pin (DEM) or manual entry | Previously ROS × spread factor with no direction, and never used |
 | 2026-10-08 | Pyra audience = firefighters / ops chiefs / ICS teams; no RPAS panel | Owner direction |
+| 2026-10-09 | After 16:00 local the station page's primary card and headline show tomorrow's peak burn; the right card shows the day after; today's passed peak stays as one reference line (`6182985`) | Owner: "make it make sense after 1600 for the ops chief" — evening work is planning the next operational period |
+| 2026-10-09 | The ICS station briefing prints from the station page; after 16:00 it leads with the next operational period, and it carries the hourly shift table and the second fuel (`6182985`, `dedfb2f`) | FBAN UAT: the briefing lacked the shift outlook and fuel B; the evening print described a passed peak |
+| 2026-10-09 | Shared `?stn=` links, first visits and GPS-nearest use the station's own fuel (AB); a returning user's saved fuel survives a reload (`5eb6364`) | Phone UAT: a fresh phone showed C2 at prairie stations (Hussar HFI 6, 33,997 kW/m) |
+| 2026-10-09 | FSB builder pre-ticks stations within 60 km of the incident station, with a live count (`e82afa2`) | Whole-sector pre-tick (58 stations) was invisible, so ticking local stations removed them |
+| 2026-10-09 | Map clusters take the worst FWI danger inside; still-loading clusters are neutral grey; the map fits the station network (`2765420`, `e82afa2`) | Extreme southern stations were hidden behind neutral bubbles at a cropped edge |
+| 2026-10-09 | Every FWI on the briefing names its basis ("daily, noon LST", or "stepped with 16:00 forecast weather, pre-noon") (`dedfb2f`) | Owner rule: no unlabelled FWI numbers |
 
 ## 4. Science implementation and references
 
@@ -123,12 +129,12 @@ retrieved 2026-10-08).
 
 | Suite | Command | What it checks |
 |---|---|---|
-| Unit / regression (198 tests) | `node --test tests/*.test.mjs` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts |
+| Unit / regression (204 tests) | `node --test tests/*.test.mjs` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view |
 | Engine audit (492 checks) | `node tests/calc_audit.mjs` | Equation-level audit and invariants |
 | Parity (108 checks) | `node tests/bc_parity.mjs` | Single-source science core; BC-specific functions |
 | Live chain / API | `node tests/live_chain_test.mjs`, `node tests/live_api_test.mjs` | Real network: Open-Meteo, CWFIS, SWOB, NAEFS |
 | Browser smoke (11 pages) | `python3 tests/browser_smoke.py` | Pages load with data, no JS errors |
-| Deep E2E (161 checks) | `python3 tests/e2e_deep.py` | FWI components, FBP, no NaN, interactions |
+| Deep E2E (185 checks) | `python3 tests/e2e_deep.py` | FWI components, FBP, no NaN, interactions, Trends content, unique stations, fresh-phone shared-link fuel + 390 px fit, ICS briefing print → PDF (AB + BC) |
 | Everything | `bash tests/run_all.sh` | All of the above |
 
 The browser suites target the live site by default. Set
@@ -136,8 +142,27 @@ The browser suites target the live site by default. Set
 test a local build first. CI runs the unit, audit and parity suites on every push.
 
 **Per-file unit tests:**
-- science 18, tiers 33, labels 26, dates 24, chain 22, alerts 15
-- spread 10, slope 12, carryover 10, outlook 8, phenology 8, fmc 6, map 6
+- science 18, tiers 33, labels 26, dates 24, chain 22, alerts 17
+- spread 10, slope 12, carryover 10, outlook 8, phenology 8, fmc 6, map 6, opsview 4
+
+Last full run 2026-10-09 against live v144: unit 204/0, audit 492/0, parity 108/0,
+E2E 185/0, smoke 11/0.
+
+**UAT 2026-10-09 (FBAN walk-through, `docs/uat/2026-10-09/`):** the scenario was a grass fire near Hussar AGDM, using O1a/O1b fuels and 95% curing. Clients were desktop Chrome plus iPhone 14 and Pixel 7 emulation (portrait and landscape). The run produced three PDFs from live v144:
+- the ICS station briefing at 18:00, leading with Saturday's operational period;
+- the ICS station briefing in the morning, leading with today;
+- the Fire Safety Briefing for the 9 stations within 60 km.
+
+Found and fixed in v140–v144:
+- The Trends page was blank because of a `naefsSt` ReferenceError, a regression from `30d838d`.
+- Clusters hid danger.
+- Embedded maps captured page scroll.
+- A station was duplicated.
+- The evening view described a peak that had already passed.
+- Shared links used the wrong fuel.
+- Phone landscape was mostly header.
+- The briefing lacked the shift table and fuel B.
+- The FSB builder pre-ticked stations out of sight.
 
 **Oracle provenance:** `tests/reference.mjs` contains independent JS ports of
 the cffdrs R functions: FWI codes, hourly FFMC, FBP ROS/SFC/TFC/HFI, FMC with
@@ -146,18 +171,27 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 ## 6. Open items
 
-- [ ] Verify printed briefing on the EOC printer (colour + greyscale) and the phone UI (menu, sticky summary row, outlook).
-- [ ] Confirm the BCWS official danger chip after the first mirror carrying `danger` (Action run 2026-10-08 evening).
-- [ ] Configure alert delivery (recipients, stations, thresholds) before enabling `tools/alerts` + OpenClaw cron.
+- [ ] Verify printed briefing on the EOC printer (colour + greyscale), and the phone UI on a real handset (emulation passed 2026-10-09).
+- [x] BCWS official danger chip confirmed on the live BC station page (2026-10-09).
+- [x] Alert delivery configured: WhatsApp via OpenClaw, daily 14:30 cron, quiet mode (2026-10-09, `eb45e98`).
+- [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
+- [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 
 ## 7. Work log (commits since the 2026-10-06 review)
 
-<!-- generated: git log --since=2026-10-05 -->
+<!-- generated: git log --since=2026-10-05 --no-merges (CWFIS cache bot commits excluded) -->
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-10-09 | `e82afa2` | fix(uat): FSB builder pre-ticks the local stations visibly; map/trends phone polish |
+| 2026-10-09 | `5eb6364` | fix(mobile): shared links use the station's fuel; usable phone landscape |
+| 2026-10-09 | `6182985` | feat(ops): after 16:00 the station page and ICS briefing lead with the next operational period |
+| 2026-10-09 | `2765420` | fix: Trends page blank (naefsSt ReferenceError); map shows worst danger; duplicate station |
+| 2026-10-08 | `eb45e98` | feat(alerts): daily cron wrapper (run-daily.sh) + scheduling notes |
+| 2026-10-08 | `84cd8d8` | feat(alerts): --test mode and verbatim channel delivery |
+| 2026-10-08 | `1656a72` | docs: project record — decisions, science references, data sources, testing, work log |
 | 2026-10-08 | `9456971` | feat: operational-period outlook (hourly fire behaviour for ICS planning) |
 | 2026-10-08 | `9e561cc` | feat: site terrain (slope/aspect) for station-page fire behaviour |
 | 2026-10-08 | `439d08d` | science: slope via the cffdrs wind–slope vector (ST-X-3 Eqs. 39-51) |
@@ -190,3 +224,11 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 | 2026-10-07 | `6829f22` | feat: seasonal D1/D2 + M1/M2 fuels; flag yesterday's CWFIS on the map |
 | 2026-10-06 | `39189c9` | fix: use daily carry-over when CWFIS is empty; correct chain dating |
 | 2026-10-05 | `d6b4e9f` | fix: Edmonton fuel raster legend used the wrong code scheme |
+
+## 8. Internal reports and validation results
+
+| Date | Path | What |
+|---|---|---|
+| 2026-10-09 | `docs/uat/2026-10-09/ICS_station_briefing_Hussar_evening_1800.pdf` | UAT: ICS station briefing at 18:00 MDT (clock-shifted), leads with the next operational period |
+| 2026-10-09 | `docs/uat/2026-10-09/ICS_station_briefing_Hussar_morning_now.pdf` | UAT: ICS station briefing at 08:30 MDT, leads with today |
+| 2026-10-09 | `docs/uat/2026-10-09/FSB_Hussar_area.pdf` | UAT: Fire Safety Briefing, 9 stations within 60 km of Hussar AGDM |
