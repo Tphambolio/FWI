@@ -870,7 +870,7 @@ function _renderPeakSummary(o) {
   const fwi = _fwi(isi, _bui(o.dmc, o.dc));
   const danger = dangerRatingProv(fwi);
   const t = _dangerTok(danger);
-  const when = o.peak ? `16:00 ${PROVINCE.tzLabel} peak burn` : 'current weather (peak-burn forecast loading…)';
+  const when = o.peak ? `${o.dayLabel ? o.dayLabel + ' ' : ''}16:00 ${PROVINCE.tzLabel} peak burn` : 'current weather (peak-burn forecast loading…)';
   // Agency rating (BCWS DANGER_RATING) when today's chain came from the agency —
   // shown beside the FWI-derived class, never replacing the 16:00 headline.
   const official = _lastFWI?.dangerSource === 'official' ? _lastFWI.danger : null;
@@ -903,9 +903,10 @@ function _renderSummaryProv() {
   set('fwi-summary-age', provenanceChipHTML(fresh));
   set('fwi-summary-src',
     `<span class="pyra-chip" title="${_esc(fresh.detail)}" style="${PROV_LEVEL_STYLE.neutral}">${fresh.network}</span>`);
-  set('fwi-today-prov', `${provenanceChipHTML(fresh, true)} <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="${_esc(fresh.detail)}">${fresh.network}</span>`);
+  if (!_primaryIsForecast) set('fwi-today-prov', `${provenanceChipHTML(fresh, true)} <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="${_esc(fresh.detail)}">${fresh.network}</span>`);
 }
 let _summaryTimer = null;
+let _primaryIsForecast = false; // Today card shows tomorrow's peak (after 16:00 local)
 
 
 /** Re-run FBP with cached last weather/FWI when fuel picker changes. */
@@ -2799,9 +2800,11 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
  * as the Today/Tomorrow cards.
  */
 let _opsHourly = null;   // { key, hours, dayCodes }
+let _opsPeriods = null;   // last rendered shift summaries (printed briefing)
 async function buildOpsOutlook() {
   const root = document.getElementById('fwi-ops-outlook');
   if (!root) return;
+  _opsPeriods = null;   // never print a previous station's shifts
   const body = document.getElementById('fwi-ops-body');
   const note = document.getElementById('fwi-ops-note');
   if (_lastFWI?.ffmc == null) { if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">Waiting for today\'s fuel-moisture codes…</p>'; return; }
@@ -2835,6 +2838,7 @@ async function buildOpsOutlook() {
     { curing: _savedCuring(), ps: _savedPS(), ..._terrainOpts(), lat: _stationLat, lng: _stationLng, fromMs: nowH, toMs: nowH + 47 * 3600000 });
   if (!rows.length) { if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">No hourly forecast for the next 48 h.</p>'; return; }
   const periods = summariseOperationalPeriods(rows).slice(0, 4);
+  _opsPeriods = { periods, fuels, slope: _siteTerrain.slope, obsDate: _opsHourly.start.obsDate };
   const tz = PROVINCE.tzName;
   const hh = ms => new Date(ms).toLocaleTimeString('en-CA', { hour: '2-digit', hour12: false, timeZone: tz }).slice(0, 2);
   const fuelName = c => FUEL_TYPES[c]?.name || c;
@@ -3782,6 +3786,39 @@ async function printStationBriefing() {
   const d1pw = d1d?.peak || d1d || {};
   const d1fbp = d1r?.fbp;
   const tomorrowDate = d1r?.label || 'D+1';
+  // After today's 16:00 peak the briefing is for the next operational period:
+  // that block leads, and today's sections are kept as a labelled reference.
+  const _pTodayIdx = fDays.findIndex(d => d._ts && _localDateStr(d._ts) === _pTodayLocal);
+  const peakPassed = fDays.length > 0 && _pTodayIdx >= 0 && _nextPeakDayIdx(fDays) > _pTodayIdx && !!d1r;
+  const opPeriodLine = peakPassed
+    ? `<strong>${tomorrowDate} 0600–1800 ${PROVINCE.tzLabel}</strong> (next operational period — today's 16:00 peak has passed)`
+    : `${today} 0600–1800 ${PROVINCE.tzLabel}`;
+  // Shift outlook (hourly FFMC chain) from the station page, when it has rendered
+  const fuelNm = c => FUEL_TYPES[c]?.name || c;
+  const shiftRows = (_opsPeriods?.periods || []).map((p, i) => {
+    const pk = p.peak, cl = pk ? hfiClassInfo(pk.hfi) : null;
+    const wnd = x => x ? `${x.from}–${x.to} (${x.hours} h)` : '—';
+    return `<tr style="background:${i % 2 ? '#f9f9f9' : '#fff'}">
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-weight:700">${p.shift} · ${p.label} <span style="font-weight:400;color:#666">${p.shift === 'Day' ? '06–18' : '18–06'}</span></td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${cl ? `<span style="display:inline-block;min-width:20px;padding:1px 6px;border-radius:3px;${hfiChipStyle(cl.num)};font-weight:900;font-size:9pt">${cl.num}</span> ${cl.label}` : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${pk ? `${pk.at} · ${Math.round(pk.hfi).toLocaleString('en-CA')} kW/m` : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-size:8pt">${pk ? fuelNm(pk.fuel) : '—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${wnd(p.cls3)}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${wnd(p.cls4)}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;font-size:8pt">${cl ? cl.desc : ''}</td>
+    </tr>`;
+  }).join('');
+  const shiftSection = shiftRows ? `
+<div class="section" style="page-break-inside:avoid">
+  <div class="section-title" style="background:#1a3a5c">Operational Periods — Hourly Fire Behaviour Outlook · ${_opsPeriods.fuels.map(fuelNm).join(' / ')}</div>
+  <div class="section-body" style="padding:0">
+    <table>
+      <thead><tr><th style="text-align:left">Shift</th><th>Peak HFI class</th><th>Peak (time · kW/m)</th><th>Fuel</th><th>HFI ≥ 3</th><th>HFI ≥ 4</th><th style="text-align:left">Tactics</th></tr></thead>
+      <tbody>${shiftRows}</tbody>
+    </table>
+    <p style="font-size:7.5pt;color:#888;margin:4px 8px">Hourly FFMC (Van Wagner 1977) from the ${_opsPeriods.obsDate} noon-LST chain · ECMWF hourly weather · worst of the selected fuels${_opsPeriods.slope ? ` · site slope ${_opsPeriods.slope}%` : ''}.</p>
+  </div>
+</div>` : '';
   const d1HfiRating = !d1fbp ? '—' : d1fbp.hfi >= 4000 ? 'EXTREME' : d1fbp.hfi >= 2000 ? 'VERY HIGH' : d1fbp.hfi >= 500 ? 'HIGH' : 'LOW';
   const d1HfiColor  = !d1fbp ? '#333' : d1fbp.hfi >= 10000 ? '#cc2200' : d1fbp.hfi >= 4000 ? '#c05000' : d1fbp.hfi >= 2000 ? '#a07800' : d1fbp.hfi >= 500 ? '#1e6b35' : d1fbp.hfi >= 10 ? '#1a6a8a' : '#1a3a7a';
   const d1EscapeNote = d1fbp && d1fbp.hfi >= 4000
@@ -3853,11 +3890,12 @@ async function printStationBriefing() {
   <p style="font-size:8pt;color:#555;margin:0 0 2px">Pyra (unofficial — verify with your FBAN / agency) · CFFDRS FWI + FBP (ST-X-3, cffdrs)</p>
   <p class="header-meta">
     Station: <strong>${stationDisplayName}</strong> &nbsp;·&nbsp; ${Math.abs(lat).toFixed(4)}°N ${Math.abs(lng).toFixed(4)}°W<br>
-    Operational Period: ${today} 0600–1800 ${PROVINCE.tzLabel}<br>
+    Operational Period: ${opPeriodLine}<br>
     Prepared: ${prepared} &nbsp;·&nbsp; Source: ${srcLabel}
   </p>
 </div>
 
+${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;margin:4px 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Today — for reference (16:00 peak burn has passed)</p>` : ''}
 <div class="section">
   <div class="section-title">${wxIsPeak ? `Today's Weather — 16:00 ${PROVINCE.tzLabel} forecast` : 'Current Conditions'}</div>
   <div class="section-body">
@@ -3913,7 +3951,7 @@ async function printStationBriefing() {
   </div>
 </div>
 
-${d1Section}
+${peakPassed ? '' : d1Section + shiftSection}
 
 <div class="section">
   <div class="section-title">Forecast Outlook — Fire Behaviour by Day · ${fuelCode} — ${fuelName} · Peak ~16:00 ${PROVINCE.tzLabel}</div>
@@ -4468,14 +4506,40 @@ async function buildD1Card() {
   const _nowLocal   = _localDateStr();
   const todayIdx    = days.findIndex(d => d._ts && _localDateStr(d._ts) === _nowLocal);
   const tomorrowIdx = days.findIndex(d => d._ts && _localDateStr(d._ts) > _nowLocal);
+  // Ops view: once today's 16:00 peak burn has passed, the left (primary) card
+  // and the headline move to tomorrow's peak — the next operational period an
+  // ops chief is planning for — and the right card to the day after. Today's
+  // passed peak stays as one reference line on the primary card.
+  const nextIdx    = _nextPeakDayIdx(days);
+  const peakPassed = todayIdx >= 0 && nextIdx > todayIdx && !!days[nextIdx];
+  const primaryIdx = peakPassed ? nextIdx : todayIdx;
+  _primaryIsForecast = peakPassed;
+  const tz = PROVINCE.tzLabel;
+  const shortDay = i => days[i]?.label || '';   // e.g. "Fri, Oct 9"
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setTxt('fwi-today-peak-label', peakPassed
+    ? `Next Peak Burn · Tomorrow ${shortDay(primaryIdx)} · ~16:00 ${tz}`
+    : `Today · Peak Burn · ~16:00 ${tz}`);
+  setTxt('fwi-tomorrow-toggle-label', peakPassed ? 'Day after' : 'Tomorrow');
+  if (peakPassed) {
+    const pr  = (_lastFWI?.ffmc != null) ? results[todayIdx] : null;
+    const pcl = pr?.fbp ? hfiClassInfo(pr.fbp.hfi) : null;
+    const past = pr ? ` (FWI ${pr.fwi.toFixed(1)}${pcl ? `, HFI ${pcl.num} · ${Math.round(pr.fbp.hfi).toLocaleString()} kW/m in ${FUEL_TYPES[_savedFuelCode()]?.name || _savedFuelCode()}` : ''})` : '';
+    setTxt('fwi-today-desc', `Today's 16:00 peak has passed${past}. Planning view for the next operational period: tomorrow's fuel-moisture codes, carried forward from today's observation, with the forecast 16:00 weather (ECMWF).`);
+    const tp = document.getElementById('fwi-today-prov');
+    if (tp) tp.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="Forecast for tomorrow's 16:00 peak burn: ECMWF weather (Open-Meteo) on the chain carried forward from today's observed codes">FORECAST</span> <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">ECMWF</span>`;
+  } else {
+    setTxt('fwi-today-desc', "Today at the 16:00 peak burn: today's fuel-moisture codes with the forecast 16:00 weather shown in this row (ECMWF).");
+    _renderSummaryProv();
+  }
 
   // Populate LEFT card (today peak burn).
   // Weather row shows the same 16:00 values the card's FBP uses — today's ECMWF
   // peak-burn hour from fetchForecastDays (exact LST-dated hours) — so the row and
   // the fire behaviour below it can't disagree. Falls back to the latest
   // observation only if the forecast has no peak values for today.
-  if (todayIdx >= 0) {
-    const t0pw = days[todayIdx]?.peak || _lastWeather || days[todayIdx] || {};
+  if (primaryIdx >= 0) {
+    const t0pw = days[primaryIdx]?.peak || _lastWeather || days[primaryIdx] || {};
     const setW = (attr, val) => { const el = document.querySelector(`[data-fwi="${attr}"]`); if (el) el.textContent = val; };
     setW('temp', `${(+(t0pw.temp)||0).toFixed(1)}°C`);
     setW('rh',   `${Math.round(+(t0pw.rh)||0)}%`);
@@ -4511,8 +4575,8 @@ async function buildD1Card() {
     };
     // Show today's FBP only when the FWI chain has real data; otherwise N/A
     // (consistent with the main wireDOM/wireFBP guard for null ffmc).
-    const todayFBPA = (_lastFWI?.ffmc != null) ? results[todayIdx]  : null;
-    const todayFBPB = (_lastFWI?.ffmc != null) ? resultsB?.[todayIdx] : null;
+    const todayFBPA = (_lastFWI?.ffmc != null) ? results[primaryIdx]  : null;
+    const todayFBPB = (_lastFWI?.ffmc != null) ? resultsB?.[primaryIdx] : null;
     populateTodaySection('-a', todayFBPA);
     populateTodaySection('-b', todayFBPB);
     // Summary row = exactly the inputs these Today cards just rendered:
@@ -4522,14 +4586,16 @@ async function buildD1Card() {
         ffmc: todayFBPA.ffmc, dmc: todayFBPA.dmc, dc: todayFBPA.dc,
         wind: todayFBPA.peakWeather?.wind ?? todayFBPA.weather?.wind ?? 10,
         fbpA: todayFBPA.fbp, fbpB: todayFBPB?.fbp || null, fuelA: fuelA0, fuelB: fuelB0, peak: true,
+        dayLabel: peakPassed ? `tomorrow (${shortDay(primaryIdx)})` : null,
       });
     }
   }
 
-  // RIGHT card — always tomorrow
-  const idx = tomorrowIdx >= 0 ? tomorrowIdx : (todayIdx >= 0 ? todayIdx + 1 : 0);
+  // RIGHT card — tomorrow, or the day after once today's peak has passed
+  const idx = peakPassed ? primaryIdx + 1
+            : tomorrowIdx >= 0 ? tomorrowIdx : (todayIdx >= 0 ? todayIdx + 1 : 0);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = `Tomorrow · Peak Burn · ~16:00 ${PROVINCE.tzLabel}`;
+  if (labelEl) labelEl.textContent = `${peakPassed ? 'Day After' : 'Tomorrow'} · Peak Burn · ~16:00 ${PROVINCE.tzLabel}`;
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 
