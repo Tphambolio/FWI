@@ -525,6 +525,28 @@ def run_regional_unique(browser, url, label):
         page.close()
 
 
+def run_deeplink_fuel(browser, label):
+    """A shared ?stn= link opened on a fresh phone (no saved settings) must use
+    the station's own fuel — the province default C2 at a prairie station made
+    the headline HFI 6 Catastrophic. Also checks the page fits a phone width."""
+    print(f"\n{'─'*60}")
+    print(f"  {label}")
+    ctx = browser.new_context(viewport={'width': 390, 'height': 664}, is_mobile=True, has_touch=True,
+                              device_scale_factor=3, timezone_id='America/Edmonton')
+    page = ctx.new_page()
+    try:
+        page.goto(f"{AB_URL}?stn=Hussar%20AGDM", wait_until='load', timeout=NETWORK_WAIT)
+        page.wait_for_timeout(PAINT_WAIT)
+        fa = page.locator('#fwi-fuel-picker').input_value()
+        p(fa.startswith('O1'), 'deep link uses the station fuel (grass), not C2', fa)
+        sw = page.evaluate("() => document.documentElement.scrollWidth - innerWidth")
+        p(sw <= 0, 'no horizontal scroll at 390 px', f'overflow {sw}px')
+    except Exception as e:
+        p(False, f'error ({label})', str(e))
+    finally:
+        ctx.close()
+
+
 print(f"\n{'═'*60}")
 print("  Pyra FWI  —  Deep E2E Test Suite")
 print(f"{'═'*60}")
@@ -551,6 +573,7 @@ with sync_playwright() as pw:
     run_load_page(browser, f"{BASE}/forecast_trends/code.html",      'AB forecast trends')
     run_load_page(browser, f"{BASE}/bc/regional_summary/code.html",  'BC regional summary')
     run_load_page(browser, f"{BASE}/bc/forecast_trends/code.html",   'BC forecast trends')
+    run_deeplink_fuel(browser, 'AB shared link on a fresh phone — station fuel')
     run_trends_page(browser, f"{BASE}/forecast_trends/code.html",    'AB forecast trends')
     run_trends_page(browser, f"{BASE}/bc/forecast_trends/code.html", 'BC forecast trends')
     run_regional_unique(browser, f"{BASE}/regional_summary/code.html",    'AB regional summary')

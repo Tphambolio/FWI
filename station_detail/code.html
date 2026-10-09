@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="../fwi-theme.js?v=132"></script>
+<script src="../fwi-theme.js?v=133"></script>
 <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -706,7 +706,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=141"></script><script src="../core/fwi-core.js?v=141"></script>
+<script src="../fwi.js?v=142"></script><script src="../core/fwi-core.js?v=142"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
@@ -724,7 +724,8 @@
     chev.textContent = nowHidden ? 'expand_more' : 'expand_less';
   });
 
-  FWI.buildStationPicker();
+  // FWI.buildStationPicker() runs after the saved fuels are restored (end of
+  // script), so a station's own fuel can apply on a shared link / first visit.
 
   // ── Print + compare buttons ───────────────────────────────────────────
   document.getElementById('fwi-print-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
@@ -844,6 +845,8 @@
   _syncPSVisibility();
   _updateCuringDisplay(_savedPC);
   _updatePSDisplay(_savedPS_);
+
+  FWI.buildStationPicker();
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0baf6e1d2ac84db0be3fa0e961d4c4b9"}'></script><!-- End Cloudflare Web Analytics -->
 </body></html>

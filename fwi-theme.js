@@ -177,3 +177,18 @@ tailwind.config = {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();
+
+// Short screens (a phone held sideways, a small laptop with display scaling):
+// a pinned header + summary + bottom nav left almost no room for content.
+// Below 520 px of height the header scrolls away and the nav becomes one slim row.
+(function () {
+  if (typeof document === 'undefined') return;
+  const st = document.createElement('style');
+  st.textContent = `@media (max-height: 520px) {
+    header.sticky { position: static !important; }
+    nav[aria-label="Primary"].fixed { padding: 2px 8px calc(2px + env(safe-area-inset-bottom)) !important; }
+    nav[aria-label="Primary"].fixed > a { flex-direction: row !important; gap: 6px; min-height: 40px !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+    nav[aria-label="Primary"].fixed .material-symbols-outlined { font-size: 20px !important; }
+  }`;
+  (document.head || document.documentElement).appendChild(st);
+})();

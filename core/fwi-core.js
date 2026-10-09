@@ -2036,7 +2036,11 @@ function buildStationPicker() {
     sel.appendChild(opt);
   });
 
-  function loadStation(save = true) {
+  // autoFuel: set fuel A/B from the station table (AB). On for a picked station,
+  // a shared ?stn= link to another station, a first visit and the GPS-nearest
+  // station; off when reloading a returning user's saved station, so their own
+  // fuel choice survives a reload.
+  function loadStation(save = true, autoFuel = save) {
     const [lat, lng] = sel.value.split(',').map(Number);
     const name = sel.options[sel.selectedIndex].textContent;
     if (save) {
@@ -2062,7 +2066,7 @@ function buildStationPicker() {
     if (stLabel) stLabel.textContent = name;
     // Auto-set fuel type from station lookup; sync both pickers.
     // PROVINCE.autoFuelOnSelect — AB only; BC respects the user's selection.
-    if (PROVINCE.autoFuelOnSelect) {
+    if (PROVINCE.autoFuelOnSelect && autoFuel) {
       const derivedFuel = _seasonalFuel(PROVINCE.stationFuel(name, lat), lat);
       ['fwi-fuel-picker', 'fwi-fuel-picker-mobile'].forEach(id => {
         const fp = document.getElementById(id);
@@ -2077,6 +2081,9 @@ function buildStationPicker() {
           const el = document.getElementById(id); if (el) el.value = alt;
         });
       }
+      // Show the curing / percent-conifer rows the new fuels need
+      if (typeof _syncCuringVisibility === 'function') _syncCuringVisibility();
+      if (typeof _syncPSVisibility === 'function') _syncPSVisibility();
     }
     initFWI(lat, lng, name);
     buildHourlyChart(lat, lng, name);
@@ -2100,7 +2107,7 @@ function buildStationPicker() {
       const val = `${nearest.lat},${nearest.lng}`;
       sel.value = val;
       localStorage.setItem(PROVINCE.storageKeys.station, val);
-      loadStation(false);
+      loadStation(false, true);
     }
   }
   _selectNearestStation = selectNearest; // expose for pin-drop map
@@ -2119,8 +2126,12 @@ function buildStationPicker() {
       stationList.find(s => norm(s) === q) ||
       stationList.find(s => norm(s).startsWith(q)) ||
       stationList.find(s => norm(s).includes(q));
+    const savedStn  = localStorage.getItem(PROVINCE.storageKeys.station);
+    const savedFuel = localStorage.getItem(PROVINCE.storageKeys.fuelA);
     if (stnMatch && selectByValue(`${stnMatch.lat},${stnMatch.lng}`)) {
-      loadStation(false); // don't overwrite saved station
+      // don't overwrite saved station; the linked station's fuel unless it is
+      // the user's own saved station with a saved fuel
+      loadStation(false, !savedFuel || sel.value !== savedStn);
       return;
     }
   }
@@ -2128,12 +2139,12 @@ function buildStationPicker() {
   const saved = localStorage.getItem(PROVINCE.storageKeys.station);
   if (selectByValue(saved)) {
     // Returning user — load saved station immediately, no geo prompt
-    loadStation(false);
+    loadStation(false, !localStorage.getItem(PROVINCE.storageKeys.fuelA));
   } else if (navigator.geolocation) {
     // First visit — show the province default station as placeholder, then auto-detect
     const dflt = _defaultPickerOption(sel);
     if (dflt) sel.value = dflt.value;
-    loadStation(false);
+    loadStation(false, true);
     navigator.geolocation.getCurrentPosition(
       pos => selectNearest(pos.coords.latitude, pos.coords.longitude),
       ()  => loadStation(true),  // denied — save current default
