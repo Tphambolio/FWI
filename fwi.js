@@ -221,7 +221,6 @@ const STATION_FUEL_TYPES = {
   "Cowpar Lake Auto"              : "D1"  , // WMS: D-1 Leafless Aspen
   "Craigmyle AGCM"                : "D1"  , // WMS: D-1/D-2 Aspen
   "Crestomere AGCM"               : "O1a" , // WMS: O-1a Matted Grass
-  "Crestomere AGCM"               : "O1a" , // WMS: O-1a Matted Grass
   "Crowsnest"                     : "O1a" , // regional default (WMS: Non-fuel)
   "Del Bonita AGDM"               : "O1a" , // regional default (WMS: Non-fuel)
   "Delburne AGCM"                 : "O1a" , // WMS: O-1a Matted Grass
@@ -605,7 +604,6 @@ const ALBERTA_STATIONS = [
   { name: 'Standard AGCM',              lat: 51.228, lng: -112.982 },
   { name: 'Hussar AGDM',                lat: 51.191, lng: -112.503 },
   { name: 'Strathmore IMCIN',           lat: 51.039, lng: -113.290 },
-  { name: 'Crestomere AGCM',            lat: 52.733, lng: -113.903 },
   // ── Calgary ────────────────────────────────────────────────────────────────
   { name: 'Calgary Int\'l CS',          lat: 51.117, lng: -114.000 },
   { name: 'Calgary Springbank A',       lat: 51.100, lng: -114.367 },

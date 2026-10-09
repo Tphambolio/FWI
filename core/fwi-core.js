@@ -222,6 +222,7 @@ const DANGER_TOKENS = {
 };
 const _NO_DANGER = { fg: '#94a3b8', solid: '#94a3b8', on: '#0b1326' };
 function _dangerTok(d) { return DANGER_TOKENS[d] || _NO_DANGER; }
+const _DANGER_ORDER = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'];
 /** Inline style for a tinted danger chip on the dark UI. */
 function dangerChipStyle(d) {
   const t = _dangerTok(d);
@@ -1903,12 +1904,21 @@ const _EDM_ROUGH = { south: 53.33, north: 53.72, west: -113.72, east: -113.27 };
  * → switches to nearest CWFIS weather station.
  * Requires Leaflet 1.9.x to be loaded in the page <head>.
  */
+/** Page scroll must not be captured by an embedded map: wheel-zoom turns on
+ *  only after the user clicks/taps the map and off again when the pointer leaves. */
+function _wheelZoomOnClick(map) {
+  map.scrollWheelZoom.disable();
+  map.on('click focus', () => map.scrollWheelZoom.enable());
+  map.on('mouseout blur', () => map.scrollWheelZoom.disable());
+}
+
 function _initPinDropMap() {
   const container = document.getElementById('fwi-map-frame');
   if (!container || typeof L === 'undefined' || container._leaflet_id) return;
 
-  const map = L.map(container, { zoomControl: true, attributionControl: false });
+  const map = L.map(container, { zoomControl: true, attributionControl: false, minZoom: 3 });
   container._leafletMap = map;
+  _wheelZoomOnClick(map);
 
   // Esri World Imagery — satellite, no API key, no CSP issues
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -3106,7 +3116,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // Role + valid time for every forecast FWI on this page (owner rule: no
     // unlabelled FWI numbers). These are daily noon-LST chain values, not the
     // station page's 16:00 peak-burn headline.
-    const chainRole = naefsSt && /^NAEFS/.test(forecastSource) ? 'NAEFS ensemble chain' : 'ECMWF via Open-Meteo chain';
+    // fetchForecastDays names its source: ECMWF (optionally + NAEFS tail) or NAEFS-only fallback
+    const chainRole = /^NAEFS/.test(forecastSource || '') ? 'NAEFS ensemble chain' : 'ECMWF via Open-Meteo chain';
     const elRole = document.getElementById('fwi-peak-window-role');
     if (elRole) elRole.textContent = `${chainRole} · daily FWI, valid noon LST ${peakDay.label}`;
 
@@ -4049,7 +4060,14 @@ async function buildStationMap(containerId, mapOpts = {}) {
     center: mapOpts.center || PROVINCE.mapCenter,
     zoom:   mapOpts.zoom   || 5,
     zoomControl: true, attributionControl: true,
+    zoomSnap: 0.25, minZoom: 3,
   });
+  // Open on the whole station network — a fixed centre/zoom cropped southern
+  // Alberta (where the worst stations usually are) out of a short map.
+  if (!mapOpts.center && getStationList().length) {
+    map.fitBounds(L.latLngBounds(getStationList().map(s => [s.lat, s.lng])), { padding: [12, 12] });
+  }
+  _wheelZoomOnClick(map);
   // CARTO basemaps now require an API key — Esri Light Gray Canvas is keyless.
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community',
@@ -4066,14 +4084,22 @@ async function buildStationMap(containerId, mapOpts = {}) {
         disableClusteringAtZoom: 7,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
+        // A cluster takes the worst FWI danger of the stations inside it, so
+        // Extreme stations are never hidden behind a neutral bubble at low zoom.
         iconCreateFunction(cluster) {
           const n = cluster.getChildCount();
+          const worst = cluster.getAllChildMarkers()
+            .reduce((w, m) => (m.options.dangerRank ?? -1) > (w?.options.dangerRank ?? -1) ? m : w, null);
+          const danger = worst && worst.options.dangerRank >= 0 ? worst.options.danger : null;
+          const t = danger ? _dangerTok(danger) : null;
+          const bg = t ? t.solid : '#1e3a8a', fg = t ? t.on : '#7bd0ff';
           return L.divIcon({
             className: '',
-            html: `<div style="width:36px;height:36px;border-radius:50%;background:#1e3a8a;border:2px solid #7bd0ff;
+            html: `<div role="img" aria-label="${n} stations${danger ? ', worst ' + danger : ''}" title="${n} stations${danger ? ' · worst ' + danger : ''}"
+                   style="width:36px;height:36px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.85);
                    display:flex;align-items:center;justify-content:center;
-                   font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#7bd0ff;
-                   box-shadow:0 2px 8px rgba(0,0,0,0.5)">${n}</div>`,
+                   font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800;color:${fg};
+                   box-shadow:0 0 0 1.5px rgba(0,0,0,0.35),0 2px 8px rgba(0,0,0,0.5)">${n}</div>`,
             iconSize: [36, 36], iconAnchor: [18, 18],
           });
         },
@@ -4157,6 +4183,10 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const prov = _provenance(w, usedCachedPrev ? cachedPrevEntry : null);
       _mapStationCache.push({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge, prov });
       _updateStationTableRow({ name: s.name, lat: stnLat, lng: stnLng, navLat: s.lat, navLng: s.lng, result: r, fbp, srcBadge, prov });
+
+      // Danger on the marker so its cluster bubble can show the worst inside
+      markers[s.name].options.danger     = r.danger;
+      markers[s.name].options.dangerRank = _DANGER_ORDER.indexOf(r.danger);
 
       // Move marker to actual station position.
       // markerClusterGroup requires remove→setLatLng→add to re-index spatial position.

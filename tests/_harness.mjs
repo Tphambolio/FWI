@@ -150,13 +150,16 @@ export function makeLeaflet() {
     const o = {
       addTo: () => o, bindPopup: () => o, setPopupContent: () => o, setIcon: () => o,
       setLatLng: () => o, addLayer: () => o, removeLayer: () => o, on: () => o,
+      options: {},
     };
     return o;
   };
-  const map = { ...layer(), getZoom: () => 5, hasLayer: () => false };
+  const map = { ...layer(), getZoom: () => 5, hasLayer: () => false, fitBounds: () => map,
+    scrollWheelZoom: { enable() {}, disable() {} } };
   return {
     map: () => map, marker: layer, markerClusterGroup: layer, tileLayer: layer,
     layerGroup: layer, circleMarker: layer, divIcon: opts => ({ ...opts }),
+    latLngBounds: pts => ({ pts }),
   };
 }
 

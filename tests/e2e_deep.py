@@ -473,6 +473,58 @@ def run_load_page(browser, url, label):
         page.close()
 
 
+def run_trends_page(browser, url, label):
+    """
+    Forecast-trends content check. The page catches its own builder errors
+    (console.warn '[FWI Forecast]') and leaves every value at '—', so a load
+    check alone passed while the page was blank (naefsSt ReferenceError, v139).
+    Checks: the summary paragraph renders, the peak-window FWI is numeric, the
+    hero stats are filled, and no '[FWI Forecast]' warning was logged.
+    """
+    print(f"\n{'─'*60}")
+    print(f"  {label} — content")
+    warns = []
+    page = browser.new_page()
+    page.on('console', lambda m: warns.append(m.text) if m.type in ('warning', 'error') and '[FWI Forecast]' in m.text else None)
+    try:
+        page.goto(url, wait_until='load', timeout=NETWORK_WAIT)
+        try:
+            page.wait_for_function(
+                "() => { const t = document.getElementById('fwi-forecast-summary')?.textContent || '';"
+                " return t && !t.startsWith('Loading'); }", timeout=NETWORK_WAIT)
+        except PwTimeout:
+            pass
+        summary = page.locator('#fwi-forecast-summary').inner_text()
+        peak    = page.locator('#fwi-peak-window-fwi').inner_text().strip()
+        temp    = page.locator('#fwi-peak-temp').inner_text().strip()
+        p(not summary.startswith('Loading'), 'forecast summary rendered', summary[:80])
+        p(re.fullmatch(r'\d+(\.\d+)?', peak) is not None, 'peak-window FWI numeric', peak)
+        p(re.search(r'-?\d', temp) is not None, 'peak temp filled', temp)
+        p(not warns, 'no [FWI Forecast] builder error', '; '.join(warns)[:200])
+    except Exception as e:
+        p(False, f'error ({label})', str(e))
+    finally:
+        page.close()
+
+
+def run_regional_unique(browser, url, label):
+    """Each station appears once in the regional table (duplicate list entries
+    produced a second, empty 'No data' row)."""
+    print(f"\n{'─'*60}")
+    print(f"  {label} — station rows unique")
+    page = browser.new_page()
+    try:
+        page.goto(url, wait_until='load', timeout=NETWORK_WAIT)
+        page.wait_for_timeout(PAINT_WAIT)
+        names = page.evaluate("() => (typeof PROVINCE !== 'undefined' ? PROVINCE.stations : []).map(s => s.name)")
+        dups = sorted({n for n in names if names.count(n) > 1})
+        p(bool(names) and not dups, 'station list has no duplicates', ', '.join(dups) or f'{len(names)} stations')
+    except Exception as e:
+        p(False, f'error ({label})', str(e))
+    finally:
+        page.close()
+
+
 print(f"\n{'═'*60}")
 print("  Pyra FWI  —  Deep E2E Test Suite")
 print(f"{'═'*60}")
@@ -499,6 +551,10 @@ with sync_playwright() as pw:
     run_load_page(browser, f"{BASE}/forecast_trends/code.html",      'AB forecast trends')
     run_load_page(browser, f"{BASE}/bc/regional_summary/code.html",  'BC regional summary')
     run_load_page(browser, f"{BASE}/bc/forecast_trends/code.html",   'BC forecast trends')
+    run_trends_page(browser, f"{BASE}/forecast_trends/code.html",    'AB forecast trends')
+    run_trends_page(browser, f"{BASE}/bc/forecast_trends/code.html", 'BC forecast trends')
+    run_regional_unique(browser, f"{BASE}/regional_summary/code.html",    'AB regional summary')
+    run_regional_unique(browser, f"{BASE}/bc/regional_summary/code.html", 'BC regional summary')
 
     browser.close()
 
