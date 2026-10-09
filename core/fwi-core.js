@@ -3726,6 +3726,8 @@ async function printStationBriefing() {
     : 'Startup estimate (no carry-over available)';
   const provLine = `${prov.kind}${prov.age ? ' · ' + prov.age : ''} · ${prov.network}`;
   const wxIsPeak = (w?.source || '').includes('peak burn forecast');
+  // Pre-noon the day's codes are stepped with the 16:00 forecast weather, not a noon observation
+  const fwiWhen = wxIsPeak ? `stepped with 16:00 ${PROVINCE.tzLabel} forecast weather, pre-noon` : 'noon LST';
   const wxLabel = wxIsPeak ? `Weather (16:00 ${PROVINCE.tzLabel} forecast)` : (w?.source || '').startsWith('MSC') ? 'Weather (station obs)' : 'Weather (noon LST)';
   const fireSize = f => f?.area60 != null ? `${f.area60 < 10 ? f.area60.toFixed(1) : Math.round(f.area60).toLocaleString()} ha` : '—';
 
@@ -3832,7 +3834,15 @@ async function printStationBriefing() {
 </div>` : '';
   const d1HfiRating = !d1fbp ? '—' : d1fbp.hfi >= 4000 ? 'EXTREME' : d1fbp.hfi >= 2000 ? 'VERY HIGH' : d1fbp.hfi >= 500 ? 'HIGH' : 'LOW';
   const d1HfiColor  = !d1fbp ? '#333' : d1fbp.hfi >= 10000 ? '#cc2200' : d1fbp.hfi >= 4000 ? '#c05000' : d1fbp.hfi >= 2000 ? '#a07800' : d1fbp.hfi >= 500 ? '#1e6b35' : d1fbp.hfi >= 10 ? '#1a6a8a' : '#1a3a7a';
-  const d1EscapeNote = d1fbp && d1fbp.hfi >= 4000
+  // Second selected fuel for the same day (station page cache) — an ops chief
+  // needs both, and the worse of the two may be fuel B.
+  const fuelCodeB = _forecastCache.fuelCodeB;
+  const d1fbpB = fuelCodeB && fuelCodeB !== fuelCode && _forecastCache.fuelCode === fuelCode
+    ? _forecastCache.resultsB?.[_pd1Safe]?.fbp : null;
+  const d1FuelBLine = d1fbpB
+    ? `<div style="margin-top:4px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f7f9ff;font-size:9pt"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">Second fuel · ${fuelCodeB} — ${FUEL_TYPES[fuelCodeB]?.name || fuelCodeB} &nbsp;</span>${hfiBadge(d1fbpB.hfi)}<br><span style="font-size:8.5pt">${Math.round(d1fbpB.hfi).toLocaleString('en-CA')} kW/m · ROS ${d1fbpB.ros.toFixed(1)} m/min · flame ${d1fbpB.flameLength.toFixed(1)} m · ${d1fbpB.fireType} · 60-min size ${fireSize(d1fbpB)}</span></div>`
+    : '';
+  const d1EscapeNote = d1fbp && Math.max(d1fbp.hfi, d1fbpB?.hfi ?? 0) >= 4000
     ? `<p style="margin:8px 0 0;padding:6px 10px;background:#f8d7da;border-left:4px solid #c0392b;color:#721c24;font-weight:700;font-size:9pt">⚠ D+1 HFI ≥ 4,000 kW/m — potential for escaped fire tomorrow during peak burn period</p>` : '';
   const d1Section = d1r ? `
 <div class="section">
@@ -3840,7 +3850,7 @@ async function printStationBriefing() {
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">Weather (~16:00 ${PROVINCE.tzLabel})</span><br><span class="val">${(+d1pw.temp||0).toFixed(1)}°C / ${Math.round(d1pw.rh||0)}% RH / ${Math.round(d1pw.wind||0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val" style="color:${d1HfiColor}">${d1r.fwi.toFixed(1)} — ${d1r.danger}</span></p>
+      <p class="kv"><span class="label">FWI (daily, noon LST)</span><br><span class="val" style="color:${d1HfiColor}">${d1r.fwi.toFixed(1)} — ${d1r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${d1fbp ? d1fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val" style="color:${d1HfiColor}">${d1fbp ? Math.round(d1fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${d1fbp ? d1fbp.flameLength.toFixed(1) + ' m' : '—'}</span>${d1fbp ? `<br><span style="font-size:7pt;color:#777">${d1fbp.flameModel}</span>` : ''}</p>
@@ -3848,6 +3858,7 @@ async function printStationBriefing() {
       <p class="kv"><span class="label">Fire Type / CFB</span><br><span class="val">${d1fbp ? d1fbp.fireType + ' / ' + (d1fbp.cfb*100).toFixed(0) + '%' : '—'}</span></p>
     </div>
     ${d1fbp ? `<div style="margin-top:6px;padding:5px 8px;border-left:4px solid #1a3a5c;background:#f0f4ff"><span style="font-size:8pt;color:#555;text-transform:uppercase;letter-spacing:0.04em">FBP System HFI Class &nbsp;</span>${hfiBadge(d1fbp.hfi)}</div>` : ''}
+    ${d1FuelBLine}
     ${d1EscapeNote}
     <p style="font-size:7.5pt;color:#888;margin-top:4px">FWI chain: hour 12 (noon LST) · FBP peak: hour 16 (16:00 ${PROVINCE.tzLabel}) · ${fSrcLabel} · Forecast valid: ${tomorrowDate} · Prepared: ${prepared}</p>
   </div>
@@ -3908,7 +3919,7 @@ async function printStationBriefing() {
 
 ${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;margin:4px 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Today — for reference (16:00 peak burn has passed)</p>` : ''}
 <div class="section">
-  <div class="section-title">${wxIsPeak ? `Today's Weather — 16:00 ${PROVINCE.tzLabel} forecast` : 'Current Conditions'}</div>
+  <div class="section-title">${wxIsPeak ? `Today's Weather — 16:00 ${PROVINCE.tzLabel} forecast` : (w?.source || '').startsWith('MSC') ? "Today's Weather — station observation" : "Today's Weather — noon LST"}</div>
   <div class="section-body">
     <div class="grid-3">
       <p class="kv"><span class="label">Temp</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) + '°C' : '—'}</span></p>
@@ -3936,7 +3947,7 @@ ${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;ma
     </div>
     <div>
       <span class="danger-badge" style="background:${dc.bg};color:${dc.text}">${r.danger}</span>
-      <span style="font-size:8pt;color:#555;margin-left:6px">${r.dangerSource === 'official' ? 'Official BCWS daily danger rating' : `Daily FWI ${r.fwi.toFixed(1)} (noon LST) · FWI-based class — not an agency rating`} · ${provLine}</span>
+      <span style="font-size:8pt;color:#555;margin-left:6px">${r.dangerSource === 'official' ? 'Official BCWS daily danger rating' : `Daily FWI ${r.fwi.toFixed(1)} (${fwiWhen}) · FWI-based class — not an agency rating`} · ${provLine}</span>
     </div>
   </div>
 </div>
@@ -3949,7 +3960,7 @@ ${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;ma
   <div class="section-body">
     <div class="grid-2">
       <p class="kv"><span class="label">${wxLabel}</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
-      <p class="kv"><span class="label">FWI</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
+      <p class="kv"><span class="label">FWI (daily, ${fwiWhen})</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span>${fbp ? `<br><span style="font-size:7pt;color:#777">${fbp.flameModel}</span>` : ''}</p>

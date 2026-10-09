@@ -547,6 +547,32 @@ def run_deeplink_fuel(browser, label):
         ctx.close()
 
 
+def run_print_briefing(browser, url, label):
+    """The station page's 'Print ICS station briefing' button opens the
+    briefing: operational period line, next-period block, shift table, the
+    multi-day table and the signature block; rendered to PDF without error."""
+    print(f"\n{'─'*60}")
+    print(f"  {label}")
+    ctx = browser.new_context(viewport={'width': 1366, 'height': 850}, timezone_id='America/Edmonton')
+    page = ctx.new_page()
+    try:
+        page.goto(url, wait_until='load', timeout=NETWORK_WAIT)
+        page.wait_for_function("() => !document.getElementById('fwi-ops-body')?.textContent.includes('Loading')", timeout=NETWORK_WAIT)
+        page.wait_for_timeout(2000)
+        with page.expect_popup(timeout=NETWORK_WAIT) as pop:
+            page.locator('#fwi-station-print-btn').click()
+        w = pop.value
+        w.wait_for_load_state()
+        body = w.inner_text('body')
+        for k in ['Operational Period:', 'NEXT OPERATIONAL PERIOD', 'OPERATIONAL PERIODS — HOURLY', 'FORECAST OUTLOOK', 'Prepared by:']:
+            p(k.lower() in body.lower(), f'briefing has "{k}"')
+        p(len(w.pdf(format='Letter')) > 10000, 'briefing renders to PDF')
+    except Exception as e:
+        p(False, f'error ({label})', str(e))
+    finally:
+        ctx.close()
+
+
 print(f"\n{'═'*60}")
 print("  Pyra FWI  —  Deep E2E Test Suite")
 print(f"{'═'*60}")
@@ -574,6 +600,8 @@ with sync_playwright() as pw:
     run_load_page(browser, f"{BASE}/bc/regional_summary/code.html",  'BC regional summary')
     run_load_page(browser, f"{BASE}/bc/forecast_trends/code.html",   'BC forecast trends')
     run_deeplink_fuel(browser, 'AB shared link on a fresh phone — station fuel')
+    run_print_briefing(browser, f"{AB_URL}?stn=Hussar%20AGDM", 'AB print ICS station briefing')
+    run_print_briefing(browser, BC_URL, 'BC print ICS station briefing')
     run_trends_page(browser, f"{BASE}/forecast_trends/code.html",    'AB forecast trends')
     run_trends_page(browser, f"{BASE}/bc/forecast_trends/code.html", 'BC forecast trends')
     run_regional_unique(browser, f"{BASE}/regional_summary/code.html",    'AB regional summary')

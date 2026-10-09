@@ -521,7 +521,13 @@
 
 <!-- ── Operational-period outlook (hourly) ──────────────────────────────── -->
 <section id="fwi-ops-outlook" aria-labelledby="fwi-ops-title" class="mb-6 rounded-2xl p-5" style="background:#0f1829;border:1px solid #1e2740">
-  <h2 id="fwi-ops-title" class="text-xs font-bold uppercase tracking-widest text-slate-200">Operational period outlook · hourly fire behaviour</h2>
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h2 id="fwi-ops-title" class="text-xs font-bold uppercase tracking-widest text-slate-200">Operational period outlook · hourly fire behaviour</h2>
+    <button id="fwi-station-print-btn" type="button" title="Print the ICS station briefing for this station, fuels and terrain — next operational period, shift outlook and multi-day forecast"
+            class="no-print flex items-center gap-1.5 font-label text-[11px] font-bold uppercase tracking-wider px-3 min-h-[44px] md:min-h-[36px] rounded border border-[#e05030]/60 text-[#ff8a65] hover:bg-[#e05030]/10 transition-colors">
+      <span aria-hidden="true" class="material-symbols-outlined text-[15px]">print</span>Print ICS station briefing
+    </button>
+  </div>
   <p class="text-[12px] text-slate-300 mt-1 mb-3">When fire behaviour peaks in each shift, for the fuels and site terrain above — for IAP and resource planning.</p>
   <div id="fwi-ops-body" aria-live="polite"><p class="text-[12px] text-slate-300">Loading hourly outlook…</p></div>
   <p id="fwi-ops-note" class="text-[11px] text-slate-400 mt-3"></p>
@@ -706,7 +712,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=142"></script><script src="../core/fwi-core.js?v=142"></script>
+<script src="../fwi.js?v=143"></script><script src="../core/fwi-core.js?v=143"></script>
 <script>
   // ── Tomorrow toggle (mobile) ──────────────────────────────────────────
   document.getElementById('fwi-tomorrow-toggle')?.addEventListener('click', () => {
@@ -729,6 +735,7 @@
 
   // ── Print + compare buttons ───────────────────────────────────────────
   document.getElementById('fwi-print-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
+  document.getElementById('fwi-station-print-btn')?.addEventListener('click', () => FWI.printStationBriefing());
   document.getElementById('fwi-print-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
   document.getElementById('fwi-idw-toggle').addEventListener('click', () => {
     FWI._idwMode = !FWI._idwMode;
