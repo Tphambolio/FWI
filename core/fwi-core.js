@@ -4152,7 +4152,8 @@ async function buildStationMap(containerId, mapOpts = {}) {
             .reduce((w, m) => (m.options.dangerRank ?? -1) > (w?.options.dangerRank ?? -1) ? m : w, null);
           const danger = worst && worst.options.dangerRank >= 0 ? worst.options.danger : null;
           const t = danger ? _dangerTok(danger) : null;
-          const bg = t ? t.solid : '#1e3a8a', fg = t ? t.on : '#7bd0ff';
+          // Still loading → the same neutral grey as the loading pills (navy read as HFI class 1)
+          const bg = t ? t.solid : '#374151', fg = t ? t.on : '#cbd5e1';
           return L.divIcon({
             className: '',
             html: `<div role="img" aria-label="${n} stations${danger ? ', worst ' + danger : ''}" title="${n} stations${danger ? ' · worst ' + danger : ''}"

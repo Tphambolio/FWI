@@ -93,7 +93,7 @@
     <!-- Stations -->
     <div class="mb-4">
       <div class="flex items-center justify-between mb-2">
-        <p class="block text-[11px] uppercase tracking-widest text-slate-300">Weather Stations</p>
+        <p class="block text-[11px] uppercase tracking-widest text-slate-300">Weather Stations <span id="bf-stn-count" class="normal-case tracking-normal text-[#ff8a65] font-bold" aria-live="polite"></span></p>
         <div class="flex gap-2">
           <button type="button" onclick="selectAllStations()" class="min-h-[44px] px-2 text-[12px] text-[#7bd0ff] hover:underline">All</button>
           <button type="button" onclick="clearAllStations()" class="min-h-[44px] px-2 text-[12px] text-slate-300 hover:underline">None</button>
@@ -180,7 +180,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#e05030]/15 text-[#ff8a70] font-bold" href="../briefing/" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=143"></script><script src="../../core/fwi-core.js?v=143"></script>
+<script src="../fwi.js?v=144"></script><script src="../../core/fwi-core.js?v=144"></script>
 <script>
 // ─── State ─────────────────────────────────────────────────────────────────
 let _briefingData = null; // last generated data
@@ -431,22 +431,30 @@ function buildConfigUI() {
     if (station) {
       const centre = FWI.stationSector(station.lat, station.lng);
       document.getElementById('bf-zone-name').value = centre + ' Fire Centre';
-      // Pre-check all stations in the same fire centre
+      // Pre-check the stations within 60 km of the incident station (it
+      // always included). The whole sector / fire centre was 40–60 stations,
+      // pre-ticked out of sight, so clicking the local ones *un*-ticked them.
       document.querySelectorAll('[name="bf-station"]').forEach(cb => {
         const s = FWI.BC_STATIONS.find(st => st.name === cb.value);
-        if (s && FWI.stationSector(s.lat, s.lng) === centre) cb.checked = true;
+        if (s && (s.name === station.name || _bfKm(station, s) <= BF_RADIUS_KM)) cb.checked = true;
       });
+      // Show the pre-ticked stations rather than the top of the list
+      document.querySelector('[name="bf-station"]:checked')?.closest('label')?.scrollIntoView({ block: 'nearest' });
     }
   }
+
+  _bfCount();
 
   // ── Auto-fill fuel types from current station's active picks + complements ──
   const fuelA = localStorage.getItem('fwi-bc-fuel-type')   || 'C3';
   const fuelB = localStorage.getItem('fwi-bc-fuel-type-2') || 'C7';
   const compA = FWI.FUEL_PAIR_COMPLEMENT[fuelA] || 'C3';
   const compB = FWI.FUEL_PAIR_COMPLEMENT[fuelB] || 'M1';
-  // Avoid duplicates: if compA === fuelB, pick a fallback
-  const fuelC = compA !== fuelB ? compA : (compA !== fuelA ? compA : 'C3');
-  const fuelD = compB !== fuelA && compB !== fuelB && compB !== fuelC ? compB : 'M1';
+  // Fuels 3–4: the complements, then common fallbacks — never a repeat
+  const _used = [fuelA, fuelB];
+  const _next = () => { const c = [compA, compB, 'D1', 'M1', 'C2', 'C3', 'O1b'].find(f => !_used.includes(f) && FWI.FUEL_TYPES[f]); _used.push(c); return c; };
+  const fuelC = _next();
+  const fuelD = _next();
   [fuelA, fuelB, fuelC, fuelD].forEach((fc, i) => {
     const sel = document.getElementById(`bf-fuel-${i + 1}`);
     if (sel && FWI.FUEL_TYPES[fc]) sel.value = fc;
@@ -480,11 +488,24 @@ function buildConfigUI() {
   document.getElementById('bf-date-label').value = `PM Forecast for ${months[today.getMonth()]} ${today.getDate()}`;
 }
 
+const BF_RADIUS_KM = 60;
+function _bfKm(a, b) {
+  const r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+function _bfCount() {
+  const el = document.getElementById('bf-stn-count');
+  if (el) el.textContent = `· ${document.querySelectorAll('[name="bf-station"]:checked').length} selected`;
+}
+document.addEventListener('change', e => { if (e.target?.name === 'bf-station') _bfCount(); });
 function selectAllStations() {
   document.querySelectorAll('[name="bf-station"]').forEach(cb => cb.checked = true);
+  _bfCount();
 }
 function clearAllStations() {
   document.querySelectorAll('[name="bf-station"]').forEach(cb => cb.checked = false);
+  _bfCount();
 }
 
 // ─── Generate ─────────────────────────────────────────────────────────────
