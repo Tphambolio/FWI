@@ -1708,6 +1708,7 @@ async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefau
   _stationLng  = lng;
   _stationName = station;
   const gen = ++_initGeneration; // this call's generation token
+  _renderRedFlag(lat, lng);      // official AB Red Flag banner (no-op elsewhere); independent of the chain
   // Forecast cache is keyed on fuel settings only — a new station (or a new
   // carry-over chain) must refetch, or the D+1 card shows the previous station.
   _forecastCache = { days: [], results: [], resultsB: [] };
@@ -2408,6 +2409,104 @@ function _getAlarmThreshold() {
   return parseFloat(localStorage.getItem(FWI_ALARM_KEY) ?? '15.5');
 }
 
+// ─── Alberta Red Flag Watch / Warning (official AWCC product) ────────────────
+// Alberta Wildfire's fire weather meteorologists issue Red Flag Watches and
+// Warnings by forecast zone in the AM/PM fire weather forecasts. A GitHub
+// Action parses them into data/ab_redflag.json (tools/redflag/ab_redflag.mjs);
+// the zones are vectorised from Alberta Wildfire's Fire Weather Forecast Zones
+// map (data/ab_fire_weather_zones.json). Pyra only relays the official product.
+let _rfZones = null, _rfStatus = null, _rfLoaded = 0;
+
+/** Forecast zone {zone, name} containing lat/lng (smallest zone first, so BP/WP/CH win over their neighbours). */
+function _rfZoneAt(lat, lng, zones = _rfZones) {
+  if (!zones?.features) return null;
+  const inRing = (r) => {
+    let inside = false;
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, yi] = r[i], [xj, yj] = r[j];
+      if ((yi > lat) !== (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+  const polys = f => f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  if (!zones._sorted) {
+    zones._sorted = zones.features.map(f => {
+      const pts = polys(f).flatMap(p => p[0]);
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      return { f, bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
+               area: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)) };
+    }).sort((a, b) => a.area - b.area);
+  }
+  for (const { f, bb } of zones._sorted) {
+    if (lng < bb[0] || lng > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+    if (polys(f).some(p => inRing(p[0]) && !p.slice(1).some(inRing))) return { zone: f.properties.zone, name: f.properties.name };
+  }
+  return null;
+}
+
+/**
+ * Red Flag status for a point: the strongest product (warning > watch) covering
+ * its zone and valid today or later (Alberta local date). Pure, for tests.
+ * Returns { zone, name, issued, source, product|null } or null outside the zones.
+ */
+function redFlagStatus(lat, lng, rf = _rfStatus, zones = _rfZones, today = _localDateStr()) {
+  const z = _rfZoneAt(lat, lng, zones);
+  if (!z) return null;
+  const live = (rf?.products || []).filter(p => p.zones.includes(z.zone) && (!p.validDate || p.validDate >= today));
+  const product = live.find(p => p.kind === 'warning') || live.find(p => p.kind === 'watch') || null;
+  return { ...z, issued: rf?.issued || null, source: rf?.source || null, product };
+}
+
+async function _loadRedFlag() {
+  if (!PROVINCE.redFlag) return false;
+  if (_rfZones && _rfStatus && Date.now() - _rfLoaded < 15 * 60 * 1000) return true;
+  try {
+    const base = document.querySelector('script[src*="fwi.js"]')?.src.replace(/fwi\.js.*$/, '') || '../';
+    const [z, s] = await Promise.all([
+      _rfZones ? _rfZones : fetchWithTimeout(base + 'data/ab_fire_weather_zones.json', {}, 10000).then(r => r.json()),
+      fetchWithTimeout('https://raw.githubusercontent.com/Tphambolio/FWI/main/data/ab_redflag.json', { cache: 'no-cache' }, 8000)
+        .then(r => r.json()).catch(() => fetchWithTimeout(base + 'data/ab_redflag.json', {}, 8000).then(r => r.json())),
+    ]);
+    _rfZones = z; _rfStatus = s; _rfLoaded = Date.now();
+    return true;
+  } catch (e) { console.warn('[FWI RedFlag]', e); return false; }
+}
+
+const _RF_STYLE = { warning: { bg: '#b91c1c', fg: '#fff', label: 'RED FLAG WARNING' }, watch: { bg: '#facc15', fg: '#1a1a1a', label: 'RED FLAG WATCH' } };
+const _rfWhen = p => p.validDate ? new Date(p.validDate + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+
+/** Station page banner (element #fwi-redflag-banner); hidden unless a product covers the station's zone. */
+async function _renderRedFlag(lat = _stationLat, lng = _stationLng) {
+  const el = document.getElementById('fwi-redflag-banner');
+  if (!el || !(await _loadRedFlag())) return;
+  const st = redFlagStatus(lat, lng);
+  if (!st?.product) { el.hidden = true; el.innerHTML = ''; return; }
+  const sty = _RF_STYLE[st.product.kind];
+  el.hidden = false;
+  el.style.cssText = `background:${sty.bg};color:${sty.fg}`;
+  el.innerHTML = `<strong>${sty.label}</strong> · zone ${st.zone} (${st.name}) · burning period ${_rfWhen(st.product)}
+    <span class="opacity-80">· Alberta Wildfire fire weather forecast issued ${st.issued} ·
+    <a href="${st.source}" target="_blank" rel="noopener" class="underline">forecast</a></span>`;
+}
+
+/** One line for printed briefings: the product in effect, or "none in effect" with the forecast issue time. */
+function _redFlagPrintLine(lat, lng) {
+  const st = PROVINCE.redFlag ? redFlagStatus(lat, lng) : null;
+  if (!st) return '';
+  if (!st.product) return `Alberta Red Flag: none in effect for zone ${st.zone} (${st.name})${st.issued ? ` · AWCC forecast issued ${st.issued}` : ''}`;
+  return `<span style="background:${_RF_STYLE[st.product.kind].bg};color:${_RF_STYLE[st.product.kind].fg};padding:1px 5px;font-weight:900">${_RF_STYLE[st.product.kind].label}</span> zone ${st.zone} (${st.name}), burning period ${_rfWhen(st.product)} · AWCC forecast issued ${st.issued}`;
+}
+
+/** Regional page: Red Flag zones as chips at the start of the alarm strip. */
+function _redFlagChips() {
+  if (!PROVINCE.redFlag || !_rfStatus) return '';
+  const today = _localDateStr();
+  return (_rfStatus.products || []).filter(p => !p.validDate || p.validDate >= today).map(p => {
+    const sty = _RF_STYLE[p.kind];
+    return `<span class="inline-flex items-center gap-2 min-h-[44px] px-3 rounded-lg text-xs font-bold w-full sm:w-auto" style="background:${sty.bg};color:${sty.fg}">${sty.label} · ${p.zones.join(' ')} · ${_rfWhen(p)}</span>`;
+  }).join('');
+}
+
 function _updateAlarmStrip() {
   const strip = document.getElementById('fwi-alarm-strip');
   if (!strip) return;
@@ -2418,7 +2517,7 @@ function _updateAlarmStrip() {
   const thEl = document.getElementById('fwi-alarm-threshold-label');
   if (thEl) thEl.textContent = `FWI ≥ ${threshold}`;
   if (!alarms.length) {
-    strip.innerHTML = `<span class="text-[11px] text-slate-400 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
+    strip.innerHTML = _redFlagChips() + `<span class="text-[11px] text-slate-400 italic">No stations above FWI ${threshold} · ${_mapStationCache.filter(e=>e.result).length} loaded</span>`;
     return;
   }
   // Grouped by danger class (highest first) with counts; each group expands to
@@ -2426,7 +2525,7 @@ function _updateAlarmStrip() {
   const open = new Set([...strip.querySelectorAll('details[open]')].map(d => d.dataset.danger));
   const order = ['Extreme', 'Very High', 'High', 'Moderate', 'Low', 'Very Low'];
   const groups = order.map(d => [d, alarms.filter(e => e.result.danger === d)]).filter(([, l]) => l.length);
-  strip.innerHTML = groups.map(([d, list]) => {
+  strip.innerHTML = _redFlagChips() + groups.map(([d, list]) => {
     const t = _dangerTok(d);
     const links = list.map(e => {
       const nav = `${e.navLat ?? e.lat},${e.navLng ?? e.lng}`;
@@ -2604,6 +2703,7 @@ function regionCard(name, sector, r) {
 async function buildRegionalSummary() {
   const list = document.getElementById('fwi-region-list');
   if (!list) return;
+  _loadRedFlag().then(ok => { if (ok) _updateAlarmStrip(); });   // AB Red Flag chips on the alarm strip
 
   const sectorOrder = PROVINCE.sectorOrder;
   const sorted = [...getStationList()].sort((a, b) => {
@@ -3730,6 +3830,7 @@ setTimeout(function() {
  * Uses _lastFWI, _lastWeather, _lastVWCalc, _forecastCache.
  */
 async function printStationBriefing() {
+  await _loadRedFlag();
   if (!_lastFWI) { alert('Load a station first.'); return; }
 
   // Fetch forecast on-demand if not yet loaded (user printing from station detail without visiting forecast page)
@@ -3975,6 +4076,7 @@ async function printStationBriefing() {
   <p class="header-meta">
     Station: <strong>${stationDisplayName}</strong> &nbsp;·&nbsp; ${Math.abs(lat).toFixed(4)}°N ${Math.abs(lng).toFixed(4)}°W<br>
     Operational Period: ${opPeriodLine}<br>
+    ${(() => { const l = _redFlagPrintLine(lat, lng); return l ? l + '<br>' : ''; })()}
     Prepared: ${prepared} &nbsp;·&nbsp; Source: ${srcLabel}
   </p>
 </div>
@@ -4730,7 +4832,7 @@ async function buildD1Card() {
   populateD1Section('-b', resultsB?.[idx]);
 }
 
-window.FWI = { initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _stationSector, _updateAlarmStrip,
+window.FWI = { redFlagStatus, _rfZoneAt, initFWI, calcFMC, calcSFC, _hffmc, buildStationPicker, buildRegionalSummary, buildForecastTrends, buildHourlyChart, buildStationMap, buildD1Card, calculateFWI, calculateFBP, calcMultiDayFBP, wireFBP, refreshFBP, fetchWeather, fetchCWFIS, fetchWeatherPrimary, fetchStationData, fetchStationDataForecast, dangerRating, exportRegionalDataset, exportForecastReport, printProvincialBriefing, printStationBriefing, FUEL_TYPES, FUEL_PAIR_COMPLEMENT, hfiClassInfo, _stationSector, _updateAlarmStrip,
   get _idwMode() { return _idwMode; },
   set _idwMode(v) { _idwMode = v; },
 };

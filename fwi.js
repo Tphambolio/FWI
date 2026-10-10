@@ -759,6 +759,7 @@ const PROVINCE = {
   highDangerFWI: 15.5,          // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: undefined,   // regions shown in the forecast trend table (all — 5 dropped Lethbridge)
   // ── Danger classes ──
+  redFlag: true,                // official AWCC Red Flag Watch/Warning by forecast zone (data/ab_redflag.json)
   dangerRating: fwi => dangerRating(fwi),                          // CWFIS FWI-map 5-class
   dangerClassNum: fwi => dangerClassNum(fwi),                      // {num,label,bg,text} for briefing badges
   dangerClasses: ['Low', 'Moderate', 'High', 'Very High', 'Extreme'], // classes low → high (briefing tallies)

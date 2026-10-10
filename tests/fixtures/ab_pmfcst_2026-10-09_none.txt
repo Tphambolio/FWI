@@ -1,0 +1,55 @@
+                                                                              PM FIRE WEATHER FORECAST
+                                                                                            ISSUED: 1100 Friday October 09 2026
+
+
+Today: A deep surface low over SW Alberta and its associated warm front will bring 20-40mm, locally 50mm, of rain/wet
+snow to the southern boreal and Rockies. The cold front will move from JP to BO in the afternoon, bringing 5mm of rain/wet
+snow with a slight risk of TRW in the region. Highs 2-10°C in the boreal to ED, 11-15°C south to Red Deer, and 17-23°C in
+the far south. RH values remain above 60%, except 25-30% south of RM. N-NE winds 30-40km/h with gusts to 55-65km/h
+in the boreal, and SW winds 35-40km/h with gusts to 70-80km/h in southern Alberta.
+
+Tomorrow: The low will depart into SK by morning, but lingering precipitation and upslope flow will bring an additional 5-
+8mm of wet snow to the east slopes and southern boreal/northern AG. A ridge will build in the north, bringing settled weather
+north of Slave Lake. Highs 0-8°C across the province, except -4 to 0°C in the Parks and SW boreal. RH values remain above
+55%. Winds N-NE20-30km/h with gusts up to 50km/h in the SE boreal/AG/east slopes. Elsewhere, N10-15km/h.
+
+Outlook for Sunday: An upper ridge will settle over northern AB, bringing clearing skies, except for light wet snow in
+CR/WP/southern AG from a trough extending north from the US. Max temps -1 to +5°C with RH above 55%, except 35-45%
+in the NW boreal. Winds S15-25G45km/h in the boreal and NE10-15km/h elsewhere.
+
+Outlook for Monday: An upper ridge building in from BC and a surface ridge extending from Hudson Bay to southern AB
+will maintain stable weather. An upper trough deepening along the Pacific coast will bring a change in weather by midweek.
+Max temps 6-10°C with min RH 25-30% along the eastern slopes and 45-60% elsewhere. Winds SW15-20G35-40km/h in
+the boreal/AG and SW10km/h elsewhere.
+
+                Forecast of Temp, RH, and wind for tomorrow afternoon; precipitation for next 24 hours
+                                          Pcpn                                                      Fire
+ Fcst        Max           Low                                                       Ltg     Ltg                 Wind Tomorrow
+                                          Covg /           Pcpn Type                               Danger
+ Zone       Temp           RH                                                       today    tom                   Afternoon
+                                          Amnt                                                     Trend
+  OJ            4            55             10L               SW RW                  L/I     L/I     LC                 S10
+  FV            3            55             30L               SW RW                  L/I     L/I     LC                NE10
+  MA            2            60           70L-M               SW RW                  L/I     L/I     DN                 S10
+  RE            2            65           80M-H                  RS                  L/I     L/I     DN               N15G35
+  GP            1            80           90M-H                  RS                  L/I     L/I     DN               NE10-15
+  SH            1            75          100M-H                  SR                  L/I     L/I     DN             N15G35-40
+  PY            4            60             10L               SW RW                  L/I     L/I     LC               NE10-15
+  MM            4            65             70L                  RS                  L/I     L/I     DN              NE15G35
+  LB            3            85          100M-H                  RS                  L/I     L/I     DN             N20-25G45
+  ED            1            70           90L-M               SW RW                  L/I     L/I     DN             N20-25G30
+  RM            1            70           90L-M            SW RW TRW                 M/I     L/I     DN            N25-30G45-50
+  BO            2            60           90L-M            SW RW TRW                 M/I     L/I     DN            N25-30G45-50
+  CR            2            65           90L-M               SW RW                  L/I     L/I     DN             N20-25G40
+  CH            2            80               -                    -                 L/I     L/I     LC               N25G45
+  AG            6            60             40L                  RW                  L/I     L/I     LC             N30-35G50
+  JP            0            50           90L-M              SW TRW                  M/I     L/I     DN                 N10
+  BP            2            40           90L-M            SW RW TRW                 M/I     L/I     DN                NE10
+  WP            2            80             90M               SW RW                  L/I     L/I     DN             NE15-20
+(Ltg Prob/Freq: L-low, M-Moderate, H-high; I-isolated, S-scattered, W-widespread)                                  Meteorologist: [redacted]
+
+
+
+
+                                                                                                            Classification: Protected A
+

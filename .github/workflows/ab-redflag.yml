@@ -1,0 +1,29 @@
+name: Alberta Red Flag Watch/Warning
+
+on:
+  schedule:
+    # 17:30 UTC = 11:30 MDT (after the 10:00 AM forecast); 22:30 UTC = 16:30 MDT (after the PM forecast)
+    - cron: '30 17 * * *'
+    - cron: '30 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  redflag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pdftotext
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Parse AWCC fire weather forecasts
+        run: node tools/redflag/ab_redflag.mjs data/ab_redflag.json
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ab_redflag.json
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "chore: update Alberta Red Flag status ($(node -p "require('./data/ab_redflag.json').issued || 'none'"))"
+          git pull --rebase origin main
+          git push

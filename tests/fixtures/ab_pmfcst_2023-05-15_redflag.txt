@@ -1,0 +1,52 @@
+                                                                    PM FIRE WEATHER FORECAST
+                                                                                     ISSUED: 1500 Monday May 15 2023
+
+                             RED FLAG WARNING IN EFFECT FOR
+             OJ/FV/MA/RE/GP/MM/PY/LB ZONES FOR TOMORROW’S BURNING PERIOD
+                                   RED FLAG WATCH IN EFFECT FOR
+                            SH/ED ZONES FOR TOMORROW’S BURNING PERIOD
+A cold front continues southeast through the province, approaching ED/SH/LB by midnight producing a significant wind shift from SE
+to NW. Widespread northerly wind gusts exceeding 40 km/h are likely along the central and eastern boreal and the eastern
+slopes, creating a particularly dangerous overnight fire situation.
+For tomorrow: The cold front departs with afternoon showers possible in the southern Rockies and northeast boreal. High
+temperatures range from 15-20 in the north and 25-30 in southern zones, with RH minima between 15-20% in the western boreal
+and foothills and 35-45 in the northeast and mountain parks. Boreal winds are NW15-20 km/h, while southern Alberta 15-20 km/h
+southwesterlies become northwest with the passage of the cold front. Gusts exceeding 50 km/h are possible in central and eastern
+zones, with the strongest winds in PY/MM. This wind shift coupled with extreme FWI indices will produce a potentially dangerous
+situation for southern regions into Tuesday’s burn period.
+Outlook for Wednesday: Winds weaken in the northwest as high pressure settles, with NE winds 15-20 km/h continuing in the
+northeast slopes and southern zones. High temperatures are 15-20C province-wide, with RH minima between 20-30% except for 40-
+50% in eastern MM/LB near the low in SK. Precipitation is scarce, confined to WA/CH zones the far northeast FV zone.
+
+Outlook for Thursday: Shower chances dissipate early Thursday in the southern Rockies as high pressure builds. Temperatures range
+from 15-20C province wide, with RH minima between 15-20% in the north and 20-25% in the south. Winds are southerly 15-20 in
+northern and northerly at 15-20 in CH, with gusts to 35 km/h possible in northern OJ and SH zones.
+      Forecast of Temp, RH, and wind for tomorrow afternoon; precipitation for next 24 hours
+                              Pcpn                                    Fire
+ Fcst                                                 Ltg    Ltg                 Wind Tomorrow
+       Max Temp Low RH Covg /           Pcpn Type                  Danger
+ Zone                                                today tom                      Afternoon
+                              Amnt                                  Trend
+  OJ       16        55         -           -          L/I    L/I     UP            NW20G35
+  FV       18        40        30L       RW/TRW        M/I   M/S      UP            NW20G40
+  MA       22        35                                L/I    L/I     UP              NW20
+  RE       20        35         -           -          L/I    L/I     UP              NW20
+  GP       24        20         -           -          L/I    L/I     UP               N20
+  SH       22        25         -           -          L/I    L/I     UP            NW25G40
+  PY       12        70       40L/M      RW/TRW       M/S    M/S      DN            NW25G50
+  MM       18        40        10L       RW/TRW        M/I    L/I     LC            NW25G50
+  LB       21        35         -           -          L/I    L/I     UP            NW25G45
+  ED       23        25         -           -          L/I    L/I     UP               N15
+  RM       23        30         -           -          L/I    L/I     UP            W15/NE15
+  BO       23        35         -           -          L/I    L/I     UP            W15/NE15
+  CR       24        30         -           -          L/I    L/I     UP          W20G40/N15
+  CH       27        40         -           -          L/I    L/I     UP             S10/W15
+  JA       25        25         -           -          L/I    L/I     UP           SW10/NE15
+  BA       24        35         -           -          L/I    L/I     UP              NE15
+  WA       20        50        10L       RW/TRW        L/I   M/I      UP         W20G40/NE15
+ (Ltg Prob/Freq: L-low, M-Moderate, H-high; I-isolated, S-scattered, W-widespread)                    Meteorologist: [redacted]
+
+
+
+                                                                                                    Classification: Protected A
+
