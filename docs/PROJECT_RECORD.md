@@ -104,7 +104,7 @@ retrieved 2026-10-08).
 
 ### References
 
-All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, 28 with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
+All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, 29 with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
 
 **Fire Weather Index System**
 - Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`4AWT7VN5`]
@@ -134,6 +134,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 - Lee, B.S.; Alexander, M.E.; Hawkes, B.C.; Lynham, T.J.; Stocks, B.J.; Englefield, P. 2002. Information systems in support of wildland fire management decision making in Canada. *Computers and Electronics in Agriculture* 37: 185–198. doi:10.1016/S0168-1699(02)00120-5 [`9IIVZWHU`]
 - Luo, W.; Taylor, M.C.; Parker, S.R. 2008. A comparison of spatial interpolation methods to estimate continuous wind speed surfaces using irregularly distributed data from England and Wales. *International Journal of Climatology* 28: 947–959. doi:10.1002/joc.1583 [`UFQ5NRGK`]
 - Zippenfenig, P. 2024. Open-Meteo.com Weather API. Zenodo. doi:10.5281/zenodo.7970649 [`B7U7GCPC`]
+- City of Edmonton, Urban Forest Initiatives. 2026. Edmonton FBP fuel type grid, 20 m (`Edmonton_FBP_FuelLayer_20251105_10m.tif`; the "10m" and date in the filename are wrong), from the 2025 City vegetation LiDAR and uPLVI. Technical lead T. Kennedy. Documented in *Edmonton Urban Canopy Cover Analysis 2025 — Project Report* (March 2026), §3.4 and Table 4.5; lineage in the FireSim project record. Not accuracy-assessed. [`E2PCWWD6`, report attached]
 - Supporting (not cited in code): Jain, P.; Flannigan, M. 2017. Comparison of methods for spatial interpolation of fire weather in Alberta, Canada. *Canadian Journal of Forest Research* 47: 1646–1658. doi:10.1139/cjfr-2017-0101 — the Alberta-specific study behind interpolating weather before computing FWI; a better primary citation for `_computeIDWBlend` than the unverified Snyder (1992). [`ET83MVJM`, tag `pyra-supporting`]
 
 **Software and reference implementation**
@@ -209,7 +210,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
 - [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Alberta WUI Pocket Guide edition confirmed as 2022 (2026-10-10).
-- [ ] Zotero: 28 of 30 Pyra Sources items have a stored PDF (2026-10-10). Added: Alberta WUI Pocket Guide (2022 edition, alberta.ca), Alberta fire-weather observations page snapshot (pmwx), and a 26-page excerpt of SR-11 1997 from the UNBC ebook (28-page export limit; ISBN and every passage Pyra quotes verified; page list in the Zotero note). Lee et al. 2002 and Luo et al. 2008 added via UNBC library access. Still without: Thomas 1963 (closed access; UNBC) and the Edmonton fuel raster (internal, no public document).
+- [ ] Zotero: 29 of 30 Pyra Sources items have a stored PDF (2026-10-10). Added: Alberta WUI Pocket Guide (2022 edition, alberta.ca), Alberta fire-weather observations page snapshot (pmwx), and a 26-page excerpt of SR-11 1997 from the UNBC ebook (28-page export limit; ISBN and every passage Pyra quotes verified; page list in the Zotero note). Lee et al. 2002 and Luo et al. 2008 added via UNBC library access. Still without: Thomas 1963 (closed access; UNBC). The Edmonton fuel grid now carries the City canopy report (§3.4 fuel typing) and a lineage note; the AB science guide cites it as ref [10] with its limits.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 
