@@ -150,7 +150,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 | ECCC MSC SWOB realtime (api.weather.gc.ca) | Station sensor obs | OGL-Canada | `QI54NLVE` |
 | BC Wildfire Service Datamart | Noon FWI codes + official danger rating (mirrored daily) | OGL-BC | `7EGXPF6H` |
 | Alberta Wildfire pmwx.csv | AEF station obs (mirrored daily) | OGL-Alberta | `RHXC63JG` |
-| Open-Meteo (default `best_match` model — see Open items; Copernicus GLO-90 DEM) | NWP hourly / noon / 16:00; elevation, slope, aspect | CC BY 4.0 | `B7U7GCPC`, `LYXBSNG8` |
+| Open-Meteo (ECCC GEM `gem_seamless` since v145; Copernicus GLO-90 DEM) | NWP hourly / noon / 16:00; elevation, slope, aspect | CC BY 4.0 | `B7U7GCPC`, `LYXBSNG8` |
 | City of Edmonton canopy LiDAR fuel raster | Edmonton pin-drop fuel type | City of Edmonton | `E2PCWWD6` |
 
 ## 5. Testing
@@ -204,7 +204,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [x] Alert delivery configured: WhatsApp via OpenClaw, daily 14:30 cron, quiet mode (2026-10-09, `eb45e98`).
 - [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
-- [ ] **NWP provenance mislabel (found 2026-10-10 during the source audit).** Pyra's Open-Meteo requests send no `models=` parameter, so they get Open-Meteo's `best_match` blend. At Hussar on 2026-10-10 that matched `gfs_seamless` exactly, not `ecmwf_ifs025`, yet the UI, printed briefings and this record call it "ECMWF IFS 0.25°". `ecmwf_ifs025` is available on the free API, so the science guide's note that it is premium-only is also out of date. Decide: request `models=ecmwf_ifs025` (labels become true; check thunderstorm probability availability) or relabel as "Open-Meteo best-match".
+- [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
 - [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Confirm the edition of the Alberta WUI Pocket Guide.
 - [ ] Zotero: 9 of 29 Pyra Sources items have PDFs. Free NRCan/USFS reports (ST-X-3 already attached; FTR-33, PS-X-69, SR-11, the Weather Guide, INT-438) could be attached.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.

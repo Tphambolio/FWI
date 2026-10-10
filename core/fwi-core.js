@@ -1399,7 +1399,7 @@ async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
-    `&past_days=1&forecast_days=2&timezone=UTC`;
+    `&past_days=1&forecast_days=2&timezone=UTC&models=gem_seamless`;
   const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
   const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
@@ -1768,7 +1768,7 @@ async function fetchStationData(station) {
 }
 
 /**
- * Fetch D+1 forecast weather for a station using ECMWF IFS via Open-Meteo.
+ * Fetch D+1 forecast weather for a station using ECCC GEM via Open-Meteo.
  * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
  * FBP wind uses hour-16 (peak burn ~16:00 MDT) — matches the D+1 peak prediction
  * shown on the station detail page.
@@ -1794,7 +1794,7 @@ async function fetchStationDataForecast(station) {
     rain:             day.rain,
     thunderstormProb: null,
     month:            new Date().getMonth() + 1,
-    source:           `ECMWF IFS 0.25° · ${day.label} · Peak ~16:00 ${PROVINCE.tzLabel}`,
+    source:           `ECCC GEM · ${day.label} · Peak ~16:00 ${PROVINCE.tzLabel}`,
     fwiFromCWFIS:     false,
   };
 
@@ -2643,8 +2643,8 @@ async function fetchForecastNAEFS(code) {
       // (max/min/median/pct25/pct75 of temp, rh, ws, pcp) — no noon-LST value.
       // Using max_temp/min_rh (the driest statistic of each) biased the chain
       // strongly dry (e.g. 17.4 vs median 9.7 °C). Use the medians as the central
-      // estimate. NAEFS now only extends the trend beyond the ECMWF horizon
-      // (fetchForecastDays); ECMWF supplies exact noon-LST/16:00 values first.
+      // estimate. NAEFS now only extends the trend beyond the GEM horizon
+      // (fetchForecastDays); GEM supplies exact noon-LST/16:00 values first.
       const peakTemp = p.median_temp ?? 15;
       const peakRh   = p.median_rh   ?? 40;
       const peakWind = p.median_ws   ?? 10;
@@ -2666,13 +2666,14 @@ async function fetchForecastNAEFS(code) {
     .sort((a, b) => a._ts - b._ts);
 }
 
-/** Fetch 7-day hourly forecast from Open-Meteo using ECMWF IFS 0.25° model.
- *  ECMWF IFS is the same model ECCC uses for verification — best available global NWP for Canadian latitudes. */
+/** Fetch hourly forecast from Open-Meteo, pinned to ECCC GEM (models=gem_seamless:
+ *  HRDPS 2.5 km to 48 h, then RDPS 10 km, then GDPS 15 km). Pinned so provenance labels are true;
+ *  the default best_match blend picked GFS at prairie stations (2026-10-10 audit). */
 async function fetchForecast(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=2&forecast_days=8`;
+    `&timezone=UTC&past_days=2&forecast_days=8&models=gem_seamless`;
   const res = await fetchWithTimeout(url, {}, 15000);
   const d = await res.json();
   const h = d.hourly;
@@ -2726,7 +2727,7 @@ async function fetchHourly(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
-    `&timezone=auto&past_hours=23&forecast_hours=0`;
+    `&timezone=auto&past_hours=23&forecast_hours=0&models=gem_seamless`;
   const res = await fetchWithTimeout(url, {}, 12000);
   const d = await res.json();
   const h = d.hourly;
@@ -2885,18 +2886,18 @@ async function buildOpsOutlook() {
      <div class="mt-4"><div class="text-[11px] font-label uppercase tracking-widest text-slate-200 mb-1">Next 48 h · worst HFI class of the selected fuels, hourly</div>
        <div class="flex gap-[2px] overflow-x-auto" role="img" aria-label="Hourly HFI class for the next 48 hours">${strip}</div></div>`;
   if (note) note.textContent =
-    `Hourly FFMC (Van Wagner 1977) from the ${_opsHourly.start.obsDate} noon-LST chain; DMC/DC switch at noon LST · ECMWF hourly weather (Open-Meteo) · ` +
+    `Hourly FFMC (Van Wagner 1977) from the ${_opsHourly.start.obsDate} noon-LST chain; DMC/DC switch at noon LST · GEM hourly weather (Open-Meteo) · ` +
     `${fuels.map(fuelName).join(' / ')}${_siteTerrain.slope ? ` · site slope ${_siteTerrain.slope}%` : ''} · informational — verify with your FBAN.`;
 }
 
 /**
- * Hourly weather for the outlook: Open-Meteo (ECMWF) hourly in UTC from
+ * Hourly weather for the outlook: Open-Meteo (GEM) hourly in UTC from
  * yesterday 00 UTC to +3 days, as [{ t (ms UTC), temp, rh, wind, wdir, rain }].
  */
 async function fetchHourlyOutlook(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=1&forecast_days=3`;
+    `&timezone=UTC&past_days=1&forecast_days=3&models=gem_seamless`;
   const h = (await fetchWithTimeout(url, { cache: 'no-cache' }, 12000).then(r => r.json())).hourly;
   return (h?.time || []).map((t, i) => ({
     t: Date.parse(t + ':00Z'),
@@ -3063,10 +3064,10 @@ function trendLabel(fwi, prevFwi) {
 }
 
 /**
- * Forecast days for the FWI/FBP chain: ECMWF IFS via Open-Meteo (exact noon-LST
+ * Forecast days for the FWI/FBP chain: ECCC GEM via Open-Meteo (exact noon-LST
  * and 16:00 hours, ~7 days) first, extended with NAEFS ensemble medians beyond
- * the ECMWF horizon (flagged ensembleTail — lower confidence). NAEFS alone only
- * if ECMWF fails. Returns { days, source }.
+ * the GEM horizon (flagged ensembleTail — lower confidence). NAEFS alone only
+ * if GEM fails. Returns { days, source }.
  */
 async function fetchForecastDays(lat, lng) {
   const naefsSt = findNearestNAEFS(lat, lng);
@@ -3081,12 +3082,12 @@ async function fetchForecastDays(lat, lng) {
     return {
       days: [...ec, ...tail],
       source: tail.length
-        ? `ECMWF IFS noon LST (days 1–${ec.length}) + NAEFS ensemble median${naefsSt ? ' · ' + naefsSt.name : ''} (days ${ec.length + 1}–${ec.length + tail.length}, lower confidence)`
-        : 'ECMWF IFS 0.25° (Open-Meteo) · noon LST',
+        ? `ECCC GEM noon LST (days 1–${ec.length}) + NAEFS ensemble median${naefsSt ? ' · ' + naefsSt.name : ''} (days ${ec.length + 1}–${ec.length + tail.length}, lower confidence)`
+        : 'ECCC GEM (Open-Meteo) · noon LST',
     };
   }
-  if (na?.length) return { days: na, source: `NAEFS ensemble median (${naefsSt.name}) — ECMWF unavailable` };
-  throw new Error('[FWI] no forecast available (ECMWF and NAEFS failed)');
+  if (na?.length) return { days: na, source: `NAEFS ensemble median (${naefsSt.name}) — GEM unavailable` };
+  throw new Error('[FWI] no forecast available (GEM and NAEFS failed)');
 }
 
 async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName = 'Edmonton') {
@@ -3131,8 +3132,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // Role + valid time for every forecast FWI on this page (owner rule: no
     // unlabelled FWI numbers). These are daily noon-LST chain values, not the
     // station page's 16:00 peak-burn headline.
-    // fetchForecastDays names its source: ECMWF (optionally + NAEFS tail) or NAEFS-only fallback
-    const chainRole = /^NAEFS/.test(forecastSource || '') ? 'NAEFS ensemble chain' : 'ECMWF via Open-Meteo chain';
+    // fetchForecastDays names its source: GEM (optionally + NAEFS tail) or NAEFS-only fallback
+    const chainRole = /^NAEFS/.test(forecastSource || '') ? 'NAEFS ensemble chain' : 'GEM via Open-Meteo chain';
     const elRole = document.getElementById('fwi-peak-window-role');
     if (elRole) elRole.textContent = `${chainRole} · daily FWI, valid noon LST ${peakDay.label}`;
 
@@ -3237,7 +3238,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
       barContainer.innerHTML = results.map(r => {
         const h = Math.max(4, (r.fwi / maxFWI) * 100).toFixed(1);
         const c = DANGER_COLORS[r.danger] || DANGER_COLORS['Moderate'];
-        // NAEFS days beyond the ECMWF horizon: hatched + faded = lower confidence
+        // NAEFS days beyond the GEM horizon: hatched + faded = lower confidence
         const tail = r.ensembleTail;
         const tailStyle = tail ? ';opacity:.45;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.35) 0 2px,transparent 2px 6px)' : '';
         return `<div class="w-full ${c.bar} rounded-t-sm transition-colors relative group cursor-help" style="height:${h}%${tailStyle}">` +
@@ -3269,7 +3270,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
         const tag = dl === _localDateStr() ? 'Today' : dl === _localDateStr(Date.now() + 86400000) ? 'Tomorrow' : '';
         const isD1 = i === d1SafeIdx;
         return `<tr class="hover:bg-surface-container transition-colors ${isD1 ? 'bg-surface-container/50' : ''}">
-  <td class="py-3 pl-4 pr-3 font-headline font-bold text-white text-sm whitespace-nowrap">${r.label}${tag ? ` <span class="text-[11px] font-label text-primary ml-1">${tag}</span>` : ''}${r.ensembleTail ? ` <span class="text-[11px] font-label text-amber-300 ml-1" title="Beyond the ECMWF horizon: NAEFS ensemble median, lower confidence">NAEFS · low conf.</span>` : ''}</td>
+  <td class="py-3 pl-4 pr-3 font-headline font-bold text-white text-sm whitespace-nowrap">${r.label}${tag ? ` <span class="text-[11px] font-label text-primary ml-1">${tag}</span>` : ''}${r.ensembleTail ? ` <span class="text-[11px] font-label text-amber-300 ml-1" title="Beyond the GEM horizon: NAEFS ensemble median, lower confidence">NAEFS · low conf.</span>` : ''}</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.temp ?? days[i]?.temp)}°C</td>
   <td class="py-3 text-sm ${(pw?.rh ?? days[i]?.rh) < 30 ? 'text-amber-300 font-bold' : 'text-on-surface-variant'}">${fmt(pw?.rh ?? days[i]?.rh, 0)}%</td>
   <td class="py-3 text-sm text-on-surface-variant">${fmt(pw?.wind ?? days[i]?.wind, 0)} km/h${pw?.wdir != null ? ' ' + compassDir(pw.wdir) : ''}</td>
@@ -3752,12 +3753,12 @@ async function printStationBriefing() {
   const srcLabel = (w?.stationName && (w?.source || '').startsWith('CWFIS'))
     ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
 
-  // Forecast source label — NAEFS days carry a stationName; Open-Meteo/ECMWF days do not
+  // Forecast source label — NAEFS days carry a stationName; Open-Meteo/GEM days do not
   const { days: fDays, results: fResults } = _forecastCache;
   const nEc = fResults.filter(x => !x.ensembleTail).length;
   const fSrcLabel = fResults.some(x => x.ensembleTail)
-    ? `ECMWF IFS 0.25° (days 1–${nEc}) + NAEFS ensemble median (later days, lower confidence, marked *)`
-    : 'ECMWF IFS 0.25° · Open-Meteo';
+    ? `ECCC GEM (days 1–${nEc}) + NAEFS ensemble median (later days, lower confidence, marked *)`
+    : 'ECCC GEM · Open-Meteo';
   let forecastRows = '';
   if (fResults.length > 0) {
     const _todayLocal    = _localDateStr();
@@ -3829,7 +3830,7 @@ async function printStationBriefing() {
       <thead><tr><th style="text-align:left">Shift</th><th>Peak HFI class</th><th>Peak (time · kW/m)</th><th>Fuel</th><th>HFI ≥ 3</th><th>HFI ≥ 4</th><th style="text-align:left">Tactics</th></tr></thead>
       <tbody>${shiftRows}</tbody>
     </table>
-    <p style="font-size:7.5pt;color:#888;margin:4px 8px">Hourly FFMC (Van Wagner 1977) from the ${_opsPeriods.obsDate} noon-LST chain · ECMWF hourly weather · worst of the selected fuels${_opsPeriods.slope ? ` · site slope ${_opsPeriods.slope}%` : ''}.</p>
+    <p style="font-size:7.5pt;color:#888;margin:4px 8px">Hourly FFMC (Van Wagner 1977) from the ${_opsPeriods.obsDate} noon-LST chain · GEM hourly weather · worst of the selected fuels${_opsPeriods.slope ? ` · site slope ${_opsPeriods.slope}%` : ''}.</p>
   </div>
 </div>` : '';
   const d1HfiRating = !d1fbp ? '—' : d1fbp.hfi >= 4000 ? 'EXTREME' : d1fbp.hfi >= 2000 ? 'VERY HIGH' : d1fbp.hfi >= 500 ? 'HIGH' : 'LOW';
@@ -4548,16 +4549,16 @@ async function buildD1Card() {
     const pr  = (_lastFWI?.ffmc != null) ? results[todayIdx] : null;
     const pcl = pr?.fbp ? hfiClassInfo(pr.fbp.hfi) : null;
     const past = pr ? ` (FWI ${pr.fwi.toFixed(1)}${pcl ? `, HFI ${pcl.num} · ${Math.round(pr.fbp.hfi).toLocaleString()} kW/m in ${FUEL_TYPES[_savedFuelCode()]?.name || _savedFuelCode()}` : ''})` : '';
-    setTxt('fwi-today-desc', `Today's 16:00 peak has passed${past}. Planning view for the next operational period: tomorrow's fuel-moisture codes, carried forward from today's observation, with the forecast 16:00 weather (ECMWF).`);
+    setTxt('fwi-today-desc', `Today's 16:00 peak has passed${past}. Planning view for the next operational period: tomorrow's fuel-moisture codes, carried forward from today's observation, with the forecast 16:00 weather (GEM).`);
     const tp = document.getElementById('fwi-today-prov');
-    if (tp) tp.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="Forecast for tomorrow's 16:00 peak burn: ECMWF weather (Open-Meteo) on the chain carried forward from today's observed codes">FORECAST</span> <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">ECMWF</span>`;
+    if (tp) tp.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="Forecast for tomorrow's 16:00 peak burn: GEM weather (Open-Meteo) on the chain carried forward from today's observed codes">FORECAST</span> <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">GEM</span>`;
   } else {
-    setTxt('fwi-today-desc', "Today at the 16:00 peak burn: today's fuel-moisture codes with the forecast 16:00 weather shown in this row (ECMWF).");
+    setTxt('fwi-today-desc', "Today at the 16:00 peak burn: today's fuel-moisture codes with the forecast 16:00 weather shown in this row (GEM).");
     _renderSummaryProv();
   }
 
   // Populate LEFT card (today peak burn).
-  // Weather row shows the same 16:00 values the card's FBP uses — today's ECMWF
+  // Weather row shows the same 16:00 values the card's FBP uses — today's GEM
   // peak-burn hour from fetchForecastDays (exact LST-dated hours) — so the row and
   // the fire behaviour below it can't disagree. Falls back to the latest
   // observation only if the forecast has no peak values for today.

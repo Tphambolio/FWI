@@ -381,7 +381,7 @@
 <p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant">MSC SWOB Realtime (Primary) · Open-Meteo NWP (Fallback) · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6"><strong class="text-on-surface">Important:</strong> The NRCan CWFIS fire weather station network (<code class="text-primary">firewx_stns_current</code> WFS layer) covers stations east of approximately −114°W — the Alberta boreal and parkland zones. <strong class="text-on-surface">BC is entirely west of −114°W and receives no CWFIS station coverage.</strong> BC current conditions therefore use a two-tier hierarchy without a CWFIS primary tier. <strong class="text-on-surface">Tier 1 — MSC SWOB Realtime:</strong> real sensor observations from Environment Canada's automated weather station network, available year-round from airports and climate reference stations. <strong class="text-on-surface">Tier 2 — Open-Meteo NWP:</strong> ECMWF IFS 0.25° model output at exact station coordinates when SWOB has no coverage within 150 km.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6"><strong class="text-on-surface">Important:</strong> The NRCan CWFIS fire weather station network (<code class="text-primary">firewx_stns_current</code> WFS layer) covers stations east of approximately −114°W — the Alberta boreal and parkland zones. <strong class="text-on-surface">BC is entirely west of −114°W and receives no CWFIS station coverage.</strong> BC current conditions therefore use a two-tier hierarchy without a CWFIS primary tier. <strong class="text-on-surface">Tier 1 — MSC SWOB Realtime:</strong> real sensor observations from Environment Canada's automated weather station network, available year-round from airports and climate reference stations. <strong class="text-on-surface">Tier 2 — Open-Meteo NWP:</strong> ECCC GEM model output at exact station coordinates when SWOB has no coverage within 150 km.</p>
 
 <div class="space-y-4">
 <!-- SWOB primary for BC -->
@@ -406,7 +406,7 @@
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
 <span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Fallback — NWP</span>
-<span class="text-[11px] text-on-surface-variant font-label">Open-Meteo ECMWF IFS 0.25° · Used when no SWOB station found within range</span>
+<span class="text-[11px] text-on-surface-variant font-label">Open-Meteo ECCC GEM · Used when no SWOB station found within range</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
@@ -430,17 +430,17 @@
 <p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Returns up to 16 daily forecast records: <code class="text-primary">max_temp</code>, <code class="text-primary">min_rh</code>, <code class="text-primary">median_ws</code>, <code class="text-primary">median_pcp</code>. FWI computed client-side via Van Wagner carry-forward chain from current observed values.</p>
 </div>
 
-<!-- ECMWF fallback forecast -->
+<!-- GEM fallback forecast -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
-<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">7-Day Forecast — Fallback</span>
-<span class="text-[11px] text-on-surface-variant font-label">ECMWF IFS 0.25° via Open-Meteo · Used when no NAEFS station within 150 km</span>
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Forecast — Primary (days 1–8)</span>
+<span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via Open-Meteo · NAEFS extends the trend beyond it</span>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
 <div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon PST)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
 <div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 16 (16:00 PDT)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
-<div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 12Z</span><span class="text-on-surface-variant">12Z available ~12:00 PST</span></div>
-<div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">0.25° (~25 km)</span><span class="text-on-surface-variant">Interpolated to point</span></div>
+<div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 06Z · 12Z · 18Z</span><span class="text-on-surface-variant">HRDPS ~4–5 h after init</span></div>
+<div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">2.5 → 10 → 15 km</span><span class="text-on-surface-variant">HRDPS → RDPS → GDPS</span></div>
 </div>
 </div>
 </div>
@@ -460,7 +460,7 @@
 <p class="text-xs font-bold text-on-surface uppercase tracking-wider mb-3">Calculation Chain</p>
 <div class="space-y-2 text-xs text-on-surface-variant font-mono">
 <p><span class="text-primary">Step 1</span> — Today's observed conditions (SWOB or NWP, noon LST) → Van Wagner → FFMC / DMC / DC chain state</p>
-<p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or ECMWF hour 12) → carry-forward → D+1 FFMC / DMC / DC</p>
+<p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or GEM hour 12) → carry-forward → D+1 FFMC / DMC / DC</p>
 <p><span class="text-primary">Step 3</span> — Tomorrow's 16:00 forecast + D+1 FWI codes → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_16h)</code></p>
 <p><span class="text-primary">Step 4</span> — Outputs: Head ROS (m/min), HFI (kW/m), Flame Length (m), Fire Type, CFB (%)</p>
 </div>
@@ -654,7 +654,7 @@
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No CWFIS fire weather station coverage:</strong> BC is west of −114°W; the NRCan <code class="text-primary">firewx_stns_current</code> WFS layer does not return BC stations. All BC current conditions come from SWOB or NWP — the pre-computed NRCan FWI carry-over chain is not available for BC stations in this app.</span></li>
 <li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">SWOB — no pre-computed FWI:</strong> Unlike CWFIS in Alberta, SWOB returns raw weather observations only. Van Wagner equations are applied client-side using BC spring startup constants. Off-season DC may be systematically underestimated.</span></li>
 <li class="flex gap-3"><span class="text-amber-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">DC divergence warning:</strong> DC has a ~53-day e-folding memory of accumulated precipitation and cannot be meaningfully averaged between stations that experienced different rainfall. When ≥2 CWFIS stations within 75 km differ by ≥75 DC units, the app shows an amber warning. This indicates a localised precipitation event may have created a step-change in DC across the landscape. The operator should review nearby station DCs and select the station whose precipitation history best represents the target fuel complex.</span></li>
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Terrain effects — BC is complex:</strong> Chinook-like valley outflow, sea breezes, mountain gaps, and strong diurnal cycles in BC's coastal and interior terrain produce fire weather that NWP models poorly resolve at 0.25°. For stations in the Coast Range, Columbia Mountains, and Cascade foothills, treat NWP-sourced FWI values with greater caution than equivalent Alberta results.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Terrain effects — BC is complex:</strong> Chinook-like valley outflow, sea breezes, mountain gaps, and strong diurnal cycles in BC's coastal and interior terrain produce fire weather that NWP models resolve poorly, even HRDPS at 2.5 km (GDPS beyond day 3–4 is 15 km). For stations in the Coast Range, Columbia Mountains, and Cascade foothills, treat NWP-sourced FWI values with greater caution than equivalent Alberta results.</span></li>
 <li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">BC danger scale — do not apply Alberta thresholds:</strong> An FWI of 35 is "Extreme" in BC but "Very High" in Alberta. Always confirm which province's scale is in use. This app hardcodes the BC scale in <code class="text-primary">bc/fwi.js</code>.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Mountain Pine Beetle fuel modification:</strong> Large areas of interior lodgepole have been structurally altered by MPB. C3 default may overpredict canopy fire intensity in grey-attack (defoliated) stands or underpredict in red-attack (fully loaded) stands. Use local BCWS fuel type mapping when available.</span></li>
 <li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No slope aspect:</strong> FBP slope factor = 0% for all stations. Mountain terrain in BC (Coast Mountains, Rockies, Columbia/Purcell/Selkirk ranges) is particularly affected. Actual HFI on steep slopes may be 2× or more above the flat-terrain prediction.</span></li>
@@ -745,7 +745,7 @@
 <!-- ── About ───────────────────────────────────────────────────────────── -->
 <div class="bg-[#0f1829] border border-[#1e2740] rounded-2xl px-6 py-5 mb-8 max-w-3xl">
   <p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">About Pyra</p>
-  <p class="text-sm text-slate-300 leading-relaxed">Pyra is an open-source wildfire weather tool built for operational use by wildland firefighters, fire behaviour analysts, and emergency managers. It integrates live fire weather observations from the Canadian Wildland Fire Information System (CWFIS) with NRCan's Canadian Forest Fire Danger Rating System (CFFDRS) — combining real-time FWI codes from the operational carry-over chain with FBP System fire behaviour predictions across standard fuel types. Weather data flows through a three-tier hierarchy: CWFIS fire weather stations (pre-computed FWI chain), MSC SWOB real-sensor observations, and ECMWF IFS numerical forecast as a last resort. Station coverage includes British Columbia (260+ stations grouped by Fire Centre) and Alberta (39 stations). Built by Travis Kennedy, Claude, and Glenn. Free, open, no login required.</p>
+  <p class="text-sm text-slate-300 leading-relaxed">Pyra is an open-source wildfire weather tool built for operational use by wildland firefighters, fire behaviour analysts, and emergency managers. It integrates live fire weather observations from the Canadian Wildland Fire Information System (CWFIS) with NRCan's Canadian Forest Fire Danger Rating System (CFFDRS) — combining real-time FWI codes from the operational carry-over chain with FBP System fire behaviour predictions across standard fuel types. Weather data flows through a three-tier hierarchy: CWFIS fire weather stations (pre-computed FWI chain), MSC SWOB real-sensor observations, and ECCC GEM numerical forecast as a last resort. Station coverage includes British Columbia (260+ stations grouped by Fire Centre) and Alberta (39 stations). Built by Travis Kennedy, Claude, and Glenn. Free, open, no login required.</p>
 </div>
 
 <!-- Footer -->

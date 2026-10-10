@@ -196,7 +196,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <!-- Forecast Days — Fire Behaviour Outlook table -->
 <section class="bg-surface-container-low rounded-lg p-6">
 <h3 class="font-headline text-xl font-bold text-white mb-4">Fire Behaviour Outlook — All Forecast Days</h3>
-<p class="text-slate-300 text-sm mb-4">FWI column: daily FWI (noon LST) from the forecast chain. HFI class + kW/m at peak burn. Peak burn conditions (~16:00 MDT). Temp/RH/Wind from ECMWF IFS (Open-Meteo) at 16:00; beyond the ECMWF horizon (~7 days) from NAEFS ensemble medians, lower confidence. FBP chains forward from today's observed FFMC/DMC/DC.</p>
+<p class="text-slate-300 text-sm mb-4">FWI column: daily FWI (noon LST) from the forecast chain. HFI class + kW/m at peak burn. Peak burn conditions (~16:00 MDT). Temp/RH/Wind from ECCC GEM (Open-Meteo) at 16:00; beyond the GEM horizon (~7 days) from NAEFS ensemble medians, lower confidence. FBP chains forward from today's observed FFMC/DMC/DC.</p>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
@@ -265,7 +265,7 @@ Wk 2 avg <span class="text-white font-bold" id="fwi-w2-avg">—</span>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=144"></script><script src="../core/fwi-core.js?v=144"></script>
+<script src="../fwi.js?v=145"></script><script src="../core/fwi-core.js?v=145"></script>
 <script>
   const _savedStation = localStorage.getItem('fwi-station'); // stored as "lat,lng"
   const [_sLat, _sLng] = _savedStation ? _savedStation.split(',').map(Number) : [null, null];

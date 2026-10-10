@@ -168,7 +168,7 @@ The province module defines a single `PROVINCE` config object (time offsets, sto
 | CWFIS `firewx_stns_current` WFS | Alberta live fire weather (Tier 1 AB); ~11 BC border stations |
 | **Alberta Wildfire pmwx.csv** | AEF fire weather stations (25 stations, southern/central AB) — properly initialized via Lawson & Armitage (2008) overwinter equation. Used in IDW blend to correct DC underinitialization near AEF station coverage. `wildfire.alberta.ca/files/pmwx.csv` |
 | Environment Canada SWOB | BC Tier 2 — raw obs for stations not in BCWS Datamart |
-| Open-Meteo NWP (ECMWF IFS) | Tier 3 fallback weather — last resort |
+| Open-Meteo NWP (ECCC GEM) | Tier 3 fallback weather — last resort |
 | CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
 | CFFDRS (Van Wagner 1987, ST-X-3) | FWI/FBP calculation — national standard |
 | BCWS 2022 Implementation Guide | BC danger class thresholds |
