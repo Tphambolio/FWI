@@ -6,7 +6,7 @@ Living record of the work, decisions, scientific references and testing behind
 - **Live:** https://tphambolio.github.io/FWI/ (AB) · https://tphambolio.github.io/FWI/bc/ (BC)
 - **Repo:** https://github.com/Tphambolio/FWI (local: `~/dev/FWI`)
 - **Owner:** Travis Kennedy, P.Ag
-- **Status at this revision:** engine v139 live; all 7 test suites green on the live site.
+- **Status at this revision:** engine v144 live; all 7 test suites green on the live site.
 
 ---
 
@@ -73,6 +73,7 @@ with today's weather.
 | 2026-10-09 | FSB builder pre-ticks stations within 60 km of the incident station, with a live count (`e82afa2`) | Whole-sector pre-tick (58 stations) was invisible, so ticking local stations removed them |
 | 2026-10-09 | Map clusters take the worst FWI danger inside; still-loading clusters are neutral grey; the map fits the station network (`2765420`, `e82afa2`) | Extreme southern stations were hidden behind neutral bubbles at a cropped edge |
 | 2026-10-09 | Every FWI on the briefing names its basis ("daily, noon LST", or "stepped with 16:00 forecast weather, pre-noon") (`dedfb2f`) | Owner rule: no unlabelled FWI numbers |
+| 2026-10-10 | All sources behind Pyra collected in the Zotero collection "Pyra Sources" (29 items: 13 linked from the existing library, 16 imported) with Zotero keys in §4; AB science guide Open-Meteo citation corrected from "Zuur & Förster" to Zippenfenig (2024) | Rigour for the Claude for Science record; source audit also found an NWP model mislabel and three unverifiable citations (Open items) |
 
 ## 4. Science implementation and references
 
@@ -101,29 +102,56 @@ retrieved 2026-10-08).
 
 ### References
 
-- Alexander, M.E.; Cruz, M.G. 2012. Interdependencies between flame length and fireline intensity in predicting crown fire initiation and crown scorch height. *International Journal of Wildland Fire* 21: 95–113.
-- Byram, G.M. 1959. Combustion of forest fuels. In: Davis, K.P. (ed.), *Forest Fire: Control and Use*. McGraw-Hill, New York.
-- Cole, F.V.; Alexander, M.E. 1995. Head fire intensity class graph for FBP System fuel type C-2. Canadian Forest Service, Northern Forestry Centre, Edmonton.
-- Forestry Canada Fire Danger Group (FCFDG). 1992. Development and structure of the Canadian Forest Fire Behavior Prediction System. Information Report ST-X-3. Forestry Canada, Ottawa.
-- Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton.
-- Rothermel, R.C. 1991. Predicting behavior and size of crown fires in the Northern Rocky Mountains. Research Paper INT-438. USDA Forest Service, Intermountain Research Station.
-- Thomas, P.H. 1963. The size of flames from natural fires. *Ninth Symposium (International) on Combustion*, 844–859.
-- Van Wagner, C.E. 1977. A method of computing fine fuel moisture content throughout the diurnal cycle. Information Report PS-X-69. Petawawa Forest Experiment Station.
-- Van Wagner, C.E. 1987. Development and structure of the Canadian Forest Fire Weather Index System. Forestry Technical Report 35. Canadian Forestry Service, Ottawa.
-- Van Wagner, C.E.; Pickett, T.L. 1985. Equations and FORTRAN program for the Canadian Forest Fire Weather Index System. Forestry Technical Report 33. Canadian Forestry Service, Ottawa.
-- Wang, X.; Wotton, B.M.; Cantin, A.S.; Parisien, M.-A.; Anderson, K.; Moore, B.; Flannigan, M.D. 2017. cffdrs: an R package for the Canadian Forest Fire Danger Rating System. *Ecological Processes* 6: 5.
-- Wotton, B.M.; Alexander, M.E.; Taylor, S.W. 2009. Updates and revisions to the 1992 Canadian Forest Fire Behavior Prediction System. Information Report GLC-X-10. Natural Resources Canada, Canadian Forest Service, Great Lakes Forestry Centre.
+All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
+
+**Fire Weather Index System**
+- Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`4AWT7VN5`]
+- Van Wagner, C.E. 1977. A method of computing fine fuel moisture content throughout the diurnal cycle. Information Report PS-X-69. Petawawa Forest Experiment Station. [`LI4PA2K3`]
+- Van Wagner, C.E. 1985. Drought, timelag and fire danger rating. *Proceedings of the 8th Conference on Fire and Forest Meteorology*, Detroit, MI, 178–185. Society of American Foresters. [`9F2JPJG7`]
+- Van Wagner, C.E. 1987. Development and structure of the Canadian Forest Fire Weather Index System. Forestry Technical Report 35. Canadian Forestry Service, Ottawa. [`LERJ4VJ6`]
+- Van Wagner, C.E.; Pickett, T.L. 1985. Equations and FORTRAN program for the Canadian Forest Fire Weather Index System. Forestry Technical Report 33. Canadian Forestry Service, Ottawa. [`94KGP5U3`]
+
+**Fire Behavior Prediction System, crown fire and flame length**
+- Alexander, M.E.; Cruz, M.G. 2012. Interdependencies between flame length and fireline intensity in predicting crown fire initiation and crown scorch height. *International Journal of Wildland Fire* 21: 95–113. [`6GKP64VK`]
+- Byram, G.M. 1959. Combustion of forest fuels. In: Davis, K.P. (ed.), *Forest Fire: Control and Use*, 61–89. McGraw-Hill, New York. [`EUKYZ4PW`]
+- Forestry Canada Fire Danger Group (FCFDG). 1992. Development and structure of the Canadian Forest Fire Behavior Prediction System. Information Report ST-X-3. Forestry Canada, Ottawa. [`LKBB3HE5`]
+- Rothermel, R.C. 1991. Predicting behavior and size of crown fires in the Northern Rocky Mountains. Research Paper INT-438. USDA Forest Service, Intermountain Research Station. [`M6T6QB2T`]
+- Thomas, P.H. 1963. The size of flames from natural fires. *Ninth Symposium (International) on Combustion*, 844–859. [`6449DW4E`]
+- Van Wagner, C.E. 1977. Conditions for the start and spread of crown fire. *Canadian Journal of Forest Research* 7: 23–34. [`EGV8S4ZH`]
+- Wotton, B.M.; Alexander, M.E.; Taylor, S.W. 2009. Updates and revisions to the 1992 Canadian Forest Fire Behavior Prediction System. Information Report GLC-X-10. Natural Resources Canada, Canadian Forest Service, Great Lakes Forestry Centre. [`3UTIPRZL`]
+
+**Head fire intensity classes and operational guidance**
+- Cole, F.V.; Alexander, M.E. 1995. Head fire intensity class graph for FBP System fuel type C-2. Canadian Forest Service, Northern Forestry Centre, Edmonton. [`YFNDUP9L`]
+- Government of Alberta, Forestry and Parks. Alberta Wildland Urban Interface Pocket Guide. Edition and year not yet confirmed. [`SM5NRGUI`]
+- Taylor, S.W.; Pike, R.G.; Alexander, M.E. 1997. Field guide to the Canadian Forest Fire Behavior Prediction (FBP) System. Special Report 11. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`W86C9VP9`]
+
+**Weather inputs, interpolation and data systems**
+- Candille, G. 2009. The multiensemble approach: the NAEFS example. *Monthly Weather Review* 137: 1655–1665. doi:10.1175/2008MWR2682.1 [`2JC5XGZY`]
+- European Space Agency. 2022. Copernicus DEM (GLO-90). doi:10.5270/ESA-c5d3d65 [`LYXBSNG8`]
+- Lee, B.S.; Alexander, M.E.; Hawkes, B.C.; Lynham, T.J.; Stocks, B.J.; Englefield, P. 2002. Information systems in support of wildland fire management decision making in Canada. *Computers and Electronics in Agriculture* 37: 185–198. doi:10.1016/S0168-1699(02)00120-5 [`9IIVZWHU`]
+- Luo, W.; Taylor, M.C.; Parker, S.R. 2008. A comparison of spatial interpolation methods to estimate continuous wind speed surfaces using irregularly distributed data from England and Wales. *International Journal of Climatology* 28: 947–959. doi:10.1002/joc.1583 [`UFQ5NRGK`]
+- Zippenfenig, P. 2024. Open-Meteo.com Weather API. Zenodo. doi:10.5281/zenodo.7970649 [`B7U7GCPC`]
+- Supporting (not cited in code): Jain, P.; Flannigan, M. 2017. Comparison of methods for spatial interpolation of fire weather in Alberta, Canada. *Canadian Journal of Forest Research* 47: 1646–1658. doi:10.1139/cjfr-2017-0101 — the Alberta-specific study behind interpolating weather before computing FWI; a better primary citation for `_computeIDWBlend` than the unverified Snyder (1992). [`ET83MVJM`, tag `pyra-supporting`]
+
+**Software and reference implementation**
+- Wang, X.; Wotton, B.M.; Cantin, A.S.; Parisien, M.-A.; Anderson, K.; Moore, B.; Flannigan, M.D. 2017. cffdrs: an R package for the Canadian Forest Fire Danger Rating System. *Ecological Processes* 6: 5. [`BZMU7LVN`]
+- cffdrs R package source, CRAN mirror https://github.com/cran/cffdrs (retrieved 2026-10-08), ported line-for-line to `tests/reference.mjs`. [`PY25G74P`]
+
+**Citations in the code or science guides that could not be verified** (not added to Zotero; see Open items):
+- "Snyder (1992)", cited for IDW in `core/fwi-core.js` `_computeIDWBlend`.
+- "Butler 2007 cap", cited for slope raising HFI up to 2× in the AB science guide's limitations list.
+- "BC Wildfire Service (2022). CFFDRS Implementation Guide — BC Danger Scale and Operational Application", BC science guide ref [6]. No document with this title was found; the BC danger classes need a verifiable BCWS source.
 
 ### Data sources
 
-| Source | Use | Licence |
-|---|---|---|
-| NRCan CWFIS (GeoServer WFS/WMS) | Station FWI chain, SCRIBE forecast, NAEFS, FBP fuel grid, active fires, hotspots | OGL-Canada |
-| ECCC MSC SWOB realtime (api.weather.gc.ca) | Station sensor obs | OGL-Canada |
-| BC Wildfire Service Datamart | Noon FWI codes + official danger rating (mirrored daily) | OGL-BC |
-| Alberta Wildfire pmwx.csv | AEF station obs (mirrored daily) | OGL-Alberta |
-| Open-Meteo (ECMWF IFS 0.25°, Copernicus GLO-90 DEM) | NWP hourly / noon / 16:00; elevation, slope, aspect | CC BY 4.0 |
-| City of Edmonton canopy LiDAR fuel raster | Edmonton pin-drop fuel type | City of Edmonton |
+| Source | Use | Licence | Zotero |
+|---|---|---|---|
+| NRCan CWFIS (GeoServer WFS/WMS) | Station FWI chain, SCRIBE forecast, NAEFS, FBP fuel grid, active fires, hotspots | OGL-Canada | `4B9TM6KC`, `9IIVZWHU`; fuel grid `E5N5TT35` |
+| ECCC MSC SWOB realtime (api.weather.gc.ca) | Station sensor obs | OGL-Canada | `QI54NLVE` |
+| BC Wildfire Service Datamart | Noon FWI codes + official danger rating (mirrored daily) | OGL-BC | `7EGXPF6H` |
+| Alberta Wildfire pmwx.csv | AEF station obs (mirrored daily) | OGL-Alberta | `RHXC63JG` |
+| Open-Meteo (default `best_match` model — see Open items; Copernicus GLO-90 DEM) | NWP hourly / noon / 16:00; elevation, slope, aspect | CC BY 4.0 | `B7U7GCPC`, `LYXBSNG8` |
+| City of Edmonton canopy LiDAR fuel raster | Edmonton pin-drop fuel type | City of Edmonton | `E2PCWWD6` |
 
 ## 5. Testing
 
@@ -176,6 +204,9 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [x] Alert delivery configured: WhatsApp via OpenClaw, daily 14:30 cron, quiet mode (2026-10-09, `eb45e98`).
 - [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
+- [ ] **NWP provenance mislabel (found 2026-10-10 during the source audit).** Pyra's Open-Meteo requests send no `models=` parameter, so they get Open-Meteo's `best_match` blend. At Hussar on 2026-10-10 that matched `gfs_seamless` exactly, not `ecmwf_ifs025`, yet the UI, printed briefings and this record call it "ECMWF IFS 0.25°". `ecmwf_ifs025` is available on the free API, so the science guide's note that it is premium-only is also out of date. Decide: request `models=ecmwf_ifs025` (labels become true; check thunderstorm probability availability) or relabel as "Open-Meteo best-match".
+- [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Confirm the edition of the Alberta WUI Pocket Guide.
+- [ ] Zotero: 9 of 29 Pyra Sources items have PDFs. Free NRCan/USFS reports (ST-X-3 already attached; FTR-33, PS-X-69, SR-11, the Weather Guide, INT-438) could be attached.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 
@@ -185,6 +216,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-10-09 | `4d4969f` | docs(record): 2026-10-09 UAT decisions, test counts, open items, UAT PDFs |
 | 2026-10-09 | `e82afa2` | fix(uat): FSB builder pre-ticks the local stations visibly; map/trends phone polish |
 | 2026-10-09 | `5eb6364` | fix(mobile): shared links use the station's fuel; usable phone landscape |
 | 2026-10-09 | `6182985` | feat(ops): after 16:00 the station page and ICS briefing lead with the next operational period |
