@@ -1129,8 +1129,12 @@ function _selectCWFIS(features, lat, lng) {
  * DC: IDW from chain stations only IF spread < 75 DC units; otherwise use nearest chain station
  *     DC and flag dcDivergence (DC has ~53-day memory, discontinuous across precip boundaries).
  *
- * Reference: Snyder (1992), Luo et al. (2008) — IDW on meteorological inputs prior to
- * FWI calculation is methodologically equivalent to the CWFIS gridded interpolation approach.
+ * References: Shepard (1968) for IDW. Same scheme as the CWFIS daily weather grids
+ * (NRCan CFS 2020 metadata: IDW, nearest 12 stations, 1/d², grids then fed to FWI/FBP).
+ * Jain & Flannigan (2017, Alberta) found "interpolate weather and previous-day codes,
+ * then calculate" better than interpolating FWI outputs; Flannigan & Wotton (1989)
+ * found the reverse, mainly because rain is patchy — hence the DC divergence flag.
+ * Luo et al. (2008) compare interpolators for wind.
  */
 function _computeIDWBlend(features, lat, lng, maxStations = 12) {
   // Build candidate list with distances; require valid weather obs

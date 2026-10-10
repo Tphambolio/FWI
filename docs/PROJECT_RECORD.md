@@ -141,10 +141,18 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 - Wang, X.; Wotton, B.M.; Cantin, A.S.; Parisien, M.-A.; Anderson, K.; Moore, B.; Flannigan, M.D. 2017. cffdrs: an R package for the Canadian Forest Fire Danger Rating System. *Ecological Processes* 6: 5. [`BZMU7LVN`]
 - cffdrs R package source, CRAN mirror https://github.com/cran/cffdrs (retrieved 2026-10-08), ported line-for-line to `tests/reference.mjs`. [`PY25G74P`]
 
-**Citations in the code or science guides that could not be verified** (not added to Zotero; see Open items):
-- "Snyder (1992)", cited for IDW in `core/fwi-core.js` `_computeIDWBlend`.
-- "Butler 2007 cap", cited for slope raising HFI up to 2× in the AB science guide's limitations list.
-- "BC Wildfire Service (2022). CFFDRS Implementation Guide — BC Danger Scale and Operational Application", BC science guide ref [6]. No document with this title was found; the BC danger classes need a verifiable BCWS source.
+**Citation audit, 2026-10-10.** Three citations could not be found and were replaced, with the claims corrected against the new sources:
+- "Snyder (1992)" (IDW in `_computeIDWBlend`): not found. Replaced by Shepard 1968, the CWFIS weather grids metadata (same IDW scheme: 12 nearest stations, 1/d²), and Jain & Flannigan 2017 and Flannigan & Wotton 1989 for the evidence (they disagree; rain patchiness is the main error source). "Methodologically equivalent to CWFIS" removed.
+- "Butler 2007 cap" (AB guide, slope limitation): Butler et al. 2007 exists but states no 2× cap; it reports McArthur (1968), about 2× at 10° and 4× at 20°. The limitation was also out of date (Pyra applies site slope since the slope work). Rewritten with the FBP Eq. 39 multipliers (1.7× at 20%, 2.3× at 30%, 6.8× at 60%, 10× at 70%+).
+- "BCWS (2022) CFFDRS Implementation Guide" (BC guide ref [6], README): not found. Replaced by the Wildfire Regulation, B.C. Reg. 38/2005, Schedule 2, which sets the Fire Danger Class from BUI × FWI tables for three Danger Regions. Pyra's BC labels (FWI cut-points 5/12/21/34) are stated as a Pyra proxy; FWI 34 is not a Regulation cut-off.
+
+**Added sources (Zotero, Pyra Sources):**
+- Butler, B.W.; Anderson, W.R.; Catchpole, E.A. 2007. Influence of slope on fire spread rate. In: Butler, B.W.; Cook, W. (comps.), *The fire environment—innovations, management, and policy*. USDA Forest Service Proceedings RMRS-P-46CD, 75–82.
+- Flannigan, M.D.; Wotton, B.M. 1989. A study of interpolation methods for forest fire danger rating in Canada. *Canadian Journal of Forest Research* 19: 1059–1066. doi:10.1139/x89-161
+- Natural Resources Canada, Canadian Forest Service. 2020. Daily Weather Grids (CWFIS) — metadata record, Federal Geospatial Platform.
+- Province of British Columbia. Wildfire Regulation, B.C. Reg. 38/2005 (consolidation current to 2026-04-29).
+- Shepard, D. 1968. A two-dimensional interpolation function for irregularly-spaced data. *Proceedings of the 1968 23rd ACM National Conference*, 517–524. doi:10.1145/800186.810616
+- Jain & Flannigan 2017 moves from "supporting" to cited (`_computeIDWBlend`).
 
 ### Data sources
 
@@ -209,7 +217,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
-- [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Alberta WUI Pocket Guide edition confirmed as 2022 (2026-10-10).
+- [x] Unverified citations resolved 2026-10-10 (Snyder 1992, Butler 2007 cap, BCWS 2022 guide): replaced with verified sources and the claims corrected; see §4 "Citation audit". Follow-up option: implement the real BC Schedule 2 lookup (BUI × FWI by Danger Region) instead of the FWI-only proxy.
 - [x] Zotero: all 30 Pyra Sources items have a stored PDF (2026-10-10). Journal papers via UNBC library access (Lee 2002, Luo 2008, Thomas 1963); SR-11 1997 is a 26-page UNBC ebook excerpt alongside the full 1996 FRDA edition; data services carry dated documentation snapshots; the Edmonton fuel grid carries the City canopy report.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.

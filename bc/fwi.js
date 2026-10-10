@@ -125,9 +125,9 @@ function applyDCFloor(rawDC, lat, lon) {
 }
 
 // BC display classes — 5 classes, no "Very High", adds "Very Low".
-// CAVEAT: this is a raw-FWI proxy of the BCWS station danger class. BCWS
-// actually derives danger class from BUI×ISI danger-region tables (Lawson &
-// Armitage 2008), so labels here can differ from official BCWS ratings.
+// CAVEAT: this is a raw-FWI proxy (5/12/21/34 are Pyra cut-points). BC's legal
+// Fire Danger Class cross-references BUI with FWI per Danger Region (Wildfire
+// Regulation, B.C. Reg. 38/2005, Schedules 1–2), so labels can differ from BCWS.
 function dangerRatingBC(fwi) {
   if (fwi <  5) return 'Very Low';
   if (fwi < 12) return 'Low';

@@ -171,7 +171,7 @@ The province module defines a single `PROVINCE` config object (time offsets, sto
 | Open-Meteo NWP (ECCC GEM) | Tier 3 fallback weather — last resort |
 | CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
 | CFFDRS (Van Wagner 1987, ST-X-3) | FWI/FBP calculation — national standard |
-| BCWS 2022 Implementation Guide | BC danger class thresholds |
+| BC Wildfire Regulation (B.C. Reg. 38/2005, Sch. 2) | Official BC Fire Danger Class (BUI × FWI by Danger Region); Pyra's BC labels are an FWI-only proxy |
 | Van Wagner (1985) | BC spring DC overwinter algorithm |
 
 ---
@@ -184,7 +184,8 @@ The province module defines a single `PROVINCE` config object (time offsets, sto
 - Van Wagner, C.E. (1985). *Drought, timelag and fire danger rating.* In: Proc. 8th Natl. Conf. on Fire and Forest Meteorology, pp. 178–185.
 - Lawson, B.D. & Armitage, O.B. (2008). *Weather Guide for the Canadian Forest Fire Danger Rating System.* Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton, Alberta. — overwinter DC carryover equation used for spring startup initialization.
 - Taylor, S.W.; Pike, R.G.; Alexander, M.E. (1997). *Field Guide to the Canadian Forest Fire Behavior Prediction (FBP) System.* Special Report 11. Natural Resources Canada.
-- BC Wildfire Service (2022). *CFFDRS Implementation Guide for BC Operations.* BCWS Fire Weather Program.
+- Province of British Columbia. *Wildfire Regulation*, B.C. Reg. 38/2005, Schedules 1–3 (Danger Regions, Fire Danger Class, restrictions).
+- Full source list with Zotero keys: `docs/PROJECT_RECORD.md` §4.
 
 ---
 
