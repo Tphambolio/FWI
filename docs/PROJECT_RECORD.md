@@ -108,7 +108,7 @@ retrieved 2026-10-08).
 
 ### References
 
-All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, all with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
+All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 38 items, all with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
 
 **Fire Weather Index System**
 - Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`4AWT7VN5`]
@@ -140,6 +140,11 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 - Zippenfenig, P. 2024. Open-Meteo.com Weather API. Zenodo. doi:10.5281/zenodo.7970649 [`B7U7GCPC`]
 - City of Edmonton, Urban Forest Initiatives. 2026. Edmonton FBP fuel type grid, 20 m (`Edmonton_FBP_FuelLayer_20251105_10m.tif`; the "10m" and date in the filename are wrong), from the 2025 City vegetation LiDAR and uPLVI. Technical lead T. Kennedy. Documented in *Edmonton Urban Canopy Cover Analysis 2025 — Project Report* (March 2026), §3.4 and Table 4.5; lineage in the FireSim project record. Not accuracy-assessed. [`E2PCWWD6`, report attached]
 - Supporting (not cited in code): Jain, P.; Flannigan, M. 2017. Comparison of methods for spatial interpolation of fire weather in Alberta, Canada. *Canadian Journal of Forest Research* 47: 1646–1658. doi:10.1139/cjfr-2017-0101 — the Alberta-specific study behind interpolating weather before computing FWI; a better primary citation for `_computeIDWBlend` than the unverified Snyder (1992). [`ET83MVJM`, tag `pyra-supporting`]
+
+**Alberta Red Flag Watch/Warning (relayed, not computed)**
+- Alberta Wildfire. 2019. Red Flag: the adoption of the Red Flag Watch and Red Flag Warning nomenclature in AWCC fire weather forecasts. Government of Alberta. https://open.alberta.ca/publications/red-flag (copy watermarked out of date). [`V63FCWNZ`]
+- Alberta Wildfire, Wildfire Geospatial Intelligence Unit. 2024. Fire Weather Forecast Zones (map). Vectorised and georeferenced by Pyra into `data/ab_fire_weather_zones.json`. [`TTJ2S8AW`]
+- Alberta Wildfire Coordination Centre. AM and PM fire weather forecasts (`amfcst.pdf`, `pmfcst.pdf`), parsed twice daily by `.github/workflows/ab-redflag.yml`. Attached: 2026-10-09 PM forecast and the 2023-05-15 Red Flag forecast used as the test fixture. [`VZKRYRZ2`]
 
 **Software and reference implementation**
 - Wang, X.; Wotton, B.M.; Cantin, A.S.; Parisien, M.-A.; Anderson, K.; Moore, B.; Flannigan, M.D. 2017. cffdrs: an R package for the Canadian Forest Fire Danger Rating System. *Ecological Processes* 6: 5. [`BZMU7LVN`]
