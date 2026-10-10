@@ -667,7 +667,7 @@ async function _fetchWeatherPrimaryBC(lat, lng) {
         .sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999))[0] || null;
       if (primary) return _swobCrossCheck(primary, swob);
       // Before noon LST a morning sensor reading isn't the day's fire weather —
-      // use today's 16:00 peak-burn forecast (headline policy, as AB does).
+      // use today's noon-LST NWP forecast (fetchWeather), as AB does.
       if (preNoon) return fetchWeather(lat, lng);
       if (swob) return swob;
       // CWFIS weather-only obs from today (no codes) are still real observations
@@ -1027,13 +1027,12 @@ const PROVINCE = {
   lstOffset: 8,          // hours behind UTC for noon LST (PST) — the CFFDRS day
   localOffset: 7,        // hours behind UTC for local daylight time (PDT) — Today/Tomorrow, 16:00 peak burn
   noonUTC: 20,           // UTC hour of noon LST (CFFDRS observation hour)
-  peakUTC: 23,           // UTC hour of 16:00 PDT peak burn
+  peakUTC: 23,           // UTC hour of 16:00 PDT peak burn (= 15:00 PST/LST; operational choice, ISI/FWI-at-peak + FBP wind only)
   dangerScaleNote: 'FWI-based approximation of BC danger classes; BCWS issues the official rating from its own tables', // summary-row tooltip: what the FWI-derived danger class is
   tzLabel: 'PDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Vancouver', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryBC(lat, lng),   // tier chain (BCWS ∥ CWFIS, date-checked)
-  preNoonNWP: 'peak',    // Open-Meteo hour before noon: today's 16:00 peak-burn forecast (headline = 16:00, 2026-10-07)
   cwfisNoCache: true,    // CWFIS station query sent with cache: 'no-cache'
   trimFeedProperties: true,  // request only the read properties from SWOB / hotspot feeds
   idwExtraFeatures: async () => [],                                // no provincial IDW augmentation

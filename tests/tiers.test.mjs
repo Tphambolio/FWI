@@ -124,7 +124,7 @@ for (const e of ENGINES) {
 
 // ─── Alberta-specific clock windows (UTC−7, noon = 19 UTC) ───────────────────
 
-test('AB: pre-noon MST with CWFIS chain present → holding cache written, weather from 22 UTC peak-burn forecast', async () => {
+test('AB: pre-noon MST with CWFIS chain present → holding cache written, weather from the 19 UTC noon-LST forecast', async () => {
   const pre = lstClock(AB, 7, 15, 9); // 09:00 MST = 16 UTC
   const h = makeContext(AB.path, { now: pre, mocks: {
     cwfis: fc([stationFeature(AB, { rep_date: rep(YDAY) })]),
@@ -132,8 +132,8 @@ test('AB: pre-noon MST with CWFIS chain present → holding cache written, weath
   } });
   const w = await primary(h, AB);
   assert.equal(w.fwiFromCWFIS, false, 'yesterday chain not presented as today');
-  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)');
-  assert.equal(w.temp, 22.15, 'Open-Meteo slot 2026-07-15T22:00');
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.temp, 19.15, 'Open-Meteo slot 2026-07-15T19:00 (noon MST)');
   assert.equal(swobCalls(h), 0, 'SWOB is not consulted before noon');
   const hold = JSON.parse(h.storage.get(h.run(`_holdKey(${AB.lat}, ${AB.lng})`)));
   assert.equal(hold.ffmc, 89);
@@ -148,11 +148,11 @@ test('AB: pre-noon MST with CWFIS chain present → holding cache written, weath
   assert.equal(r._obsDate, TODAY);
 });
 
-test('AB: pre-noon MST with only SWOB → SWOB skipped, peak-burn NWP used', async () => {
+test('AB: pre-noon MST with only SWOB → SWOB skipped, noon-LST NWP forecast used', async () => {
   const pre = lstClock(AB, 7, 15, 9);
   const h = makeContext(AB.path, { now: pre, mocks: { swob: fc([swobNear(AB, pre)]) } });
   const w = await primary(h, AB);
-  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)');
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
   assert.equal(swobCalls(h), 0);
 });
 
@@ -230,11 +230,11 @@ function swobFeature322(now) {
 }
 
 for (const [label, hour, expect] of [
-  // pre-noon: a morning sensor reading isn't the day's fire weather → 16:00 peak-burn forecast
-  ['pre-noon (09:00 PST)', 9, /^Open-Meteo NWP \(peak burn forecast · 16:00 PDT\)$/],
+  // pre-noon: a morning sensor reading isn't the day's fire weather → noon-LST NWP forecast
+  ['pre-noon (09:00 PST)', 9, /^Open-Meteo NWP \(noon LST forecast, pre-noon\)$/],
   ['post-noon (13:00 PST)', 13, /^MSC SWOB · MSC AIRPORT/],
 ]) {
-  test(`BC: ${label}, CWFIS chain dated yesterday is not primary → ${hour < 12 ? 'peak-burn NWP' : 'SWOB'} used`, async () => {
+  test(`BC: ${label}, CWFIS chain dated yesterday is not primary → ${hour < 12 ? 'noon-LST NWP' : 'SWOB'} used`, async () => {
     const now = lstClock(BC, 7, 15, hour);
     const h = makeContext(BC.path, { now, mocks: {
       cwfis: fc([stationFeature(BC, { rep_date: rep(YDAY) })]), swob: fc([swobNear(BC, now, { temp: 19 })]),
@@ -251,8 +251,8 @@ test('BC: pre-noon, yesterday\'s CWFIS chain and no SWOB → NWP + initFWI steps
     cwfis: fc([stationFeature(BC, { rep_date: rep(YDAY) })]), prev: prevPayload(pre, rep(YDAY)),
   } });
   const w = await primary(h, BC);
-  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 PDT)');
-  assert.equal(w.temp, 23.15, 'peak-burn slot 2026-07-15T23:00');
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.temp, 20.15, 'noon-PST slot 2026-07-15T20:00');
   const r = await init(h, BC);
   assert.equal(r._cachedFWI.src, 'daily');
   assert.equal(r._cachedFWI.final, false);

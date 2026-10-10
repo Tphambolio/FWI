@@ -98,9 +98,9 @@ test('AB: post-noon CWFIS chain dated yesterday → updated "Noon LST · Jul 14 
   assert.equal(updated, 'Noon LST · Jul 14 (not today)');
 });
 
-test('AB: pre-noon peak-burn forecast → updated "Peak Burn Forecast · 16:00 MDT"', async () => {
+test('AB: pre-noon noon-LST forecast → updated "Noon LST Forecast · today (pre-noon)"', async () => {
   const { updated } = await render(AB, { now: lstClock(AB, 7, 15, 9), mocks: { cwfis: fc([stationFeature(AB, { rep_date: rep(YDAY) })]) } });
-  assert.equal(updated, 'Peak Burn Forecast · 16:00 MDT');
+  assert.equal(updated, 'Noon LST Forecast · today (pre-noon)');
 });
 
 // BC used to show "Live · <time>" even for yesterday's data; since the core merge
