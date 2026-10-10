@@ -388,7 +388,7 @@ function _defaultFuelFor(lat) {
  * AB tier chain (PROVINCE.fetchPrimary — core fetchWeatherPrimary delegates here).
  * CWFIS firewx_stns_current updates once daily at noon LST (19:00 UTC for AB).
  * Before noon, the layer serves yesterday's obs — use chain values for holding
- * cache init but fall through to the peak-burn forecast for today's weather.
+ * cache init but fall through to the noon-LST NWP forecast for today's weather.
  * "Pre-noon" is evaluated in MST (UTC−7): the old `getUTCHours() < 19` test
  * wrapped past midnight UTC and treated 18:00 MDT–midnight as pre-noon,
  * discarding today's real obs every evening.
@@ -412,7 +412,7 @@ async function _fetchWeatherPrimaryAB(lat, lng) {
     if (cwfis) {
       if (isPreNoon && !_idwMode) {
         // CWFIS layer serves yesterday's noon obs until 19:00 UTC — always fall through
-        // to today's peak burn forecast for weather inputs.
+        // to today's noon-LST NWP forecast (fetchWeather) for weather inputs.
         // Cache FWI chain if present so initFWI uses real carry-over instead of startup constants.
         if (cwfis.fwiFromCWFIS) {
           try {
@@ -424,7 +424,7 @@ async function _fetchWeatherPrimaryAB(lat, lng) {
             }));
           } catch (_) {}
         }
-        // Fall through — use today's peak burn forecast for weather inputs
+        // Fall through — today's noon-LST forecast steps the carry-over (VW 1987)
       } else {
         return _swobCrossCheck(cwfis, swob);
       }
@@ -433,7 +433,7 @@ async function _fetchWeatherPrimaryAB(lat, lng) {
     if (!isPreNoon && swob) return swob;
   } catch (e) { /* fall through */ }
 
-  // Pre-noon: skip SWOB — real-time morning obs are not useful for peak burn prediction
+  // Pre-noon: skip SWOB — a morning sensor reading is not the day's noon-LST weather
   if (!isPreNoon) {
     try {
       const swob = await fetchSWOB(lat, lng);
@@ -719,13 +719,12 @@ const PROVINCE = {
   lstOffset: 7,          // hours behind UTC for noon LST (MST) — the CFFDRS day
   localOffset: 6,        // hours behind UTC for local daylight time (MDT) — Today/Tomorrow, 16:00 peak burn
   noonUTC: 19,           // UTC hour of noon LST (CFFDRS observation hour)
-  peakUTC: 22,           // UTC hour of 16:00 MDT peak burn
+  peakUTC: 22,           // UTC hour of 16:00 MDT peak burn (= 15:00 MST/LST; operational choice, ISI/FWI-at-peak + FBP wind only)
   dangerScaleNote: 'CWFIS FWI map classes', // summary-row tooltip: what the FWI-derived danger class is
   tzLabel: 'MDT',        // local daylight-time label in UI / briefings
   tzName: 'America/Edmonton', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryAB(lat, lng),   // tier chain + pre-noon policy
-  preNoonNWP: 'peak',    // Open-Meteo hour before noon: today's 16:00 peak-burn forecast
   cwfisNoCache: true,    // CWFIS station query sent with cache: 'no-cache'
   trimFeedProperties: true,  // request only the read properties from SWOB / hotspot feeds
   idwExtraFeatures: async (lat, lng) =>                            // IDW blend augmentation: AEF pmwx stations in AB

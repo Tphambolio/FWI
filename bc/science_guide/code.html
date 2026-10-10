@@ -187,7 +187,7 @@
 <!-- BC FWI Classification Scale — 5 classes, no Very High -->
 <section class="mb-16">
 <h3 class="font-headline text-2xl font-bold text-on-surface mb-2">BC Wildfire Service Danger Scale — 5 Classes</h3>
-<p class="text-sm text-on-surface-variant mb-6">BC uses five danger classes. "Very High" does not exist in the BC scale — "High" transitions directly to "Extreme" at FWI 34. Thresholds are calibrated to BC climate; the same FWI value implies different operational significance than in Alberta. Source: BC Wildfire Service CFFDRS Implementation Guide (BCWS, 2022).</p>
+<p class="text-sm text-on-surface-variant mb-6">BC uses five danger classes. "Very High" does not exist in the BC scale — "High" transitions directly to "Extreme" at FWI 34. Thresholds are calibrated to BC climate; the same FWI value implies different operational significance than in Alberta. <strong class="text-amber-400">Heuristic, unverified:</strong> this is a raw-FWI <em>proxy</em> of the BCWS danger class. BCWS derives its official class from BUI × ISI danger-region tables, not from FWI alone, so these labels can differ from the official rating; the cited "BCWS 2022 Implementation Guide" could not be located and the 5/12/21/34 cut-points are unverified. When today's BCWS noon observation carries an official <code class="text-primary">DANGER_RATING</code>, the station page shows it as "BCWS official" beside the FWI-derived class.</p>
 <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
   <div class="bg-surface-container rounded-lg p-5 border-t-2" style="border-top-color:#a7f3d0">
     <div class="font-headline text-2xl font-bold mb-1" style="color:#a7f3d0">Very Low</div>
@@ -217,7 +217,7 @@
 </div>
 <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
   <p class="text-[11px] font-bold uppercase tracking-widest text-amber-400 mb-1">BC vs Alberta — Why Thresholds Differ</p>
-  <p class="text-xs text-on-surface-variant leading-relaxed">Alberta's scale has six classes including "Very High" (FWI 33–49), with Extreme beginning at FWI 50. BC's Extreme begins at FWI 34 — a critical operational difference. The same FWI reading of 40 is "Very High" in Alberta but "Extreme" in BC. Do not apply Alberta thresholds to BC operational decisions.</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">The Alberta app uses the five CWFIS FWI map classes, including "Very High" (FWI 22.5–29.4), with Extreme from FWI 29.5. This app's BC proxy has no "Very High" and Extreme from FWI 34. The same FWI reading of 25 is "Very High" in the Alberta app but "High" here. Do not apply Alberta thresholds to BC operational decisions.</p>
   <div class="grid grid-cols-2 gap-4 mt-3 text-xs">
     <div>
       <p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mb-2">BC Scale (this app)</p>
@@ -232,16 +232,16 @@
     <div>
       <p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Alberta Scale (AB app)</p>
       <div class="space-y-1 font-mono text-on-surface-variant">
-        <div><span class="text-secondary">Low</span>: FWI &lt; 9</div>
-        <div><span class="text-primary">Moderate</span>: FWI 9–17</div>
-        <div><span style="color:#f5c518">High</span>: FWI 18–32</div>
-        <div><span class="text-orange-400">Very High</span>: FWI 33–49</div>
-        <div><span class="text-tertiary">Extreme</span>: FWI ≥ 50</div>
+        <div><span class="text-secondary">Low</span>: FWI &lt; 5.5</div>
+        <div><span class="text-primary">Moderate</span>: FWI 5.5–15.4</div>
+        <div><span style="color:#f5c518">High</span>: FWI 15.5–22.4</div>
+        <div><span class="text-orange-400">Very High</span>: FWI 22.5–29.4</div>
+        <div><span class="text-tertiary">Extreme</span>: FWI ≥ 29.5</div>
       </div>
     </div>
   </div>
 </div>
-<p class="text-[11px] text-on-surface-variant mt-4">Source: BC Wildfire Service CFFDRS Implementation Guide (BCWS, 2022); van Wagner, C.E. (1987). <em>Development and Structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35.</p>
+<p class="text-[11px] text-on-surface-variant mt-4">Sources: Alberta column — CWFIS <code>public:fwi</code> map legend. BC column — unverified proxy (see above); van Wagner, C.E. (1987). <em>Development and Structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35.</p>
 </section>
 
 <!-- FBP System -->
@@ -321,11 +321,11 @@
 <div class="h-px flex-1 mx-8 bg-outline-variant/15"></div>
 <span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">BC-Specific · Van Wagner 1985</span>
 </div>
-<p class="text-on-surface-variant leading-relaxed mb-6 max-w-2xl">BC spring DC startup values are substantially lower than Alberta's because of higher winter precipitation and snowpack recharge — particularly on the coast and in the interior-wet belt. Alberta's standard startup (DC 300) would overestimate drought severity in coastal and northern BC stations. BC Wildfire Service formally implements Van Wagner's (1985) overwinter DC carry-over algorithm for operational use; this app uses the practical cold-start defaults below as a browser-side fallback.</p>
+<p class="text-on-surface-variant leading-relaxed mb-6 max-w-2xl">BC spring DC startup values are substantially lower than Alberta's because of higher winter precipitation and snowpack recharge — particularly on the coast and in the interior-wet belt. Alberta's standard startup (DC 300) would overestimate drought severity in coastal and northern BC stations. Operational agencies overwinter the DC (Lawson &amp; Armitage 2008 [10], printed pp. 32–33); this app does not, and uses the cold-start defaults below as a browser-side fallback.</p>
 
 <div class="glass-card rounded-2xl p-8 border border-outline-variant/10 mb-6">
 <h4 class="font-headline text-lg font-bold mb-4 text-primary">DC Startup Defaults by Fire Centre — This App</h4>
-<p class="text-xs text-on-surface-variant mb-5 leading-relaxed">These values are used as cold-start DC when no CWFIS carry-over chain is available. They are moot during fire season when SWOB/NWP provides observed weather and the Van Wagner chain runs forward. Exact station values are in <code class="text-primary">bc/fwi.js → BC_STATION_STARTUP_DC</code>.</p>
+<p class="text-xs text-on-surface-variant mb-5 leading-relaxed">These values are used as cold-start DC when no CWFIS carry-over chain is available. They are moot during fire season when SWOB/NWP provides observed weather and the Van Wagner chain runs forward. Exact station values are in <code class="text-primary">bc/fwi.js → BC_STATION_STARTUP_DC</code>. <strong class="text-amber-400">Heuristic, unverified:</strong> these per-station and per-Fire-Centre values are a project table without a published source. The spring DC floor (Mar–Jul PST, raw DC ≤ 60 raised to 50/75/80/60 by latitude band) is likewise a heuristic correction of the CWFIS cold-start artifact, not the overwinter method.</p>
 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
   <div class="bg-surface-container-lowest rounded-xl p-4">
     <div class="text-[11px] font-label uppercase text-on-surface-variant mb-2">Coastal Fire Centre</div>
@@ -359,8 +359,8 @@
   </div>
 </div>
 <div class="bg-[#0f1829] border border-[#7bd0ff]/20 rounded-xl p-4 mt-4">
-  <p class="text-[11px] font-bold uppercase tracking-widest text-[#7bd0ff] mb-2">Overwinter DC Algorithm — Van Wagner (1985)</p>
-  <p class="text-xs text-on-surface-variant leading-relaxed">BC Wildfire Service operationally applies Van Wagner's overwinter carry-over formula: <code class="text-primary font-mono">DC_spring = DC_fall × e<sup>(-rw/a)</sup> + b</code>, where rw is the total overwinter precipitation (Nov–Mar in mm), and constants a=99.0, b=−91.5 calibrated to BC conditions. This produces a biologically meaningful spring startup from the autumn fire season's final DC value — accounting for wetting from fall and winter precipitation. This app uses simplified regional defaults (above) as a practical browser-side substitute. For operational precision, use BCWS-supplied startup values at the start of each fire season.</p>
+  <p class="text-[11px] font-bold uppercase tracking-widest text-[#7bd0ff] mb-2">Overwinter DC — CFFDRS Weather Guide procedure (not implemented here)</p>
+  <p class="text-xs text-on-surface-variant leading-relaxed">Lawson &amp; Armitage (2008 [10], printed p. 32, eqs. 2–4): <code class="text-primary font-mono">Qf = 800·exp(−DCf/400)</code>; <code class="text-primary font-mono">Qs = a·Qf + b·(3.94·rw)</code>; <code class="text-primary font-mono">DCs = 400·ln(800/Qs)</code>, where DCf is the final fall DC, rw the winter precipitation (mm), a the carry-over fraction of fall moisture (1.0 / 0.75 / 0.5) and b the effectiveness of winter precipitation (0.9 / 0.75 / 0.5), chosen by regional fire-weather authorities from the criteria in their Table 9 (printed p. 33). The guide notes the exercise is generally unnecessary where normal winter precipitation exceeds 200 mm (most of the BC coast). The constants BCWS uses are not verified here. (An earlier version of this page gave a different formula with a = 99.0, b = −91.5; that formula had no source and has been removed.) This app uses simplified regional defaults (above) as a practical browser-side substitute. For operational precision, use BCWS-supplied startup values at the start of each fire season.</p>
 </div>
 </div>
 </section>
@@ -397,9 +397,9 @@
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">air_temp</span><span class="text-on-surface-variant">°C at 2m AGL</span></div>
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">rel_hum</span><span class="text-on-surface-variant">% relative humidity</span></div>
 <div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">avg_wnd_spd_10m_pst1hr</span><span class="text-on-surface-variant">km/h 1-hr avg at 10m</span></div>
-<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">pcpn_amt_pst1hr</span><span class="text-on-surface-variant">mm precipitation</span></div>
+<div><span class="text-on-surface-variant">Field</span> <span class="font-bold text-on-surface block">pcpn_amt_pst24hrs</span><span class="text-on-surface-variant">mm, 24 h to the obs (6 h / 1 h fallback)</span></div>
 </div>
-<p class="text-xs text-on-surface-variant mt-3">CFFDRS specifies <strong class="text-on-surface">noon Local Standard Time (LST)</strong> as the standard daily observation time. For BC (Pacific Standard Time = UTC−8), this is <strong class="text-on-surface">20:00 UTC year-round</strong>. The app targets the 20:00 UTC SWOB observation; if no obs within ±1 hour is found, the most recent observation is used and labelled accordingly. FWI codes are <em>not</em> pre-computed from SWOB — Van Wagner equations are applied live against BC spring startup constants or the last known carry-over.</p>
+<p class="text-xs text-on-surface-variant mt-3">Wind: the 1-h mean (10-min fallback) is used; the CFFDRS observing standard is a 10 m wind averaged over at least 10 minutes (Lawson &amp; Armitage 2008 [10], printed p. 13), so SWOB wind can differ from a standard fire-weather observation. CFFDRS specifies <strong class="text-on-surface">noon Local Standard Time (LST)</strong> as the standard daily observation time. For BC (Pacific Standard Time = UTC−8), this is <strong class="text-on-surface">20:00 UTC year-round</strong>. After noon the app takes the SWOB record closest to 20:00 UTC (±1 h); if none is published yet, the most recent observation is used and labelled accordingly. Before noon SWOB is not used for the daily chain (a morning reading is not the day's noon weather). FWI codes are <em>not</em> pre-computed from SWOB — Van Wagner equations are applied live against BC spring startup constants or the last known carry-over.</p>
 </div>
 
 <!-- NWP fallback for BC -->
@@ -411,15 +411,17 @@
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
   ?latitude={lat}&amp;longitude={lng}
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation
-  &amp;forecast_days=1&amp;timezone=UTC
-  → select index where UTC hour = 20 (noon PST)</code>
+  &amp;past_days=1&amp;forecast_days=2&amp;timezone=UTC
+  → chain inputs: today's 20:00 UTC hour (noon PST) + 24-h rain to it
+  → peak wind: today's 23:00 UTC hour (16:00 PDT = 15:00 PST)</code>
+<p class="text-xs text-on-surface-variant mt-3"><strong class="text-on-surface">Noon chain.</strong> The daily codes are always stepped with noon-LST weather (Van Wagner 1987 [2], PDF p. 13 / printed p. 2: the FWI is "calculated from noon weather readings" but "represents fire danger at its midafternoon peak"). Before noon the forecast noon-PST hour is used. The 16:00 PDT hour supplies only the wind for the peak-burn ISI/FWI and FBP. Until 2026-10-10 the pre-noon chain was stepped with 16:00 weather, double-counting the afternoon drying (e.g. FWI 39.9 instead of 32.2).</p>
 <p class="text-xs text-on-surface-variant mt-3">NWP interpolates model grid-point output to the exact station coordinate. Captures synoptic patterns but misses valley inversions, terrain channelling, sea-breeze modulation, and marine influence. Mountain and coastal stations in BC are most affected by NWP limitations. Stations in the Coast Mountains and deep fjords are particularly prone to NWP errors in wind direction and humidity.</p>
 </div>
 
 <!-- NAEFS BC -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
-<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">14-Day Forecast — Primary</span>
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Forecast Tail — Beyond the Open-Meteo Horizon</span>
 <span class="text-[11px] text-on-surface-variant font-label">CWFIS NAEFS WFS · 35 BC stations · Codes 10183–10269</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs
@@ -427,7 +429,7 @@
   &amp;typeNames=public:firewx_naefs
   &amp;outputFormat=application/json
   &amp;CQL_FILTER=code={station_code}&amp;count=20</code>
-<p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Returns up to 16 daily forecast records: <code class="text-primary">max_temp</code>, <code class="text-primary">min_rh</code>, <code class="text-primary">median_ws</code>, <code class="text-primary">median_pcp</code>. FWI computed client-side via Van Wagner carry-forward chain from current observed values.</p>
+<p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Only days beyond the last Open-Meteo day are used (flagged lower confidence). The ensemble <code class="text-primary">median_temp</code>, <code class="text-primary">median_rh</code>, <code class="text-primary">median_ws</code> and <code class="text-primary">median_pcp</code> feed the noon-LST equations; whether these are daily-mean or noon statistics is not documented (unverified). FWI computed client-side via Van Wagner carry-forward chain.</p>
 </div>
 
 <!-- GEM fallback forecast -->
@@ -437,8 +439,8 @@
 <span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via Open-Meteo · NAEFS extends the trend beyond it</span>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
-<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">Hour 12 (noon PST)</span><span class="text-on-surface-variant">CFFDRS LST standard</span></div>
-<div><span class="text-on-surface-variant">Peak burn FBP</span> <span class="font-bold text-on-surface block">Hour 16 (16:00 PDT)</span><span class="text-on-surface-variant">D+1 fire behaviour</span></div>
+<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">20 UTC (noon PST)</span><span class="text-on-surface-variant">CFFDRS noon-LST standard</span></div>
+<div><span class="text-on-surface-variant">Peak burn ISI/FWI + FBP wind</span> <span class="font-bold text-on-surface block">23 UTC (16:00 PDT)</span><span class="text-on-surface-variant">= 15:00 PST</span></div>
 <div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 06Z · 12Z · 18Z</span><span class="text-on-surface-variant">HRDPS ~4–5 h after init</span></div>
 <div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">2.5 → 10 → 15 km</span><span class="text-on-surface-variant">HRDPS → RDPS → GDPS</span></div>
 </div>
@@ -460,8 +462,8 @@
 <p class="text-xs font-bold text-on-surface uppercase tracking-wider mb-3">Calculation Chain</p>
 <div class="space-y-2 text-xs text-on-surface-variant font-mono">
 <p><span class="text-primary">Step 1</span> — Today's observed conditions (SWOB or NWP, noon LST) → Van Wagner → FFMC / DMC / DC chain state</p>
-<p><span class="text-primary">Step 2</span> — Tomorrow's noon forecast (NAEFS <code class="text-primary">max_temp / min_rh / median_ws</code>, or GEM hour 12) → carry-forward → D+1 FFMC / DMC / DC</p>
-<p><span class="text-primary">Step 3</span> — Tomorrow's 16:00 forecast + D+1 FWI codes → <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_16h)</code></p>
+<p><span class="text-primary">Step 2</span> — Tomorrow's noon-PST forecast (GEM 20 UTC: T, RH, wind, 24-h rain; NAEFS medians only beyond the GEM horizon) → carry-forward → D+1 FFMC / DMC / DC</p>
+<p><span class="text-primary">Step 3</span> — Tomorrow's 16:00 PDT wind (23 UTC) + D+1 FWI codes → peak ISI/FWI and <code class="text-primary">calculateFBP(fuelCode, ffmc, dmc, dc, wind_16h)</code>; the 16:00 temperature/RH do not re-step the codes</p>
 <p><span class="text-primary">Step 4</span> — Outputs: Head ROS (m/min), HFI (kW/m), Flame Length (m), Fire Type, CFB (%)</p>
 </div>
 </div>
@@ -518,7 +520,7 @@
 <div class="border-l-2 border-primary pl-5">
 <div class="text-[11px] font-label uppercase tracking-widest text-primary mb-1">FWI System — Van Wagner &amp; Pickett (1985)</div>
 <p class="text-sm text-on-surface-variant leading-relaxed">Weather inputs (T, RH, W, r) → FFMC → DMC → DC → ISI → BUI → FWI. All six equations implemented verbatim from the Forestry Canada publication. Day-length adjustment factors applied by calendar month.</p>
-<p class="text-sm text-on-surface-variant mt-2">Spring startup defaults: <span class="font-bold text-on-surface">FFMC = 85, DMC = 6</span>. DC startup is station-specific by Fire Centre — see the DC Startup table above. These cold-start values are used during the off-season or when no SWOB carry-over is available. Danger rating uses the <span class="font-bold text-on-surface">BC 5-class scale</span> — BC scale is hardcoded in <code class="text-primary">bc/fwi.js</code>.</p>
+<p class="text-sm text-on-surface-variant mt-2">Spring startup defaults: <span class="font-bold text-on-surface">FFMC = 85, DMC = 6</span>. DC startup is station-specific by Fire Centre — see the DC Startup table above. These cold-start values are used only when no CWFIS/BCWS carry-over is available. FFMC coefficient: 147.2 throughout (Van Wagner 1987 [2] eq. 2; Van Wagner &amp; Pickett 1985 [1]); cffdrs uses 147.27723, which shifts results by up to 0.12 FFMC, 0.6 ISI and 0.5 FWI daily and 1.1 FFMC in long hourly chains, so expect differences of that size against cffdrs-based outputs. Danger rating uses the <span class="font-bold text-on-surface">BC 5-class scale</span> — BC scale is hardcoded in <code class="text-primary">bc/fwi.js</code>.</p>
 </div>
 <div class="border-l-2 border-secondary pl-5">
 <div class="text-[11px] font-label uppercase tracking-widest text-secondary mb-1">FBP System — Forestry Canada ST-X-3 (1992)</div>
@@ -633,11 +635,12 @@
 <li class="flex gap-3"><span class="text-primary shrink-0">[2]</span><span>Van Wagner, C.E. (1987). <em>Development and structure of the Canadian Forest Fire Weather Index System.</em> Forestry Technical Report 35. Canadian Forestry Service, Ottawa.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[3]</span><span>Forestry Canada Fire Danger Group (1992). <em>Development and structure of the Canadian Forest Fire Behavior Prediction System.</em> Information Report ST-X-3. Forestry Canada, Ottawa.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[4]</span><span>Van Wagner, C.E. (1977). Conditions for the start and spread of crown fire. <em>Canadian Journal of Forest Research,</em> 7(1), 23–34.</span></li>
-<li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Van Wagner, C.E. (1985). <em>Drought, timelag and fire danger rating.</em> In Proceedings 8th Conference on Fire and Forest Meteorology. pp. 178–185. Society of American Foresters, Bethesda, MD. — Overwinter DC carry-over algorithm used by BCWS.</span></li>
-<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>BC Wildfire Service (2022). <em>CFFDRS Implementation Guide — BC Danger Scale and Operational Application.</em> BC Ministry of Forests. — Defines BC 5-class danger scale (Very Low/Low/Moderate/High/Extreme) and FWI thresholds.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[5]</span><span>Van Wagner, C.E. (1985). <em>Drought, timelag and fire danger rating.</em> In Proceedings 8th Conference on Fire and Forest Meteorology. pp. 178–185. Society of American Foresters, Bethesda, MD. — Time-lag basis for overwintering the DC (cited by Lawson &amp; Armitage 2008 [10]); not held on disk.</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[6]</span><span>BC Wildfire Service (2022). <em>CFFDRS Implementation Guide — BC Danger Scale and Operational Application.</em> BC Ministry of Forests. — <strong>Unverified:</strong> this document could not be located; the 5/12/21/34 FWI cut-points used here are not confirmed against it.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[7]</span><span>Byram, G.M. (1959). Combustion of forest fuels. In K.P. Davis (Ed.), <em>Forest Fire: Control and Use</em> (pp. 61–89). McGraw-Hill.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[8]</span><span>Taylor, S.W.; Pike, R.G.; Alexander, M.E. (1997). <em>Field Guide to the Canadian Forest Fire Behavior Prediction (FBP) System.</em> Special Report 11. Natural Resources Canada, Northern Forestry Centre, Edmonton, AB.</span></li>
 <li class="flex gap-3"><span class="text-primary shrink-0">[9]</span><span>Environment and Climate Change Canada / NOAA (2003–present). North American Ensemble Forecast System (NAEFS). Distributed via NRCan CWFIS WFS layer <em>public:firewx_naefs</em>. BC stations: codes 10183–10269 (35 stations, discovered via WFS query province_state='BC').</span></li>
+<li class="flex gap-3"><span class="text-primary shrink-0">[10]</span><span>Lawson, B.D. &amp; Armitage, O.B. (2008). <em>Weather Guide for the Canadian Forest Fire Danger Rating System.</em> Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. — Noon LST observation time (printed p. 1), 10-min wind averaging (printed p. 13), overwintering the DC (printed pp. 32–33).</span></li>
 </ul>
 </div>
 
@@ -651,7 +654,7 @@
 </div>
 </div>
 <ul class="space-y-3 text-sm text-on-surface-variant">
-<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">No CWFIS fire weather station coverage:</strong> BC is west of −114°W; the NRCan <code class="text-primary">firewx_stns_current</code> WFS layer does not return BC stations. All BC current conditions come from SWOB or NWP — the pre-computed NRCan FWI carry-over chain is not available for BC stations in this app.</span></li>
+<li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Agency chains:</strong> BC current conditions come first from today's BCWS noon observation (daily mirror of the BCWS Datamart) or the CWFIS <code class="text-primary">firewx_stns_current</code> chain, whichever station is nearer; SWOB and NWP are fallbacks. Before noon PST, yesterday's chain is stepped one day with today's noon-PST forecast.</span></li>
 <li class="flex gap-3"><span class="text-secondary shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">SWOB — no pre-computed FWI:</strong> Unlike CWFIS in Alberta, SWOB returns raw weather observations only. Van Wagner equations are applied client-side using BC spring startup constants. Off-season DC may be systematically underestimated.</span></li>
 <li class="flex gap-3"><span class="text-amber-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">DC divergence warning:</strong> DC has a ~53-day e-folding memory of accumulated precipitation and cannot be meaningfully averaged between stations that experienced different rainfall. When ≥2 CWFIS stations within 75 km differ by ≥75 DC units, the app shows an amber warning. This indicates a localised precipitation event may have created a step-change in DC across the landscape. The operator should review nearby station DCs and select the station whose precipitation history best represents the target fuel complex.</span></li>
 <li class="flex gap-3"><span class="text-yellow-400 shrink-0 mt-0.5">▸</span><span><strong class="text-on-surface">Terrain effects — BC is complex:</strong> Chinook-like valley outflow, sea breezes, mountain gaps, and strong diurnal cycles in BC's coastal and interior terrain produce fire weather that NWP models resolve poorly, even HRDPS at 2.5 km (GDPS beyond day 3–4 is 15 km). For stations in the Coast Range, Columbia Mountains, and Cascade foothills, treat NWP-sourced FWI values with greater caution than equivalent Alberta results.</span></li>
@@ -682,11 +685,11 @@
     <div>
       <p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mb-2">Left Half — FWI Danger</p>
       <div class="space-y-1.5">
-        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#4ae176"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Low</strong> — FWI 0–8</span></div>
-        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#7bd0ff"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Moderate</strong> — FWI 9–17</span></div>
-        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#f5c518"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">High</strong> — FWI 18–32</span></div>
-        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#ff9d00"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Very High</strong> — FWI 33–49</span></div>
-        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#ff3b3b"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Extreme</strong> — FWI ≥ 50</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#a7f3d0"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Very Low</strong> — FWI &lt; 5</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#4ae176"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Low</strong> — FWI 5–11</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#7bd0ff"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Moderate</strong> — FWI 12–20</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#f5c518"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">High</strong> — FWI 21–33</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 rounded-l-full flex-shrink-0" style="background:#ff3b3b"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Extreme</strong> — FWI ≥ 34 (BC proxy classes)</span></div>
       </div>
     </div>
     <!-- HFI right half colors -->

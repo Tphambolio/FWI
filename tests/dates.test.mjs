@@ -99,20 +99,33 @@ for (const e of ENGINES) {
 
 // ─── Province-specific target-hour behaviour ──────────────────────────────────
 
-test('AB: fetchWeather pre-noon MST targets the 22 UTC peak-burn hour of today', async () => {
+// Noon chain (VW 1987, FTR-35 PDF p. 13): before noon the daily codes are
+// stepped with today's noon-LST forecast hour; the 16:00 local daylight-time
+// hour (= 15:00 LST) is carried separately as `peak` for ISI/FWI-at-peak + FBP.
+test('AB: fetchWeather pre-noon MST steps with the 19 UTC noon-LST forecast; 22 UTC (16:00 MDT) only as peak', async () => {
   const { run } = makeContext(AB.path, { now: lstClock(AB, 7, 15, 9) });
   const w = await run(`fetchWeather(${AB.lat}, ${AB.lng})`);
-  assert.equal(w.temp, 22.15);
-  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 MDT)');
+  assert.equal(w.temp, 19.15, 'chain input = 2026-07-15T19:00 (noon MST)');
+  assert.equal(w.peak.temp, 22.15, 'peak = 2026-07-15T22:00 (16:00 MDT)');
+  assert.equal(w.preNoonForecast, true);
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
 });
 
-// Headline policy (2026-10-07): before noon both provinces show today's 16:00
-// peak-burn forecast (BC previously used the current hour).
-test('BC: fetchWeather pre-noon PST targets the 23 UTC peak-burn hour of today', async () => {
+test('BC: fetchWeather pre-noon PST steps with the 20 UTC noon-LST forecast; 23 UTC (16:00 PDT) only as peak', async () => {
   const { run } = makeContext(BC.path, { now: lstClock(BC, 7, 15, 9) }); // 17 UTC
   const w = await run(`fetchWeather(${BC.lat}, ${BC.lng})`);
-  assert.equal(w.temp, 23.15);
-  assert.equal(w.source, 'Open-Meteo NWP (peak burn forecast · 16:00 PDT)');
+  assert.equal(w.temp, 20.15);
+  assert.equal(w.peak.temp, 23.15);
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+});
+
+test('AB: fetchWeather post-noon uses the same noon-LST hour (pre- and post-noon policies agree)', async () => {
+  const { run } = makeContext(AB.path, { now: lstClock(AB, 7, 15, 14) });
+  const w = await run(`fetchWeather(${AB.lat}, ${AB.lng})`);
+  assert.equal(w.temp, 19.15);
+  assert.equal(w.peak.temp, 22.15);
+  assert.equal(w.preNoonForecast, false);
+  assert.equal(w.source, 'Open-Meteo NWP (noon LST)');
 });
 
 

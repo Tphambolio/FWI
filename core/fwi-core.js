@@ -41,6 +41,7 @@ function getRegions() { return PROVINCE.regions; }
 // above this, so the floor never overwrites real moisture state.
 const DC_COLDSTART_CEILING = 60;
 
+
 // ═══ SCIENCE CORE BEGIN: FWI daily equations (single source for AB + BC — CI-checked) ═══
 function _ffmc(temp, rh, wind, rain, p) {
   let mo = 147.2 * (101 - p) / (59.5 + p);
@@ -835,18 +836,22 @@ function wireFBP(weather, fwi) {
   // Guard: if the FWI chain has no valid state (CWFIS down, season not started),
   // ffmc is null. calculateFBP would silently coerce null→0 giving FFMC=0 → ISI≈0
   // → artificially low/misleading fire behaviour. Show N/A instead.
+  // Fire behaviour wind: the 16:00 peak-burn hour when the weather carries one
+  // (NWP tier — the codes themselves were stepped with noon-LST weather), else
+  // the observed noon wind. Never used to step the codes.
+  const fw = weather.peak || weather;
   const fbpA = fwi.ffmc != null
-    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, _siteTerrain.slope, curing, ps, _terrainOpts(weather.wdir))
+    ? calculateFBP(fuelA, fwi.ffmc, fwi.dmc, fwi.dc, fw.wind, _siteTerrain.slope, curing, ps, _terrainOpts(fw.wdir))
     : null;
   const fbpB = fwi.ffmc != null
-    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, weather.wind, _siteTerrain.slope, curing, ps, _terrainOpts(weather.wdir))
+    ? calculateFBP(fuelB, fwi.ffmc, fwi.dmc, fwi.dc, fw.wind, _siteTerrain.slope, curing, ps, _terrainOpts(fw.wdir))
     : null;
   populateSection('-a', fbpA);
   populateSection('-b', fbpB);
   // Provisional summary row from exactly what the cards now show; buildD1Card
   // replaces it with the 16:00 peak-burn values when it repaints the cards.
-  _renderPeakSummary({ ffmc: fwi.ffmc, dmc: fwi.dmc, dc: fwi.dc, wind: weather.wind,
-    fbpA, fbpB, fuelA, fuelB, peak: false });
+  _renderPeakSummary({ ffmc: fwi.ffmc, dmc: fwi.dmc, dc: fwi.dc, wind: fw.wind,
+    fbpA, fbpB, fuelA, fuelB, peak: !!weather.peak });
   _renderTerrainStatus(fbpA);
 }
 
@@ -1388,12 +1393,22 @@ function _swobCrossCheck(chain, swob) {
 }
 
 /**
- * Fetch weather from Open-Meteo targeting the noon LST observation.
- * CFFDRS specifies noon Local Standard Time (UTC−7 AB / UTC−8 BC, year-round)
- * for daily FWI calculations. We request today's hourly array and select the
- * PROVINCE.noonUTC hour (= noon LST). Before noon the target is province
- * policy (PROVINCE.preNoonNWP): 'peak' — today's 16:00 peak-burn forecast
- * hour (AB); 'latest' — the most recent available hour (BC).
+ * Fetch daily FWI weather from Open-Meteo.
+ *
+ * Van Wagner (1987, FTR-35, PDF p. 13 / printed p. 2): the daily codes are
+ * computed "from noon weather readings" (noon LST: temperature, RH, 10 m wind,
+ * rain in the previous 24 h) yet "represent fire danger at its midafternoon
+ * peak, generally specified as 1600 hours". So the chain is ALWAYS stepped with
+ * today's noon-LST hour (PROVINCE.noonUTC) and the 24-h rain to noon. Before
+ * noon that hour is a forecast; after noon it is the model's value for the
+ * hour that has passed. Stepping with afternoon weather counts the afternoon
+ * drying twice (the pre-2026-10-10 pre-noon policy gave e.g. FWI 39.9 instead
+ * of 32.2 for the same day).
+ *
+ * The 16:00 local daylight-time hour (PROVINCE.peakUTC; 16:00 MDT = 15:00 MST,
+ * 16:00 PDT = 15:00 PST, an operational choice and not the VW 1987 "1600
+ * hours") is returned separately as `peak`. It is used ONLY for the wind in the
+ * peak-burn ISI/FWI and the FBP fire behaviour, never to step the codes.
  */
 async function fetchWeather(lat, lng) {
   const url = `https://api.open-meteo.com/v1/forecast` +
@@ -1402,42 +1417,61 @@ async function fetchWeather(lat, lng) {
     `&past_days=1&forecast_days=2&timezone=UTC&models=gem_seamless`;
   const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
   const d = await res.json();
-  const times = d.hourly.time; // ISO strings in UTC (timezone=UTC)
+  const h = d.hourly;
+  const times = h.time; // ISO strings in UTC (timezone=UTC)
 
-  // Post-noon: noon LST (PROVINCE.noonUTC) — standard CFFDRS input time.
-  // Target the hour by explicit LST-date ISO string: the old UTC-hour index
+  // Target hours by explicit LST-date ISO string: the old UTC-hour index
   // selected tomorrow's forecast between 17:00 MST and midnight (UTC day rolls
   // over at 17:00 MST) and could never see a 24-h precip window.
   const lstNow    = new Date(Date.now() - PROVINCE.lstOffset * 3600000);
   const lstDate   = lstNow.toISOString().slice(0, 10);   // today's calendar date in LST
   const isPreNoon = lstNow.getUTCHours() < 12;
-  let targetISO;
-  if (!isPreNoon)                          targetISO = `${lstDate}T${PROVINCE.noonUTC}:00`;
-  else if (PROVINCE.preNoonNWP === 'peak') targetISO = `${lstDate}T${PROVINCE.peakUTC}:00`; // 16:00 local peak burn
-  else                                     targetISO = new Date().toISOString().slice(0, 13) + ':00'; // most recent available hour
-  let i = times.indexOf(targetISO);
+  const hourISO = utcHour =>
+    new Date(Date.parse(lstDate + 'T00:00:00Z') + utcHour * 3600000).toISOString().slice(0, 13) + ':00';
+  let i = times.indexOf(hourISO(PROVINCE.noonUTC));   // noon LST, the CFFDRS input hour
   if (i === -1) i = times.length - 1;
+  const iPeak = times.indexOf(hourISO(PROVINCE.peakUTC));
 
-  // 24-h precipitation accumulated to the target hour (CFFDRS daily rain window).
-  // past_days=1 guarantees the full preceding 24 h is in the array.
-  const rain24 = d.hourly.precipitation
+  // 24-h precipitation accumulated to noon LST (CFFDRS daily rain window).
+  // Open-Meteo hourly precipitation is the sum over the preceding hour, so
+  // hours i−23 … i cover noon-to-noon. past_days=1 guarantees the window.
+  const rain24 = h.precipitation
     .slice(Math.max(0, i - 23), i + 1)
     .reduce((s, v) => s + (v ?? 0), 0);
 
-  const sourceNote = !isPreNoon ? 'Open-Meteo NWP (noon LST)'
-    : PROVINCE.preNoonNWP === 'peak' ? `Open-Meteo NWP (peak burn forecast · 16:00 ${PROVINCE.tzLabel})`
-    : 'Open-Meteo NWP (pre-noon — best available)';
   return {
-    temp:  d.hourly.temperature_2m[i],
-    rh:    d.hourly.relative_humidity_2m[i],
-    wind:  d.hourly.wind_speed_10m[i],
-    wdir:  d.hourly.wind_direction_10m[i] ?? null,
+    temp:  h.temperature_2m[i],
+    rh:    h.relative_humidity_2m[i],
+    wind:  h.wind_speed_10m[i],
+    wdir:  h.wind_direction_10m[i] ?? null,
     rain:             rain24,
-    thunderstormProb: d.hourly.thunderstorm_probability?.[i] ?? null,
+    thunderstormProb: h.thunderstorm_probability?.[i] ?? null,
     month: new Date().getMonth() + 1,
-    source: sourceNote,
+    // 16:00 local daylight-time hour: wind for peak-burn ISI/FWI + FBP only
+    peak: iPeak >= 0 && h.wind_speed_10m[iPeak] != null ? {
+      temp: h.temperature_2m[iPeak], rh: h.relative_humidity_2m[iPeak],
+      wind: h.wind_speed_10m[iPeak], wdir: h.wind_direction_10m[iPeak] ?? null,
+    } : null,
+    preNoonForecast: isPreNoon,   // the noon-LST values are a forecast (today's noon not reached yet)
+    source: isPreNoon ? 'Open-Meteo NWP (noon LST forecast, pre-noon)' : 'Open-Meteo NWP (noon LST)',
     fwiFromCWFIS: false,
   };
+}
+
+/**
+ * Peak-burn indices: the day's noon-LST codes (FFMC/DMC/DC) with the 16:00
+ * wind, i.e. ISI/BUI/FWI as the station page headline shows them. VW 1987
+ * (PDF p. 13): the noon-based codes already represent the afternoon fuel
+ * state, so only the wind comes from the peak hour; the codes are never
+ * re-stepped.
+ */
+function _peakIndices(codes, peakWind) {
+  if (codes?.ffmc == null || peakWind == null) return null;
+  const wind = Math.max(0, peakWind);
+  const isi = _isi(codes.ffmc, wind);
+  const bui = _bui(codes.dmc, codes.dc);
+  const fwi = _fwi(isi, bui);
+  return { wind, isi, bui, fwi, danger: dangerRatingProv(fwi) };
 }
 
 /**
@@ -1533,8 +1567,8 @@ function wireDOM(r, lat, lng) {
     const isToday = obsDate === _lstDateStr();
     const label = new Date(obsDate + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
     set('updated', isToday ? 'Noon LST · today' : `Noon LST · ${label} (not today)`);
-  } else if (r.weather.source?.includes('peak burn forecast')) {
-    set('updated', `Peak Burn Forecast · 16:00 ${PROVINCE.tzLabel}`);
+  } else if (r.weather.preNoonForecast) {
+    set('updated', 'Noon LST Forecast · today (pre-noon)');
   } else {
     set('updated', `Live · ${new Date().toLocaleTimeString()}`);
   }
@@ -1557,9 +1591,8 @@ function wireDOM(r, lat, lng) {
   const roleEl = document.getElementById('fwi-daily-role');
   if (roleEl) {
     const fmtD = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-    const src = r.weather.source || '';
     roleEl.textContent = r.ffmc == null ? 'CFFDRS daily FWI · pending (no chain yet)'
-      : src.includes('peak burn forecast') ? `CFFDRS daily FWI · stepped with 16:00 ${PROVINCE.tzLabel} model weather (pre-noon) · ${fmtD(_lstDateStr())}`
+      : r.weather.preNoonForecast && !r._cachedFWI?.final ? `CFFDRS daily FWI · noon LST ${fmtD(_lstDateStr())} · stepped with the noon-LST model forecast (pre-noon)${r._cachedFWI ? ` from the ${fmtD(r._cachedFWI.obsDate)} chain` : ''}`
       : r.weather.repDate ? `CFFDRS daily FWI · noon LST ${fmtD(r.weather.repDate)}`
       : r._cachedFWI && !r._cachedFWI.final ? `CFFDRS daily FWI · noon LST ${fmtD(_lstDateStr())} · carried from ${fmtD(r._cachedFWI.obsDate)} chain`
       : `CFFDRS daily FWI · noon LST ${fmtD(_lstDateStr())}`;
@@ -1716,7 +1749,9 @@ async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefau
           result = { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi,
                      danger: dangerRatingProv(fwi), weather };
         } else {
-          // Previous day's codes — step one day forward with today's weather (Van Wagner 1987)
+          // Previous day's codes — step one day forward with today's noon-LST
+          // weather (Van Wagner 1987). Before noon fetchWeather returns the
+          // noon-LST forecast hour, never the 16:00 hour (no double-counted afternoon).
           result = calculateFWI({ ...weather, fwiFromCWFIS: false }, { ffmc: co.ffmc, dmc: co.dmc, dc });
         }
         result._cachedFWI = co;
@@ -1726,6 +1761,9 @@ async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefau
                    danger: null, weather, _inactive: true };
       }
     }
+    // Peak-burn ISI/FWI (noon-LST codes + 16:00 wind) when the weather carries
+    // a 16:00 hour (NWP tier). Display/FBP only; the daily codes are unchanged.
+    if (weather.peak && result.ffmc != null) result.peak = _peakIndices(result, weather.peak.wind);
     wireDOM(result, lat, lng);
     console.log('[FWI]', result);
   } catch (err) {
@@ -1769,9 +1807,11 @@ async function fetchStationData(station) {
 
 /**
  * Fetch D+1 forecast weather for a station using ECCC GEM via Open-Meteo.
- * FWI chain uses hour-12 (noon) forecast conditions with CWFIS carry-over as prev.
- * FBP wind uses hour-16 (peak burn ~16:00 MDT) — matches the D+1 peak prediction
- * shown on the station detail page.
+ * The FWI chain is stepped with the day's noon-LST forecast (temp, RH, wind,
+ * 24-h rain) from the CWFIS carry-over (VW 1987, PDF p. 13). The returned ISI /
+ * FWI / danger are the peak-burn values: those noon codes with the 16:00 local
+ * daylight-time wind (`weather.wind`, also the FBP wind) — the same definition
+ * as the station page headline. `fwi.daily` keeps the standard noon-LST ISI/FWI.
  * Used by the Fire Safety Briefing builder for PM Forecast mode.
  */
 async function fetchStationDataForecast(station) {
@@ -1785,7 +1825,7 @@ async function fetchStationDataForecast(station) {
   // D+1: next operationally relevant peak burn day (today if before 16:00 local, tomorrow if after)
   let day = days[_nextPeakDayIdx(days)] || days[1] || days[0];
 
-  // Weather: noon (hour 12) for FWI chain; peak wind (hour 16) for FBP
+  // Weather: noon LST for the FWI chain (chainWx); peak wind (16:00 local) for ISI/FWI + FBP
   const weather = {
     temp:             day.temp,
     rh:               day.rh,
@@ -1816,9 +1856,16 @@ async function fetchStationDataForecast(station) {
     prevFWI = { ffmc: last.ffmc, dmc: last.dmc, dc: last.dc };
   }
   const dayDate = day?._ts != null ? new Date(day._ts).toISOString().slice(0, 10) : null;
-  const fwi = (asOf && dayDate && dayDate <= asOf)
-    ? calculateFWI({ ...weather, fwiFromCWFIS: true, ...prevFWI }, prevFWI) // target day already in carry-over
-    : calculateFWI(weather, prevFWI);
+  // Step with the noon-LST forecast only — the 16:00 wind must not dry the FFMC
+  const chainWx = { ...weather, wind: day.wind, wdir: null };
+  const daily = (asOf && dayDate && dayDate <= asOf)
+    ? calculateFWI({ ...chainWx, fwiFromCWFIS: true, ...prevFWI }, prevFWI) // target day already in carry-over
+    : calculateFWI(chainWx, prevFWI);
+  const pk = _peakIndices(daily, weather.wind);
+  const fwi = pk
+    ? { ...daily, isi: pk.isi, fwi: pk.fwi, danger: pk.danger, weather,
+        daily: { isi: daily.isi, fwi: daily.fwi, danger: daily.danger, wind: day.wind } }
+    : daily;
   return { station, weather, fwi, forecastDay: day, chainDate: asOf, chainStation: p?.name ?? null };
 }
 
@@ -2680,8 +2727,8 @@ async function fetchForecast(lat, lng) {
   const days = [];
   // The hourly array starts at 00:00 UTC two days ago (past_days=2). For each
   // forecast day starting today: noon LST = PROVINCE.noonUTC (19:00 UTC AB,
-  // 20:00 UTC BC — CFFDRS chain input), peak burn = noon + 3 h (16:00 local
-  // daylight time, FBP inputs). Daily rain is the CFFDRS
+  // 20:00 UTC BC — CFFDRS chain input), peak burn = PROVINCE.peakUTC (16:00
+  // local daylight time = 15:00 LST, noon + 3 h; ISI/FWI-at-peak + FBP wind). Daily rain is the CFFDRS
   // noon-to-noon 24-h accumulation — the old code passed a single hour of
   // precip, which made forecast rain ≈ 0 and biased the whole chain dry.
   // (The previous timezone=auto + index-12 selection also sampled 12:00 local
@@ -2694,7 +2741,7 @@ async function fetchForecast(lat, lng) {
   if (base < 23) base = 48 + PROVINCE.noonUTC;
   for (let day = 0; day < 7; day++) {
     const iNoon = base + 24 * day;
-    const iPeak = iNoon + 3;
+    const iPeak = iNoon + (PROVINCE.peakUTC - PROVINCE.noonUTC);
     if (iNoon >= (h.time?.length ?? 0)) break;
     const rain24 = h.precipitation
       .slice(iNoon - 23, iNoon + 1)
@@ -3713,7 +3760,10 @@ async function printStationBriefing() {
   const fmc = calcFMC(lat, lng, doy, _stationElev ?? 0);
 
   // FBP prediction
-  const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, w?.wind || 0, _siteTerrain.slope, _savedCuring(), _savedPS(), _terrainOpts(w?.wdir));
+  // Pre-noon (NWP tier) the codes are stepped with the noon-LST forecast and
+  // fire behaviour uses the 16:00 wind (w.peak), as on the station page.
+  const fbpWx = w?.peak || w;
+  const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, fbpWx?.wind || 0, _siteTerrain.slope, _savedCuring(), _savedPS(), _terrainOpts(fbpWx?.wdir));
   const terrainLine = _siteTerrain.slope
     ? `Site slope ${_siteTerrain.slope}%${_siteTerrain.aspect != null ? ' facing ' + _compass8(_siteTerrain.aspect) : ''} (${_siteTerrain.src === 'pin' ? 'map pin, 90 m DEM' : 'entered'})${fbp?.raz != null ? ` · head fire toward ${_compass8(fbp.raz)}, effective wind ${Math.round(fbp.wsv)} km/h` : ''}`
     : 'Flat ground (no site slope entered)';
@@ -3726,10 +3776,14 @@ async function printStationBriefing() {
     : co ? (co.final ? `CWFIS chain (${co.obsDate}, holding)` : `CWFIS chain from ${co.obsDate}, stepped with today's weather`)
     : 'Startup estimate (no carry-over available)';
   const provLine = `${prov.kind}${prov.age ? ' · ' + prov.age : ''} · ${prov.network}`;
-  const wxIsPeak = (w?.source || '').includes('peak burn forecast');
-  // Pre-noon the day's codes are stepped with the 16:00 forecast weather, not a noon observation
-  const fwiWhen = wxIsPeak ? `stepped with 16:00 ${PROVINCE.tzLabel} forecast weather, pre-noon` : 'noon LST';
-  const wxLabel = wxIsPeak ? `Weather (16:00 ${PROVINCE.tzLabel} forecast)` : (w?.source || '').startsWith('MSC') ? 'Weather (station obs)' : 'Weather (noon LST)';
+  // Pre-noon (NWP tier) the day's codes are stepped with the noon-LST model
+  // forecast (VW 1987: daily codes use noon-LST weather), not a noon observation
+  const wxIsNoonFc = !!w?.preNoonForecast;
+  const fwiWhen = wxIsNoonFc ? 'noon LST model forecast, pre-noon' : 'noon LST';
+  const wxLabel = wxIsNoonFc ? 'Weather (noon LST forecast)' : (w?.source || '').startsWith('MSC') ? 'Weather (station obs)' : 'Weather (noon LST)';
+  const peakLine = (w?.peak && r.peak)
+    ? `<p class="kv"><span class="label">FWI at 16:00 ${PROVINCE.tzLabel} peak (noon codes + 16:00 wind ${Math.round(r.peak.wind)} km/h)</span><br><span class="val">${r.peak.fwi.toFixed(1)} — ${r.peak.danger}</span></p>`
+    : '';
   const fireSize = f => f?.area60 != null ? `${f.area60 < 10 ? f.area60.toFixed(1) : Math.round(f.area60).toLocaleString()} ha` : '—';
 
   // Danger colour for print
@@ -3920,7 +3974,7 @@ async function printStationBriefing() {
 
 ${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;margin:4px 0 6px;padding:5px 10px;background:#f0f0f0;border-left:3px solid #888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Today — for reference (16:00 peak burn has passed)</p>` : ''}
 <div class="section">
-  <div class="section-title">${wxIsPeak ? `Today's Weather — 16:00 ${PROVINCE.tzLabel} forecast` : (w?.source || '').startsWith('MSC') ? "Today's Weather — station observation" : "Today's Weather — noon LST"}</div>
+  <div class="section-title">${wxIsNoonFc ? "Today's Weather — noon LST forecast (pre-noon)" : (w?.source || '').startsWith('MSC') ? "Today's Weather — station observation" : "Today's Weather — noon LST"}</div>
   <div class="section-body">
     <div class="grid-3">
       <p class="kv"><span class="label">Temp</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) + '°C' : '—'}</span></p>
@@ -3960,8 +4014,9 @@ ${peakPassed ? d1Section + shiftSection + `<p style="font-size:8pt;color:#444;ma
   <div class="section-title">Current Fire Behaviour · ${fuelCode} — ${fuelName} · Today · ${today}</div>
   <div class="section-body">
     <div class="grid-2">
-      <p class="kv"><span class="label">${wxLabel}</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span></p>
+      <p class="kv"><span class="label">${wxLabel}</span><br><span class="val">${w?.temp != null ? (+w.temp).toFixed(1) : '—'}°C / ${Math.round(w?.rh??0)}% RH / ${Math.round(w?.wind??0)} km/h</span>${w?.peak ? `<br><span style="font-size:7pt;color:#777">FBP below uses the 16:00 ${PROVINCE.tzLabel} wind: ${Math.round(w.peak.wind)} km/h</span>` : ''}</p>
       <p class="kv"><span class="label">FWI (daily, ${fwiWhen})</span><br><span class="val">${r.fwi.toFixed(1)} — ${r.danger}</span></p>
+      ${peakLine}
       <p class="kv"><span class="label">Head ROS</span><br><span class="val">${fbp ? fbp.ros.toFixed(1) + ' m/min' : '—'}</span></p>
       <p class="kv"><span class="label">Head Fire Intensity</span><br><span class="val">${fbp ? Math.round(fbp.hfi).toLocaleString('en-CA') + ' kW/m' : '—'}</span></p>
       <p class="kv"><span class="label">Flame Length</span><br><span class="val">${fbp ? fbp.flameLength.toFixed(1) + ' m' : '—'}</span>${fbp ? `<br><span style="font-size:7pt;color:#777">${fbp.flameModel}</span>` : ''}</p>
