@@ -6,7 +6,7 @@ Living record of the work, decisions, scientific references and testing behind
 - **Live:** https://tphambolio.github.io/FWI/ (AB) · https://tphambolio.github.io/FWI/bc/ (BC)
 - **Repo:** https://github.com/Tphambolio/FWI (local: `~/dev/FWI`)
 - **Owner:** Travis Kennedy, P.Ag
-- **Status at this revision:** engine v144 live; all 7 test suites green on the live site.
+- **Status at this revision:** engine v145 live; all 7 test suites green on the live site.
 
 ---
 
@@ -74,6 +74,7 @@ with today's weather.
 | 2026-10-09 | Map clusters take the worst FWI danger inside; still-loading clusters are neutral grey; the map fits the station network (`2765420`, `e82afa2`) | Extreme southern stations were hidden behind neutral bubbles at a cropped edge |
 | 2026-10-09 | Every FWI on the briefing names its basis ("daily, noon LST", or "stepped with 16:00 forecast weather, pre-noon") (`dedfb2f`) | Owner rule: no unlabelled FWI numbers |
 | 2026-10-10 | All sources behind Pyra collected in the Zotero collection "Pyra Sources" (29 items: 13 linked from the existing library, 16 imported) with Zotero keys in §4; AB science guide Open-Meteo citation corrected from "Zuur & Förster" to Zippenfenig (2024) | Rigour for the Claude for Science record; source audit also found an NWP model mislabel and three unverifiable citations (Open items) |
+| 2026-10-10 | Open-Meteo pinned to ECCC GEM (`models=gem_seamless`) and every label says GEM (`b3a1a56`, v145) | Source audit: the unpinned best_match blend served GFS while labels said ECMWF; GEM is Canada's operational model, with HRDPS 2.5 km over the first 48 h |
 
 ## 4. Science implementation and references
 
@@ -102,7 +103,7 @@ retrieved 2026-10-08).
 
 ### References
 
-All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
+All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, 23 with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
 
 **Fire Weather Index System**
 - Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`4AWT7VN5`]
@@ -124,6 +125,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 - Cole, F.V.; Alexander, M.E. 1995. Head fire intensity class graph for FBP System fuel type C-2. Canadian Forest Service, Northern Forestry Centre, Edmonton. [`YFNDUP9L`]
 - Government of Alberta, Forestry and Parks. Alberta Wildland Urban Interface Pocket Guide. Edition and year not yet confirmed. [`SM5NRGUI`]
 - Taylor, S.W.; Pike, R.G.; Alexander, M.E. 1997. Field guide to the Canadian Forest Fire Behavior Prediction (FBP) System. Special Report 11. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`W86C9VP9`]
+- Taylor, S.W.; Pike, R.G.; Alexander, M.E. 1996. Field guide to the Canadian Forest Fire Behavior Prediction (FBP) System. FRDA Handbook 012. Canadian Forest Service and BC Ministry of Forests, Victoria. ISBN 0-662-24104-5. The BC edition of the same guide; its PDF stands in for SR-11. [`QCZXFCUQ`]
 
 **Weather inputs, interpolation and data systems**
 - Candille, G. 2009. The multiensemble approach: the NAEFS example. *Monthly Weather Review* 137: 1655–1665. doi:10.1175/2008MWR2682.1 [`2JC5XGZY`]
@@ -206,7 +208,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
 - [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Confirm the edition of the Alberta WUI Pocket Guide.
-- [ ] Zotero: 9 of 29 Pyra Sources items have PDFs. Free NRCan/USFS reports (ST-X-3 already attached; FTR-33, PS-X-69, SR-11, the Weather Guide, INT-438) could be attached.
+- [ ] Zotero: 23 of 30 Pyra Sources items have a stored PDF (2026-10-10; data services carry a dated snapshot of their documentation page). Still without: Thomas 1963, Luo et al. 2008 and Lee et al. 2002 (paywalled; no legitimate free copy found yet), Taylor et al. 1997 SR-11 (the 1996 FRDA edition is attached instead, `QCZXFCUQ`), the Alberta WUI Pocket Guide (edition unknown), Alberta pmwx and the Edmonton fuel raster (no public documentation page).
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 
@@ -216,6 +218,8 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-10-10 | `b3a1a56` | feat(nwp): pin Open-Meteo to ECCC GEM; labels say GEM (v145) |
+| 2026-10-10 | `0ffab4f` | docs(record): Pyra Sources Zotero collection; fix Open-Meteo citation |
 | 2026-10-09 | `4d4969f` | docs(record): 2026-10-09 UAT decisions, test counts, open items, UAT PDFs |
 | 2026-10-09 | `e82afa2` | fix(uat): FSB builder pre-ticks the local stations visibly; map/trends phone polish |
 | 2026-10-09 | `5eb6364` | fix(mobile): shared links use the station's fuel; usable phone landscape |
