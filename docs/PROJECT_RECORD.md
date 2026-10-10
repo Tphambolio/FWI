@@ -75,6 +75,7 @@ with today's weather.
 | 2026-10-09 | Every FWI on the briefing names its basis ("daily, noon LST", or "stepped with 16:00 forecast weather, pre-noon") (`dedfb2f`) | Owner rule: no unlabelled FWI numbers |
 | 2026-10-10 | All sources behind Pyra collected in the Zotero collection "Pyra Sources" (29 items: 13 linked from the existing library, 16 imported) with Zotero keys in §4; AB science guide Open-Meteo citation corrected from "Zuur & Förster" to Zippenfenig (2024) | Rigour for the Claude for Science record; source audit also found an NWP model mislabel and three unverifiable citations (Open items) |
 | 2026-10-10 | Open-Meteo pinned to ECCC GEM (`models=gem_seamless`) and every label says GEM (`b3a1a56`, v145) | Source audit: the unpinned best_match blend served GFS while labels said ECMWF; GEM is Canada's operational model, with HRDPS 2.5 km over the first 48 h |
+| 2026-10-10 | Daily codes are always stepped with noon-LST weather; before noon the noon-LST *forecast* hour is used, never the 16:00 hour. The 16:00 MDT/PDT hour (= 15:00 LST, an operational choice) gives only the wind for peak-burn ISI/FWI and FBP. Report example: FWI 39.9 (old, double-counted afternoon) → 27.2 daily / 32.2 peak | Van Wagner 1987 FTR-35 PDF p. 13: FWI computed from noon readings represents the mid-afternoon peak (FireSim vs Pyra comparison, M2) |
 
 ## 4. Science implementation and references
 
@@ -97,7 +98,7 @@ retrieved 2026-10-08).
 | HFI classes 1–6 and tactics | Class bounds and suppression descriptors | Alberta WUI Pocket Guide; Cole & Alexander 1995 |
 
 **Deliberate deviations (documented in code):**
-- FFMC moisture coefficient 147.2 (Van Wagner 1987) vs cffdrs 147.27723 (~1e-4 relative).
+- FFMC moisture coefficient 147.2 (Van Wagner 1987 eq. 2; FTR-33 FORTRAN) vs cffdrs 147.27723. Not negligible: up to 0.12 FFMC / 0.6 ISI / 0.5 FWI daily and 1.1 FFMC in a 480-h hourly chain (FireSim vs Pyra comparison 2026-10-10). Pyra uses 147.2 consistently everywhere.
 - C6 zero-wind upslope rate uses surface RSI in the slope routine.
 - D2 slope inversion goes through D1 (exact, since D2 RSI = 0.2·D1).
 
@@ -159,7 +160,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 
 | Suite | Command | What it checks |
 |---|---|---|
-| Unit / regression (204 tests) | `node --test tests/*.test.mjs` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view |
+| Unit / regression (212 tests) | `node --test tests/*.test.mjs` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view |
 | Engine audit (492 checks) | `node tests/calc_audit.mjs` | Equation-level audit and invariants |
 | Parity (108 checks) | `node tests/bc_parity.mjs` | Single-source science core; BC-specific functions |
 | Live chain / API | `node tests/live_chain_test.mjs`, `node tests/live_api_test.mjs` | Real network: Open-Meteo, CWFIS, SWOB, NAEFS |
