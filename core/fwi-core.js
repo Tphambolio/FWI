@@ -25,8 +25,10 @@ const STARTUP = { ffmc: 85.0, dmc: 6.0, dc: 300.0 };
 // ─── Province routing (all province differences come from PROVINCE) ─────────
 /** Spring startup DC for a station (province startup-DC zone table, else the province default). */
 function getStartupDC(stationName) { return PROVINCE.startupDC[stationName] ?? PROVINCE.startupDCDefault; }
-/** Province danger class for display (AB: CWFIS 5-class incl. Very High; BC: 5-class incl. Very Low). */
-function dangerRatingProv(fwi) { return PROVINCE.dangerRating(fwi); }
+/** Province danger class for display (AB: CWFIS FWI 5-class incl. Very High; BC: Wildfire Regulation
+ *  Schedule 2 from BUI × FWI by Danger Region, incl. Very Low). bui/lat/lng default to the current station;
+ *  AB ignores them. */
+function dangerRatingProv(fwi, bui = null, lat = _stationLat, lng = _stationLng) { return PROVINCE.dangerRating(fwi, bui, lat, lng); }
 /** Province station list for UI pickers, map and summaries. */
 function getStationList() { return PROVINCE.stations; }
 /** Province sector / fire-centre label for a station. */
@@ -872,8 +874,9 @@ function _renderPeakSummary(o) {
     return;
   }
   const isi = _isi(o.ffmc, o.wind ?? 0);
-  const fwi = _fwi(isi, _bui(o.dmc, o.dc));
-  const danger = dangerRatingProv(fwi);
+  const bui = _bui(o.dmc, o.dc);
+  const fwi = _fwi(isi, bui);
+  const danger = dangerRatingProv(fwi, bui);
   const t = _dangerTok(danger);
   const when = o.peak ? `${o.dayLabel ? o.dayLabel + ' ' : ''}16:00 ${PROVINCE.tzLabel} peak burn` : 'current weather (peak-burn forecast loading…)';
   // Agency rating (BCWS DANGER_RATING) when today's chain came from the agency —
@@ -1475,7 +1478,7 @@ function _peakIndices(codes, peakWind) {
   const isi = _isi(codes.ffmc, wind);
   const bui = _bui(codes.dmc, codes.dc);
   const fwi = _fwi(isi, bui);
-  return { wind, isi, bui, fwi, danger: dangerRatingProv(fwi) };
+  return { wind, isi, bui, fwi, danger: dangerRatingProv(fwi, bui) };
 }
 
 /**
@@ -1494,7 +1497,7 @@ function calculateFWI(w, prev = STARTUP) {
     // the FWI-derived class; dangerSource records which one is shown.
     const official = w.officialDanger ?? null;
     return { ffmc: w.ffmc, dmc: w.dmc, dc: w.dc, isi, bui, fwi,
-             danger: official ?? dangerRatingProv(fwi),
+             danger: official ?? dangerRatingProv(fwi, bui),
              dangerSource: official ? 'official' : 'fwi', weather: w };
   }
   // Van Wagner equations — spring startup constants when no carry-over available.
@@ -1507,7 +1510,7 @@ function calculateFWI(w, prev = STARTUP) {
   const isi  = _isi(ffmc, w.wind);
   const bui  = _bui(dmc, dc);
   const fwi  = _fwi(isi, bui);
-  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi), dangerSource: 'fwi', weather: w };
+  return { ffmc, dmc, dc, isi, bui, fwi, danger: dangerRatingProv(fwi, bui), dangerSource: 'fwi', weather: w };
 }
 
 /** Fill all [data-fwi="key"] elements with the computed values. */
@@ -1751,7 +1754,7 @@ async function initFWI(lat = PROVINCE.initDefaults.lat, lng = PROVINCE.initDefau
           const bui = _bui(co.dmc, dc);
           const fwi = _fwi(isi, bui);
           result = { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi,
-                     danger: dangerRatingProv(fwi), weather };
+                     danger: dangerRatingProv(fwi, bui), weather };
         } else {
           // Previous day's codes — step one day forward with today's noon-LST
           // weather (Van Wagner 1987). Before noon fetchWeather returns the
@@ -1800,7 +1803,7 @@ async function fetchStationData(station) {
         // Already today's noon codes — don't step them a second time
         const isi = _isi(co.ffmc, weather.wind ?? 0), bui = _bui(co.dmc, dc), fwiV = _fwi(isi, bui);
         return { station, weather, fwi: { ffmc: co.ffmc, dmc: co.dmc, dc, isi, bui, fwi: fwiV,
-                 danger: dangerRatingProv(fwiV), weather } };
+                 danger: dangerRatingProv(fwiV, bui, station.lat, station.lng), weather } };
       }
       prevFWI = { ffmc: co.ffmc, dmc: co.dmc, dc };
     }
@@ -2827,7 +2830,7 @@ async function buildHourlyChart(lat, lng, stationName = 'Edmonton') {
     f = _hffmc(w.temp, w.rh, w.wind, w.rain, f);
     const isi = _isi(f, w.wind);
     const fwi = _fwi(isi, buiToday);
-    return { fwi, danger: dangerRatingProv(fwi), time: w.time };
+    return { fwi, danger: dangerRatingProv(fwi, buiToday), time: w.time };
   });
 
   const maxFWI = Math.max(...results.map(r => r.fwi), 1);
@@ -2994,7 +2997,7 @@ function calcHourlyOutlook(hours, start, dayCodes = {}, fuels = ['C2'], opts = {
       if (r && (!worst || r.hfi > worst.hfi)) worst = { fuel, hfi: r.hfi, cls: hfiClassInfo(r.hfi).num, ros: r.ros };
     }
     out.push({ t: w.t, temp: w.temp, rh: w.rh, wind: w.wind, wdir: w.wdir, ffmc: f, isi, bui, fwi,
-               danger: dangerRatingProv(fwi), fbp, worst });
+               danger: dangerRatingProv(fwi, bui), fbp, worst });
   }
   return out;
 }
@@ -3669,11 +3672,11 @@ setTimeout(function() {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:5px">
   <table style="border-collapse:collapse;width:100%;font-size:6.5pt">
     <thead><tr style="background:#2d3748;color:#fff">
-      <th colspan="3" style="padding:3px 5px;text-align:left;letter-spacing:.05em;text-transform:uppercase">FWI Danger Rating (marker left half)</th>
+      <th colspan="3" style="padding:3px 5px;text-align:left;letter-spacing:.05em;text-transform:uppercase">${PROVINCE.dangerLegendHead?.[0] ?? 'FWI Danger Rating'} (marker left half)</th>
     </tr>
     <tr style="background:#f0f2f5">
       <th style="padding:2px 5px;text-align:left">Rating</th>
-      <th style="padding:2px 4px;text-align:center">FWI</th>
+      <th style="padding:2px 4px;text-align:center">${PROVINCE.dangerLegendHead?.[1] ?? 'FWI'}</th>
       <th style="padding:2px 5px;text-align:left">Fire Behaviour</th>
     </tr></thead>
     <tbody>
@@ -3796,8 +3799,8 @@ async function printStationBriefing() {
 
   // Province danger class helper (PROVINCE.dangerClassNum) — inline badge HTML
   // (abbreviated labels for table fit)
-  const classBadge = (fwi) => {
-    const cl = PROVINCE.dangerClassNum(fwi);
+  const classBadge = (fwi, bui = null) => {
+    const cl = PROVINCE.dangerClassNum(fwi, bui, _stationLat, _stationLng);
     const short = cl.label === 'Moderate' ? 'Mod' : cl.label === 'Very High' ? 'V. High' : cl.label;
     return `<span style="display:inline-block;min-width:22px;padding:1px 6px;border-radius:3px;background:${cl.bg};color:${cl.text};font-size:9pt;font-weight:900;text-align:center">${cl.num}</span> ${short}`;
   };
@@ -3837,7 +3840,7 @@ async function printStationBriefing() {
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.temp != null ? (+fpw.temp).toFixed(1) + '°C' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${fpw.rh != null ? Math.round(fpw.rh) + '%' : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:700">${Math.round(fr.fwi)}</td>
-        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${classBadge(fr.fwi)}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${classBadge(fr.fwi, fr.bui)}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${ffbp ? ffbp.ros.toFixed(1) : '—'}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiTxt}</td>
         <td style="padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:center">${hfiClassTxt}</td>
@@ -4492,7 +4495,7 @@ function renderSCRIBE(scribe) {
   grid.innerHTML = scribe.records.map(r => {
     const dt = new Date(r.rep_date);
     const label = dt.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
-    const danger = dangerRatingProv(r.fwi);
+    const danger = dangerRatingProv(r.fwi, r.bui ?? null, r.latitude ?? undefined, r.longitude ?? undefined);
     return `<div class="bg-surface-container-lowest rounded-lg p-4">
       <p class="text-[11px] font-label uppercase tracking-wider text-slate-300 mb-1">NRCan SCRIBE forecast · valid noon LST ${label}</p>
       <p class="font-headline text-2xl font-bold text-white">${r.fwi.toFixed(1)}</p>

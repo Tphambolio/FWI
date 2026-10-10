@@ -171,7 +171,7 @@ The province module defines a single `PROVINCE` config object (time offsets, sto
 | Open-Meteo NWP (ECCC GEM) | Tier 3 fallback weather — last resort |
 | CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
 | CFFDRS (Van Wagner 1987, ST-X-3) | FWI/FBP calculation — national standard |
-| BC Wildfire Regulation (B.C. Reg. 38/2005, Sch. 2) | Official BC Fire Danger Class (BUI × FWI by Danger Region); Pyra's BC labels are an FWI-only proxy |
+| BC Wildfire Regulation (B.C. Reg. 38/2005, Sch. 2) | BC Fire Danger Class from BUI × FWI by Danger Region (reproduces BCWS ratings 99.87%) |
 | Van Wagner (1985) | BC spring DC overwinter algorithm |
 
 ---

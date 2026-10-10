@@ -74,6 +74,7 @@ with today's weather.
 | 2026-10-09 | Map clusters take the worst FWI danger inside; still-loading clusters are neutral grey; the map fits the station network (`2765420`, `e82afa2`) | Extreme southern stations were hidden behind neutral bubbles at a cropped edge |
 | 2026-10-09 | Every FWI on the briefing names its basis ("daily, noon LST", or "stepped with 16:00 forecast weather, pre-noon") (`dedfb2f`) | Owner rule: no unlabelled FWI numbers |
 | 2026-10-10 | All sources behind Pyra collected in the Zotero collection "Pyra Sources" (29 items: 13 linked from the existing library, 16 imported) with Zotero keys in §4; AB science guide Open-Meteo citation corrected from "Zuur & Förster" to Zippenfenig (2024) | Rigour for the Claude for Science record; source audit also found an NWP model mislabel and three unverifiable citations (Open items) |
+| 2026-10-10 | BC danger class computed from the Wildfire Regulation Schedule 2 (BUI × FWI by Danger Region) instead of an FWI-only proxy; briefing legend shows Class I–V (v147) | The proxy disagreed with BCWS; with truncated BUI/FWI the Schedule 2 tables reproduce BCWS's published rating 99.87% of the time. Schedule 1 is a 2005 district map, so each station's region was fitted from its own ratings (FRANK CREEK 1375 fits poorly, 67%, and takes its neighbour's region) |
 | 2026-10-10 | Open-Meteo pinned to ECCC GEM (`models=gem_seamless`) and every label says GEM (`b3a1a56`, v145) | Source audit: the unpinned best_match blend served GFS while labels said ECMWF; GEM is Canada's operational model, with HRDPS 2.5 km over the first 48 h |
 | 2026-10-10 | Daily codes are always stepped with noon-LST weather; before noon the noon-LST *forecast* hour is used, never the 16:00 hour. The 16:00 MDT/PDT hour (= 15:00 LST, an operational choice) gives only the wind for peak-burn ISI/FWI and FBP. Report example: FWI 39.9 (old, double-counted afternoon) → 27.2 daily / 32.2 peak | Van Wagner 1987 FTR-35 PDF p. 13: FWI computed from noon readings represents the mid-afternoon peak (FireSim vs Pyra comparison, M2) |
 
@@ -95,6 +96,7 @@ retrieved 2026-10-08).
 | 60-min fire size | Point-ignition acceleration; back-fire ROS; LB(t) incl. grass; ellipse area | FCFDG 1992 Eqs. 70–81; cffdrs `distance_at_time`, `back_rate_of_spread`, `length_to_breadth[_at_time]` |
 | Flame length | Byram for surface fires; Thomas for CFB ≥ 0.1 | Byram 1959; Thomas 1963; Rothermel 1991; Alexander & Cruz 2012 |
 | Spring DC floor | Regional heuristic for cold-start DC (not CFFDRS) | Project heuristic; cf. Lawson & Armitage 2008 overwinter DC |
+| BC Fire Danger Class | Schedule 2 BUI × FWI tables for Danger Regions 1–3, values truncated; region per BCWS station fitted from BCWS's own 2026 DANGER_RATING (nearest station elsewhere); FWI-only proxy only when BUI is unknown. Reproduces BCWS ratings on 99.87% of 38,613 station-days (2026-05-01 to 09-30) | Wildfire Regulation, B.C. Reg. 38/2005, Schedules 1–2 |
 | HFI classes 1–6 and tactics | Class bounds and suppression descriptors | Alberta WUI Pocket Guide; Cole & Alexander 1995 |
 
 **Deliberate deviations (documented in code):**
@@ -217,7 +219,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
-- [x] Unverified citations resolved 2026-10-10 (Snyder 1992, Butler 2007 cap, BCWS 2022 guide): replaced with verified sources and the claims corrected; see §4 "Citation audit". Follow-up option: implement the real BC Schedule 2 lookup (BUI × FWI by Danger Region) instead of the FWI-only proxy.
+- [x] Unverified citations resolved 2026-10-10 (Snyder 1992, Butler 2007 cap, BCWS 2022 guide): replaced with verified sources and the claims corrected; see §4 "Citation audit". BC Schedule 2 lookup implemented (v147).
 - [x] Zotero: all 30 Pyra Sources items have a stored PDF (2026-10-10). Journal papers via UNBC library access (Lee 2002, Luo 2008, Thomas 1963); SR-11 1997 is a 26-page UNBC ebook excerpt alongside the full 1996 FRDA edition; data services carry dated documentation snapshots; the Edmonton fuel grid carries the City canopy report.
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.

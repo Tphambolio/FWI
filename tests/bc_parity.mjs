@@ -143,6 +143,97 @@ for (const [fwi, expected] of BC_DANGER_CASES) {
   else { issues.push(`  dangerRatingBC FAIL: FWI=${fwi} got "${got}" expected "${expected}"`); fail++; }
 }
 
+// ─── BC Fire Danger Class — Wildfire Regulation Schedule 2 ─────────────────
+// Real BCWS Data Mart noon rows (2026 season): code, lat, lng, BUI, FWI and BCWS's
+// own DANGER_RATING (1–5). With BUI and location, dangerRatingBC must reproduce
+// the official class: 4 rows per Danger Region × class, all three regions.
+console.log('\n── BC Schedule 2 danger class vs BCWS official rating ──');
+{
+  const L = ['Very Low', 'Low', 'Moderate', 'High', 'Extreme'];
+  const ROWS = [
+  [   93, 53.2532, -132.1156, 14.014, 0.455, 1], // HONNA 20260801 R1
+  [ 1165, 54.1693, -121.6519, 10.789, 0.267, 1], // SEVEREID 20260612 R1
+  [   75, 50.5711, -124.0777, 19.926, 0.03, 1], // TOBA CAMP 20260829 R1
+  [   93, 53.2532, -132.1156, 13.492, 0.162, 1], // HONNA 20260526 R1
+  [ 1066, 49.5855, -123.3873, 28.127, 7.75, 2], // TS MCNABB 20260522 R1
+  [  904, 52.3873, -126.5897, 37.295, 0.802, 2], // HAGENSBORG 2 20260830 R1
+  [  189, 53.4937, -123.6089, 57.024, 0.742, 2], // CHILAKO 20260526 R1
+  [  945, 50.3701, -126.4339, 34.592, 0.89, 2], // TS NAKA CREEK 20260725 R1
+  [  153, 54.7442, -123.0187, 63.723, 16.312, 3], // MCLEOD LAKE 20260819 R1
+  [  431, 55.6015, -128.0478, 51.446, 2.632, 3], // UPPER KISPIOX 20260514 R1
+  [  155, 55.2864, -123.1359, 36.739, 12.002, 3], // MACKENZIE FS 20260808 R1
+  [  383, 50.383, -117.8799, 25.363, 11.213, 3], // FALLS CREEK 20260613 R1
+  [  110, 57.9141, -131.1711, 56.1, 22.394, 4], // TELEGRAPH CREEK 20260509 R1
+  [   37, 49.3776, -124.9337, 67.113, 18.447, 4], // BEAVER CREEK 20260523 R1
+  [  173, 55.135, -126.2073, 69.553, 20.518, 4], // NORTH BABINE 20260816 R1
+  [ 1176, 51.3127, -119.3926, 106.23, 16.208, 4], // MUDPIT 20260812 R1
+  [  158, 54.0554, -124.0102, 128.919, 34.516, 5], // VANDERHOOF HUB 20260614 R1
+  [  873, 50.765, -117.9578, 130.361, 21.538, 5], // CRAWFORD 20260726 R1
+  [   82, 50.3317, -122.5658, 132.839, 42.709, 5], // SCAR CREEK 20260622 R1
+  [  868, 51.8533, -118.5914, 125.459, 30.263, 5], // BIG MOUTH 2 20260820 R1
+  [  211, 52.9575, -123.5958, 46.788, 0.381, 1], // NAZKO 20260522 R2
+  [  230, 52.3278, -121.3983, 19.184, 0.941, 1], // HORSEFLY 20260930 R2
+  [  227, 52.4709, -121.743, 30.479, 1.275, 1], // GAVIN 20260906 R2
+  [  230, 52.3278, -121.3983, 30.686, 0.005, 1], // HORSEFLY 20260606 R2
+  [  228, 52.91, -122.0667, 63.366, 12.499, 2], // BENSON 20260708 R2
+  [  227, 52.4709, -121.743, 53.195, 16.296, 2], // GAVIN 20260527 R2
+  [  230, 52.3278, -121.3983, 22.289, 6.599, 2], // HORSEFLY 20260907 R2
+  [  206, 52.5387, -123.3433, 46.885, 9.912, 2], // TAUTRI 20260524 R2
+  [  221, 52.7101, -124.4823, 93.331, 7.609, 3], // BALDFACE 20260530 R2
+  [  232, 51.7238, -120.3899, 63.19, 22.794, 3], // COLDSCAUR LAKE 20260505 R2
+  [  227, 52.4709, -121.743, 101.334, 14.303, 3], // GAVIN 20260727 R2
+  [  209, 52.0838, -123.2733, 89.611, 24.383, 3], // ALEXIS CREEK 20260921 R2
+  [  225, 52.0497, -121.8738, 151.278, 24.375, 4], // KNIFE 20260514 R2
+  [  236, 51.375, -121.72, 115.035, 28.196, 4], // MEADOW LAKE 20260622 R2
+  [  222, 51.4508, -122.6603, 112.914, 30.028, 4], // GASPARD 20260722 R2
+  [  216, 51.48, -123.8181, 145.33, 22.174, 4], // NEMIAH 20260518 R2
+  [  235, 51.2378, -120.9976, 232.817, 32.706, 5], // YOUNG LAKE 20260806 R2
+  [  226, 51.7017, -124.875, 194.051, 42.443, 5], // MIDDLE LAKE 20260602 R2
+  [  222, 51.4508, -122.6603, 181.418, 42.165, 5], // GASPARD 20260808 R2
+  [  226, 51.7017, -124.875, 238.445, 41.593, 5], // MIDDLE LAKE 20260716 R2
+  [  309, 50.7963, -122.8805, 22.962, 0.687, 1], // GWYNETH LAKE 20260916 R3
+  [  286, 50.8036, -119.6307, 34.368, 3.079, 1], // TURTLE 20260929 R3
+  [ 1075, 49.0469, -115.2253, 11.119, 0.001, 1], // KOOCANUSA 20260602 R3
+  [  977, 49.6551, -121.3576, 38.271, 0.006, 1], // ANDERSON CREEK 20260526 R3
+  [  396, 49.699, -118.081, 23.326, 14.42, 2], // OCTOPUS CREEK 20260921 R3
+  [  393, 49.5267, -118.3603, 38.732, 16.423, 2], // NICOLL 20260920 R3
+  [  977, 49.6551, -121.3576, 54.925, 2.869, 2], // ANDERSON CREEK 20260928 R3
+  [  331, 49.1391, -120.1844, 45.607, 12.643, 2], // ASHNOLA 20260607 R3
+  [  301, 50.3059, -122.7287, 116.85, 24.903, 3], // PEMBERTON BASE 20260716 R3
+  [  307, 50.6153, -120.8362, 89.208, 26.421, 3], // LEIGHTON LAKE 20260521 R3
+  [  311, 50.7923, -121.3582, 77.048, 20.239, 3], // MCLEAN LAKE 20260911 R3
+  [  292, 50.5217, -122.4978, 140.764, 24.588, 3], // DARCY 20260512 R3
+  [  426, 49.6672, -115.8483, 200.558, 39.518, 4], // CRANBROOK 20260808 R3
+  [ 1029, 50.9109, -122.6889, 117.811, 38.251, 4], // FIVE MILE 20260514 R3
+  [  396, 49.699, -118.081, 134.55, 28.112, 4], // OCTOPUS CREEK 20260812 R3
+  [  836, 49.4335, -120.4571, 191.601, 27.932, 4], // AUGUST LAKE 20260702 R3
+  [  317, 49.0625, -120.7668, 221.691, 50.231, 5], // ALLISON PASS 20260805 R3
+  [ 1055, 50.3511, -121.655, 462.968, 48.372, 5], // SPLINTLUM 20260808 R3
+  [ 1399, 50.1214, -120.7442, 362.36, 99.266, 5], // MERRITT 2 HUB 20260730 R3
+  [  317, 49.0625, -120.7668, 165.404, 50.388, 5], // ALLISON PASS 20260721 R3
+  ];
+  for (const [code, lat, lng, bui, fwi, off] of ROWS) {
+    const got = BC.dangerRatingBC(fwi, bui, lat, lng);
+    const ok = got === L[off - 1];
+    if (ok) pass++; else { issues.push(`  Schedule 2 FAIL: station ${code} BUI=${bui} FWI=${fwi} got "${got}" expected "${L[off - 1]}"`); fail++; }
+  }
+  console.log(`  ${ROWS.length} real station-days checked`);
+  // Table edges: values are truncated, so FWI 0.9 is column "0" in Region 1 and BUI 19.9 is row "0–19".
+  const edges = [[1, 19.9, 0.9, 1], [1, 20, 0.9, 2], [1, 19.9, 1, 2], [2, 48.9, 4.9, 1], [3, 140.9, 46.9, 4],
+                 [3, 141, 47, 5], [1, 119, 31, 5], [3, 201, 47, 5], [2, 158.9, 37.9, 4]];
+  for (const [rg, bui, fwi, exp] of edges) {
+    const got = BC.bcSchedule2Class(bui, fwi, rg);
+    if (got === exp) pass++; else { issues.push(`  Schedule 2 edge FAIL: R${rg} BUI=${bui} FWI=${fwi} got ${got} exp ${exp}`); fail++; }
+  }
+  // Region lookup by nearest BCWS station (Schedule 1 map): Williams Lake area = 2, Kamloops = 3, Prince George = 1.
+  for (const [lat, lng, exp, nm] of [[52.13, -122.14, 2, 'Williams Lake'], [50.67, -120.33, 3, 'Kamloops'], [53.92, -122.75, 1, 'Prince George'], [51.0, -118.2, 1, 'Revelstoke']]) {
+    const got = BC.bcDangerRegion(lat, lng);
+    if (got === exp) pass++; else { issues.push(`  Danger Region FAIL: ${nm} got ${got} exp ${exp}`); fail++; }
+  }
+  // No BUI → the FWI-only proxy (unchanged behaviour).
+  if (BC.dangerRatingBC(25) === 'High') pass++; else { issues.push('  proxy fallback FAIL'); fail++; }
+}
+
 // ─── BC-specific internal functions ──────────────────────────────────────────
 // Tests applyDCFloor (BC) and getStartupDC (BC) — not exported in window.FWI
 // but critical to correct spring chain initialization.

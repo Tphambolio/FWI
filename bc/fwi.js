@@ -124,11 +124,17 @@ function applyDCFloor(rawDC, lat, lon) {
   return { dc: rawDC, corrected: false };
 }
 
-// BC display classes — 5 classes, no "Very High", adds "Very Low".
-// CAVEAT: this is a raw-FWI proxy (5/12/21/34 are Pyra cut-points). BC's legal
-// Fire Danger Class cross-references BUI with FWI per Danger Region (Wildfire
-// Regulation, B.C. Reg. 38/2005, Schedules 1–2), so labels can differ from BCWS.
-function dangerRatingBC(fwi) {
+const BC_DANGER_LABELS = ['Very Low', 'Low', 'Moderate', 'High', 'Extreme']; // classes I–V
+
+/**
+ * BC danger class label. With BUI and a location: the Schedule 2 class for the
+ * nearest BCWS station's Danger Region (matches BCWS's official rating). Without
+ * BUI or location: a raw-FWI proxy (5/12/21/34 are Pyra cut-points, not from the
+ * Regulation), used only where BUI is unknown.
+ */
+function dangerRatingBC(fwi, bui, lat, lng) {
+  const cls = bcSchedule2Class(bui, fwi, bcDangerRegion(lat, lng));
+  if (cls) return BC_DANGER_LABELS[cls - 1];
   if (fwi <  5) return 'Very Low';
   if (fwi < 12) return 'Low';
   if (fwi < 21) return 'Moderate';
@@ -534,6 +540,56 @@ const BCWS_STATION_COORDS = {
   5916: [52.0830, -122.1217],
 };
 
+// BC Fire Danger Class — Wildfire Regulation, B.C. Reg. 38/2005, Schedule 2:
+// the Buildup Index is cross-referenced with the FWI in a table for each Danger
+// Region (Schedule 1 map). Values are truncated to whole numbers before lookup;
+// with truncation the tables reproduce BCWS's published DANGER_RATING on 99.87%
+// of 38,613 station-days (Data Mart noon rows, 2026-05-01 to 2026-09-30).
+// Rows = BUI bands (upper bounds), columns = FWI bands (upper bounds); 1–5 = I–V.
+const BC_SCHED2 = {
+  1: { bui: [19, 42, 69, 118],   fwi: [0, 7, 16, 30],  m: [[1,2,2,3,3],[2,2,3,3,4],[2,3,3,4,4],[2,3,4,4,5],[3,3,4,5,5]] },
+  2: { bui: [48, 85, 118, 158],  fwi: [4, 16, 26, 37], m: [[1,2,2,3,3],[2,2,3,3,4],[2,3,3,4,4],[2,3,4,4,5],[3,3,4,5,5]] },
+  3: { bui: [50, 90, 140, 200],  fwi: [4, 16, 27, 46], m: [[1,2,2,3,3],[2,2,3,3,4],[2,3,3,4,5],[2,3,4,4,5],[3,3,4,4,5]] },
+};
+
+// Danger Region per BCWS station code. Schedule 1 is a map of 2005 forest-district
+// boundaries, so each station's region was fitted from BCWS's own ratings: the
+// region whose table reproduces that station's 2026 DANGER_RATING (≥95% match,
+// ≥20 days; all but one ≥99%). Stations without a clean fit (no 2026 data, too
+// few days, or FRANK CREEK 1375 at 67%) take the region of the nearest fitted
+// station. Region 1 is everything not listed.
+const BC_DANGER_REGION_2 = new Set([
+  206,208,209,210,211,212,213,216,218,221,222,225,226,227,228,230,232,233,234,235,236,832,1275,
+  1349,4973,5816,5916
+]);
+const BC_DANGER_REGION_3 = new Set([
+  279,280,283,286,291,292,298,301,302,305,306,307,309,311,316,317,322,326,328,331,334,362,366,
+  367,374,388,390,391,392,393,394,396,401,402,404,406,407,408,411,412,417,418,419,421,425,426,
+  786,788,790,791,836,838,865,866,876,886,977,1024,1029,1055,1075,1082,1083,1203,1277,1323,1339,
+  1359,1375,1399,1790,2450,3110,3810,3873,5796,5858,5861
+]);
+
+/** Danger Region (1–3) for a BCWS station code, or for the nearest BCWS station to lat/lng. */
+function bcDangerRegion(lat, lng) {
+  if (lat == null || lng == null) return null;
+  let best = null, bestD = Infinity;
+  for (const [code, [la, lo]] of Object.entries(BCWS_STATION_COORDS)) {
+    const d = (la - lat) ** 2 + ((lo - lng) * Math.cos(lat * Math.PI / 180)) ** 2;
+    if (d < bestD) { bestD = d; best = +code; }
+  }
+  if (best == null) return null;
+  return BC_DANGER_REGION_2.has(best) ? 2 : BC_DANGER_REGION_3.has(best) ? 3 : 1;
+}
+
+/** Schedule 2 Fire Danger Class (1–5) from BUI and FWI in a Danger Region. */
+function bcSchedule2Class(bui, fwi, region) {
+  const t = BC_SCHED2[region];
+  if (!t || !Number.isFinite(bui) || !Number.isFinite(fwi)) return null;
+  const band = (v, ub) => { const x = Math.floor(Math.max(0, v)); const i = ub.findIndex(u => x <= u); return i < 0 ? ub.length : i; };
+  return t.m[band(bui, t.bui)][band(fwi, t.fwi)];
+}
+
+
 // BCWS daily danger rating classes (Datamart DANGER_RATING 1-5). BCWS derives
 // these with its own rating tables — not from FWI alone.
 const BCWS_DANGER_CLASSES = { 1: 'Very Low', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Extreme' };
@@ -585,8 +641,8 @@ async function fetchBCWSDatamart() {
 }
 
 /** BC 5-class number + print colours for briefing badges (BC counterpart of dangerClassNum). */
-function _dangerClassNumBC(fwi) {
-  const label = dangerRatingBC(fwi);
+function _dangerClassNumBC(fwi, bui, lat, lng) {
+  const label = dangerRatingBC(fwi, bui, lat, lng);
   const cl = PRINT_DANGER_COLORS[label] || PRINT_DANGER_COLORS['Moderate'];
   const num = ['Very Low', 'Low', 'Moderate', 'High', 'Extreme'].indexOf(label) + 1;
   return { num, label, bg: cl.bg, text: cl.text };
@@ -1067,19 +1123,20 @@ const PROVINCE = {
   highDangerFWI: 21,            // FWI where 'High' starts (forecast "days at risk")
   trendTableCount: undefined,   // regions shown in the forecast trend table (all)
   // ── Danger classes ──
-  dangerRating: fwi => dangerRatingBC(fwi),                        // BC 5-class (Very Low … Extreme)
-  dangerClassNum: fwi => _dangerClassNumBC(fwi),                   // {num,label,bg,text} for briefing badges
+  dangerRating: (fwi, bui, lat, lng) => dangerRatingBC(fwi, bui, lat, lng), // Schedule 2 (BUI × FWI by Danger Region); FWI proxy if no BUI
+  dangerClassNum: (fwi, bui, lat, lng) => _dangerClassNumBC(fwi, bui, lat, lng),                   // {num,label,bg,text} for briefing badges
   dangerClasses: ['Very Low', 'Low', 'Moderate', 'High', 'Extreme'], // classes low → high (briefing tallies)
-  dangerLegend: [                                                  // provincial briefing legend: label, colour, FWI, behaviour
-    ['Very Low', '#a7f3d0', '0–4',   'Fuels wet; spread very unlikely'],
-    ['Low',      '#4ae176', '5–11',  'Isolated fires; initial attack effective'],
-    ['Moderate', '#7bd0ff', '12–20', 'Fires start easily; control feasible'],
-    ['High',     '#f5c518', '21–33', 'Rapid spread; spotting; control difficult'],
-    ['Extreme',  '#ef4444', '≥ 34',  'Crown fire conditions; evacuate structure zone'],
+  dangerLegendHead: ['BC Fire Danger Class · B.C. Reg. 38/2005 Sch. 2 (BUI × FWI by Danger Region)', 'Class'],
+  dangerLegend: [                                                  // provincial briefing legend: label, colour, class, behaviour
+    ['Very Low', '#a7f3d0', 'I',   'Fuels wet; spread very unlikely'],
+    ['Low',      '#4ae176', 'II',  'Isolated fires; initial attack effective'],
+    ['Moderate', '#7bd0ff', 'III', 'Fires start easily; control feasible'],
+    ['High',     '#f5c518', 'IV',  'Rapid spread; spotting; control difficult'],
+    ['Extreme',  '#ef4444', 'V',   'Crown fire conditions; evacuate structure zone'],
   ],
   // ── Briefings ──
   briefingTitle: 'Pyra · BC Wildfire FWI — Provincial Briefing',
   briefingBounds: '[[48.0, -140.0], [60.0, -114.0]]',             // provincial briefing map fitBounds
   stationFallbackName: 'BC Station',                               // station briefing name when none loaded
-  exports: () => ({ dangerRatingBC, dangerRatingProv, BC_STATIONS, getStationList, stationSector, getRegions, setProvince, getProvince }),
+  exports: () => ({ dangerRatingBC, bcSchedule2Class, bcDangerRegion, dangerRatingProv, BC_STATIONS, getStationList, stationSector, getRegions, setProvince, getProvince }),
 };
