@@ -104,7 +104,7 @@ retrieved 2026-10-08).
 
 ### References
 
-All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, 23 with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
+All sources below are in the Zotero collection **Pyra Sources** (local library, collection key `RAM676AU`; 30 items, 26 with a stored PDF), tagged `pyra-source`; the bracketed code after each entry is its Zotero item key. Each new item carries a child note saying what it drives in Pyra.
 
 **Fire Weather Index System**
 - Lawson, B.D.; Armitage, O.B. 2008. Weather guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`4AWT7VN5`]
@@ -124,7 +124,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 
 **Head fire intensity classes and operational guidance**
 - Cole, F.V.; Alexander, M.E. 1995. Head fire intensity class graph for FBP System fuel type C-2. Canadian Forest Service, Northern Forestry Centre, Edmonton. [`YFNDUP9L`]
-- Government of Alberta, Forestry and Parks. Alberta Wildland Urban Interface Pocket Guide. Edition and year not yet confirmed. [`SM5NRGUI`]
+- Government of Alberta. 2022. Alberta Wildland Urban Interface Pocket Guide. https://www.alberta.ca/system/files/pses-alberta-wildland-urban-interface-pocket-guide.pdf [`SM5NRGUI`]
 - Taylor, S.W.; Pike, R.G.; Alexander, M.E. 1997. Field guide to the Canadian Forest Fire Behavior Prediction (FBP) System. Special Report 11. Natural Resources Canada, Canadian Forest Service, Northern Forestry Centre, Edmonton. [`W86C9VP9`]
 - Taylor, S.W.; Pike, R.G.; Alexander, M.E. 1996. Field guide to the Canadian Forest Fire Behavior Prediction (FBP) System. FRDA Handbook 012. Canadian Forest Service and BC Ministry of Forests, Victoria. ISBN 0-662-24104-5. The BC edition of the same guide; its PDF stands in for SR-11. [`QCZXFCUQ`]
 
@@ -208,8 +208,8 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] FBAN review: during frontal winds the hourly shift outlook can peak overnight (Hussar, 9–10 Oct: HFI 5 at 04:00 in O1b). This is model behaviour of the hourly FFMC + wind, not a code fault, but worth an analyst's eye.
 - [ ] BC keeps `autoFuelOnSelect: false`, so BC shared links use the viewer's saved or default fuel (C3). Decide whether BC should adopt the station fuel too.
 - [x] NWP provenance mislabel (found 2026-10-10): Open-Meteo calls now pin `models=gem_seamless` (ECCC GEM: HRDPS 2.5 km → RDPS → GDPS) and every label says GEM (v145, 2026-10-10).
-- [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Confirm the edition of the Alberta WUI Pocket Guide.
-- [ ] Zotero: 23 of 30 Pyra Sources items have a stored PDF (2026-10-10; data services carry a dated snapshot of their documentation page). Still without: Thomas 1963, Luo et al. 2008 and Lee et al. 2002 (paywalled; no legitimate free copy found yet), Taylor et al. 1997 SR-11 (the 1996 FRDA edition is attached instead, `QCZXFCUQ`), the Alberta WUI Pocket Guide (edition unknown), Alberta pmwx and the Edmonton fuel raster (no public documentation page).
+- [ ] Unverified citations: replace or remove Snyder (1992) in `_computeIDWBlend` (suggest Jain & Flannigan 2017), "Butler 2007 cap" in the AB science guide, and "BCWS (2022) CFFDRS Implementation Guide" in the BC science guide. Alberta WUI Pocket Guide edition confirmed as 2022 (2026-10-10).
+- [ ] Zotero: 26 of 30 Pyra Sources items have a stored PDF (2026-10-10). Added: Alberta WUI Pocket Guide (2022 edition, alberta.ca), Alberta fire-weather observations page snapshot (pmwx), and a 26-page excerpt of SR-11 1997 from the UNBC ebook (28-page export limit; ISBN and every passage Pyra quotes verified; page list in the Zotero note). Still without: Thomas 1963, Luo et al. 2008, Lee et al. 2002 (closed access; get through UNBC) and the Edmonton fuel raster (internal, no public document).
 - [ ] Optional: compare 60-min sizes against a real Alberta FSB, if one becomes available.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 
