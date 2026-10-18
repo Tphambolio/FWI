@@ -8,7 +8,8 @@
  * - Fire-weather day: noon LST stays 19 UTC (CWFIS tz_correct −7 for Alberta)
  *   before and after the change by default; AB_FWI_LST_OFFSET_FROM_2026_11_01
  *   = 6 would move days from 2026-11-01 on to 18 UTC.
- * - BC has no clock rules and is unchanged.
+ * - BC: permanent UTC−7 from 2026-11-01 (label PT), noon LST stays 20 UTC.
+ * - Before the change labels follow the instant's offset (MST/MDT, PST/PDT).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -96,9 +97,43 @@ test('AB: setting the post-change offset to 6 moves days from 2026-11-01 to 18 U
   assert.ok(hours.some(([d]) => d < '2026-11-01') && hours.some(([d]) => d >= '2026-11-01'));
 });
 
-test('BC: no clock rules — PST noon (20 UTC) and PDT label unchanged after 2026-11-01', () => {
+test('AB: before the change an instant\'s timestamp label follows its own offset (winter MST); the peak-burn clock label stays MDT', () => {
+  for (const [ms, label] of [
+    [U(2011, 1, 15, 19), 'MST'], [U(2011, 5, 15, 20), 'MDT'],
+    [U(2026, 1, 15, 19), 'MST'], [U(2026, 3, 8, 8, 59), 'MST'], [U(2026, 3, 8, 9), 'MDT'],
+    [U(2026, 10, 31, 18), 'MDT'], [U(2026, 11, 2, 18), 'MT'], [U(2027, 1, 15, 18), 'MT'],
+  ]) {
+    const { run } = makeContext(AB.path, { now: ms });
+    assert.equal(run(`_tzLabelAt(${ms})`), label, new Date(ms).toISOString());
+    assert.equal(run('PROVINCE.tzLabel'), ms >= U(2026, 11, 1, 8) ? 'MT' : 'MDT', '16:00 peak clock = 22 UTC');
+  }
+});
+
+test('BC: permanent UTC−7 from 2026-11-01 09:00 UTC — PDT/PST before, PT after; noon LST stays 20 UTC', () => {
+  for (const [ms, label] of [
+    [U(2026, 1, 15, 20), 'PST'], [U(2026, 7, 15, 20), 'PDT'], [U(2026, 11, 1, 8, 59), 'PDT'],
+    [U(2026, 11, 1, 9), 'PT'], [U(2026, 11, 2, 21), 'PT'], [U(2027, 3, 15, 21), 'PT'],
+  ]) {
+    const { run } = makeContext(BC.path, { now: ms });
+    assert.equal(run(`_tzLabelAt(${ms})`), label, new Date(ms).toISOString());
+    assert.equal(run('PROVINCE.tzLabel'), ms >= U(2026, 11, 1, 9) ? 'PT' : 'PDT', '16:00 peak clock = 23 UTC');
+  }
   const { run } = makeContext(BC.path, { now: U(2026, 11, 2, 21) });
-  assert.equal(run('PROVINCE.clockRules'), undefined);
-  assert.equal(run(`_noonMsOn('2026-11-02')`), Date.parse('2026-11-02T20:00:00Z'));
-  assert.equal(run('_clockAt().tzLabel'), 'PDT');
+  assert.equal(run('BC_FWI_LST_OFFSET_FROM_2026_11_01'), 8);
+  for (const d of ['2026-07-15', '2026-10-31', '2026-11-01', '2026-11-02', '2027-03-15']) {
+    assert.equal(run(`_noonMsOn('${d}')`), Date.parse(`${d}T20:00:00Z`), d);
+  }
+  const f = ms => run(`_wallFmt(${ms}, { hour: '2-digit', minute: '2-digit', hour12: false }, 'toLocaleTimeString')`);
+  assert.equal(f(U(2026, 11, 2, 20)), '13:00');   // UTC−7 after the change, whatever the tz data
+  assert.equal(f(U(2027, 1, 15, 20)), '13:00');
+  assert.equal(f(U(2026, 1, 15, 20)), '12:00');   // PST before it
+  assert.equal(run(`_pdtDateStr(${U(2026, 11, 2, 6, 59)})`), '2026-11-01');
+  assert.equal(run(`_pdtDateStr(${U(2026, 11, 2, 7)})`), '2026-11-02');
+});
+
+test('BC: fetchWeather after the change takes 20 UTC (noon PST) and 23 UTC (16:00 PT) peak', async () => {
+  const { run } = makeContext(BC.path, { now: U(2026, 11, 2, 22) });
+  const w = await run(`fetchWeather(${BC.lat}, ${BC.lng})`);
+  assert.equal(w.temp, 20.02);
+  assert.equal(w.peak.temp, 23.02);
 });

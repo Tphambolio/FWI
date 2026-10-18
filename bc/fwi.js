@@ -712,7 +712,7 @@ async function _fetchWeatherPrimaryBC(lat, lng) {
   if (!_idwMode) {
     try {
       const today = _lstDateStr();
-      const preNoon = new Date(Date.now() - PROVINCE.lstOffset * 3600000).getUTCHours() < 12;
+      const preNoon = new Date(Date.now() - _clockAt().lstOffset * 3600000).getUTCHours() < 12;
       const [bcws, cwfis, swob] = await Promise.all([
         fetchBCWSForCoords(lat, lng).catch(() => null),
         fetchCWFIS(lat, lng, false).catch(() => null),
@@ -1072,20 +1072,43 @@ const NAEFS_BC_STATIONS = [
 
 // ─── P3: Active fires + satellite hotspot layers ─────────────────────────────
 
-/** "YYYY-MM-DD" in Pacific Daylight Time (UTC−7) — BC name for the core's _localDateStr. */
+/** "YYYY-MM-DD" on BC's UTC−7 clock (PDT; PT from 2026-11-01) — BC name for the core's _localDateStr. */
 function _pdtDateStr(ts) { return _localDateStr(ts); }
+
+// ─── BC's clocks (core _clockAt; see fwi.js AB_CLOCK_RULES for the pattern) ──
+//  * Wall clock: B.C. adopted permanent daylight time — UTC−7 all year after
+//    the 2026-03-08 spring-forward; no fall-back on 2026-11-01 (B.C. news
+//    release 2026AG0013-000209; IANA tzdata 2026b, abbreviation "MST").
+//    Labelled PDT/PST before 2026-11-01 09:00 UTC, "PT" after ("Pacific
+//    time", the province's own name; label pending owner confirmation).
+//    wallOffsetMin keeps the UI on UTC−7 in browsers whose tz data is older.
+//  * Fire-weather day: CWFIS gives 392 BC stations tz_correct −8 and 75
+//    eastern stations −7 (cwfis_allstn2026.csv). On 17 Oct 2026 — seven months
+//    after the legal change — CWFIS daily values matched the ECCC 20 UTC record
+//    at Kamloops and Prince George (−8) and 19 UTC at Cranbrook and Dawson
+//    Creek (−7). So noon LST stays 20 UTC (PST); one setting below for the
+//    days from 2026-11-01. (Pyra BC uses 20 UTC for every station, including
+//    the −7 eastern ones: a known simplification, PROJECT_RECORD §6.)
+const BC_FWI_LST_OFFSET_FROM_2026_11_01 = 8;
+const BC_CLOCK_RULES = [
+  { fromMs: -Infinity, lstOffset: 8, noonUTC: 20, localOffset: 7, peakUTC: 23,
+    tzLabel: 'PDT', stdLabel: 'PST', wallOffsetMin: null },
+  { fromMs: Date.UTC(2026, 10, 1, 9), lstOffset: BC_FWI_LST_OFFSET_FROM_2026_11_01,
+    noonUTC: 12 + BC_FWI_LST_OFFSET_FROM_2026_11_01, localOffset: 7, peakUTC: 23, tzLabel: 'PT', wallOffsetMin: -420 },
+];
 
 // ─── Province config — read by core/fwi-core.js at load and call time ───────
 // Defined last so it can reference this module's data tables directly.
 const PROVINCE = {
   code: 'BC',
-  // ── Time ──
-  lstOffset: 8,          // hours behind UTC for noon LST (PST) — the CFFDRS day
-  localOffset: 7,        // hours behind UTC for local daylight time (PDT) — Today/Tomorrow, 16:00 peak burn
-  noonUTC: 20,           // UTC hour of noon LST (CFFDRS observation hour)
-  peakUTC: 23,           // UTC hour of 16:00 PDT peak burn (= 15:00 PST/LST; operational choice, ISI/FWI-at-peak + FBP wind only)
+  // ── Time ── dated rules (BC_CLOCK_RULES above; core _clockAt / _clockOn).
+  clockRules: BC_CLOCK_RULES,
+  get lstOffset() { return _clockAt().lstOffset; },     // hours behind UTC for noon LST (PST) — the CFFDRS day (8)
+  get localOffset() { return _clockAt().localOffset; }, // hours behind UTC of the UTC−7 clock (PDT; PT from 2026-11-01) — Today/Tomorrow, 16:00 peak burn
+  get noonUTC() { return _clockAt().noonUTC; },         // UTC hour of noon LST (CFFDRS observation hour, 20)
+  get peakUTC() { return _clockAt().peakUTC; },         // UTC hour of 16:00 peak burn on the UTC−7 clock (23; operational choice, ISI/FWI-at-peak + FBP wind only)
   dangerScaleNote: 'FWI-based approximation of BC danger classes; BCWS issues the official rating from its own tables', // summary-row tooltip: what the FWI-derived danger class is
-  tzLabel: 'PDT',        // local daylight-time label in UI / briefings
+  get tzLabel() { return _clockAt().tzLabel; },         // label of the UTC−7 clock that localOffset/peakUTC use ('PDT'; 'PT' from 2026-11-01). Instant timestamps use _tzLabelAt (PST in winter)
   tzName: 'America/Vancouver', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryBC(lat, lng),   // tier chain (BCWS ∥ CWFIS, date-checked)

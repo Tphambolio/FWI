@@ -248,14 +248,19 @@ const area = v => (v == null || !isFinite(v) ? '—' : v < 10 ? (+v).toFixed(1) 
 // tzdata 2026c). Node's bundled ICU may predate 2026c and fall back to MST, so
 // Edmonton times from then are formatted with the fixed offset and labelled
 // "MT" (owner's label; fwi.js AB_CLOCK_RULES).
-const AB_FIXED_UTC6_FROM = Date.UTC(2026, 10, 1, 8);
+// B.C. likewise stays on UTC−7 from 2026-11-01 02:00 PDT (09:00 UTC), "PT".
+const FIXED_FROM = {
+  'America/Edmonton': { fromMs: Date.UTC(2026, 10, 1, 8), offH: -6, label: 'MT' },
+  'America/Vancouver': { fromMs: Date.UTC(2026, 10, 1, 9), offH: -7, label: 'PT' },
+};
 
 export function formatLocal(nowMs, timeZone = 'America/Edmonton') {
-  if (timeZone === 'America/Edmonton' && nowMs >= AB_FIXED_UTC6_FROM) {
-    const w = new Date(nowMs - 6 * 3600000);
+  const fx = FIXED_FROM[timeZone];
+  if (fx && nowMs >= fx.fromMs) {
+    const w = new Date(nowMs + fx.offH * 3600000);
     const date = w.toLocaleDateString('en-CA', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     const time = w.toLocaleTimeString('en-CA', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
-    return `${date} ${time} MT`;
+    return `${date} ${time} ${fx.label}`;
   }
   const d = new Date(nowMs);
   const date = d.toLocaleDateString('en-CA', { timeZone, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });

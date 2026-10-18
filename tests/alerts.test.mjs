@@ -309,6 +309,7 @@ test('formatLocal: Edmonton time is UTC−6 "MT" from 2026-11-01 (no fall-back),
   assert.match(formatLocal(Date.UTC(2026, 10, 2, 18)), /Nov 2, 2026 12:00 MT$/);
   assert.match(formatLocal(Date.UTC(2027, 2, 15, 18)), /Mar 15, 2027 12:00 MT$/);
   assert.match(formatLocal(Date.UTC(2011, 4, 15, 20)), /May 15, 2011 14:00 MDT$/);
-  // Other zones go through the runtime's tz data (BC: summer only; BC's own 2026 change is tz-data dependent)
+  // B.C.: PDT before, UTC−7 "PT" from 2026-11-01 09:00 UTC whatever the runtime's tz data
   assert.match(formatLocal(Date.UTC(2026, 6, 15, 18), 'America/Vancouver'), /11:00 PDT$/);
+  assert.match(formatLocal(Date.UTC(2026, 10, 2, 18), 'America/Vancouver'), /Nov 2, 2026 11:00 PT$/);
 });
