@@ -2,7 +2,7 @@ name: Update CWFIS Carry-over Cache
 
 on:
   schedule:
-    # 20:15 UTC = 13:15 MST — after the CWFIS daily noon-LST observations land
+    # 20:15 UTC = 13:15 MST = 14:15 MT (Alberta UTC−6 from 2026-11-01) — after the CWFIS daily noon-LST (19 UTC) observations land
     - cron: '15 20 * * *'
   workflow_dispatch: # allow manual trigger
 

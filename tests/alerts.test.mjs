@@ -302,3 +302,12 @@ test('buildMessage test mode is labelled [TEST] and says no action is needed', (
   const m = _bm({ alerts: [], nowMs: 0, timeZone: 'UTC', test: true });
   assert.equal(m, null, 'still null with no stations');
 });
+
+test('formatLocal: Edmonton time is UTC−6 "MT" from 2026-11-01 (no fall-back), MDT/MST before', async () => {
+  const { formatLocal } = await import('../tools/alerts/run.mjs');
+  assert.match(formatLocal(Date.UTC(2026, 9, 31, 18)), /Oct 31, 2026 12:00 MDT$/);
+  assert.match(formatLocal(Date.UTC(2026, 10, 2, 18)), /Nov 2, 2026 12:00 MT$/);
+  assert.match(formatLocal(Date.UTC(2027, 2, 15, 18)), /Mar 15, 2027 12:00 MT$/);
+  assert.match(formatLocal(Date.UTC(2011, 4, 15, 20)), /May 15, 2011 14:00 MDT$/);
+  assert.match(formatLocal(Date.UTC(2026, 10, 2, 18), 'America/Vancouver'), /10:00 PST$/);
+});

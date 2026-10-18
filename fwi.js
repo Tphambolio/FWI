@@ -394,7 +394,7 @@ function _defaultFuelFor(lat) {
  * discarding today's real obs every evening.
  */
 async function _fetchWeatherPrimaryAB(lat, lng) {
-  const mstHour   = new Date(Date.now() - PROVINCE.lstOffset * 3600000).getUTCHours();
+  const mstHour   = new Date(Date.now() - _clockAt().lstOffset * 3600000).getUTCHours();
   const isPreNoon = mstHour < 12;
 
   try {
@@ -708,20 +708,44 @@ const NAEFS_AB_STATIONS = [
   { code: 10182, name: 'Whitecourt',           lat: 54.15, lng: -115.78 },
 ];
 
-/** "YYYY-MM-DD" in Mountain Daylight Time (UTC−6) — AB name for the core's _localDateStr. */
+/** "YYYY-MM-DD" on Alberta's UTC−6 clock (MDT; MT from 2026-11-01) — AB name for the core's _localDateStr. */
 function _mdtDateStr(ts) { return _localDateStr(ts); }
+
+// ─── Alberta's clocks (core _clockAt) ───────────────────────────────────────
+// Two clocks, and Alberta's 2026 change moves only the second:
+//  * Fire-weather day ("noon LST", the CFFDRS observation): CWFIS gives every
+//    Alberta station a fixed UTC−LST correction of −7 "estimated from
+//    coordinate ranges and maps" (cwfis_allstn2026.csv tz_correct), so the
+//    daily values are the 19 UTC observation all year; Saskatchewan, legally
+//    on UTC−6 for decades, is split −6/−7 by longitude. Alberta Wildfire's PM
+//    Actual is defined in MST (12:00 MST = 19 UTC). No agency has said what it
+//    does after 2026-11-01, so the offset for CFFDRS days from then is ONE
+//    value below: 7 (default: 19 UTC = 13:00 MT) or 6 (18 UTC = 12:00 MT).
+//    Report "Alberta permanent UTC-6 switch 2026-10-18" (FireSim R57).
+//  * Wall clock: Official Time Act — UTC−6 all year from 2026-11-01 02:00 MDT
+//    (08:00 UTC), no fall-back (IANA tzdata 2026c, "CST"). Labelled "MT" from
+//    then (owner's choice); MDT before. wallOffsetMin makes the UI show UTC−6
+//    even in browsers whose tz data predates 2026c.
+const AB_FWI_LST_OFFSET_FROM_2026_11_01 = 7;
+const AB_CLOCK_RULES = [
+  { fromMs: -Infinity, lstOffset: 7, noonUTC: 19, localOffset: 6, peakUTC: 22, tzLabel: 'MDT', wallOffsetMin: null },
+  { fromMs: Date.UTC(2026, 10, 1, 8), lstOffset: AB_FWI_LST_OFFSET_FROM_2026_11_01,
+    noonUTC: 12 + AB_FWI_LST_OFFSET_FROM_2026_11_01, localOffset: 6, peakUTC: 22, tzLabel: 'MT', wallOffsetMin: -360 },
+];
 
 // ─── Province config — read by core/fwi-core.js at load and call time ───────
 // Defined last so it can reference this module's data tables directly.
 const PROVINCE = {
   code: 'AB',
-  // ── Time ──
-  lstOffset: 7,          // hours behind UTC for noon LST (MST) — the CFFDRS day
-  localOffset: 6,        // hours behind UTC for local daylight time (MDT) — Today/Tomorrow, 16:00 peak burn
-  noonUTC: 19,           // UTC hour of noon LST (CFFDRS observation hour)
-  peakUTC: 22,           // UTC hour of 16:00 MDT peak burn (= 15:00 MST/LST; operational choice, ISI/FWI-at-peak + FBP wind only)
+  // ── Time ── dated rules (AB_CLOCK_RULES above; core _clockAt / _clockOn). The
+  // scalar fields read the rule in force now, for callers without a date.
+  clockRules: AB_CLOCK_RULES,
+  get lstOffset() { return _clockAt().lstOffset; },     // hours behind UTC for noon LST — the CFFDRS day (7)
+  get localOffset() { return _clockAt().localOffset; }, // hours behind UTC of the UTC−6 clock (MDT; MT from 2026-11-01) — Today/Tomorrow, 16:00 peak burn
+  get noonUTC() { return _clockAt().noonUTC; },         // UTC hour of noon LST (CFFDRS observation hour, 19)
+  get peakUTC() { return _clockAt().peakUTC; },         // UTC hour of 16:00 peak burn on the UTC−6 clock (22; operational choice, ISI/FWI-at-peak + FBP wind only)
   dangerScaleNote: 'CWFIS FWI map classes', // summary-row tooltip: what the FWI-derived danger class is
-  tzLabel: 'MDT',        // local daylight-time label in UI / briefings
+  get tzLabel() { return _clockAt().tzLabel; },         // wall-clock label in UI / briefings: 'MDT', 'MT' from 2026-11-01
   tzName: 'America/Edmonton', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryAB(lat, lng),   // tier chain + pre-noon policy
