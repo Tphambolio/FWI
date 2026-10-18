@@ -244,7 +244,19 @@ const f1 = v => (v == null || !isFinite(v) ? '—' : (+v).toFixed(1));
 const kwm = v => (v == null || !isFinite(v) ? '—' : Math.round(v).toLocaleString('en-CA'));
 const area = v => (v == null || !isFinite(v) ? '—' : v < 10 ? (+v).toFixed(1) : Math.round(v).toLocaleString('en-CA'));
 
+// Alberta: UTC−6 all year from 2026-11-01 02:00 MDT (Official Time Act; IANA
+// tzdata 2026c). Node's bundled ICU may predate 2026c and fall back to MST, so
+// Edmonton times from then are formatted with the fixed offset and labelled
+// "MT" (owner's label; fwi.js AB_CLOCK_RULES).
+const AB_FIXED_UTC6_FROM = Date.UTC(2026, 10, 1, 8);
+
 export function formatLocal(nowMs, timeZone = 'America/Edmonton') {
+  if (timeZone === 'America/Edmonton' && nowMs >= AB_FIXED_UTC6_FROM) {
+    const w = new Date(nowMs - 6 * 3600000);
+    const date = w.toLocaleDateString('en-CA', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const time = w.toLocaleTimeString('en-CA', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${date} ${time} MT`;
+  }
   const d = new Date(nowMs);
   const date = d.toLocaleDateString('en-CA', { timeZone, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const time = d.toLocaleTimeString('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });

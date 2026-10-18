@@ -1273,7 +1273,7 @@ async function fetchSWOB(lat, lng) {
   // a 3-hour window ending now (latest obs). Without a datetime filter the
   // endpoint returns stale archived records.
   const now    = new Date();
-  const noonMs = Date.parse(_lstDateStr(now.getTime()) + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000;
+  const noonMs = _noonMsOn(_lstDateStr(now.getTime()));
   const fmt    = d => d.toISOString().replace(/\.\d+Z$/, 'Z');
   const windows = [];
   if (now.getTime() >= noonMs) windows.push([new Date(noonMs - 3600000), new Date(Math.min(now.getTime(), noonMs + 3600000))]);
@@ -1324,7 +1324,8 @@ async function fetchSWOB(lat, lng) {
 
   const obsTime    = new Date(p['date_tm-value'] || p['obs_date_tm']);
   const obsUTCHour = obsTime.getUTCHours();
-  const isNoonLST  = obsUTCHour >= PROVINCE.noonUTC - 1 && obsUTCHour <= PROVINCE.noonUTC + 1; // ±1 hr of noon LST
+  const noonUTCObs = _clockAt(obsTime.getTime()).noonUTC;
+  const isNoonLST  = obsUTCHour >= noonUTCObs - 1 && obsUTCHour <= noonUTCObs + 1; // ±1 hr of noon LST
   const stnName    = (p['stn_nam-value'] || '').replace(/\+/g,' ').trim();
   const srcLabel   = isNoonLST
     ? `MSC SWOB · ${stnName} (noon LST)`
@@ -1430,14 +1431,15 @@ async function fetchWeather(lat, lng) {
   // Target hours by explicit LST-date ISO string: the old UTC-hour index
   // selected tomorrow's forecast between 17:00 MST and midnight (UTC day rolls
   // over at 17:00 MST) and could never see a 24-h precip window.
-  const lstNow    = new Date(Date.now() - PROVINCE.lstOffset * 3600000);
+  const lstNow    = new Date(Date.now() - _clockAt().lstOffset * 3600000);
   const lstDate   = lstNow.toISOString().slice(0, 10);   // today's calendar date in LST
+  const clk       = _clockOn(lstDate);
   const isPreNoon = lstNow.getUTCHours() < 12;
   const hourISO = utcHour =>
     new Date(Date.parse(lstDate + 'T00:00:00Z') + utcHour * 3600000).toISOString().slice(0, 13) + ':00';
-  let i = times.indexOf(hourISO(PROVINCE.noonUTC));   // noon LST, the CFFDRS input hour
+  let i = times.indexOf(hourISO(clk.noonUTC));   // noon LST, the CFFDRS input hour
   if (i === -1) i = times.length - 1;
-  const iPeak = times.indexOf(hourISO(PROVINCE.peakUTC));
+  const iPeak = times.indexOf(hourISO(clk.peakUTC));
 
   // 24-h precipitation accumulated to noon LST (CFFDRS daily rain window).
   // Open-Meteo hourly precipitation is the sum over the preceding hour, so
@@ -2257,7 +2259,7 @@ function _provenance(w, co = null, nowMs = Date.now()) {
     : (w.fwiFromCWFIS || w.idwMode) ? 'CWFIS'
     : src.startsWith('MSC') ? 'MSC SWOB'
     : 'Open-Meteo';
-  const noonMs = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000;
+  const noonMs = d => _noonMsOn(d);
   let kind, obsMs = null;
   if (co) {
     kind = co.final ? 'OBSERVED' : 'CARRIED FROM YESTERDAY';
@@ -2284,7 +2286,7 @@ function _provenance(w, co = null, nowMs = Date.now()) {
   else if (dailyDate) {
     // Today's noon chain is published ~2 h after noon LST; until then yesterday's
     // is the newest that can exist and is not "late".
-    const lstHour = new Date(nowMs - PROVINCE.lstOffset * 3600000).getUTCHours();
+    const lstHour = new Date(nowMs - _clockAt(nowMs).lstOffset * 3600000).getUTCHours();
     const expected = lstHour >= 14 ? _lstDateStr(nowMs) : _lstDateStr(nowMs - 86400000);
     const behind = Math.round((Date.parse(expected) - Date.parse(dailyDate)) / 86400000);
     level = behind <= 0 ? 'ok' : behind === 1 ? 'amber' : 'red';
@@ -2599,11 +2601,52 @@ function _cwfisPrevFor(name, lat, lng) {
 }
 
 /**
+ * The province's clock rule in force at `ms` (default now): an entry of
+ * PROVINCE.clockRules (the last whose fromMs ≤ ms), else PROVINCE itself.
+ * Fields: lstOffset, noonUTC (fire-weather day), localOffset, peakUTC, tzLabel
+ * (wall clock), and wallOffsetMin (fixed wall-clock offset, minutes east of
+ * UTC, used instead of the browser's tz data). Alberta has two rules: before
+ * and after its 2026-11-01 switch to UTC−6 all year (fwi.js AB_CLOCK_RULES).
+ */
+function _clockAt(ms) {
+  const rules = PROVINCE.clockRules;
+  if (!rules) return PROVINCE;
+  const t = ms ?? Date.now();
+  let r = rules[0];
+  for (const x of rules) if (t >= x.fromMs) r = x;
+  return r;
+}
+
+/** Clock rule for a CFFDRS day "YYYY-MM-DD" (taken at 12:00 UTC of that date). */
+function _clockOn(dateStr) {
+  return _clockAt(Date.parse(String(dateStr).slice(0, 10) + 'T12:00:00Z'));
+}
+
+/** UTC instant (ms) of the daily noon-LST observation of a CFFDRS day "YYYY-MM-DD". */
+function _noonMsOn(dateStr) {
+  return Date.parse(String(dateStr).slice(0, 10) + 'T00:00:00Z') + _clockOn(dateStr).noonUTC * 3600000;
+}
+
+/**
+ * Date#toLocale*String on the province's wall clock. Once a rule with a fixed
+ * wallOffsetMin is in force (Alberta from 2026-11-01) the instant is shifted
+ * and formatted as UTC, so a browser whose tz data predates IANA 2026c (and
+ * would fall back to UTC−7) still shows Alberta time; before that, the
+ * browser's tz data for PROVINCE.tzName.
+ */
+function _wallFmt(ms, opts, kind = 'toLocaleString') {
+  const r = _clockAt(ms);
+  if (r.wallOffsetMin == null) return new Date(ms)[kind]('en-CA', { ...opts, timeZone: PROVINCE.tzName });
+  return new Date(ms + r.wallOffsetMin * 60000)[kind]('en-CA', { ...opts, timeZone: 'UTC' });
+}
+
+/**
  * Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST
- * (PROVINCE.lstOffset hours behind UTC: 7 for AB MST, 8 for BC PST).
+ * (lstOffset hours behind UTC: 7 for AB, 8 for BC PST; _clockAt).
  */
 function _lstDateStr(ts) {
-  return new Date((ts ?? Date.now()) - PROVINCE.lstOffset * 3600000).toISOString().slice(0, 10);
+  const t = ts ?? Date.now();
+  return new Date(t - _clockAt(t).lstOffset * 3600000).toISOString().slice(0, 10);
 }
 
 /**
@@ -2614,7 +2657,8 @@ function _lstDateStr(ts) {
  * @param {number} [ts] - Unix ms timestamp; defaults to Date.now()
  */
 function _localDateStr(ts) {
-  const d = new Date((ts ?? Date.now()) - PROVINCE.localOffset * 3600000);
+  const t = ts ?? Date.now();
+  const d = new Date(t - _clockAt(t).localOffset * 3600000);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
@@ -2844,11 +2888,17 @@ async function fetchForecast(lat, lng) {
   // the array start broke after UTC midnight (evenings): "today" in UTC is
   // already tomorrow locally, so days[0] skipped today. past_days=2 keeps a
   // full 24-h rain window before day 0 in that case too.
-  let base = h.time.indexOf(`${_lstDateStr()}T${PROVINCE.noonUTC}:00`);
-  if (base < 23) base = 48 + PROVINCE.noonUTC;
+  // Each day's noon/peak hours come from that day's clock rule (_clockOn), so a
+  // forecast across a rule change (Alberta 2026-11-01) stays on noon LST.
+  const today = _lstDateStr();
+  const clk0 = _clockOn(today);
+  let base = h.time.indexOf(`${today}T${String(clk0.noonUTC).padStart(2, '0')}:00`);
+  if (base < 23) base = 48 + clk0.noonUTC;
   for (let day = 0; day < 7; day++) {
-    const iNoon = base + 24 * day;
-    const iPeak = iNoon + (PROVINCE.peakUTC - PROVINCE.noonUTC);
+    const dDate = new Date(Date.parse(today + 'T00:00:00Z') + day * 86400000).toISOString().slice(0, 10);
+    const clk = _clockOn(dDate);
+    const iNoon = base + 24 * day + (clk.noonUTC - clk0.noonUTC);
+    const iPeak = iNoon + (clk.peakUTC - clk.noonUTC);
     if (iNoon >= (h.time?.length ?? 0)) break;
     const rain24 = h.precipitation
       .slice(iNoon - 23, iNoon + 1)
@@ -3005,8 +3055,7 @@ async function buildOpsOutlook() {
   if (!rows.length) { if (body) body.innerHTML = '<p class="text-[12px] text-slate-300">No hourly forecast for the next 48 h.</p>'; return; }
   const periods = summariseOperationalPeriods(rows).slice(0, 4);
   _opsPeriods = { periods, fuels, slope: _siteTerrain.slope, obsDate: _opsHourly.start.obsDate };
-  const tz = PROVINCE.tzName;
-  const hh = ms => new Date(ms).toLocaleTimeString('en-CA', { hour: '2-digit', hour12: false, timeZone: tz }).slice(0, 2);
+  const hh = ms => _wallFmt(ms, { hour: '2-digit', hour12: false }, 'toLocaleTimeString').slice(0, 2);
   const fuelName = c => FUEL_TYPES[c]?.name || c;
 
   const cards = periods.map(p => {
@@ -3028,7 +3077,7 @@ async function buildOpsOutlook() {
     const st = HFI_STYLE[c] || { fill: '#334155', text: '#fff', pattern: '' };
     const bg = st.pattern ? `${st.pattern},${st.fill}` : st.fill;
     const w = r.worst;
-    const tip = `${new Date(r.t).toLocaleString('en-CA', { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz })} · ` +
+    const tip = `${_wallFmt(r.t, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} · ` +
       `${Math.round(r.temp)}°C ${Math.round(r.rh)}% · wind ${Math.round(r.wind)} km/h${r.wdir != null ? ' ' + _compass8(r.wdir) : ''} · FFMC ${r.ffmc.toFixed(1)} · FWI ${r.fwi.toFixed(1)}` +
       (w ? ` · HFI ${c} (${Math.round(w.hfi).toLocaleString()} kW/m, ${fuelName(w.fuel)}) · ROS ${w.ros.toFixed(1)} m/min` : '');
     const lbl = i % 3 === 0 ? `<span class="block text-center text-[11px] text-slate-300 mt-1">${hh(r.t)}</span>` : '<span class="block text-[11px] mt-1">&nbsp;</span>';
@@ -3072,9 +3121,9 @@ async function fetchHourlyOutlook(lat, lng) {
  * for hours in [fromMs, toMs] (default: all hours after the seed).
  */
 function calcHourlyOutlook(hours, start, dayCodes = {}, fuels = ['C2'], opts = {}) {
-  const lstDate = ms => new Date(ms - PROVINCE.lstOffset * 3600000).toISOString().slice(0, 10);
-  const lstHour = ms => new Date(ms - PROVINCE.lstOffset * 3600000).getUTCHours();
-  const seedMs = start?.obsDate ? Date.parse(start.obsDate + 'T00:00:00Z') + PROVINCE.noonUTC * 3600000 : null;
+  const lstDate = ms => _lstDateStr(ms);
+  const lstHour = ms => new Date(ms - _clockAt(ms).lstOffset * 3600000).getUTCHours();
+  const seedMs = start?.obsDate ? _noonMsOn(start.obsDate) : null;
   let f = start?.ffmc ?? STARTUP.ffmc;
   const out = [];
   for (const w of hours) {
@@ -3108,9 +3157,12 @@ function calcHourlyOutlook(hours, start, dayCodes = {}, fuels = ['C2'], opts = {
  * (+ hour, fuel), and the first–last hour at class ≥ 3 and ≥ 4.
  */
 function summariseOperationalPeriods(rows, tzName = PROVINCE.tzName) {
-  const fmtH = ms => new Date(ms).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzName });
-  const fmtD = ms => new Date(ms).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tzName });
-  const localHour = ms => +new Date(ms).toLocaleString('en-CA', { hour: '2-digit', hour12: false, timeZone: tzName }).slice(0, 2) % 24;
+  // The province's own zone goes through _wallFmt (Alberta's UTC−6 rule even on stale browser tz data)
+  const fmt = (ms, opts, kind) => tzName === PROVINCE.tzName
+    ? _wallFmt(ms, opts, kind) : new Date(ms)[kind]('en-CA', { ...opts, timeZone: tzName });
+  const fmtH = ms => fmt(ms, { hour: '2-digit', minute: '2-digit', hour12: false }, 'toLocaleTimeString');
+  const fmtD = ms => fmt(ms, { weekday: 'short', month: 'short', day: 'numeric' }, 'toLocaleDateString');
+  const localHour = ms => +fmt(ms, { hour: '2-digit', hour12: false }, 'toLocaleString').slice(0, 2) % 24;
   const periods = [];
   for (const r of rows) {
     const hr = localHour(r.t);
@@ -3190,7 +3242,7 @@ function _nextPeakDayIdx(days) {
   // test was only true 16:00–17:59 MDT (UTC wraps at 18:00 MDT), and the cutoff
   // used the *viewer's* local midnight, so evening visitors saw "Tomorrow" flip
   // back to a stale "Today".
-  const localNow   = new Date(Date.now() - PROVINCE.localOffset * 3600000);
+  const localNow   = new Date(Date.now() - _clockAt().localOffset * 3600000);
   const peakPassed = localNow.getUTCHours() >= 16;   // 16:00 local peak burn
   const today      = _localDateStr();
   const idx = days.findIndex(d => d._ts &&
@@ -4440,8 +4492,8 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const obsTs = w.repDate
         ? new Date(String(w.repDate).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + ' noon LST' + (cwfisPrevDay ? ' (previous day)' : '')
         : rawTs
-        ? new Date(rawTs).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: PROVINCE.tzName }) + ` ${PROVINCE.tzLabel}`
-        : new Date().toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: PROVINCE.tzName }) + ` ${PROVINCE.tzLabel} (calc)`;
+        ? _wallFmt(new Date(rawTs).getTime(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_clockAt(new Date(rawTs).getTime()).tzLabel}`
+        : _wallFmt(Date.now(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_clockAt().tzLabel} (calc)`;
       const sourceStnLine = w.stationName
         ? `<div style="font-size:11px;color:#475569;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
         : '';
