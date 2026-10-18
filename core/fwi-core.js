@@ -2641,6 +2641,26 @@ function _wallFmt(ms, opts, kind = 'toLocaleString') {
 }
 
 /**
+ * Wall-clock label at `ms` (default now). After a rule with a fixed
+ * wallOffsetMin is in force, its tzLabel ('MT', 'PT'). Before, the daylight
+ * label (tzLabel) when the instant's offset per the browser's tz data for
+ * PROVINCE.tzName is the daylight offset (−localOffset h), else stdLabel —
+ * so a winter time before the change reads MST / PST, not MDT / PDT.
+ */
+function _tzLabelAt(ms) {
+  const t = ms ?? Date.now();
+  const r = _clockAt(t);
+  if (r.wallOffsetMin != null || !r.stdLabel) return r.tzLabel;
+  const p = {};
+  for (const x of new Intl.DateTimeFormat('en-CA', { timeZone: PROVINCE.tzName, year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t))) {
+    if (x.type !== 'literal') p[x.type] = +x.value;
+  }
+  const offMin = Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute) - Math.floor(t / 60000) * 60000) / 60000);
+  return offMin === -r.localOffset * 60 ? r.tzLabel : r.stdLabel;
+}
+
+/**
  * Calendar date (YYYY-MM-DD) of the CFFDRS observation day — noon LST
  * (lstOffset hours behind UTC: 7 for AB, 8 for BC PST; _clockAt).
  */
@@ -4492,8 +4512,8 @@ async function buildStationMap(containerId, mapOpts = {}) {
       const obsTs = w.repDate
         ? new Date(String(w.repDate).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + ' noon LST' + (cwfisPrevDay ? ' (previous day)' : '')
         : rawTs
-        ? _wallFmt(new Date(rawTs).getTime(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_clockAt(new Date(rawTs).getTime()).tzLabel}`
-        : _wallFmt(Date.now(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_clockAt().tzLabel} (calc)`;
+        ? _wallFmt(new Date(rawTs).getTime(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_tzLabelAt(new Date(rawTs).getTime())}`
+        : _wallFmt(Date.now(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ` ${_tzLabelAt()} (calc)`;
       const sourceStnLine = w.stationName
         ? `<div style="font-size:11px;color:#475569;margin-bottom:1px">Data source: <strong>${w.stationName}</strong></div>`
         : '';
@@ -4754,7 +4774,7 @@ async function buildD1Card() {
   const peakPassed = todayIdx >= 0 && nextIdx > todayIdx && !!days[nextIdx];
   const primaryIdx = peakPassed ? nextIdx : todayIdx;
   _primaryIsForecast = peakPassed;
-  const tz = PROVINCE.tzLabel;
+  const tz = _clockAt(days[primaryIdx]?._ts ?? Date.now()).tzLabel;   // the peak day's clock (MDT → MT across 2026-11-01)
   const shortDay = i => days[i]?.label || '';   // e.g. "Fri, Oct 9"
   const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setTxt('fwi-today-peak-label', peakPassed
@@ -4835,7 +4855,7 @@ async function buildD1Card() {
   const idx = peakPassed ? primaryIdx + 1
             : tomorrowIdx >= 0 ? tomorrowIdx : (todayIdx >= 0 ? todayIdx + 1 : 0);
   const labelEl = document.getElementById('fwi-d1-peak-label');
-  if (labelEl) labelEl.textContent = `${peakPassed ? 'Day After' : 'Tomorrow'} · Peak Burn · ~16:00 ${PROVINCE.tzLabel}`;
+  if (labelEl) labelEl.textContent = `${peakPassed ? 'Day After' : 'Tomorrow'} · Peak Burn · ~16:00 ${_clockAt(Date.now() + (peakPassed ? 2 : 1) * 86400000).tzLabel}`;
   const d1r = results[idx], d1d = days[idx];
   if (!d1r) return;
 

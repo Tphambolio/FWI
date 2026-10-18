@@ -415,6 +415,7 @@
   &amp;past_days=1&amp;forecast_days=2&amp;timezone=UTC
   → chain inputs: today's 20:00 UTC hour (noon PST) + 24-h rain to it
   → peak wind: today's 23:00 UTC hour (16:00 PDT = 15:00 PST)</code>
+<p class="text-xs text-on-surface-variant mt-3 leading-relaxed"><strong class="text-on-surface">B.C.'s clock change:</strong> B.C. adopted permanent daylight time: UTC−7 all year after the 2026-03-08 spring-forward, with no fall-back on 2026-11-01. That moves the wall clock, not the fire-weather day: on 17 Oct 2026 CWFIS daily values still matched the 20 UTC (noon PST) hourly record at Kamloops and Prince George, and 19 UTC at the eastern, Mountain-time stations (Cranbrook, Dawson Creek; CWFIS <code class="text-primary">tz_correct</code> −7). Pyra keeps 20 UTC for every BC station (the eastern stations are a known simplification); one setting, <code class="text-primary">BC_FWI_LST_OFFSET_FROM_2026_11_01</code> in bc/fwi.js. Times are labelled PDT/PST before 2026-11-01 and PT after.</p>
 <p class="text-xs text-on-surface-variant mt-3"><strong class="text-on-surface">Noon chain.</strong> The daily codes are always stepped with noon-LST weather (Van Wagner 1987 [2], PDF p. 13 / printed p. 2: the FWI is "calculated from noon weather readings" but "represents fire danger at its midafternoon peak"). Before noon the forecast noon-PST hour is used. The 16:00 PDT hour supplies only the wind for the peak-burn ISI/FWI and FBP. Until 2026-10-10 the pre-noon chain was stepped with 16:00 weather, double-counting the afternoon drying (e.g. FWI 39.9 instead of 32.2).</p>
 <p class="text-xs text-on-surface-variant mt-3">NWP interpolates model grid-point output to the exact station coordinate. Captures synoptic patterns but misses valley inversions, terrain channelling, sea-breeze modulation, and marine influence. Mountain and coastal stations in BC are most affected by NWP limitations. Stations in the Coast Mountains and deep fjords are particularly prone to NWP errors in wind direction and humidity.</p>
 </div>
@@ -440,7 +441,7 @@
 <span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via Open-Meteo · NAEFS extends the trend beyond it</span>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
-<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">20 UTC (noon PST)</span><span class="text-on-surface-variant">CFFDRS noon-LST standard</span></div>
+<div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">20 UTC (noon PST; 13:00 PT from 2026-11-01)</span><span class="text-on-surface-variant">CFFDRS noon-LST standard</span></div>
 <div><span class="text-on-surface-variant">Peak burn ISI/FWI + FBP wind</span> <span class="font-bold text-on-surface block">23 UTC (16:00 PDT)</span><span class="text-on-surface-variant">= 15:00 PST</span></div>
 <div><span class="text-on-surface-variant">Model runs</span> <span class="font-bold text-on-surface block">00Z · 06Z · 12Z · 18Z</span><span class="text-on-surface-variant">HRDPS ~4–5 h after init</span></div>
 <div><span class="text-on-surface-variant">Resolution</span> <span class="font-bold text-on-surface block">2.5 → 10 → 15 km</span><span class="text-on-surface-variant">HRDPS → RDPS → GDPS</span></div>

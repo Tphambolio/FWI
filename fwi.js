@@ -724,11 +724,14 @@ function _mdtDateStr(ts) { return _localDateStr(ts); }
 //    Report "Alberta permanent UTC-6 switch 2026-10-18" (FireSim R57).
 //  * Wall clock: Official Time Act — UTC−6 all year from 2026-11-01 02:00 MDT
 //    (08:00 UTC), no fall-back (IANA tzdata 2026c, "CST"). Labelled "MT" from
-//    then (owner's choice); MDT before. wallOffsetMin makes the UI show UTC−6
+//    then (owner's choice). Before: the 16:00 peak-burn and Today/Tomorrow
+//    clock (localOffset 6, peakUTC 22) is MDT all year, so those labels say
+//    MDT; an instant's timestamp (popup observation time) carries its own
+//    label, MST in winter (stdLabel, core _tzLabelAt). wallOffsetMin makes the UI show UTC−6
 //    even in browsers whose tz data predates 2026c.
 const AB_FWI_LST_OFFSET_FROM_2026_11_01 = 7;
 const AB_CLOCK_RULES = [
-  { fromMs: -Infinity, lstOffset: 7, noonUTC: 19, localOffset: 6, peakUTC: 22, tzLabel: 'MDT', wallOffsetMin: null },
+  { fromMs: -Infinity, lstOffset: 7, noonUTC: 19, localOffset: 6, peakUTC: 22, tzLabel: 'MDT', stdLabel: 'MST', wallOffsetMin: null },
   { fromMs: Date.UTC(2026, 10, 1, 8), lstOffset: AB_FWI_LST_OFFSET_FROM_2026_11_01,
     noonUTC: 12 + AB_FWI_LST_OFFSET_FROM_2026_11_01, localOffset: 6, peakUTC: 22, tzLabel: 'MT', wallOffsetMin: -360 },
 ];
@@ -745,7 +748,7 @@ const PROVINCE = {
   get noonUTC() { return _clockAt().noonUTC; },         // UTC hour of noon LST (CFFDRS observation hour, 19)
   get peakUTC() { return _clockAt().peakUTC; },         // UTC hour of 16:00 peak burn on the UTC−6 clock (22; operational choice, ISI/FWI-at-peak + FBP wind only)
   dangerScaleNote: 'CWFIS FWI map classes', // summary-row tooltip: what the FWI-derived danger class is
-  get tzLabel() { return _clockAt().tzLabel; },         // wall-clock label in UI / briefings: 'MDT', 'MT' from 2026-11-01
+  get tzLabel() { return _clockAt().tzLabel; },         // label of the UTC−6 clock that localOffset/peakUTC use ('MDT'; 'MT' from 2026-11-01). Instant timestamps use _tzLabelAt (MST in winter)
   tzName: 'America/Edmonton', // IANA zone for map popup obs times
   // ── Data tiers ──
   fetchPrimary: (lat, lng) => _fetchWeatherPrimaryAB(lat, lng),   // tier chain + pre-noon policy
