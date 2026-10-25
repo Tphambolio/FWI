@@ -3632,8 +3632,9 @@ function printProvincialBriefing(mode = 'provincial') {
   if (!useMap && !useRegional) { alert('Data still loading — try again in a moment.'); return; }
 
   const now   = new Date();
-  const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
+  // Province wall clock, not the viewer's device clock or its tz abbreviation (stale tz data reads CST/MST after 2026-11-01)
+  const today = _wallFmt(now.getTime(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }, 'toLocaleDateString');
+  const prepared = _wallFmt(now.getTime(), { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' ' + _tzLabelAt(now.getTime());
 
   // Build station rows — sort by FWI descending within each sector grouping
   let rows;
@@ -3928,8 +3929,9 @@ async function printStationBriefing() {
   const r = _lastFWI;
   const w = _lastWeather || r.weather;
   const now   = new Date();
-  const today = now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const prepared = now.toLocaleString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short' });
+  // Province wall clock, not the viewer's device clock or its tz abbreviation (stale tz data reads CST/MST after 2026-11-01)
+  const today = _wallFmt(now.getTime(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }, 'toLocaleDateString');
+  const prepared = _wallFmt(now.getTime(), { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' ' + _tzLabelAt(now.getTime());
 
   const stationDisplayName = _stationName || PROVINCE.stationFallbackName;
   const lat = _stationLat;

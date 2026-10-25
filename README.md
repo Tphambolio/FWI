@@ -60,7 +60,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 | Spring DC startup | Regional floor correction applied (Mar–Jun): Edmonton 250 · SE prairies 450 · Calgary 280 · Red Deer 290 · Slave Lake 180. Raw CWFIS values below 70% of zone floor are corrected. Based on Lawson & Armitage (2008) overwinter equation + April 2026 AEF pmwx.csv calibration. |
 | Sectors | 6 latitude bands: NE Boreal · NW Sector · Lesser Slave · Central-N · Central · Southern |
 | Default fuels | C2 (Boreal Spruce) · D1 (Leafless Aspen) |
-| Noon LST | 19:00 UTC (MST = UTC−7) |
+| Noon LST | 19:00 UTC (12:00 MST, CWFIS station standard time; kept after Alberta fixed its clock at UTC−6 on 2026-11-01 until CWFIS confirms — `tools/tz/cwfis_noon_probe.mjs`) |
 | Engine | `fwi.js` (AB province module) + `core/fwi-core.js` (shared core) |
 
 ### British Columbia
