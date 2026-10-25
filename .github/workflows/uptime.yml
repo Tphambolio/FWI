@@ -1,0 +1,70 @@
+name: Uptime (Pyra + FireSim)
+
+# Every 30 minutes: pages, data mirrors, FireSim API and frontend (tools/uptime/check.mjs).
+# On failure it opens (or comments on) one issue labelled "uptime" — GitHub e-mails the owner —
+# and, if the repository variable NTFY_TOPIC is set, pushes a phone notification via ntfy.sh.
+# When everything is back it comments and closes the issue. docs/RUNBOOK.md says what to do.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Run checks
+        id: run
+        run: |
+          set +e
+          node tools/uptime/check.mjs > report.txt
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+          cat report.txt
+      - name: Open or update the incident issue
+        if: steps.run.outputs.rc != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+        run: |
+          title="Uptime: check failing"
+          body=$(printf 'Automated check failed at %s.\n\n```\n%s\n```\n\nRunbook: docs/RUNBOOK.md · Run: %s\n' "$(date -u +%FT%TZ)" "$(cat report.txt)" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID")
+          gh label create uptime --color B60205 --description "Automated uptime alerts" --force >/dev/null 2>&1 || true
+          num=$(gh issue list --label uptime --state open --json number --jq '.[0].number')
+          if [ -z "$num" ]; then
+            num=$(gh issue create --title "$title" --label uptime --body "$body" | grep -o '[0-9]*$')
+            echo "opened #$num"
+            if [ -n "$NTFY_TOPIC" ]; then
+              curl -s -m 20 -H "Title: Pyra/FireSim uptime FAIL" -H "Priority: high" -H "Tags: rotating_light" \
+                -d "$(grep -E '^FAIL' report.txt | head -5)" "https://ntfy.sh/$NTFY_TOPIC" >/dev/null || true
+            fi
+          else
+            gh issue comment "$num" --body "$body" >/dev/null
+            echo "commented on #$num"
+          fi
+      - name: Close the incident issue on recovery
+        if: steps.run.outputs.rc == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+        run: |
+          num=$(gh issue list --label uptime --state open --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body "$(printf 'Recovered at %s — all checks pass.\n\n```\n%s\n```\n' "$(date -u +%FT%TZ)" "$(cat report.txt)")" >/dev/null
+            gh issue close "$num" >/dev/null
+            echo "closed #$num"
+            if [ -n "$NTFY_TOPIC" ]; then
+              curl -s -m 20 -H "Title: Pyra/FireSim uptime recovered" -H "Tags: white_check_mark" -d "All checks pass." "https://ntfy.sh/$NTFY_TOPIC" >/dev/null || true
+            fi
+          fi
