@@ -137,7 +137,8 @@ tailwind.config = {
       '<p class="pm-small">Built by ' + credits + '.<br>' +
         '<a href="https://x.com/lactucafarm" target="_blank" rel="noopener">DM on X</a> · ' +
         '<a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener">GitHub issues</a> · ' +
-        '<a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener">Source code</a></p>' +
+        '<a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener">Source code</a> · ' +
+        '<a href="' + root + 'privacy/">Privacy</a></p>' +
       '<p class="pm-small" style="color:#fcd34d;margin-top:10px">Unofficial — for situational awareness only. Verify with an FBAN / the provincial agency before operational decisions.</p>';
     var back = document.createElement('div');
     back.id = 'pyra-menu-backdrop';

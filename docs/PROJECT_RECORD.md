@@ -35,6 +35,9 @@ classic scripts.
 | `.github/workflows/cwfis-daily.yml` | Daily Action: CWFIS carry-over cache, AEF pmwx mirror, BCWS noon mirror |
 | `tools/alerts/` | Threshold alert tool, run through the owner's local agent (Pilot). Delivery is disabled until configured |
 | `tests/` | Offline unit/regression suites, reference oracle, browser suites |
+| `sw.js`, `manifest.webmanifest`, `icons/`, `core/pwa.js` | Installable web app: service worker (shell cache-first, repo data stale-while-revalidate, third-party network-first), offline strip, Install button. No science or data-tier logic |
+| `core/telemetry.js`, `config/telemetry.js` | Page-view beacon (provider `none` / Cloudflare / generic POST) and the Feedback button. Config is the only file to edit |
+| `privacy/index.html`, `docs/privacy.md` | Privacy statement linked from every footer |
 
 Each page loads the province module first, then the core. Province
 differences live in `PROVINCE` config fields, never in `if (province)`
@@ -81,6 +84,9 @@ with today's weather.
 | 2026-10-18 | Alberta permanent UTC−6 (Official Time Act; IANA tzdata 2026c, no fall-back on 2026-11-01): dated clock rules `AB_CLOCK_RULES` in fwi.js read through core `_clockAt` / `_clockOn` / `_noonMsOn` / `_wallFmt`. Fire-weather day unchanged by default: noon LST = 19 UTC (13:00 MT) before and after, one setting `AB_FWI_LST_OFFSET_FROM_2026_11_01` (7; 6 = 18 UTC). Wall clock labelled MDT before 2026-11-01 02:00 MDT and "MT" after (owner's choice, not IANA "CST"); after the change Pyra formats Alberta times with the fixed UTC−6 instead of the browser's tz data; the alert tool likewise | CWFIS gives every Alberta station `tz_correct` −7 ("estimated from coordinate ranges and maps"; Saskatchewan is split −6/−7 by longitude though legally UTC−6), Alberta Wildfire's PM Actual is defined in MST; daily CWFIS values match ECCC 19 UTC hourly records (Edmonton Int'l CS 17 Oct 2026). No agency has announced a change after 1 Nov: re-check around 1 March 2027. Report "Alberta permanent UTC-6 switch 2026-10-18" (FireSim [R57]); FireSim PR switched together |
 | 2026-10-18 | B.C. permanent UTC−7 (permanent daylight time after the 2026-03-08 spring-forward; no fall-back on 2026-11-01; IANA tzdata 2026b): dated `BC_CLOCK_RULES` in bc/fwi.js like Alberta's. Wall clock labelled PDT/PST before 2026-11-01 09:00 UTC and "PT" after (B.C.'s "Pacific time"; pending owner confirmation), fixed UTC−7 instead of the browser's tz data after the change; alert tool likewise. Fire-weather day unchanged: noon LST 20 UTC, one setting `BC_FWI_LST_OFFSET_FROM_2026_11_01` (8). Also: before the change, labels follow the instant's own offset (`_tzLabelAt`): winter times read MST / PST, no longer MDT / PDT | CWFIS `tz_correct`: 392 BC stations −8, 75 eastern −7. On 17 Oct 2026, seven months after B.C.'s legal change, CWFIS daily values matched ECCC hourly at 20 UTC (Kamloops AUT 19.1 °C/25 %/33 km/h; Prince George A Auto 8.4/74/24) and at 19 UTC for the −7 stations (Cranbrook A Auto 16.2/32/14; Dawson Creek A 9.7/56/34): a jurisdiction that changed its legal clock kept its CWFIS observation hour. FireSim [R57] addendum |
 | 2026-10-25 | Printed briefings stamp "Prepared" and the heading date on the province wall clock (`_wallFmt` + `_tzLabelAt`) instead of the viewer's device clock and Intl abbreviation; `tools/tz/cwfis_noon_probe.mjs` added to observe CWFIS's refresh hour after 2026-11-01 | Follow-up to the 2026-10-18 clock rules |
+| 2026-10-25 | Pyra is an installable web app (manifest + `sw.js`, v149). Shell cache-first under a cache named for the engine `?v=`; `data/*.json|csv` stale-while-revalidate only while the cached copy is under 15 min old, otherwise network-first (6 s) with cache fallback; CWFIS / ECCC / Open-Meteo / tiles / CDNs network-first with cache fallback, failed responses never cached; analytics and PayPal hosts never intercepted. A cache fallback carries `X-Pyra-Cache: hit;<time>` and the page shows "Offline — showing data cached at <time>" | A firefighter who opened the station page on Wi-Fi must be able to reopen it without signal. The 15-min bound on data-file staleness keeps the data tiers seeing the day's `cwfis_prev.json` / BCWS mirror rather than yesterday's, so no tier logic changes |
+| 2026-10-25 | Usage counting lives in `config/telemetry.js` with three providers (`none`, `cloudflare`, `post`). The Cloudflare Web Analytics token that eight pages carried inline since launch moved there, so the shipped default is `cloudflare` (cookieless, no personal data) rather than silently dropping the owner's counter; `post` sends one `sendBeacon` per page view with exactly page id, province, version, installed, viewport class, record type and a sessionStorage-only session id — never station, coordinates or typed text. Privacy statement `privacy/` + `docs/privacy.md`, linked from every footer and the menu | Owner asked for privacy-respecting counting with no third-party script by default; the existing Cloudflare tag was already the de-facto counter, so the honest default is to keep it visible in one config line, switchable to `none` |
+| 2026-10-25 | Feedback button (bottom-right, above the bottom nav, z below the menu) on every page: 1–5 "Was this useful today?" (beacon only in `post` mode, otherwise noted on the device), text box, prefilled GitHub issue and optional mailto (`feedbackEmail`, hidden when empty). Prefill carries page, version, province and the text only | Field users should be able to say "this was/wasn't useful today" in one tap without accounts; the prefilled issue must not leak a user's station or location unless they type it |
 
 ## 4. Science implementation and references
 
@@ -181,12 +187,15 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 
 | Suite | Command | What it checks |
 |---|---|---|
-| Unit / regression (212 tests) | `node --test tests/*.test.mjs` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view |
+| Unit / regression (259 tests) | `node --test "tests/**/*.test.mjs"` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view, PWA wiring, telemetry privacy contract |
+| PWA static (`tests/pwa.test.mjs`) | part of the unit run | Manifest fields + icons exist; every page links manifest / theme-color / apple-touch-icon and loads config → telemetry → pwa at the engine `?v=`; `sw.js` precache entries exist; cache name = page `?v=`; no inline Cloudflare tag; Privacy link + disclaimer in every footer |
+| Telemetry (`tests/telemetry.test.mjs`) | part of the unit run | With `none` / empty endpoint nothing is sent and no script injected; with `post` exactly one beacon with exactly the allowed keys and no station / coordinates / `?stn=`; Cloudflare mode injects only their script; ratings, issue and mailto prefill |
 | Engine audit (492 checks) | `node tests/calc_audit.mjs` | Equation-level audit and invariants |
 | Parity (108 checks) | `node tests/bc_parity.mjs` | Single-source science core; BC-specific functions |
 | Live chain / API | `node tests/live_chain_test.mjs`, `node tests/live_api_test.mjs` | Real network: Open-Meteo, CWFIS, SWOB, NAEFS |
 | Browser smoke (11 pages) | `python3 tests/browser_smoke.py` | Pages load with data, no JS errors |
 | Deep E2E (185 checks) | `python3 tests/e2e_deep.py` | FWI components, FBP, no NaN, interactions, Trends content, unique stations, fresh-phone shared-link fuel + 390 px fit, ICS briefing print → PDF (AB + BC) |
+| PWA browser (28 checks) | `python3 tests/pwa_browser.py` | Service worker registers at the root scope and controls the page; manifest parses; weather responses land in the runtime cache; Feedback button above the bottom nav, prefilled issue without the station, fits 390 px; then a truly offline relaunch (DNS blocked, local server stopped — Playwright's `set_offline` does not reach service workers) renders the station page from cache with the amber "Offline — showing data cached at <time>" strip, a danger label and no NaN |
 | Everything | `bash tests/run_all.sh` | All of the above |
 
 The browser suites target the live site by default. Set
@@ -196,9 +205,14 @@ test a local build first. CI runs the unit, audit and parity suites on every pus
 **Per-file unit tests:**
 - science 18, tiers 33, labels 26, dates 24, chain 22, alerts 17
 - spread 10, slope 12, carryover 10, outlook 8, phenology 8, fmc 6, map 6, opsview 4
+- pwa 22, telemetry 9 (2026-10-25)
 
 Last full run 2026-10-09 against live v144: unit 204/0, audit 492/0, parity 108/0,
 E2E 185/0, smoke 11/0.
+
+Run 2026-10-25 against a local server of the `feat/pwa-usage-feedback` worktree
+(v149, service worker registered): unit 259/0, audit 492/0, parity 182/0,
+smoke 11/0, E2E 185/0, PWA browser 28/0.
 
 **UAT 2026-10-09 (FBAN walk-through, `docs/uat/2026-10-09/`):** the scenario was a grass fire near Hussar AGDM, using O1a/O1b fuels and 95% curing. Clients were desktop Chrome plus iPhone 14 and Pixel 7 emulation (portrait and landscape). The run produced three PDFs from live v144:
 - the ICS station briefing at 18:00, leading with Saturday's operational period;

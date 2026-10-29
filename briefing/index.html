@@ -3,13 +3,19 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="theme-color" content="#0b1326"/>
+<link rel="manifest" href="../manifest.webmanifest"/>
+<link rel="icon" href="../icons/pyra-192.png" type="image/png" sizes="192x192"/>
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-title" content="Pyra"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <title>Pyra · Fire Safety Briefing</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="../fwi-theme.js?v=133"></script>
+<script src="../fwi-theme.js?v=134"></script>
 <style>
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
   input[type=range] { accent-color: #e05030; }
@@ -172,6 +178,13 @@
   </main>
 </div>
 
+<footer class="no-print px-4 pt-3 pb-28 text-center text-[11px] text-slate-400 border-t border-[#1e2740] flex flex-col gap-1 items-center">
+  <div class="flex flex-wrap justify-center gap-x-4 text-[12px] text-slate-300">
+    <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">GitHub</a>
+    <a href="../privacy/" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">Privacy</a>
+  </div>
+  <span class="text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
+</footer>
 <!-- BottomNavBar -->
 <nav aria-label="Primary" class="no-print bg-[#0b1326]/95 backdrop-blur-xl border-t border-[#7bd0ff]/15 fixed bottom-0 left-0 w-full z-[1001] flex justify-around items-center px-2 pb-5 pt-2 shadow-[0_-10px_30px_rgba(6,14,32,0.6)]">
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../station_detail/code.html"><span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Station</span></a>
@@ -180,7 +193,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#e05030]/15 text-[#ff8a70] font-bold" href="../briefing/" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=148"></script><script src="../core/fwi-core.js?v=148"></script>
+<script src="../fwi.js?v=149"></script><script src="../core/fwi-core.js?v=149"></script>
 <script>
 // ─── State ─────────────────────────────────────────────────────────────────
 let _briefingData = null; // last generated data
@@ -974,5 +987,6 @@ ${anyRedFlag ? `<div style="background:#ffe0e0;border:2px solid #c00;padding:4px
 // ─── Init ──────────────────────────────────────────────────────────────────
 buildConfigUI();
 </script>
+<script src="../config/telemetry.js?v=149"></script><script src="../core/telemetry.js?v=149"></script><script src="../core/pwa.js?v=149"></script>
 </body>
 </html>

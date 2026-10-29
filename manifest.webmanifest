@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "Pyra — Fire Weather",
+  "short_name": "Pyra",
+  "description": "CFFDRS fire weather and FBP fire behaviour for Alberta and British Columbia: station briefings, live map, 14-day trends.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1326",
+  "theme_color": "#0b1326",
+  "lang": "en-CA",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    { "src": "icons/pyra-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/pyra-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/pyra-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Alberta station", "short_name": "AB station", "url": "./station_detail/code.html", "icons": [{ "src": "icons/pyra-192.png", "sizes": "192x192" }] },
+    { "name": "Alberta map", "short_name": "AB map", "url": "./regional_summary/code.html", "icons": [{ "src": "icons/pyra-192.png", "sizes": "192x192" }] },
+    { "name": "BC station", "short_name": "BC station", "url": "./bc/station_detail/code.html", "icons": [{ "src": "icons/pyra-192.png", "sizes": "192x192" }] },
+    { "name": "BC map", "short_name": "BC map", "url": "./bc/regional_summary/code.html", "icons": [{ "src": "icons/pyra-192.png", "sizes": "192x192" }] }
+  ]
+}

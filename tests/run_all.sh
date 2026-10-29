@@ -55,6 +55,8 @@ if command -v python3 &>/dev/null && python3 -c "import playwright" 2>/dev/null;
     python3 tests/browser_smoke.py
   run_suite "e2e_deep (FWI components, FBP, NaN, interaction)" \
     python3 tests/e2e_deep.py
+  run_suite "pwa_browser (service worker, offline strip, feedback)" \
+    python3 tests/pwa_browser.py
 else
   printf "\n${YLW}── browser tests ──${NC}\n"
   printf "  SKIP  playwright not available\n"
