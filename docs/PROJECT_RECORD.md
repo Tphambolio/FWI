@@ -230,6 +230,11 @@ Run 2026-10-25 against a local server of the `feat/pwa-usage-feedback` worktree
 (v149, service worker registered): unit 259/0, audit 492/0, parity 182/0,
 smoke 11/0, E2E 185/0, PWA browser 28/0.
 
+Run 2026-10-29 against a local server of the `feat/geomet-nwp` worktree (v150,
+pages reading the freshly built `data/gem/*.json`): unit 301/0, audit 492/0,
+parity 182/0, live chain 11/0, live API 7/0, smoke 11/0, E2E 185/0, PWA
+browser 28/0 — `bash tests/run_all.sh` 8 suites pass.
+
 **UAT 2026-10-09 (FBAN walk-through, `docs/uat/2026-10-09/`):** the scenario was a grass fire near Hussar AGDM, using O1a/O1b fuels and 95% curing. Clients were desktop Chrome plus iPhone 14 and Pixel 7 emulation (portrait and landscape). The run produced three PDFs from live v144:
 - the ICS station briefing at 18:00, leading with Saturday's operational period;
 - the ICS station briefing in the morning, leading with today;
