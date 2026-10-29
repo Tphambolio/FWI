@@ -257,6 +257,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-10-29 | `037c1f3` | feat(pwa): installable app with the last briefing cached offline; privacy-respecting usage counting + Feedback button (v149) |
 | 2026-10-10 | `b3a1a56` | feat(nwp): pin Open-Meteo to ECCC GEM; labels say GEM (v145) |
 | 2026-10-10 | `0ffab4f` | docs(record): Pyra Sources Zotero collection; fix Open-Meteo citation |
 | 2026-10-09 | `4d4969f` | docs(record): 2026-10-09 UAT decisions, test counts, open items, UAT PDFs |
