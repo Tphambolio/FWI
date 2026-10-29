@@ -28,7 +28,7 @@
  */
 'use strict';
 
-const VERSION = '150';                     // = ?v= on fwi.js / core/fwi-core.js script tags
+const VERSION = '151';                     // = ?v= on fwi.js / core/fwi-core.js script tags
 const SHELL_CACHE = `pyra-shell-v${VERSION}`;
 const DATA_CACHE = `pyra-data-v${VERSION}`;
 const RUNTIME_CACHE = 'pyra-runtime-v1';   // third-party responses; capped, survives version bumps

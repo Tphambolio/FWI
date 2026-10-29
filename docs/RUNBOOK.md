@@ -21,7 +21,7 @@ repository's mirrored files (BCWS noon, AEF pmwx, CWFIS carry-over, **ECCC GEM p
 fallback. One upstream outage degrades a tier; the page still loads and the provenance chip says which tier
 served the numbers. Model weather comes from `data/gem/<prov>.json` (GeoMet, every 6 h); `config/weather.js`
 decides whether a page may still call Open-Meteo when that file is missing or > 9 h old
-(`fallback: 'open-meteo'`, the rollout default — must be `'none'` before commercial use).
+(`fallback: 'none'` since 2026-10-29: Open-Meteo is never called; a stale GEM file is used and labelled, a missing file is an error — so the `GEM series fresh` checks below are the ones that matter).
 
 ## Alerts
 
@@ -44,7 +44,6 @@ decides whether a page may still call Open-Meteo when that file is missing or > 
 | `FireSim frontend` fail | Vercel build failed or Vercel incident | Vercel dashboard → Deployments → promote the previous production deployment. |
 | `Pyra GEM series AB/BC fresh (9 h)` fail | `gem-points.yml` did not run or failed (GeoMet outage, a layer renamed, < 90 % of coverages downloaded, push rejected), or GitHub started the scheduled run late | Open the run in Actions. Pages keep working: with `config/weather.js` `fallback: 'open-meteo'` they call Open-Meteo for model weather and label it so; with `'none'` they use the stale file and the provenance says how old it is. Network errors: re-run the job (`workflow_dispatch`). Layer or dimension change: `node tools/gem/gem_points.mjs --dry` locally shows which model/layer fails; fix `tools/gem/lib.mjs MODELS`, run `node --test tests/gem_action.test.mjs`. Push rejected: re-run (the job rebases). |
 | `Upstream ECCC GeoMet WCS` WARN | geo.weather.gc.ca outage or maintenance | Nothing. The next `gem-points.yml` run picks up; the file check above pages only if it stays stale > 9 h. |
-| `Upstream Open-Meteo GEM (fallback only)` WARN | Third-party outage | Nothing. Open-Meteo is only the fallback behind `config/weather.js`; a 429 means the free tier is throttled — if it recurs, set `fallback: 'none'` (the GEM file is the primary source). |
 | Users see times one hour off after 2026-11-01 | Their browser's time-zone data predates Alberta's/BC's clock change | Expected to be handled: Pyra formats all local times on fixed offsets (`_wallFmt`), not the browser's zone data. If it still happens, the page is cached — hard-reload; the service worker's cache name follows the `?v=` version. |
 | A page shows old numbers after a release | Browser cache / service worker | Bump `?v=` on the page's script tags (and the SW cache name) and push. Users get the new version on the next load. |
 | No WhatsApp alert came | Workstation off, OpenClaw gateway down, or no new threshold crossing (quiet mode) | `tail ~/logs/pyra-alerts.log`; `openclaw gateway status`. Exit 0 = nothing new, 10 = alert sent. This path is not monitored by the uptime workflow. |

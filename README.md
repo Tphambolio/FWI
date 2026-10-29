@@ -57,7 +57,7 @@ Each BC page has an **Alberta →** toggle in the top-right header to switch to 
 
 ### Model weather: ECCC GEM read from MSC GeoMet
 - Tier 3 model weather (noon-LST chain inputs when no station reports, 16:00 peak-burn wind, 24-h trend, operational-period outlook, 7-day forecast chain) is **ECCC GEM** — HRDPS 2.5 km → RDPS 10 km → GDPS 15 km — composited every 6 h by `.github/workflows/gem-points.yml` from GeoMet WCS into `data/gem/ab.json` and `data/gem/bc.json` (hourly temp / RH / 10 m wind / direction / rain at every station, now −48 h … +240 h). The browser reads one file per province; no third-party weather API is called per station. Format: `docs/data-sources.md`
-- `config/weather.js` is the only switch: `fallback: 'open-meteo'` (shipped default during rollout) lets a page call Open-Meteo `gem_seamless` when the file is missing, older than 9 h or lacks the station; **set `fallback: 'none'` before any commercial use** (Open-Meteo's free tier is non-commercial). Provenance labels read "ECCC GEM (GeoMet)"; the "Open-Meteo" wording appears only on the fallback path
+- `config/weather.js` is the only switch: `fallback: 'none'` (the default since 2026-10-29; `'open-meteo'` was the rollout default) — `'open-meteo'` lets a page call Open-Meteo `gem_seamless` when the file is missing, older than 9 h or lacks the station; **set `fallback: 'none'` before any commercial use** (Open-Meteo's free tier is non-commercial). Provenance labels read "ECCC GEM (GeoMet)"; the "Open-Meteo" wording appears only on the fallback path
 - Station elevations for foliar moisture content come from NRCan's CDEM (`data/station_elevation.json`, same Action) instead of the Open-Meteo elevation API
 - Attribution: *Data Source: Environment and Climate Change Canada* (ECCC open data licence)
 
@@ -216,7 +216,7 @@ The province module defines a single `PROVINCE` config object (time offsets, sto
 | Environment Canada SWOB | BC Tier 2 — raw obs for stations not in BCWS Datamart |
 | **ECCC GEM via MSC GeoMet** (HRDPS 2.5 km → RDPS 10 km → GDPS 15 km) | Tier 3 model weather — hourly point series per station in `data/gem/<prov>.json`, built every 6 h by `gem-points.yml` from GeoMet WCS 2.0.1. *Data Source: Environment and Climate Change Canada.* Format and acceptance evidence: `docs/data-sources.md` |
 | NRCan CDEM (cloud-optimised GeoTIFF) | Station ground elevation for FMC (`data/station_elevation.json`, same Action) — OGL-Canada |
-| Open-Meteo `gem_seamless` (CC BY 4.0, non-commercial free tier) | **Fallback only**, behind `config/weather.js` `fallback: 'open-meteo'`: used when a GEM file is missing, > 9 h old or lacks the station; plus the elevation API for pin-dropped slope. Must be `'none'` for commercial use |
+| Open-Meteo `gem_seamless` (CC BY 4.0, non-commercial free tier) | **Disabled by default** (`config/weather.js` `fallback: 'none'` since 2026-10-29); with `'open-meteo'` it is used when a GEM file is missing, > 9 h old or lacks the station; plus the elevation API for pin-dropped slope. Must be `'none'` for commercial use |
 | CWFIS `firewx_naefs` WFS | 14-day NAEFS ensemble — AB (13 stations) + BC (35 stations, codes 10183–10269) |
 | CFFDRS (Van Wagner 1987, ST-X-3) | FWI/FBP calculation — national standard |
 | BC Wildfire Regulation (B.C. Reg. 38/2005, Sch. 2) | BC Fire Danger Class from BUI × FWI by Danger Region (reproduces BCWS ratings 99.87%) |

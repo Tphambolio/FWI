@@ -20,6 +20,12 @@ export const GEM_PATH = join(ROOT, 'core', 'gem.js');
 export function runEngine(ctx, provincePath) {
   vm.runInContext(readFileSync(provincePath, 'utf8'), ctx, { filename: provincePath });
   vm.runInContext(readFileSync(WEATHER_CONFIG_PATH, 'utf8'), ctx, { filename: WEATHER_CONFIG_PATH });
+  // The shipped config has fallback: 'none' (since 2026-10-29; tests/weather_config.test.mjs guards
+  // that). The engine suites were written against the rollout default and mock Open-Meteo for
+  // stations the fixture GEM file lacks, so they run with the fallback allowed; tests that exercise
+  // the 'none' behaviour set `window.PYRA_WEATHER.fallback = 'none'` themselves.
+  const w = ctx.window || ctx;
+  if (w.PYRA_WEATHER) w.PYRA_WEATHER = { ...w.PYRA_WEATHER, fallback: 'open-meteo' };
   vm.runInContext(readFileSync(GEM_PATH, 'utf8'), ctx, { filename: GEM_PATH });
   vm.runInContext(readFileSync(CORE_PATH, 'utf8'), ctx, { filename: CORE_PATH });
 }

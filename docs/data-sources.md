@@ -18,7 +18,7 @@ Open Government Licence – Canada, read once per station from the national
 cloud-optimised GeoTIFF.
 
 Open-Meteo (`models=gem_seamless`, the pre-v150 source) is kept **only as a
-fallback** behind `config/weather.js` (`fallback: 'open-meteo'`), used when a
+fallback** behind `config/weather.js` (`fallback: 'none'` since 2026-10-29; set `'open-meteo'` to re-enable), used when a
 GEM file is missing, older than `max_age_h` (9 h) or lacks a station. Its free
 tier is for non-commercial use: **set `fallback: 'none'` before any commercial
 use of Pyra.**

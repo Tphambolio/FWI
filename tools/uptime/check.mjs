@@ -162,11 +162,6 @@ await Promise.all([
     if (/ExceptionReport/.test(r.text.slice(0, 400))) throw new Error(`service exception: ${r.text.replace(/\s+/g, ' ').slice(0, 160)}`);
     return `200 in ${r.ms} ms`;
   }),
-  check('Upstream Open-Meteo GEM (fallback only)', 'WARN', async () => {
-    const r = await get('https://api.open-meteo.com/v1/forecast?latitude=53.5&longitude=-113.5&hourly=temperature_2m&models=gem_seamless&forecast_days=1');
-    if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
-    return `200 in ${r.ms} ms`;
-  }),
 ]);
 
 const fails = results.filter(r => !r.ok && r.level === 'FAIL');

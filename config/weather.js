@@ -33,7 +33,7 @@
  */
 window.PYRA_WEATHER = {
   source: 'gem-file',
-  fallback: 'open-meteo',
+  fallback: 'none',
   max_age_h: 9,
   max_point_km: 1,
   elevation: 'file',
