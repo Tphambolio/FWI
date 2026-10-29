@@ -385,10 +385,10 @@
 <span class="material-symbols-outlined text-primary text-2xl mt-0.5">cloud_download</span>
 <div>
 <h4 class="font-headline text-lg font-bold text-on-surface mb-1">Weather Source — BC Two-Tier Hierarchy</h4>
-<p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant">MSC SWOB Realtime (Primary) · Open-Meteo NWP (Fallback) · No API Key</p>
+<p class="text-[11px] font-label uppercase tracking-widest text-on-surface-variant">MSC SWOB Realtime (Primary) · ECCC GEM via MSC GeoMet (Model weather) · No API Key</p>
 </div>
 </div>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6"><strong class="text-on-surface">Important:</strong> The NRCan CWFIS fire weather station network (<code class="text-primary">firewx_stns_current</code> WFS layer) covers stations east of approximately −114°W — the Alberta boreal and parkland zones. <strong class="text-on-surface">BC is entirely west of −114°W and receives no CWFIS station coverage.</strong> BC current conditions therefore use a two-tier hierarchy without a CWFIS primary tier. <strong class="text-on-surface">Tier 1 — MSC SWOB Realtime:</strong> real sensor observations from Environment Canada's automated weather station network, available year-round from airports and climate reference stations. <strong class="text-on-surface">Tier 2 — Open-Meteo NWP:</strong> ECCC GEM model output at exact station coordinates when SWOB has no coverage within 150 km.</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6"><strong class="text-on-surface">Important:</strong> The NRCan CWFIS fire weather station network (<code class="text-primary">firewx_stns_current</code> WFS layer) covers stations east of approximately −114°W — the Alberta boreal and parkland zones. <strong class="text-on-surface">BC is entirely west of −114°W and receives no CWFIS station coverage.</strong> BC current conditions therefore use a two-tier hierarchy without a CWFIS primary tier. <strong class="text-on-surface">Tier 1 — MSC SWOB Realtime:</strong> real sensor observations from Environment Canada's automated weather station network, available year-round from airports and climate reference stations. <strong class="text-on-surface">Tier 2 — ECCC GEM via MSC GeoMet:</strong> GEM model output sampled at the station (hourly point series in <code class="text-primary">data/gem/bc.json</code>, rebuilt every 6 h) when SWOB has no coverage within 150 km; Open-Meteo only as the flagged fallback.</p>
 
 <div class="space-y-4">
 <!-- SWOB primary for BC -->
@@ -413,9 +413,9 @@
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
 <span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Fallback — NWP</span>
-<span class="text-[11px] text-on-surface-variant font-label">Open-Meteo ECCC GEM · Used when no SWOB station found within range</span>
+<span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via MSC GeoMet (data/gem/bc.json, rebuilt every 6 h) · Used when no SWOB station found within range · Open-Meteo only as the flagged fallback (config/weather.js)</span>
 </div>
-<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET api.open-meteo.com/v1/forecast
+<code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">data/gem/{prov}.json → core/gem.js (ECCC GEM point series; fallback only: GET api.open-meteo.com/v1/forecast)
   ?latitude={lat}&amp;longitude={lng}
   &amp;hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation
   &amp;past_days=1&amp;forecast_days=2&amp;timezone=UTC
@@ -429,7 +429,7 @@
 <!-- NAEFS BC -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
-<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Forecast Tail — Beyond the Open-Meteo Horizon</span>
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Forecast Tail — Beyond the GEM Horizon</span>
 <span class="text-[11px] text-on-surface-variant font-label">CWFIS NAEFS WFS · 35 BC stations · Codes 10183–10269</span>
 </div>
 <code class="block text-xs text-primary bg-surface-container p-3 rounded-lg leading-relaxed overflow-x-auto whitespace-pre">GET cwfis.cfs.nrcan.gc.ca/geoserver/public/wfs
@@ -437,14 +437,14 @@
   &amp;typeNames=public:firewx_naefs
   &amp;outputFormat=application/json
   &amp;CQL_FILTER=code={station_code}&amp;count=20</code>
-<p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Only days beyond the last Open-Meteo day are used (flagged lower confidence). The ensemble <code class="text-primary">median_temp</code>, <code class="text-primary">median_rh</code>, <code class="text-primary">median_ws</code> and <code class="text-primary">median_pcp</code> feed the noon-LST equations; whether these are daily-mean or noon statistics is not documented (unverified). FWI computed client-side via Van Wagner carry-forward chain.</p>
+<p class="text-xs text-on-surface-variant mt-3">Unlike the fire weather station network, the NAEFS ensemble forecast layer <em>does</em> cover BC — 35 stations discovered via WFS query (province_state='BC'). Station codes range 10183–10269. Nearest station within 150 km is used by Haversine distance. Only days beyond the last GEM day are used (flagged lower confidence). The ensemble <code class="text-primary">median_temp</code>, <code class="text-primary">median_rh</code>, <code class="text-primary">median_ws</code> and <code class="text-primary">median_pcp</code> feed the noon-LST equations; whether these are daily-mean or noon statistics is not documented (unverified). FWI computed client-side via Van Wagner carry-forward chain.</p>
 </div>
 
 <!-- GEM fallback forecast -->
 <div class="bg-surface-container-lowest rounded-xl p-5">
 <div class="flex items-center gap-3 mb-3">
 <span class="px-2 py-0.5 bg-secondary/10 text-secondary font-label text-[11px] font-bold rounded uppercase tracking-wider">Forecast — Primary (days 1–8)</span>
-<span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via Open-Meteo · NAEFS extends the trend beyond it</span>
+<span class="text-[11px] text-on-surface-variant font-label">ECCC GEM via MSC GeoMet · point series at every station · NAEFS extends the trend beyond it</span>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-xs">
 <div><span class="text-on-surface-variant">FWI chain</span> <span class="font-bold text-on-surface block">20 UTC (noon PST; 13:00 PT from 2026-11-01)</span><span class="text-on-surface-variant">CFFDRS noon-LST standard</span></div>
@@ -715,7 +715,7 @@
       <div class="space-y-1.5">
         <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0" style="background:#4b5563;border-radius:3px"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Square</strong> — BCWS Datamart (primary) / CWFIS fire weather network</span></div>
         <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0" style="background:#4b5563;border-radius:8px"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Rounded rect</strong> — MSC SWOB real sensor observations</span></div>
-        <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0 rounded-full" style="background:#4b5563"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Pill</strong> — Open-Meteo NWP model output</span></div>
+        <div class="flex items-center gap-2"><div class="w-10 h-5 flex-shrink-0 rounded-full" style="background:#4b5563"></div><span class="text-xs text-on-surface-variant"><strong class="text-on-surface">Pill</strong> — ECCC GEM NWP model output</span></div>
       </div>
     </div>
   </div>
@@ -769,7 +769,7 @@
     <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">@lactucafarm</a>
     <a href="../../station_detail/code.html" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">Alberta</a>
   </div>
-  <span class="text-[11px] text-slate-400 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · BC Wildfire Service — OGL-Canada / OGL-BC / CC BY 4.0</span>
+  <span class="text-[11px] text-slate-400 leading-relaxed">Data Source: Environment and Climate Change Canada (GEM via MSC GeoMet, SWOB) · NRCan CWFIS · NRCan CDEM · BC Wildfire Service — OGL-Canada / OGL-BC · Open-Meteo (fallback only, CC BY 4.0)</span>
   <span class="text-[11px] text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
   <span class="text-[11px] text-slate-400">© 2026 Travis Kennedy · Free to use · No warranty · BC Wildfire Service CFFDRS danger scale</span>
   <form class="donate mt-1" action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank">
