@@ -56,7 +56,7 @@ for (const e of ENGINES) {
     const { run } = makeContext(e.path, { now: eve });
     const w = await run(`fetchWeather(${e.lat}, ${e.lng})`);
     assert.equal(w.temp, e.noonUTC + 0.15, `slot 2026-07-15T${e.noonUTC}:00`);
-    assert.equal(w.source, 'Open-Meteo NWP (noon LST)');
+    assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST');
   });
 
   test(`${e.prov}: fetchWeather post-noon targets ${e.noonUTC} UTC`, async () => {
@@ -108,7 +108,7 @@ test('AB: fetchWeather pre-noon MST steps with the 19 UTC noon-LST forecast; 22 
   assert.equal(w.temp, 19.15, 'chain input = 2026-07-15T19:00 (noon MST)');
   assert.equal(w.peak.temp, 22.15, 'peak = 2026-07-15T22:00 (16:00 MDT)');
   assert.equal(w.preNoonForecast, true);
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST forecast, pre-noon');
 });
 
 test('BC: fetchWeather pre-noon PST steps with the 20 UTC noon-LST forecast; 23 UTC (16:00 PDT) only as peak', async () => {
@@ -116,7 +116,7 @@ test('BC: fetchWeather pre-noon PST steps with the 20 UTC noon-LST forecast; 23 
   const w = await run(`fetchWeather(${BC.lat}, ${BC.lng})`);
   assert.equal(w.temp, 20.15);
   assert.equal(w.peak.temp, 23.15);
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST forecast, pre-noon');
 });
 
 test('AB: fetchWeather post-noon uses the same noon-LST hour (pre- and post-noon policies agree)', async () => {
@@ -125,7 +125,7 @@ test('AB: fetchWeather post-noon uses the same noon-LST hour (pre- and post-noon
   assert.equal(w.temp, 19.15);
   assert.equal(w.peak.temp, 22.15);
   assert.equal(w.preNoonForecast, false);
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST');
 });
 
 

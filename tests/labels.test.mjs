@@ -42,9 +42,9 @@ for (const e of ENGINES) {
     assert.equal(badge, `CWFIS · ${e.cwfisName} · 0 km`);
   });
 
-  test(`${e.prov}: NWP fallback → source is the Open-Meteo label with no distance`, async () => {
+  test(`${e.prov}: NWP tier → source is the ECCC GEM (GeoMet) label with no distance`, async () => {
     const { src } = await render(e, { now: post });
-    assert.equal(src, 'Open-Meteo NWP (noon LST)');
+    assert.equal(src, 'ECCC GEM (GeoMet) · noon LST');
   });
 
   test(`${e.prov}: IDW mode → source "IDW · N stations · avg X km" and badge "IDW blend · …"`, async () => {
@@ -138,7 +138,7 @@ for (const e of [AB, BC]) {
     assert.equal(lvl({ fwiFromCWFIS: true, repDate: '2026-07-12T12:00:00Z', source: 'CWFIS · X' }), 'red');
     assert.equal(lvl({ source: 'MSC SWOB · Y (latest obs)', obsTime: new Date(now - 2 * 3600000).toISOString() }), 'ok');
     assert.equal(lvl({ source: 'MSC SWOB · Y (latest obs)', obsTime: new Date(now - 5 * 3600000).toISOString() }), 'amber');
-    assert.equal(lvl({ source: 'Open-Meteo NWP (noon LST)' }), 'neutral');
+    assert.equal(lvl({ source: 'ECCC GEM (GeoMet) · noon LST' }), 'neutral');
   });
 }
 

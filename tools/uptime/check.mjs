@@ -12,10 +12,13 @@
  *                     (the cwfis-daily workflow runs at 20:15 UTC). ab_redflag.json within 36 h
  *                     (ab-redflag runs 17:30 and 22:30 UTC). Content is not judged, only freshness:
  *                     off-season the files still regenerate daily, with few or no active stations.
+ *   Pyra GEM series   data/gem/ab.json and bc.json (ECCC GEM point series from GeoMet, gem-points
+ *                     workflow every 6 h) generated within 9 h — the browser's own staleness bound
+ *                     (config/weather.js max_age_h), beyond which pages fall back to Open-Meteo.
  *   FireSim API       /api/v1/health returns status "healthy"; /api/v1/version returns a git_sha.
  *   FireSim frontend  https://wildfire-simulator.vercel.app returns 200 with the app root.
- *   Upstreams (WARN)  CWFIS WFS, ECCC SWOB, Open-Meteo answer at all — Pyra degrades through its
- *                     tiers when one is down, so these never page on their own.
+ *   Upstreams (WARN)  CWFIS WFS, ECCC SWOB, ECCC GeoMet WCS, Open-Meteo (fallback) answer at all —
+ *                     Pyra degrades through its tiers when one is down, so these never page on their own.
  */
 const PYRA = 'https://tphambolio.github.io/FWI';
 const FIRESIM_API = 'https://firesim-api.fly.dev';
@@ -109,6 +112,17 @@ await Promise.all([
   }),
   // Scheduled runs on GitHub start up to ~3 h late, so the 17:30 / 22:30 UTC slots land ~20 h apart at worst.
   // 14 h raised a false alarm every afternoon (issues #9–#12); 26 h still catches a whole missed day.
+  // GEM point series: the browser treats a file older than 9 h as stale (config/weather.js max_age_h)
+  // and falls back to Open-Meteo while that is allowed — so 9 h is the paging threshold here too.
+  ...['ab', 'bc'].map(prov => check(`Pyra GEM series ${prov.toUpperCase()} fresh (9 h)`, 'FAIL', async () => {
+    const r = await get(`${PYRA}/data/gem/${prov}.json`, { timeout: 30000 });
+    if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+    const j = JSON.parse(r.text);
+    const h = ageH(j.generated);
+    if (!(h <= 9)) throw new Error(`data/gem/${prov}.json ${h.toFixed(1)} h old (> 9 h), generated ${j.generated}, HRDPS run ${j.model_runs?.hrdps}`);
+    const n = Object.keys(j.stations || {}).filter(k => !j.stations[k].alias).length;
+    return `${h.toFixed(1)} h old, HRDPS run ${j.model_runs?.hrdps}, ${n} stations, ${(r.text.length / 1048576).toFixed(1)} MB`;
+  })),
   check('Pyra ab-redflag workflow ran (26 h)', 'FAIL', () => workflowRan('ab-redflag.yml', 26)),
   check('Pyra cwfis-daily workflow ran (26 h)', 'FAIL', () => workflowRan('cwfis-daily.yml', 26)),
   check('FireSim API health', 'FAIL', async () => {
@@ -141,7 +155,14 @@ await Promise.all([
     if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
     return `200 in ${r.ms} ms`;
   }),
-  check('Upstream Open-Meteo GEM', 'WARN', async () => {
+  check('Upstream ECCC GeoMet WCS (GEM source)', 'WARN', async () => {
+    // One tiny HRDPS coverage (≈ 3 × 3 cells over Edmonton) at the layer's default time
+    const r = await get('https://geo.weather.gc.ca/geomet?service=WCS&version=2.0.1&request=GetCoverage&coverageId=HRDPS.CONTINENTAL_TT&subsettingcrs=EPSG:4326&subset=x(-113.6,-113.5)&subset=y(53.5,53.6)&format=image/tiff', { timeout: 30000 });
+    if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+    if (/ExceptionReport/.test(r.text.slice(0, 400))) throw new Error(`service exception: ${r.text.replace(/\s+/g, ' ').slice(0, 160)}`);
+    return `200 in ${r.ms} ms`;
+  }),
+  check('Upstream Open-Meteo GEM (fallback only)', 'WARN', async () => {
     const r = await get('https://api.open-meteo.com/v1/forecast?latitude=53.5&longitude=-113.5&hourly=temperature_2m&models=gem_seamless&forecast_days=1');
     if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
     return `200 in ${r.ms} ms`;

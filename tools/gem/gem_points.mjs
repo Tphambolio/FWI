@@ -121,7 +121,8 @@ async function loadCapabilities() {
     const common = perLayer.temp.times.filter(t => ['rh', 'wind', 'wdir'].every(v => perLayer[v].times.includes(t)));
     caps[model] = {
       ref, refTimes: perLayer.temp.refTimes, times: common, timeSet: new Set(common),
-      rainSet: new Set(perLayer.rain.times), rain3hSet: perLayer.rain3h ? new Set(perLayer.rain3h.times) : null, perLayer,
+      rainSet: new Set(perLayer.rain.times), rain3hSet: perLayer.rain3h ? new Set(perLayer.rain3h.times) : null,
+      rainTotSet: perLayer.rainTot ? new Set(perLayer.rainTot.times) : null, perLayer,
     };
     log(`${model}: run ${isoHour(ref)} · ${common.length} hours ${isoHour(common[0])} → ${isoHour(common[common.length - 1])} · rain1h ${perLayer.rain.times.length}${perLayer.rain3h ? ` · rain3h ${perLayer.rain3h.times.length}` : ''} · ${perLayer.temp.refTimes.length} runs listed`);
   }
@@ -163,7 +164,9 @@ function planRequests(startMs, n, sources, caps, prevFile) {
         entry.t0 = s.t0; entry.t1 = s.t1;
         entry.keys0 = {}; entry.keys1 = {};
         for (const v of ['temp', 'rh', 'wind', 'wdir']) { entry.keys0[v] = add(m.layers[v], ref, s.t0); entry.keys1[v] = add(m.layers[v], ref, s.t1); }
-        if (!s.noRain) entry.keys.rain = add(m.layers.rain3h, ref, s.t1);
+        entry.rainFrom = s.rainFrom || null;
+        if (s.rainFrom === '3h') entry.keys.rain = add(m.layers.rain3h, ref, s.t1);
+        else if (s.rainFrom === 'total') { entry.keys.rainTot0 = add(m.layers.rainTot, ref, s.t0); entry.keys.rainTot1 = add(m.layers.rainTot, ref, s.t1); }
       } else {
         for (const v of VARS) entry.keys[v] = add(m.layers[v], ref, t);
         if (m.rainKind === 'run-accum' && t - HOUR > ref) entry.rainPrev = add(m.layers.rain, ref, t - HOUR);
@@ -234,8 +237,14 @@ function assemble(plan, samples, nPoints, n) {
         rh = lerp(get(e.keys0.rh, k), get(e.keys1.rh, k), fr);
         wind = lerp(get(e.keys0.wind, k), get(e.keys1.wind, k), fr);
         wdir = lerpDir(get(e.keys0.wdir, k), get(e.keys1.wdir, k), fr);
-        const r3 = get(e.keys.rain, k);
-        rain = r3 == null ? null : r3 / 3;
+        // 3-h accumulation spread evenly over its three hourly bins (t0, t1]
+        if (e.rainFrom === 'total') {
+          const a = get(e.keys.rainTot0, k), b = get(e.keys.rainTot1, k);
+          rain = (a == null || b == null) ? null : Math.max(0, b - a) / 3;
+        } else {
+          const r3 = get(e.keys.rain, k);
+          rain = r3 == null ? null : r3 / 3;
+        }
       } else {
         temp = get(e.keys.temp, k); rh = get(e.keys.rh, k); wind = get(e.keys.wind, k); wdir = get(e.keys.wdir, k);
         const r = get(e.keys.rain, k);
@@ -260,7 +269,8 @@ async function updateElevations(allPoints) {
   const path = join(ROOT, 'data', 'station_elevation.json');
   let file = { source: 'NRCan CDEM (Canadian Digital Elevation Model), 16 m cloud-optimised GeoTIFF, EPSG:3979 — Open Government Licence – Canada', url: CDEM_COG, stations: {} };
   try { const f = JSON.parse(readFileSync(path, 'utf8')); if (f?.stations) file = { ...file, ...f }; } catch (_) {}
-  const missing = allPoints.filter(p => file.stations[p.name]?.elev == null);
+  // A station outside the CDEM (US border stations) is recorded with elev null so it is not retried every run
+  const missing = allPoints.filter(p => !(p.name in file.stations));
   if (!missing.length) { log('elevation: all stations present'); return; }
   log(`elevation: ${missing.length} stations to look up in the CDEM COG`);
   const { fromUrl } = await import('geotiff');
@@ -273,12 +283,14 @@ async function updateElevations(allPoints) {
     try {
       const [x, y] = lcc3979(p.lat, p.lon);
       const px = Math.floor((x - x0) / (x1 - x0) * W), py = Math.floor((y1 - y) / (y1 - y0) * H);
-      if (px < 0 || py < 0 || px >= W || py >= H) return;
-      const r = await img.readRasters({ window: [px, py, px + 1, py + 1] });
-      const v = r[0][0];
-      if (v == null || v === nodata || !isFinite(v) || v < -500 || v > 9000) return;
-      file.stations[p.name] = { lat: +p.lat.toFixed(4), lon: +p.lon.toFixed(4), elev: Math.round(v) };
-      okN++;
+      let elev = null;
+      if (px >= 0 && py >= 0 && px < W && py < H) {
+        const r = await img.readRasters({ window: [px, py, px + 1, py + 1] });
+        const v = r[0][0];
+        if (v != null && v !== nodata && isFinite(v) && v > -500 && v < 9000) elev = Math.round(v);
+      }
+      file.stations[p.name] = { lat: +p.lat.toFixed(4), lon: +p.lon.toFixed(4), elev };
+      if (elev != null) okN++;
     } catch (e) { console.warn(`  elev fail ${p.name}: ${e.message}`); }
   }, 4);
   file.generated = new Date().toISOString();

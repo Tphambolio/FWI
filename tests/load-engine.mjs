@@ -11,11 +11,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-export const CORE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'core', 'fwi-core.js');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+export const CORE_PATH = join(ROOT, 'core', 'fwi-core.js');
+export const WEATHER_CONFIG_PATH = join(ROOT, 'config', 'weather.js');
+export const GEM_PATH = join(ROOT, 'core', 'gem.js');
 
-/** Run [province module, core] into an existing vm context, in page order. */
+/** Run [province module, config/weather.js, core/gem.js, core] into an existing vm context, in page order. */
 export function runEngine(ctx, provincePath) {
   vm.runInContext(readFileSync(provincePath, 'utf8'), ctx, { filename: provincePath });
+  vm.runInContext(readFileSync(WEATHER_CONFIG_PATH, 'utf8'), ctx, { filename: WEATHER_CONFIG_PATH });
+  vm.runInContext(readFileSync(GEM_PATH, 'utf8'), ctx, { filename: GEM_PATH });
   vm.runInContext(readFileSync(CORE_PATH, 'utf8'), ctx, { filename: CORE_PATH });
 }
 

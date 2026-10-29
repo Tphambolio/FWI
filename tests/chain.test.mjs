@@ -28,7 +28,7 @@ for (const e of ENGINES) {
   test(`${e.prov}: fetchStationData with yesterday's cwfis_prev entry steps it once with today's weather`, async () => {
     const h = makeContext(e.path, { now: post, mocks: { prev: prevPayload(post, rep(YDAY)) } });
     const { fwi, weather } = await h.run(`fetchStationData(${stn(e)})`);
-    assert.match(weather.source, /^Open-Meteo NWP \(noon LST\)/);
+    assert.match(weather.source, /^ECCC GEM \(GeoMet\) · noon LST/);
     close(fwi.dc, refDC(weather.temp, weather.rain, 7, e.prevDC), 'one Van Wagner day');
     assert.notEqual(fwi.ffmc, e.prevFFMC);
   });

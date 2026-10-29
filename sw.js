@@ -15,7 +15,7 @@
  *     network refreshes it; an older copy is only the fallback for a failed or
  *     slow (> NET_TIMEOUT_MS) network, so the data tiers keep seeing the day's
  *     mirror. No data-tier or science logic lives here.
- *   Third-party (CWFIS, ECCC, Open-Meteo, ArcGIS tiles, CDNs, fonts)
+ *   Third-party (CWFIS, ECCC, Open-Meteo fallback, ArcGIS tiles, CDNs, fonts)
  *     network-first with cache fallback; failed responses (non-2xx) are never
  *     cached. Analytics and payment hosts are never cached or intercepted.
  *
@@ -28,7 +28,7 @@
  */
 'use strict';
 
-const VERSION = '149';                     // = ?v= on fwi.js / core/fwi-core.js script tags
+const VERSION = '150';                     // = ?v= on fwi.js / core/fwi-core.js script tags
 const SHELL_CACHE = `pyra-shell-v${VERSION}`;
 const DATA_CACHE = `pyra-data-v${VERSION}`;
 const RUNTIME_CACHE = 'pyra-runtime-v1';   // third-party responses; capped, survives version bumps
@@ -62,6 +62,8 @@ const PRECACHE = [
   'core/pwa.js',
   'core/telemetry.js',
   'config/telemetry.js',
+  'config/weather.js',
+  'core/gem.js',
   'manifest.webmanifest',
   'icons/pyra-192.png',
   'icons/pyra-512.png',

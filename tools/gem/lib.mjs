@@ -44,7 +44,9 @@ export const MODELS = {
   },
   gdps: {
     code: 'G', res: '15 km',
-    layers: { temp: 'GDPS_15km_AirTemp_2m', rh: 'GDPS_15km_RelativeHumidity_2m', wind: 'GDPS_15km_WindSpeed_10m', wdir: 'GDPS_15km_WindDir_10m', rain: 'GDPS_15km_Precip-Accum1h', rain3h: 'GDPS_15km_Precip-Accum3h' },
+    // rain3h covers the 3-hourly tail to ~+168 h; beyond it the run-total
+    // accumulation (rainTot) is differenced between the bracketing instants.
+    layers: { temp: 'GDPS_15km_AirTemp_2m', rh: 'GDPS_15km_RelativeHumidity_2m', wind: 'GDPS_15km_WindSpeed_10m', wdir: 'GDPS_15km_WindDir_10m', rain: 'GDPS_15km_Precip-Accum1h', rain3h: 'GDPS_15km_Precip-Accum3h', rainTot: 'GDPS_15km_Precip-Accum' },
     rainKind: '1h',
   },
 };
@@ -135,6 +137,10 @@ export function chooseSources(startMs, n, caps) {
   const out = new Array(n).fill(null);
   for (let i = 0; i < n; i++) {
     const t = startMs + i * HOUR;
+    // Hours at or before the newest HRDPS run start are history: the previous
+    // file's short-lead HRDPS values (or a backfill from an older run) beat a
+    // coarser model's forecast for the same hour, so leave them null here.
+    if (caps.hrdps?.ref != null && t <= caps.hrdps.ref) continue;
     // Only forecast hours (t > run start) — analysis hour 0 has no accumulated rain yet
     if (has('hrdps', t) && rain('hrdps', t) && t > caps.hrdps.ref) out[i] = { model: 'hrdps', code: 'H' };
     else if (has('rdps', t) && rain('rdps', t) && t > caps.rdps.ref) out[i] = { model: 'rdps', code: 'R' };
@@ -147,7 +153,15 @@ export function chooseSources(startMs, n, caps) {
       for (const x of times) { if (x <= t) t0 = x; if (x >= t && t1 === null) t1 = x; }
       if (t0 !== null && t1 !== null && t1 - t0 === 3 * HOUR) out[i] = { model: 'gdps', code: 'g', t0, t1 };
       else if (t0 === t && has('gdps', t)) out[i] = { model: 'gdps', code: 'g', t0: t - 3 * HOUR, t1: t };
-      if (out[i] && caps.gdps.rain3hSet && !caps.gdps.rain3hSet.has(out[i].t1)) out[i].noRain = true;
+      // Rain for the three hours (t0, t1]: Precip-Accum3h(t1)/3 where that layer
+      // reaches; beyond it (Precip-Accum(t1) − Precip-Accum(t0))/3 from the
+      // run-total layer; null only if neither is listed.
+      if (out[i]) {
+        const g = caps.gdps;
+        if (g.rain3hSet?.has(out[i].t1)) out[i].rainFrom = '3h';
+        else if (g.rainTotSet?.has(out[i].t1) && g.rainTotSet?.has(out[i].t0)) out[i].rainFrom = 'total';
+        else out[i].noRain = true;
+      }
     }
   }
   return out;

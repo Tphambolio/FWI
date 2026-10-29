@@ -7,7 +7,7 @@ Checks per page:
   - HTTP 200
   - Danger rating label present (Low/Moderate/High/Very High/Extreme)
   - Temperature in -40..50°C (plausible, not NaN/null) — where applicable
-  - Weather source label present (CWFIS/SWOB/Open-Meteo)
+  - Weather source label present (CWFIS/SWOB/ECCC GEM)
   - No JS errors in console
 
 Run: python3 tests/browser_smoke.py
@@ -38,7 +38,7 @@ CHECKS = [
 ]
 
 DANGER_LABELS = {'Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'}
-SOURCE_LABELS  = {'CWFIS', 'SWOB', 'Open-Meteo', 'NWP', 'MSC'}
+SOURCE_LABELS  = {'CWFIS', 'SWOB', 'GEM', 'ECCC', 'Open-Meteo', 'NWP', 'MSC'}
 JS_PAINT_MS    = 3000  # extra wait after "load" for JS to render initial content
 
 passed = 0

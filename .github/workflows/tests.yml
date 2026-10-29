@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Install the GEM Action's GeoTIFF reader (lets tests/gem_action.test.mjs decode a fixture)
+        run: npm install --prefix tools/gem --no-audit --no-fund
       - name: Run FWI/FBP validation suite
         run: node --test "tests/**/*.test.mjs"
       - name: AB/BC parity (shared science sections + BC-specific functions)

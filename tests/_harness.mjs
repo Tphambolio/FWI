@@ -99,6 +99,34 @@ export function openMeteoFor(url, now, { temp, rh = () => 35, wind = () => 12, p
   };
 }
 
+/**
+ * data/gem/<prov>.json payload (the ECCC GEM point series the 6-hourly Action
+ * writes) built from an Open-Meteo-shaped hourly payload, with one stored point
+ * per `points` entry. The default context serves this from the test's own
+ * openmeteo mock, so the GEM path (the primary one) sees exactly the values the
+ * Open-Meteo path would — tests then differ only in source labels and routing.
+ *   opts.generated  ISO stamp (default now − 1 h → fresh); opts.src per-hour codes
+ */
+export function gemFileFor(payload, now, points, { generated, src } = {}) {
+  const h = payload?.hourly || payload;
+  if (!h?.time?.length) return { $status: 404 };
+  const n = h.time.length;
+  const stations = {};
+  for (const p of points) {
+    stations[p.name] = {
+      lat: p.lat, lon: p.lng ?? p.lon,
+      temp: [...h.temperature_2m], rh: [...h.relative_humidity_2m], wind: [...h.wind_speed_10m],
+      wdir: [...(h.wind_direction_10m || Array(n).fill(270))], rain: [...h.precipitation],
+    };
+  }
+  const run = new Date(Math.floor(now / (6 * HOUR)) * 6 * HOUR).toISOString();
+  return {
+    schema: 1, province: 'test', generated: generated ?? new Date(now - HOUR).toISOString(),
+    model_runs: { hrdps: run, rdps: run, gdps: run },
+    start: h.time[0] + ':00Z', step_h: 1, n, src: src ?? 'H'.repeat(n), stations,
+  };
+}
+
 /** data/cwfis_prev.json payload with one AB and one BC station. */
 export function prevPayload(now, repDate, overrides = {}) {
   return {
@@ -172,6 +200,8 @@ const json = (body, status = 200) => ({
 
 /** Route a URL to a mock-handler key. */
 export function routeOf(url) {
+  if (url.includes('data/gem/')) return 'gem';
+  if (url.includes('station_elevation.json')) return 'elev';
   if (url.includes('cwfis_prev.json')) return 'prev';
   if (url.includes('bcws_noon.json')) return 'bcws';
   if (url.includes('aef_pmwx.csv')) return 'aef';
@@ -207,6 +237,18 @@ export function makeContext(enginePath, { now, mocks = {}, storage: init = {}, i
     naefs: { features: [] },
     cwfisOther: { features: [] },
     prev: { $status: 404 }, bcws: { $status: 404 }, aef: { $status: 404 }, other: { $status: 404 },
+    elev: { $status: 404 },
+    // GEM point series (primary NWP path): derived from this context's openmeteo
+    // mock — a 12-day window from 00 UTC two days ago at both reference stations.
+    // An openmeteo mock that errors or carries no `hourly` (e.g. the elevation
+    // stub) yields 404 here, so those tests exercise the Open-Meteo fallback.
+    gem: () => {
+      const om = 'openmeteo' in mocks ? mocks.openmeteo : defaults.openmeteo;
+      let payload = om;
+      try { if (typeof om === 'function') payload = om('https://api.open-meteo.com/v1/forecast?past_days=2&forecast_days=10&timezone=UTC'); } catch (_) { payload = null; }
+      if (!payload || payload instanceof Error || !payload.hourly) return { $status: 404 };
+      return gemFileFor(payload, now ?? Date.now(), ENGINES.map(e => ({ name: e.name, lat: e.lat, lng: e.lng })));
+    },
   };
   const ctx = {
     window: {},
