@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="theme-color" content="#0b1326"/>
+<link rel="manifest" href="../manifest.webmanifest"/>
+<link rel="icon" href="../icons/pyra-192.png" type="image/png" sizes="192x192"/>
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-title" content="Pyra"/>
+<title>Pyra · Privacy</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0b1326; color: #dae2fd; font: 15px/1.6 Inter, system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: linear-gradient(#161f35, #0b1326); border-bottom: 1px solid #1e2740; }
+  header a { color: #7bd0ff; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+  header h1 { margin: 0; font: 700 18px 'Space Grotesk', Inter, sans-serif; color: #7bd0ff; }
+  main { max-width: 46rem; margin: 0 auto; padding: 24px 16px 140px; }
+  h2 { font: 700 15px 'Space Grotesk', Inter, sans-serif; color: #7bd0ff; margin: 28px 0 8px; text-transform: uppercase; letter-spacing: .08em; }
+  p, li { color: #cbd5e1; }
+  strong { color: #dae2fd; }
+  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: #131b2e; padding: 1px 5px; border-radius: 4px; color: #dae2fd; }
+  a { color: #7bd0ff; }
+  .card { background: #0f1829; border: 1px solid #1e2740; border-radius: 14px; padding: 16px 18px; margin: 12px 0; }
+  .lede { font-size: 16px; color: #dae2fd; }
+  footer { border-top: 1px solid #1e2740; margin-top: 40px; padding-top: 16px; text-align: center; font-size: 11px; color: #94a3b8; }
+  footer a { display: inline-flex; align-items: center; min-height: 44px; margin: 0 8px; }
+  .amber { color: #fcd34d; }
+</style>
+</head>
+<body>
+<header>
+  <a href="../station_detail/code.html" aria-label="Back to the station page">&larr; Pyra</a>
+  <h1>Privacy</h1>
+</header>
+<main id="main" tabindex="-1">
+  <p class="lede">Pyra is a static website. There are no accounts, no logins, no cookies, no advertising, no fingerprinting, and nothing about you is sold or shared.</p>
+
+  <h2>What stays on your device</h2>
+  <div class="card">
+    <p>Your browser keeps a few settings so the app opens the way you left it: the station you chose, your fuel types, grass curing and PS%, the alarm threshold, the last FWI chain Pyra computed for a station (the "holding cache" that fills in when CWFIS is late), and — if you tap it — your last "Was this useful today?" rating. These live in the browser's local storage on your device. They are never sent to Pyra.</p>
+    <p>If you install Pyra (or just open it), the browser's service worker also keeps a copy of the pages and of the last data it fetched, so the last briefing you saw opens again with no signal. The page then shows an amber strip: <span class="amber">"Offline — showing data cached at &lt;time&gt;"</span>. Clearing the site's data in your browser removes all of this.</p>
+  </div>
+
+  <h2>What leaves your device</h2>
+  <div class="card">
+    <p><strong>Weather data requests.</strong> To show fire weather, the page fetches data straight from the public services — NRCan CWFIS, ECCC MSC (SWOB), Open-Meteo, Alberta Wildfire's mirror, BCWS data in this repository, and Esri map tiles. Those requests carry the coordinates of the station or map point you are looking at (that is how weather is fetched) and, like any web request, the services see your IP address and browser type. Pyra adds no identifier of its own. Each service has its own privacy terms.</p>
+    <p><strong>Location.</strong> The station page may ask your browser for your location to pick the nearest station. The answer is used in the page only, to choose a station; it is not stored or sent to Pyra.</p>
+    <p><strong>Usage counting.</strong> <code>config/telemetry.js</code> in the repository sets one of three modes:</p>
+    <ul>
+      <li><code>none</code> — nothing is sent.</li>
+      <li><code>cloudflare</code> — the page loads Cloudflare Web Analytics, a cookieless counter that records page views and page-speed metrics without cookies, fingerprinting or personal data. <strong>This is the mode currently in use.</strong></li>
+      <li><code>post</code> — once per page view the browser sends one small record to an endpoint run for Pyra, containing exactly: the page id (for example <code>ab/station</code>), province, app version, whether Pyra is running as an installed app, a coarse viewport class (<code>phone</code> / <code>desktop</code>), the record type, and a random session id that lives only in the tab's session storage and vanishes when the tab closes. Never the station you chose, never coordinates, never anything you typed.</li>
+    </ul>
+    <p><strong>Feedback.</strong> The "Feedback" button offers a 1–5 rating and a text box. The rating is sent only in <code>post</code> mode (same fields as above plus the rating); otherwise it is just noted on your device. "Open a GitHub issue" and "Email" open a new tab or your mail app with the page, version, province and your text prefilled — nothing is posted until you send it there yourself, and your station or location is only included if you type it.</p>
+  </div>
+
+  <h2>Third parties the pages load</h2>
+  <div class="card">
+    <p>Tailwind CSS (cdn.tailwindcss.com), Leaflet and plugins (cdn.jsdelivr.net), Google Fonts, Esri ArcGIS tiles, and — in <code>cloudflare</code> mode — Cloudflare Web Analytics. The PayPal donate button only contacts PayPal when you press it.</p>
+  </div>
+
+  <h2>Questions</h2>
+  <div class="card">
+    <p>Open an issue at <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener">github.com/Tphambolio/FWI/issues</a> or message <a href="https://x.com/lactucafarm" target="_blank" rel="noopener">@lactucafarm</a>. The source text of this page is <code>docs/privacy.md</code> in the repository.</p>
+    <p style="font-size:12px;color:#94a3b8">Last updated 2026-10-25.</p>
+  </div>
+
+  <footer>
+    <a href="../station_detail/code.html">Alberta</a> · <a href="../bc/station_detail/code.html">British Columbia</a> · <a href="https://github.com/Tphambolio/FWI" target="_blank" rel="noopener">GitHub</a><br/>
+    <span class="amber">For informational use only — not for operational fire management decisions</span><br/>
+    © 2026 Travis Kennedy · Free to use · No warranty
+  </footer>
+</main>
+<script src="../config/telemetry.js?v=149"></script><script src="../core/telemetry.js?v=149"></script><script src="../core/pwa.js?v=149"></script>
+</body>
+</html>
