@@ -107,7 +107,9 @@ await Promise.all([
     const j = JSON.parse(r.text);
     return `parses, issued ${j.issued || 'none'}, ${(j.products || []).length} products`;
   }),
-  check('Pyra ab-redflag workflow ran (14 h)', 'FAIL', () => workflowRan('ab-redflag.yml', 14)),
+  // Scheduled runs on GitHub start up to ~3 h late, so the 17:30 / 22:30 UTC slots land ~20 h apart at worst.
+  // 14 h raised a false alarm every afternoon (issues #9–#12); 26 h still catches a whole missed day.
+  check('Pyra ab-redflag workflow ran (26 h)', 'FAIL', () => workflowRan('ab-redflag.yml', 26)),
   check('Pyra cwfis-daily workflow ran (26 h)', 'FAIL', () => workflowRan('cwfis-daily.yml', 26)),
   check('FireSim API health', 'FAIL', async () => {
     const r = await get(`${FIRESIM_API}/api/v1/health`);
