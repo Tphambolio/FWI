@@ -41,7 +41,7 @@ for (const e of ENGINES) {
     const h = makeContext(e.path, { now: post, mocks: { prev: prevPayload(post, rep(YDAY)) } });
     const w = await primary(h, e);
     assert.equal(w.fwiFromCWFIS, false);
-    assert.match(w.source, /^Open-Meteo NWP/);
+    assert.match(w.source, /^ECCC GEM \(GeoMet\)/);
     const r = await init(h, e);
     assert.equal(r._cachedFWI.src, 'daily');
     assert.equal(r._cachedFWI.final, false);
@@ -104,17 +104,17 @@ for (const e of ENGINES) {
     assert.equal(w.distKm, 1);
   });
 
-  test(`${e.prov}: CWFIS, SWOB, BCWS and cwfis_prev all fail → Open-Meteo NWP noon LST`, async () => {
+  test(`${e.prov}: CWFIS, SWOB, BCWS and cwfis_prev all fail → ECCC GEM (GeoMet) noon LST`, async () => {
     const boom = new TypeError('Failed to fetch');
     const h = makeContext(e.path, { now: post, mocks: { cwfis: boom, swob: boom, bcws: boom, prev: boom } });
     const w = await primary(h, e);
-    assert.equal(w.source, 'Open-Meteo NWP (noon LST)');
+    assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST');
     assert.equal(w.temp, e.noonUTC + 0.15, `${e.noonUTC} UTC slot selected`);
     const r = await init(h, e);
     assert.equal(r._inactive, true);
   });
 
-  test(`${e.prov}: when Open-Meteo also fails, initFWI shows "Data unavailable"`, async () => {
+  test(`${e.prov}: when the GEM file and the Open-Meteo fallback also fail, initFWI shows "Data unavailable"`, async () => {
     const boom = new TypeError('Failed to fetch');
     const h = makeContext(e.path, { now: post, mocks: { cwfis: boom, swob: boom, bcws: boom, prev: boom, openmeteo: boom } });
     await h.run(`initFWI(${e.lat}, ${e.lng}, '${e.name}')`);
@@ -132,7 +132,7 @@ test('AB: pre-noon MST with CWFIS chain present → holding cache written, weath
   } });
   const w = await primary(h, AB);
   assert.equal(w.fwiFromCWFIS, false, 'yesterday chain not presented as today');
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST forecast, pre-noon');
   assert.equal(w.temp, 19.15, 'Open-Meteo slot 2026-07-15T19:00 (noon MST)');
   assert.equal(swobCalls(h), 0, 'SWOB is not consulted before noon');
   const hold = JSON.parse(h.storage.get(h.run(`_holdKey(${AB.lat}, ${AB.lng})`)));
@@ -152,7 +152,7 @@ test('AB: pre-noon MST with only SWOB → SWOB skipped, noon-LST NWP forecast us
   const pre = lstClock(AB, 7, 15, 9);
   const h = makeContext(AB.path, { now: pre, mocks: { swob: fc([swobNear(AB, pre)]) } });
   const w = await primary(h, AB);
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST forecast, pre-noon');
   assert.equal(swobCalls(h), 0);
 });
 
@@ -209,7 +209,7 @@ test('BC: a BCWS mirror dated yesterday (PST) is ignored', async () => {
   const post = lstClock(BC, 7, 15, 13);
   const h = makeContext(BC.path, { now: post, mocks: { bcws: bcwsMirror(YDAY) } });
   const w = await primary(h, BC);
-  assert.match(w.source, /^Open-Meteo NWP/);
+  assert.match(w.source, /^ECCC GEM \(GeoMet\)/);
 });
 
 test('BC: BCWS chain + disagreeing SWOB → SWOB weather, BCWS chain, chainSource records BCWS', async () => {
@@ -231,7 +231,7 @@ function swobFeature322(now) {
 
 for (const [label, hour, expect] of [
   // pre-noon: a morning sensor reading isn't the day's fire weather → noon-LST NWP forecast
-  ['pre-noon (09:00 PST)', 9, /^Open-Meteo NWP \(noon LST forecast, pre-noon\)$/],
+  ['pre-noon (09:00 PST)', 9, /^ECCC GEM \(GeoMet\) · noon LST forecast, pre-noon$/],
   ['post-noon (13:00 PST)', 13, /^MSC SWOB · MSC AIRPORT/],
 ]) {
   test(`BC: ${label}, CWFIS chain dated yesterday is not primary → ${hour < 12 ? 'noon-LST NWP' : 'SWOB'} used`, async () => {
@@ -251,7 +251,7 @@ test('BC: pre-noon, yesterday\'s CWFIS chain and no SWOB → NWP + initFWI steps
     cwfis: fc([stationFeature(BC, { rep_date: rep(YDAY) })]), prev: prevPayload(pre, rep(YDAY)),
   } });
   const w = await primary(h, BC);
-  assert.equal(w.source, 'Open-Meteo NWP (noon LST forecast, pre-noon)');
+  assert.equal(w.source, 'ECCC GEM (GeoMet) · noon LST forecast, pre-noon');
   assert.equal(w.temp, 20.15, 'noon-PST slot 2026-07-15T20:00');
   const r = await init(h, BC);
   assert.equal(r._cachedFWI.src, 'daily');
@@ -276,7 +276,7 @@ test('BC: CWFIS weather-only dated yesterday is not used → NWP', async () => {
     cwfis: fc([cwfisWxOnly({ name: BC.cwfisName, lat: BC.lat, lon: BC.lng, rep_date: rep(YDAY) })]),
   } });
   const w = await primary(h, BC);
-  assert.match(w.source, /^Open-Meteo NWP/);
+  assert.match(w.source, /^ECCC GEM \(GeoMet\)/);
 });
 
 // ─── SWOB noon-LST record selection (2026-10-08) ─────────────────────────────

@@ -490,6 +490,11 @@ function _terrainOpts(windDir = null) {
  * Slopes < 2 % are treated as flat (aspect null). null on failure.
  */
 async function _terrainAt(lat, lng) {
+  // Ad-hoc map pin: the only remaining live elevation-API call, allowed solely while
+  // config/weather.js keeps fallback: 'open-meteo' (station elevations come from the
+  // NRCan CDEM file). With fallback 'none' the pin reads no slope — enter it manually.
+  const gem = (typeof PyraGEM !== 'undefined' && PyraGEM) || null;
+  if (gem && !gem.fallbackAllowed()) return null;
   const d = 100, dLat = d / 111320, dLng = d / (111320 * Math.cos(lat * Math.PI / 180));
   const pts = [[lat, lng], [lat + dLat, lng], [lat - dLat, lng], [lat, lng + dLng], [lat, lng - dLng]];
   try {
@@ -554,20 +559,29 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 }
 
 /**
- * Ground elevation (m ASL) at a point — Open-Meteo elevation API (Copernicus
- * 90 m DEM), cached per point. null on failure (FMC then uses the no-elevation
- * form, as before). Used for foliar moisture content (FCFDG 1992 Eqs. 3-4).
+ * Ground elevation (m ASL) at a station — data/station_elevation.json (NRCan
+ * CDEM 16 m, written by the gem-points Action; core/gem.js), cached per point.
+ * The Open-Meteo elevation API (Copernicus 90 m) is consulted only when the
+ * station is not in the file AND config/weather.js allows the fallback. null
+ * on failure (FMC then uses the no-elevation form, as before). Used for foliar
+ * moisture content (FCFDG 1992 Eqs. 3-4).
  */
 const _elevCache = new Map();
 async function _elevationFor(lat, lng) {
   const key = `${(+lat).toFixed(3)},${(+lng).toFixed(3)}`;
   if (_elevCache.has(key)) return _elevCache.get(key);
   let elev = null;
-  try {
-    const d = await fetchWithTimeout(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`, {}, 6000).then(r => r.json());
-    const v = Array.isArray(d?.elevation) ? d.elevation[0] : d?.elevation;
-    if (typeof v === 'number' && isFinite(v) && v > -500 && v < 9000) elev = v;
-  } catch (_) {}
+  const gem = (typeof PyraGEM !== 'undefined' && PyraGEM) || null;
+  let fromFile;
+  if (gem) { try { fromFile = await gem.elevation(lat, lng); } catch (_) { fromFile = undefined; } }
+  if (typeof fromFile === 'number') elev = fromFile;
+  else if (!gem || gem.fallbackAllowed()) {
+    try {
+      const d = await fetchWithTimeout(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`, {}, 6000).then(r => r.json());
+      const v = Array.isArray(d?.elevation) ? d.elevation[0] : d?.elevation;
+      if (typeof v === 'number' && isFinite(v) && v > -500 && v < 9000) elev = v;
+    } catch (_) {}
+  }
   _elevCache.set(key, elev);
   return elev;
 }
@@ -967,6 +981,57 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
     clearTimeout(timer);
   }
 }
+
+// ─── Model weather (NWP): ECCC GEM point series, Open-Meteo only as a flagged fallback ───
+/**
+ * Hourly model weather for a point, Open-Meteo shaped
+ *   { time: ['YYYY-MM-DDTHH:00' UTC], temperature_2m, relative_humidity_2m, wind_speed_10m (km/h),
+ *     wind_direction_10m, precipitation (mm/h), thunderstorm_probability?, _source }
+ * so the existing parsers (noon-LST / 16:00 sampling, 24-h rain windows) are untouched.
+ *
+ *   1. data/gem/<prov>.json via core/gem.js — ECCC GEM read from MSC GeoMet by the
+ *      6-hourly Action (HRDPS → RDPS → GDPS). _source 'gem', or 'gem-stale' when the
+ *      file is older than config/weather.js max_age_h.
+ *   2. api.open-meteo.com (models=gem_seamless) — only when config/weather.js has
+ *      fallback: 'open-meteo' AND the file is missing/stale or lacks the point.
+ *      _source 'open-meteo'. Must be switched off ('none') for commercial use.
+ * With fallback 'none' a stale file is still used; a missing one throws, so the
+ * calling tier fails over exactly as a failed network call did before.
+ *
+ * opts: { pastDays, forecastDays } or { pastHours, forecastHours }, vars (Open-Meteo
+ * field list for the fallback URL), timeoutMs.
+ */
+async function _nwpHourly(lat, lng, opts = {}) {
+  const gem = (typeof PyraGEM !== 'undefined' && PyraGEM) || (typeof window !== 'undefined' && window.PyraGEM) || null;
+  const allowOM = !gem || gem.fallbackAllowed();
+  let g = null;
+  if (gem) {
+    try { g = await gem.hourly(lat, lng, opts); } catch (_) { g = null; }
+    if (g && !(g._source === 'gem-stale' && allowOM)) return g;
+  }
+  if (allowOM) {
+    const vars = opts.vars || 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation';
+    const span = opts.pastHours != null || opts.forecastHours != null
+      ? `&past_hours=${opts.pastHours ?? 0}&forecast_hours=${opts.forecastHours ?? 0}`
+      : `&past_days=${opts.pastDays ?? 0}&forecast_days=${opts.forecastDays ?? 2}`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=${vars}${span}&timezone=UTC&models=gem_seamless`;
+    const d = await fetchWithTimeout(url, { cache: 'no-cache' }, opts.timeoutMs || 12000).then(r => r.json());
+    const h = d?.hourly;
+    if (!h?.time) throw new Error('[FWI] Open-Meteo returned no hourly data');
+    h._source = 'open-meteo';
+    return h;
+  }
+  if (g) return g;   // stale GEM file, fallback disabled: better than nothing, labelled stale
+  throw new Error('[FWI] model weather unavailable: GEM file missing and Open-Meteo fallback disabled (config/weather.js)');
+}
+
+/** Human label for an _nwpHourly payload's source: 'ECCC GEM (GeoMet)' · '… stale file' · 'Open-Meteo' (fallback). */
+function _nwpLabel(h) {
+  if (h?._source === 'open-meteo') return 'Open-Meteo';
+  if (h?._source === 'gem-stale') return `ECCC GEM (GeoMet, file ${h._gem?.ageH ?? '?'} h old)`;
+  return 'ECCC GEM (GeoMet)';
+}
+const _nwpIsFallback = h => h?._source === 'open-meteo';
 
 // ─── CWFIS WFS fetch ──────────────────────────────────────────────────────────
 /**
@@ -1419,13 +1484,9 @@ function _swobCrossCheck(chain, swob) {
  * peak-burn ISI/FWI and the FBP fire behaviour, never to step the codes.
  */
 async function fetchWeather(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability` +
-    `&past_days=1&forecast_days=2&timezone=UTC&models=gem_seamless`;
-  const res = await fetchWithTimeout(url, { cache: 'no-cache' }, 12000);
-  const d = await res.json();
-  const h = d.hourly;
+  // ECCC GEM point series (GeoMet) first; Open-Meteo only as the flagged fallback — see _nwpHourly
+  const h = await _nwpHourly(lat, lng, { pastDays: 1, forecastDays: 2,
+    vars: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,thunderstorm_probability' });
   const times = h.time; // ISO strings in UTC (timezone=UTC)
 
   // Target hours by explicit LST-date ISO string: the old UTC-hour index
@@ -1462,7 +1523,11 @@ async function fetchWeather(lat, lng) {
       wind: h.wind_speed_10m[iPeak], wdir: h.wind_direction_10m[iPeak] ?? null,
     } : null,
     preNoonForecast: isPreNoon,   // the noon-LST values are a forecast (today's noon not reached yet)
-    source: isPreNoon ? 'Open-Meteo NWP (noon LST forecast, pre-noon)' : 'Open-Meteo NWP (noon LST)',
+    // Source names: the GEM file path says GeoMet; the "Open-Meteo" wording exists only on the fallback path
+    source: _nwpIsFallback(h)
+      ? (isPreNoon ? 'Open-Meteo NWP (noon LST forecast, pre-noon)' : 'Open-Meteo NWP (noon LST)')
+      : `${_nwpLabel(h)} · ${isPreNoon ? 'noon LST forecast, pre-noon' : 'noon LST'}`,
+    nwpSource: h._source,
     fwiFromCWFIS: false,
   };
 }
@@ -1844,7 +1909,8 @@ async function fetchStationDataForecast(station) {
     rain:             day.rain,
     thunderstormProb: null,
     month:            new Date().getMonth() + 1,
-    source:           `ECCC GEM · ${day.label} · Peak ~16:00 ${PROVINCE.tzLabel}`,
+    source:           `${days.nwpSource === 'open-meteo' ? 'ECCC GEM (Open-Meteo fallback)' : days.nwpSource === 'gem-stale' ? 'ECCC GEM (GeoMet, stale file)' : 'ECCC GEM (GeoMet)'} · ${day.label} · Peak ~16:00 ${PROVINCE.tzLabel}`,
+    nwpSource:        days.nwpSource,
     fwiFromCWFIS:     false,
   };
 
@@ -2258,7 +2324,8 @@ function _provenance(w, co = null, nowMs = Date.now()) {
   const network = chainSrc.startsWith('BCWS') ? 'BCWS'
     : (w.fwiFromCWFIS || w.idwMode) ? 'CWFIS'
     : src.startsWith('MSC') ? 'MSC SWOB'
-    : 'Open-Meteo';
+    : src.startsWith('Open-Meteo') ? 'Open-Meteo'   // flagged fallback path only
+    : 'ECCC GEM';
   const noonMs = d => _noonMsOn(d);
   let kind, obsMs = null;
   if (co) {
@@ -2270,7 +2337,7 @@ function _provenance(w, co = null, nowMs = Date.now()) {
   } else if (network === 'MSC SWOB') {
     kind = 'OBSERVED';
     obsMs = w.obsTime ? Date.parse(w.obsTime) : null;
-  } else if (network === 'Open-Meteo') {
+  } else if (network === 'Open-Meteo' || network === 'ECCC GEM') {
     kind = 'MODEL FORECAST';
   } else {
     kind = 'OBSERVED';
@@ -2884,18 +2951,14 @@ async function fetchForecastNAEFS(code) {
     .sort((a, b) => a._ts - b._ts);
 }
 
-/** Fetch hourly forecast from Open-Meteo, pinned to ECCC GEM (models=gem_seamless:
- *  HRDPS 2.5 km to 48 h, then RDPS 10 km, then GDPS 15 km). Pinned so provenance labels are true;
- *  the default best_match blend picked GFS at prairie stations (2026-10-10 audit). */
+/** Hourly ECCC GEM forecast (HRDPS 2.5 km to 48 h, then RDPS 10 km, then GDPS 15 km) from the
+ *  GeoMet point series (data/gem/<prov>.json); Open-Meteo gem_seamless only as the flagged fallback
+ *  (_nwpHourly). Pinned to GEM so provenance labels are true; the old unpinned best_match blend
+ *  picked GFS at prairie stations (2026-10-10 audit). Returns days[] with days.nwpSource set. */
 async function fetchForecast(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=2&forecast_days=8&models=gem_seamless`;
-  const res = await fetchWithTimeout(url, {}, 15000);
-  const d = await res.json();
-  const h = d.hourly;
+  const h = await _nwpHourly(lat, lng, { pastDays: 2, forecastDays: 8, timeoutMs: 15000 });
   const days = [];
+  days.nwpSource = h._source;
   // The hourly array starts at 00:00 UTC two days ago (past_days=2). For each
   // forecast day starting today: noon LST = PROVINCE.noonUTC (19:00 UTC AB,
   // 20:00 UTC BC — CFFDRS chain input), peak burn = PROVINCE.peakUTC (16:00
@@ -2920,6 +2983,9 @@ async function fetchForecast(lat, lng) {
     const iNoon = base + 24 * day + (clk.noonUTC - clk0.noonUTC);
     const iPeak = iNoon + (clk.peakUTC - clk.noonUTC);
     if (iNoon >= (h.time?.length ?? 0)) break;
+    // Beyond the series' horizon (nulls) stop rather than inventing the `?? 15` defaults below;
+    // NAEFS medians take over from here (fetchForecastDays).
+    if (h.temperature_2m[iNoon] == null) break;
     const rain24 = h.precipitation
       .slice(iNoon - 23, iNoon + 1)
       .reduce((s, v) => s + (v ?? 0), 0);
@@ -2944,19 +3010,16 @@ async function fetchForecast(lat, lng) {
 }
 
 /**
- * Fetch the past 23 hours of hourly data for the 24-hour trend chart.
- * Uses Open-Meteo's past_hours extension.
+ * Fetch the past 23 hours of hourly data for the 24-hour trend chart
+ * (GEM point series; Open-Meteo past_hours only on the flagged fallback).
+ * Times are UTC ISO hours and parsed as such — the old timezone=auto strings
+ * were parsed in the viewer's browser zone.
  */
 async function fetchHourly(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
-    `&timezone=auto&past_hours=23&forecast_hours=0&models=gem_seamless`;
-  const res = await fetchWithTimeout(url, {}, 12000);
-  const d = await res.json();
-  const h = d.hourly;
+  const h = await _nwpHourly(lat, lng, { pastHours: 23, forecastHours: 0,
+    vars: 'temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation' });
   return (h.time || []).map((t, i) => ({
-    time:  new Date(t),
+    time:  new Date(/Z$|[+-]\d\d:\d\d$/.test(t) ? t : t + ':00Z'),
     temp:  h.temperature_2m[i]       ?? 15,
     rh:    h.relative_humidity_2m[i]  ?? 40,
     wind:  h.wind_speed_10m[i]        ?? 10,
@@ -3109,24 +3172,24 @@ async function buildOpsOutlook() {
      <div class="mt-4"><div class="text-[11px] font-label uppercase tracking-widest text-slate-200 mb-1">Next 48 h · worst HFI class of the selected fuels, hourly</div>
        <div class="flex gap-[2px] overflow-x-auto" role="img" aria-label="Hourly HFI class for the next 48 hours">${strip}</div></div>`;
   if (note) note.textContent =
-    `Hourly FFMC (Van Wagner 1977) from the ${_opsHourly.start.obsDate} noon-LST chain; DMC/DC switch at noon LST · GEM hourly weather (Open-Meteo) · ` +
+    `Hourly FFMC (Van Wagner 1977) from the ${_opsHourly.start.obsDate} noon-LST chain; DMC/DC switch at noon LST · ECCC GEM hourly weather (${_opsHourly.hours?.nwpSource === 'open-meteo' ? 'Open-Meteo fallback' : 'GeoMet'}) · ` +
     `${fuels.map(fuelName).join(' / ')}${_siteTerrain.slope ? ` · site slope ${_siteTerrain.slope}%` : ''} · informational — verify with your FBAN.`;
 }
 
 /**
- * Hourly weather for the outlook: Open-Meteo (GEM) hourly in UTC from
- * yesterday 00 UTC to +3 days, as [{ t (ms UTC), temp, rh, wind, wdir, rain }].
+ * Hourly weather for the outlook: ECCC GEM hourly (GeoMet point series;
+ * Open-Meteo on the flagged fallback) in UTC from yesterday 00 UTC to +3 days,
+ * as [{ t (ms UTC), temp, rh, wind, wdir, rain }]. The array carries `.nwpSource`.
  */
 async function fetchHourlyOutlook(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-    `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation` +
-    `&timezone=UTC&past_days=1&forecast_days=3&models=gem_seamless`;
-  const h = (await fetchWithTimeout(url, { cache: 'no-cache' }, 12000).then(r => r.json())).hourly;
-  return (h?.time || []).map((t, i) => ({
+  const h = await _nwpHourly(lat, lng, { pastDays: 1, forecastDays: 3 });
+  const rows = (h?.time || []).map((t, i) => ({
     t: Date.parse(t + ':00Z'),
     temp: h.temperature_2m[i], rh: h.relative_humidity_2m[i], wind: h.wind_speed_10m[i],
     wdir: h.wind_direction_10m?.[i] ?? null, rain: h.precipitation[i] ?? 0,
   })).filter(x => x.temp != null && x.rh != null && x.wind != null);
+  rows.nwpSource = h._source;
+  return rows;
 }
 
 /**
@@ -3305,11 +3368,14 @@ async function fetchForecastDays(lat, lng) {
   if (ec?.length) {
     const last = dateOf(ec[ec.length - 1]);
     const tail = (na || []).filter(d => dateOf(d) > last).map(d => ({ ...d, ensembleTail: true }));
+    const via = ec.nwpSource === 'open-meteo' ? 'Open-Meteo fallback' : ec.nwpSource === 'gem-stale' ? 'GeoMet, stale file' : 'GeoMet';
+    const days = [...ec, ...tail];
+    days.nwpSource = ec.nwpSource;
     return {
-      days: [...ec, ...tail],
+      days,
       source: tail.length
-        ? `ECCC GEM noon LST (days 1–${ec.length}) + NAEFS ensemble median${naefsSt ? ' · ' + naefsSt.name : ''} (days ${ec.length + 1}–${ec.length + tail.length}, lower confidence)`
-        : 'ECCC GEM (Open-Meteo) · noon LST',
+        ? `ECCC GEM (${via}) noon LST (days 1–${ec.length}) + NAEFS ensemble median${naefsSt ? ' · ' + naefsSt.name : ''} (days ${ec.length + 1}–${ec.length + tail.length}, lower confidence)`
+        : `ECCC GEM (${via}) · noon LST`,
     };
   }
   if (na?.length) return { days: na, source: `NAEFS ensemble median (${naefsSt.name}) — GEM unavailable` };
@@ -3359,7 +3425,8 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
     // unlabelled FWI numbers). These are daily noon-LST chain values, not the
     // station page's 16:00 peak-burn headline.
     // fetchForecastDays names its source: GEM (optionally + NAEFS tail) or NAEFS-only fallback
-    const chainRole = /^NAEFS/.test(forecastSource || '') ? 'NAEFS ensemble chain' : 'GEM via Open-Meteo chain';
+    const chainRole = /^NAEFS/.test(forecastSource || '') ? 'NAEFS ensemble chain'
+      : /Open-Meteo fallback/.test(forecastSource || '') ? 'ECCC GEM chain (Open-Meteo fallback)' : 'ECCC GEM chain (GeoMet)';
     const elRole = document.getElementById('fwi-peak-window-role');
     if (elRole) elRole.textContent = `${chainRole} · daily FWI, valid noon LST ${peakDay.label}`;
 
@@ -3564,7 +3631,7 @@ async function buildForecastTrends(lat = 53.5344, lng = -113.4903, stationName =
 
 // ─── Forecast Summary Text ───────────────────────────────────────────────────
 
-function forecastSummaryText(days, results, stationName = 'Edmonton', source = 'Open-Meteo NWP') {
+function forecastSummaryText(days, results, stationName = 'Edmonton', source = 'ECCC GEM (GeoMet)') {
   const peakDay  = results.reduce((a, b) => b.fwi > a.fwi ? b : a);
   const trend    = results[results.length - 1].fwi > results[0].fwi ? 'increasing' : 'decreasing';
   const maxDanger = peakDay.danger;
@@ -3733,7 +3800,7 @@ function printProvincialBriefing(mode = 'provincial') {
   <div class="hdr-title">${briefingTitle}</div>
   <div class="hdr-meta">
     ${today} · 0600–1800 ${PROVINCE.tzLabel}<br>
-    Prepared: ${prepared} · CWFIS / MSC SWOB / Open-Meteo NWP · FWI = daily value at noon LST<br>
+    Prepared: ${prepared} · CWFIS / MSC SWOB / ECCC GEM (GeoMet) · FWI = daily value at noon LST<br>
     <strong>Pyra (unofficial — verify with FBAN)</strong>
   </div>
 </div>
@@ -3987,14 +4054,15 @@ async function printStationBriefing() {
 
   // Source label
   const srcLabel = (w?.stationName && (w?.source || '').startsWith('CWFIS'))
-    ? `CWFIS · ${w.stationName}` : (w?.source || 'Open-Meteo NWP');
+    ? `CWFIS · ${w.stationName}` : (w?.source || 'ECCC GEM (GeoMet)');
 
-  // Forecast source label — NAEFS days carry a stationName; Open-Meteo/GEM days do not
+  // Forecast source label — NAEFS days carry a stationName; GEM days do not
   const { days: fDays, results: fResults } = _forecastCache;
   const nEc = fResults.filter(x => !x.ensembleTail).length;
+  const fVia = fDays?.nwpSource === 'open-meteo' ? 'Open-Meteo fallback' : 'GeoMet';
   const fSrcLabel = fResults.some(x => x.ensembleTail)
-    ? `ECCC GEM (days 1–${nEc}) + NAEFS ensemble median (later days, lower confidence, marked *)`
-    : 'ECCC GEM · Open-Meteo';
+    ? `ECCC GEM (${fVia}; days 1–${nEc}) + NAEFS ensemble median (later days, lower confidence, marked *)`
+    : `ECCC GEM (${fVia})`;
   let forecastRows = '';
   if (fResults.length > 0) {
     const _todayLocal    = _localDateStr();
@@ -4789,7 +4857,7 @@ async function buildD1Card() {
     const past = pr ? ` (FWI ${pr.fwi.toFixed(1)}${pcl ? `, HFI ${pcl.num} · ${Math.round(pr.fbp.hfi).toLocaleString()} kW/m in ${FUEL_TYPES[_savedFuelCode()]?.name || _savedFuelCode()}` : ''})` : '';
     setTxt('fwi-today-desc', `Today's 16:00 peak has passed${past}. Planning view for the next operational period: tomorrow's fuel-moisture codes, carried forward from today's observation, with the forecast 16:00 weather (GEM).`);
     const tp = document.getElementById('fwi-today-prov');
-    if (tp) tp.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="Forecast for tomorrow's 16:00 peak burn: GEM weather (Open-Meteo) on the chain carried forward from today's observed codes">FORECAST</span> <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">GEM</span>`;
+    if (tp) tp.innerHTML = `<span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}" title="Forecast for tomorrow's 16:00 peak burn: ECCC GEM weather (GeoMet point series) on the chain carried forward from today's observed codes">FORECAST</span> <span class="pyra-chip" style="${PROV_LEVEL_STYLE.neutral}">GEM</span>`;
   } else {
     setTxt('fwi-today-desc', "Today at the 16:00 peak burn: today's fuel-moisture codes with the forecast 16:00 weather shown in this row (GEM).");
     _renderSummaryProv();

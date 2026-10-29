@@ -1,0 +1,10 @@
+{
+  "name": "pyra-gem-points",
+  "private": true,
+  "description": "ECCC GeoMet (WCS) → per-station GEM hourly series for Pyra (data/gem/*.json). Run from the repo root: npm install --prefix tools/gem && node tools/gem/gem_points.mjs",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "geotiff": "2.1.3"
+  }
+}

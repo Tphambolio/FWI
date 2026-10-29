@@ -179,7 +179,7 @@
   <span class="font-label text-[11px] uppercase tracking-widest text-slate-300">Click headers to sort</span>
 </div>
 <p class="text-[12px] text-slate-300 mb-4 leading-relaxed">
-  Live observations from Alberta fire weather stations (CWFIS WFS + AEF network). <strong class="text-on-surface">Source</strong> says where each row's FWI comes from, in plain language: <span class="text-green-300">OBSERVED</span> (station sensor or today's agency chain), <span class="text-amber-300">CARRIED</span> (yesterday's chain stepped forward one day) or <span class="text-slate-200">MODEL</span> (Open-Meteo forecast weather), with its age — amber over 3 h, red over 24 h — and the network (CWFIS · BCWS · MSC SWOB · Open-Meteo) underneath. Hover or long-press a chip for the technical detail. FWI is the daily value at noon LST. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
+  Live observations from Alberta fire weather stations (CWFIS WFS + AEF network). <strong class="text-on-surface">Source</strong> says where each row's FWI comes from, in plain language: <span class="text-green-300">OBSERVED</span> (station sensor or today's agency chain), <span class="text-amber-300">CARRIED</span> (yesterday's chain stepped forward one day) or <span class="text-slate-200">MODEL</span> (ECCC GEM forecast weather), with its age — amber over 3 h, red over 24 h — and the network (CWFIS · BCWS · MSC SWOB · ECCC GEM) underneath. Hover or long-press a chip for the technical detail. FWI is the daily value at noon LST. <strong class="text-on-surface">HFI CLS</strong> is the Byram intensity class derived using the station fuel type. Click any row's station name to jump to its detail page.
 </p>
 <div id="fwi-region-list"></div>
 </section>
@@ -202,7 +202,7 @@
     <a href="https://x.com/lactucafarm" target="_blank" rel="noopener" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">@lactucafarm</a>
     <a href="../bc/station_detail/code.html" class="inline-flex items-center min-h-[44px] hover:text-white underline-offset-2 hover:underline">British Columbia</a>
   </div>
-  <span class="text-[11px] text-slate-400 leading-relaxed">Data: NRCan CWFIS · ECCC MSC · Open-Meteo · Alberta Wildfire — OGL-Canada / CC BY 4.0</span>
+  <span class="text-[11px] text-slate-400 leading-relaxed">Data Source: Environment and Climate Change Canada (GEM via MSC GeoMet, SWOB) · NRCan CWFIS · NRCan CDEM · Alberta Wildfire — OGL-Canada · Open-Meteo (fallback only, CC BY 4.0)</span>
   <span class="text-[11px] text-amber-300 font-medium">For informational use only — not for operational fire management decisions</span>
   <span class="text-[11px] text-slate-400">© 2026 Travis Kennedy · Free to use · No warranty</span>
   <form class="donate mt-1" action="https://www.paypal.com/ncp/payment/8TN6C4ATZYXZY" method="post" target="_blank">
@@ -218,7 +218,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#e05030]/10" href="../briefing/"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=149"></script><script src="../core/fwi-core.js?v=149"></script>
+<script src="../fwi.js?v=150"></script><script src="../config/weather.js?v=150"></script><script src="../core/gem.js?v=150"></script><script src="../core/fwi-core.js?v=150"></script>
 <script>
   const _h = document.getElementById('fwi-station-network-heading');
   if (_h) _h.textContent = `Station Network — All ${FWI.ALBERTA_STATIONS.length} Stations`;
@@ -231,5 +231,5 @@
   document.getElementById('fwi-export-btn').addEventListener('click', () => FWI.printProvincialBriefing('provincial'));
   document.getElementById('fwi-export-regional-btn').addEventListener('click', () => FWI.printProvincialBriefing('regional'));
 </script>
-<script src="../config/telemetry.js?v=149"></script><script src="../core/telemetry.js?v=149"></script><script src="../core/pwa.js?v=149"></script>
+<script src="../config/telemetry.js?v=150"></script><script src="../core/telemetry.js?v=150"></script><script src="../core/pwa.js?v=150"></script>
 </body></html>

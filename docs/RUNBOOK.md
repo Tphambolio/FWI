@@ -11,13 +11,17 @@ from this repository by `.github/workflows/uptime.yml` (every 30 min, `tools/upt
 | Pyra site | GitHub Pages from `main`, https://tphambolio.github.io/FWI/ | $0 | every push to `main` (1–3 min) |
 | CWFIS / BCWS / AEF mirror | Action `cwfis-daily.yml`, 20:15 UTC daily → `data/cwfis_prev.json`, `data/bcws_noon.json`, `data/aef_pmwx.csv` | $0 | commits to `main` |
 | Alberta Red Flag relay | Action `ab-redflag.yml`, 17:30 and 22:30 UTC → `data/ab_redflag.json` (commits only when the status changes) | $0 | commits to `main` |
+| ECCC GEM point series | Action `gem-points.yml`, 03:40 / 09:40 / 15:40 / 21:40 UTC (≈ 3 h 40 after each HRDPS/RDPS cycle) → `data/gem/ab.json`, `data/gem/bc.json`, `data/station_elevation.json` (`tools/gem/`, ≈ 700–800 GeoMet WCS requests, 1.5–3 min) | $0 | commits to `main` |
 | Science/unit tests | Action `tests.yml` on push and PR | $0 | — |
 | Uptime monitor | Action `uptime.yml`, every 30 min | $0 | opens/closes an issue labelled `uptime` |
 | Daily WhatsApp threshold alert | Workstation cron 14:30 local → `tools/alerts/run-daily.sh` → OpenClaw | $0 | **depends on the workstation being on** |
 
-Pyra has no server of its own: the browser calls CWFIS (NRCan WFS), ECCC SWOB, Open-Meteo (ECCC GEM),
-Alberta Wildfire and BCWS directly, in a tiered fallback. One upstream outage degrades a tier; the page
-still loads and the provenance chip says which tier served the numbers.
+Pyra has no server of its own: the browser calls CWFIS (NRCan WFS) and ECCC SWOB directly and reads the
+repository's mirrored files (BCWS noon, AEF pmwx, CWFIS carry-over, **ECCC GEM point series**) in a tiered
+fallback. One upstream outage degrades a tier; the page still loads and the provenance chip says which tier
+served the numbers. Model weather comes from `data/gem/<prov>.json` (GeoMet, every 6 h); `config/weather.js`
+decides whether a page may still call Open-Meteo when that file is missing or > 9 h old
+(`fallback: 'open-meteo'`, the rollout default — must be `'none'` before commercial use).
 
 ## Alerts
 
@@ -38,7 +42,9 @@ still loads and the provenance chip says which tier served the numbers.
 | `CWFIS/BCWS/AEF mirror fresh` fail with the workflow passing | The mirror file is unchanged for > 36 h (upstream serving stale data) | Check https://cwfis.cfs.nrcan.gc.ca/ and https://wildfire.alberta.ca/files/pmwx.csv by hand. Nothing to fix on our side; note it in the issue. Off-season (Nov–Mar) AB stations go quiet but the files still regenerate daily. |
 | `FireSim API health/version` fail | Fly machine stopped, out of memory, or a bad deploy | FireSim runbook (`docs/runbook.md` there): `flyctl status -a firesim-api`, `flyctl logs -a firesim-api`, `flyctl machine restart <id>`; rollback with `flyctl releases` + `flyctl deploy --image`. |
 | `FireSim frontend` fail | Vercel build failed or Vercel incident | Vercel dashboard → Deployments → promote the previous production deployment. |
-| `Upstream …` WARN | Third-party outage | Nothing. If Open-Meteo returns 429 repeatedly, the free tier is being throttled: Pyra must move to ECCC MSC GeoMet or a paid plan before any commercial use (open item in the business plan). |
+| `Pyra GEM series AB/BC fresh (9 h)` fail | `gem-points.yml` did not run or failed (GeoMet outage, a layer renamed, < 90 % of coverages downloaded, push rejected), or GitHub started the scheduled run late | Open the run in Actions. Pages keep working: with `config/weather.js` `fallback: 'open-meteo'` they call Open-Meteo for model weather and label it so; with `'none'` they use the stale file and the provenance says how old it is. Network errors: re-run the job (`workflow_dispatch`). Layer or dimension change: `node tools/gem/gem_points.mjs --dry` locally shows which model/layer fails; fix `tools/gem/lib.mjs MODELS`, run `node --test tests/gem_action.test.mjs`. Push rejected: re-run (the job rebases). |
+| `Upstream ECCC GeoMet WCS` WARN | geo.weather.gc.ca outage or maintenance | Nothing. The next `gem-points.yml` run picks up; the file check above pages only if it stays stale > 9 h. |
+| `Upstream Open-Meteo GEM (fallback only)` WARN | Third-party outage | Nothing. Open-Meteo is only the fallback behind `config/weather.js`; a 429 means the free tier is throttled — if it recurs, set `fallback: 'none'` (the GEM file is the primary source). |
 | Users see times one hour off after 2026-11-01 | Their browser's time-zone data predates Alberta's/BC's clock change | Expected to be handled: Pyra formats all local times on fixed offsets (`_wallFmt`), not the browser's zone data. If it still happens, the page is cached — hard-reload; the service worker's cache name follows the `?v=` version. |
 | A page shows old numbers after a release | Browser cache / service worker | Bump `?v=` on the page's script tags (and the SW cache name) and push. Users get the new version on the next load. |
 | No WhatsApp alert came | Workstation off, OpenClaw gateway down, or no new threshold crossing (quiet mode) | `tail ~/logs/pyra-alerts.log`; `openclaw gateway status`. Exit 0 = nothing new, 10 = alert sent. This path is not monitored by the uptime workflow. |

@@ -193,7 +193,7 @@
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all text-slate-300 hover:bg-[#7bd0ff]/10" href="../science_guide/code.html"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Science</span></a>
 <a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 active:scale-95 transition-all bg-[#e05030]/15 text-[#ff8a70] font-bold" href="../briefing/" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Briefing</span></a>
 </nav>
-<script src="../fwi.js?v=149"></script><script src="../../core/fwi-core.js?v=149"></script>
+<script src="../fwi.js?v=150"></script><script src="../../config/weather.js?v=150"></script><script src="../../core/gem.js?v=150"></script><script src="../../core/fwi-core.js?v=150"></script>
 <script>
 // ─── State ─────────────────────────────────────────────────────────────────
 let _briefingData = null; // last generated data
@@ -247,7 +247,7 @@ function _lightningTifUrl(minutesBack = 0) {
   return `https://dd.weather.gc.ca/today/lightning/${date}T${time}Z_MSC_Lightning_2.5km.tif`;
 }
 
-// ─── Fetch lightning for zone: ECCC GeoTIFF → Open-Meteo fallback ────────────
+// ─── Fetch lightning for zone: ECCC GeoTIFF → NWP thunderstorm probability (Open-Meteo fallback path only) ───
 async function fetchLightningForZone(rows) {
   // ── Primary: ECCC MSC observed strikes (GeoTIFF, 2.5km, 10-min) ───────────
   try {
@@ -312,7 +312,7 @@ async function fetchLightningForZone(rows) {
     console.warn('[Lightning] ECCC GeoTIFF failed:', err.message);
   }
 
-  // ── Fallback: Open-Meteo thunderstorm_probability ─────────────────────────
+  // ── Fallback: thunderstorm_probability — only present when the Open-Meteo fallback served the weather (GEM has no such layer) ──
   const probs = rows
     .map(r => r.weather?.thunderstormProb)
     .filter(v => v != null && isFinite(v));
@@ -344,7 +344,8 @@ function rowProv(r) {
   if (!r.weather) return 'no data';
   const day = r.forecastDay?.label || '';
   const chain = r.chainDate ? ` · chain from CWFIS ${r.chainDate}` : ' · no carry-over (cold start)';
-  return `Model forecast (Open-Meteo) · valid ${day} · noon LST codes, 16:00 wind${chain}`;
+  const model = r.weather.nwpSource === 'open-meteo' ? 'ECCC GEM, Open-Meteo fallback' : 'ECCC GEM via GeoMet';
+  return `Model forecast (${model}) · valid ${day} · noon LST codes, 16:00 wind${chain}`;
 }
 
 // FWI cell colours
@@ -971,7 +972,7 @@ ${anyRedFlag ? `<div style="background:#ffe0e0;border:2px solid #c00;padding:4px
   </tr>
 </table>
 <p style="font-size:7pt;color:#555;text-align:center;margin-top:8px;border-top:1px solid #ccc;padding-top:4px">
-  Data sources: NRCan CWFIS (OGL-Canada) · ECCC MSC SWOB (OGL-Canada) · Open-Meteo ECCC GEM (CC BY 4.0) · BC Wildfire Service Datamart (OGL-BC) ·
+  Data sources: NRCan CWFIS (OGL-Canada) · ECCC MSC SWOB (OGL-Canada) · ECCC GEM via MSC GeoMet (ECCC open data licence; Open-Meteo fallback only, CC BY 4.0) · NRCan CDEM (OGL-Canada) · BC Wildfire Service Datamart (OGL-BC) ·
   CFFDRS Van Wagner &amp; Pickett 1985 · FBP FCFDG 1992 / Wotton et al. 2009 — Pyra v${new Date().getFullYear()} github.com/Tphambolio/FWI<br>
   <strong>For informational use only — verify with certified fire behaviour analyst before operational decisions</strong>
 </p>
@@ -987,6 +988,6 @@ ${anyRedFlag ? `<div style="background:#ffe0e0;border:2px solid #c00;padding:4px
 // ─── Init ──────────────────────────────────────────────────────────────────
 buildConfigUI();
 </script>
-<script src="../../config/telemetry.js?v=149"></script><script src="../../core/telemetry.js?v=149"></script><script src="../../core/pwa.js?v=149"></script>
+<script src="../../config/telemetry.js?v=150"></script><script src="../../core/telemetry.js?v=150"></script><script src="../../core/pwa.js?v=150"></script>
 </body>
 </html>

@@ -1,0 +1,51 @@
+name: Update GEM point series (ECCC GeoMet)
+
+# Every 6 h, ~3 h 40 after the 00/06/12/18Z HRDPS/RDPS cycles start (they publish
+# on GeoMet ~3–3.5 h after initialisation). Writes data/gem/ab.json, data/gem/bc.json
+# (hourly temp / RH / wind / wind dir / rain at every station, now−48 h … now+240 h,
+# HRDPS → RDPS → GDPS) and fills data/station_elevation.json for new stations.
+# The browser reads these files instead of calling a weather API per station;
+# config/weather.js decides whether Open-Meteo may still be used as a fallback.
+on:
+  schedule:
+    - cron: '40 3,9,15,21 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: gem-points
+  cancel-in-progress: false
+
+jobs:
+  update-gem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install the GeoTIFF reader (pinned, tools/gem/package.json)
+        run: npm install --prefix tools/gem --no-audit --no-fund
+
+      - name: Build data/gem/*.json from GeoMet WCS (+ station elevations from NRCan CDEM)
+        run: node tools/gem/gem_points.mjs
+
+      - name: Commit updated series
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/gem/ab.json data/gem/bc.json data/station_elevation.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          # Label with the HRDPS run the series were built from
+          run=$(node -p "require('./data/gem/ab.json').model_runs.hrdps || ''")
+          git commit -m "chore: update GEM point series (HRDPS run $run)"
+          git pull --rebase origin main
+          git push

@@ -95,6 +95,18 @@ for (const page of APP_PAGES) {
     const order = ['config/telemetry.js', 'core/telemetry.js', 'core/pwa.js'].map(f => html.indexOf(f));
     assert.ok(order[0] < order[1] && order[1] < order[2], 'config/telemetry.js before core/telemetry.js before core/pwa.js');
 
+    // Engine pages: province module → config/weather.js → core/gem.js → core/fwi-core.js, all at ?v=
+    if (ENGINE_PAGES.includes(page)) {
+      for (const f of ['config/weather.js', 'core/gem.js']) {
+        const tags = attr(html, new RegExp(`<script src="([^"]*${f.replace('/', '\\/')}\\?v=\\d+)"`, 'g'));
+        assert.equal(tags.length, 1, `${f} loaded once`);
+        assert.ok(tags[0].endsWith(`?v=${v}`), `${f} at ?v=${v}: ${tags[0]}`);
+        assert.ok(existsSync(resolve(dir, tags[0].split('?')[0])), `${f} src resolves`);
+      }
+      const eo = ['fwi.js?v=', 'config/weather.js', 'core/gem.js', 'core/fwi-core.js'].map(f => html.indexOf(f));
+      assert.ok(eo[0] < eo[1] && eo[1] < eo[2] && eo[2] < eo[3], 'province module before config/weather.js before core/gem.js before core/fwi-core.js');
+    }
+
     assert.doesNotMatch(html, /static\.cloudflareinsights\.com/, 'no inline Cloudflare tag — config/telemetry.js owns the provider');
     assert.ok(html.includes('<footer'), 'has a footer');
     if (!page.startsWith('privacy/')) {
@@ -154,7 +166,7 @@ test('sw.js PRECACHE lists only files that exist, and covers every page + engine
     assert.ok(!f.includes('?'), `no query strings in precache keys: ${f}`);
     assert.ok(existsSync(join(root, f)), `precache file exists: ${f}`);
   }
-  for (const must of [...APP_PAGES, ...LANDINGS, 'core/fwi-core.js', 'fwi.js', 'bc/fwi.js', 'fwi-theme.js', 'core/pwa.js', 'core/telemetry.js', 'config/telemetry.js', 'manifest.webmanifest', 'icons/pyra-192.png', 'icons/pyra-512.png']) {
+  for (const must of [...APP_PAGES, ...LANDINGS, 'core/fwi-core.js', 'fwi.js', 'bc/fwi.js', 'fwi-theme.js', 'core/pwa.js', 'core/telemetry.js', 'config/telemetry.js', 'config/weather.js', 'core/gem.js', 'manifest.webmanifest', 'icons/pyra-192.png', 'icons/pyra-512.png']) {
     assert.ok(files.includes(must), `precache includes ${must}`);
   }
 });
@@ -178,8 +190,8 @@ test('sw.js passes analytics and payment hosts through untouched', () => {
   assert.ok(hosts.has('www.paypal.com'));
 });
 
-test('core/pwa.js and core/telemetry.js are classic scripts (no import/export)', () => {
-  for (const f of ['core/pwa.js', 'core/telemetry.js', 'config/telemetry.js', 'sw.js']) {
+test('core/pwa.js, core/telemetry.js, core/gem.js and the config files are classic scripts (no import/export)', () => {
+  for (const f of ['core/pwa.js', 'core/telemetry.js', 'config/telemetry.js', 'core/gem.js', 'config/weather.js', 'sw.js']) {
     const s = read(f);
     assert.doesNotMatch(s, /^\s*(import|export)\s/m, `${f} has no ES module syntax`);
     new vm.Script(s, { filename: f }); // parses
