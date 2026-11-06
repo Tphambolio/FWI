@@ -38,6 +38,14 @@ CHECKS = [
 ]
 
 DANGER_LABELS = {'Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Extreme'}
+# A station with no observation (seasonal BCWS stations are shut down for the winter) has
+# no FFMC chain, and the page then says "pending (no chain yet)" with no danger rating
+# (2026-11-06: BC Vanderhoof Hub, station 158, absent from data/bcws_noon.json and the
+# carry-over cache). That explicit state is accepted on any page, but only when tomorrow's
+# peak-burn numbers (temperature and RH) still render, so a real regression on the page,
+# or a missing forecast, still fails.
+PENDING_TEXT = 'pending (no chain yet)'
+TOMORROW_RE = re.compile(r"tomorrow\s*·\s*peak burn[\s\S]{0,200}?temp\s*-?\d+(?:\.\d+)?\s*°c[\s\S]{0,80}?rh\s*\d+\s*%", re.I)
 SOURCE_LABELS  = {'CWFIS', 'SWOB', 'GEM', 'ECCC', 'Open-Meteo', 'NWP', 'MSC'}
 JS_PAINT_MS    = 3000  # extra wait after "load" for JS to render initial content
 
@@ -61,7 +69,8 @@ def check_page(browser, url, label, wait_until):
         # then reports the failure.
         try:
             page.wait_for_function(
-                "labels => labels.some(l => document.body.innerText.includes(l))",
+                "labels => labels.some(l => document.body.innerText.includes(l)) || "
+                "document.body.innerText.toLowerCase().includes('" + PENDING_TEXT + "')",
                 arg=sorted(DANGER_LABELS), timeout=25000)
         except Exception:
             pass
@@ -73,9 +82,11 @@ def check_page(browser, url, label, wait_until):
         temps   = re.findall(r'(-?\d+(?:\.\d+)?)\s*°C', body)
         has_src = any(s in body for s in SOURCE_LABELS)
 
-        ok  = http_ok and danger and not js_errors
+        pending = PENDING_TEXT in body.lower()
+        pending_ok = (not danger) and pending and bool(TOMORROW_RE.search(body))
+        ok  = http_ok and (danger or pending_ok) and not js_errors
         tag = 'PASS' if ok else 'FAIL'
-        print(f"  {tag}  {label}")
+        print(f"  {tag}  {label}" + ("  (PENDING: no chain yet; tomorrow renders)" if pending_ok and ok else ""))
         print(f"       http={'ok' if http_ok else resp.status if resp else '?'}  "
               f"danger={danger}  temps={temps[:2]}  source={has_src}  "
               f"wait={wait_until}  js_errs={len(js_errors)}")
@@ -83,7 +94,7 @@ def check_page(browser, url, label, wait_until):
             print(f"       JS errors: {js_errors[:3]}")
         if not http_ok:
             issues.append(f"{label}: HTTP {resp.status if resp else '?'}")
-        if not danger:
+        if not danger and not pending_ok:
             issues.append(f"{label}: no danger rating found")
         if js_errors:
             issues.append(f"{label}: JS errors: {js_errors[:2]}")
