@@ -296,6 +296,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-11-06 | `2e420ad` | feat(elevation): pin-drop slope and off-file elevation from NRCan CDEM (Geogratis), no Open-Meteo (v152) |
 | 2026-10-29 | `49f4dc8` | feat(nwp): Tier 3 model weather from the ECCC GEM point series (GeoMet); Open-Meteo only as a flagged fallback (v150) |
 | 2026-10-29 | `209cc03` | feat(gem): ECCC GeoMet point-series builder + first data/gem/{ab,bc}.json and station elevations |
 | 2026-10-29 | `037c1f3` | feat(pwa): installable app with the last briefing cached offline; privacy-respecting usage counting + Feedback button (v149) |
