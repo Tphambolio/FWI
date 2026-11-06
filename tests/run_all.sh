@@ -42,9 +42,11 @@ run_suite "calc_audit (FWI/FBP engine audit)" \
 run_suite "bc_parity (BC/AB parity + BC-specific functions)" \
   node tests/bc_parity.mjs
 
+# ── GEM chain (repo data, no network), then live network tests ───────────────
+run_suite "gem_chain (ECCC GEM 7-day from data/gem, AB+BC engines)" \
+  node tests/gem_chain_test.mjs
+
 # ── Live network tests (skip gracefully if offline) ──────────────────────────
-run_suite "live_chain (Open-Meteo 7-day, AB+BC engines)" \
-  node tests/live_chain_test.mjs
 
 run_suite "live_api (CWFIS + SWOB + NAEFS)" \
   node tests/live_api_test.mjs
