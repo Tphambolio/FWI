@@ -296,6 +296,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-11-06 | (this commit) | fix(pages): remove the stale "Open-Meteo (fallback only, CC BY 4.0)" credit from the data-source footer of the 8 station-detail, science-guide, forecast-trends and regional-summary pages (AB + BC); `config/weather.js` has `fallback: 'none'` and no page calls Open-Meteo, so the footer credits only sources actually used (approved by the PM tab, 2026-11-06). Assets v153 (`?v=` on the pages and `sw.js` VERSION, guard `tests/pwa.test.mjs`). |
 | 2026-11-06 | (this commit) | test(smoke): `tests/browser_smoke.py` accepts the page's explicit "pending (no chain yet)" state with no danger rating, but only when tomorrow's peak-burn temperature and RH still render. Cause: BC Vanderhoof Hub (station 158) had no observation (absent from `data/bcws_noon.json` and the carry-over cache) at season end, so the page correctly showed no daily FWI; the test required a rating on every page. Every other page still needs a rating, so a real outage still fails. Live smoke 11/11 and full `tests/run_all.sh` green. |
 | 2026-11-06 | `2e420ad` | feat(elevation): pin-drop slope and off-file elevation from NRCan CDEM (Geogratis), no Open-Meteo (v152) |
 | 2026-10-29 | `49f4dc8` | feat(nwp): Tier 3 model weather from the ECCC GEM point series (GeoMet); Open-Meteo only as a flagged fallback (v150) |
