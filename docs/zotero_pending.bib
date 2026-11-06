@@ -1,0 +1,26 @@
+% Pyra Sources (Zotero collection "Pyra Sources", key RAM676AU, connector target C5): entries still to import.
+% Written 2026-11-06 because Zotero was not running when the CDEM live lookup was added (PROJECT_RECORD §4, §6).
+% Import: start Zotero, select "Pyra Sources", then
+%   curl -s -X POST 'http://127.0.0.1:23119/connector/import?session=pyra-cdem' -H 'Content-Type: application/x-bibtex' --data-binary @docs/zotero_pending.bib
+% (check /connector/getSelectedCollection first). Then replace "to add" in the §4 data-sources table with the item keys
+% and delete this file. Both URLs were fetched on 2026-11-06 (HTTP 200). No unbraced month fields (they make stray "Import errors" notes).
+
+@misc{eccc_msc_geomet,
+  author       = {{Environment and Climate Change Canada}},
+  title        = {{MSC GeoMet}: geospatial web services (WMS, WCS) for Meteorological Service of Canada weather and climate data},
+  howpublished = {MSC Open Data documentation},
+  url          = {https://eccc-msc.github.io/open-data/msc-geomet/readme_en/},
+  urldate      = {2026-11-06},
+  keywords     = {pyra-source},
+  annote       = {Drives Pyra's Tier 3 model weather: gem-points.yml reads HRDPS, RDPS and GDPS coverages by WCS 2.0.1 GetCoverage and writes data/gem/ab.json and bc.json. Licence: ECCC Data Server End-use Licence, https://eccc-msc.github.io/open-data/licence/readme_en/ (attribution: Data Source: Environment and Climate Change Canada).}
+}
+
+@misc{nrcan_cdem,
+  author       = {{Natural Resources Canada}},
+  title        = {Canadian Digital Elevation Model, 1945--2011},
+  howpublished = {Open Government Portal, Government of Canada (dataset 7f245e4d-76c2-4caa-951a-45d1d2051333)},
+  url          = {https://open.canada.ca/data/en/dataset/7f245e4d-76c2-4caa-951a-45d1d2051333},
+  urldate      = {2026-11-06},
+  keywords     = {pyra-source},
+  annote       = {Drives station ground elevation for foliar moisture content (data/station_elevation.json, 16 m cloud-optimised GeoTIFF read by gem_points.mjs) and, since 2026-11-06, the slope of a dropped map pin and off-file elevations (NRCan Geogratis point service, 5 samples at +-100 m). Licence: Open Government Licence - Canada. The record marks CDEM as a legacy product that is no longer supported. The page documenting NRCan's Elevation API has moved and its usage terms were not read.}
+}

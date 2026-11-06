@@ -12,7 +12,7 @@ If you install Pyra (or just open it), the browser's service worker also keeps a
 
 ## What leaves your device
 
-**Weather data requests.** To show fire weather, the page fetches data straight from the public services — NRCan CWFIS, ECCC MSC (SWOB), Open-Meteo, Alberta Wildfire's mirror, BCWS data in this repo, and Esri map tiles. Those requests carry the coordinates of the station or map point you are looking at (that is how weather is fetched) and, like any web request, the services see your IP address and browser type. Pyra adds no identifier of its own. Each service has its own privacy terms.
+**Weather data requests.** To show fire weather, the page fetches data straight from the public services — NRCan CWFIS, NRCan's Geogratis elevation service (the ground elevation around a map pin you drop, to read its slope; only that point's coordinates are sent, no cookies), ECCC MSC (SWOB), Alberta Wildfire's mirror, BCWS data in this repo, and Esri map tiles. Those requests carry the coordinates of the station or map point you are looking at (that is how weather is fetched) and, like any web request, the services see your IP address and browser type. Pyra adds no identifier of its own. Each service has its own privacy terms.
 
 **Location.** The station page may ask your browser for your location to pick the nearest station. The answer is used in the page only, to choose a station; it is not stored or sent to Pyra.
 
@@ -32,4 +32,4 @@ Tailwind CSS (cdn.tailwindcss.com), Leaflet and plugins (cdn.jsdelivr.net), Goog
 
 Open an issue at https://github.com/Tphambolio/FWI/issues or message [@lactucafarm](https://x.com/lactucafarm).
 
-*Last updated 2026-10-25.*
+*Last updated 2026-11-06.*

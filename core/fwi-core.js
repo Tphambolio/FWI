@@ -473,6 +473,7 @@ let _stationElev = null; // station elevation (m ASL) for the FMC elevation form
 const _COMPASS8 = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const _compass8 = deg => deg == null ? '—' : _COMPASS8[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 let _siteTerrain = { slope: 0, aspect: null, src: 'flat' };
+let _terrainNote = ''; // shown instead of the default flat-ground line after a pin whose slope could not be read
 function _terrainStorageKey() { return `${PROVINCE.storageKeys.fuelA}-site-terrain`; }
 try {
   const t = JSON.parse(localStorage.getItem(_terrainStorageKey()));
@@ -485,23 +486,22 @@ function _terrainOpts(windDir = null) {
 }
 
 /**
- * Slope (%) and aspect (direction faced, °) at a point from the Copernicus
- * 90 m DEM (Open-Meteo elevation API): centre-difference gradient over ±100 m.
- * Slopes < 2 % are treated as flat (aspect null). null on failure.
+ * Slope (%) and aspect (direction faced, °) at a point from NRCan's CDEM
+ * (16 m cells, Open Government Licence – Canada) via the Geogratis point service
+ * (_cdemAltitude): centre-difference gradient over ±100 m from five samples.
+ * Slopes < 2 % are treated as flat (aspect null). null when any sample is
+ * unavailable (outside Canada, service down, config/weather.js elevation_live
+ * 'none'), or when the five samples mix 0 m with land — the service reports
+ * open water as 0 m, so a shoreline pin has no usable gradient. The pin
+ * then reads no slope and the crew enters it by hand, exactly as before.
  */
 async function _terrainAt(lat, lng) {
-  // Ad-hoc map pin: the only remaining live elevation-API call, allowed solely while
-  // config/weather.js keeps fallback: 'open-meteo' (station elevations come from the
-  // NRCan CDEM file). With fallback 'none' the pin reads no slope — enter it manually.
-  const gem = (typeof PyraGEM !== 'undefined' && PyraGEM) || null;
-  if (gem && !gem.fallbackAllowed()) return null;
   const d = 100, dLat = d / 111320, dLng = d / (111320 * Math.cos(lat * Math.PI / 180));
   const pts = [[lat, lng], [lat + dLat, lng], [lat - dLat, lng], [lat, lng + dLng], [lat, lng - dLng]];
   try {
-    const url = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p => p[0].toFixed(6)).join(',')}` +
-                `&longitude=${pts.map(p => p[1].toFixed(6)).join(',')}`;
-    const z = (await fetchWithTimeout(url, {}, 8000).then(r => r.json()))?.elevation;
-    if (!Array.isArray(z) || z.length !== 5 || z.some(v => typeof v !== 'number')) return null;
+    const z = await Promise.all(pts.map(p => _cdemAltitude(p[0], p[1], 8000)));
+    if (z.length !== 5 || z.some(v => typeof v !== 'number')) return null;
+    if (z.some(v => v === 0) && z.some(v => v !== 0)) return null; // water/land edge
     const [, zN, zS, zE, zW] = z;
     const dzdx = (zE - zW) / (2 * d), dzdy = (zN - zS) / (2 * d);
     const slope = Math.round(Math.hypot(dzdx, dzdy) * 100);
@@ -510,7 +510,22 @@ async function _terrainAt(lat, lng) {
   } catch (_) { return null; }
 }
 
+/**
+ * Read the slope at a dropped map pin and apply it as the site terrain. A failed
+ * read must not leave an earlier pin's slope applied to this new location: the
+ * terrain goes back to flat and the status line says why. Manual entries are kept.
+ */
+async function _applyPinTerrain(lat, lng) {
+  const t = await _terrainAt(lat, lng);
+  if (t) { _setSiteTerrain({ ...t, src: 'pin', lat, lng }); return t; }
+  if (_siteTerrain.src === 'pin') _setSiteTerrain({ slope: 0, aspect: null, src: 'flat' });
+  _terrainNote = 'Slope not available for this pin (NRCan elevation service has no answer here). Flat ground assumed. Enter the slope if you know it.';
+  _renderTerrainStatus();
+  return null;
+}
+
 function _setSiteTerrain(t, { refresh = true } = {}) {
+  _terrainNote = '';
   const slope = Math.max(0, Math.min(100, Math.round(+t.slope || 0)));
   // Keep the aspect even at slope 0 so the order the two inputs are set in doesn't matter
   _siteTerrain = { slope, aspect: t.aspect != null && t.aspect !== '' ? ((+t.aspect % 360) + 360) % 360 : null, src: t.src || 'manual',
@@ -529,8 +544,8 @@ function _renderTerrainStatus(fbp = null) {
   const el = document.getElementById('fwi-terrain-status');
   if (!el) return;
   const t = _siteTerrain;
-  if (!t.slope) { el.textContent = 'Flat ground assumed. Drop a pin on the map to read the site slope from terrain, or enter it.'; return; }
-  const src = t.src === 'pin' ? 'from map pin (90 m DEM — check on site)' : 'entered manually';
+  if (!t.slope) { el.textContent = _terrainNote || 'Flat ground assumed. Drop a pin on the map to read the site slope from terrain, or enter it.'; return; }
+  const src = t.src === 'pin' ? 'from map pin (NRCan CDEM 16 m, ±100 m gradient — check on site)' : 'entered manually';
   let line = `Slope ${t.slope}%${t.aspect != null ? ` facing ${_compass8(t.aspect)}` : ''} · ${src}.`;
   if (fbp && fbp.wsv != null) {
     line += ` Fire behaviour includes slope: effective wind ${Math.round(fbp.wsv)} km/h` +
@@ -561,10 +576,10 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 /**
  * Ground elevation (m ASL) at a station — data/station_elevation.json (NRCan
  * CDEM 16 m, written by the gem-points Action; core/gem.js), cached per point.
- * The Open-Meteo elevation API (Copernicus 90 m) is consulted only when the
- * station is not in the file AND config/weather.js allows the fallback. null
- * on failure (FMC then uses the no-elevation form, as before). Used for foliar
- * moisture content (FCFDG 1992 Eqs. 3-4).
+ * A point that is not in the file (a map pin, a new station) is read live from
+ * the same CDEM through NRCan's Geogratis service (_cdemAltitude) — never from
+ * Open-Meteo. null on failure (FMC then uses the no-elevation form, as before).
+ * Used for foliar moisture content (FCFDG 1992 Eqs. 3-4).
  */
 const _elevCache = new Map();
 async function _elevationFor(lat, lng) {
@@ -575,15 +590,40 @@ async function _elevationFor(lat, lng) {
   let fromFile;
   if (gem) { try { fromFile = await gem.elevation(lat, lng); } catch (_) { fromFile = undefined; } }
   if (typeof fromFile === 'number') elev = fromFile;
-  else if (!gem || gem.fallbackAllowed()) {
-    try {
-      const d = await fetchWithTimeout(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`, {}, 6000).then(r => r.json());
-      const v = Array.isArray(d?.elevation) ? d.elevation[0] : d?.elevation;
-      if (typeof v === 'number' && isFinite(v) && v > -500 && v < 9000) elev = v;
-    } catch (_) {}
-  }
+  else elev = await _cdemAltitude(+lat, +lng, 6000);
   _elevCache.set(key, elev);
   return elev;
+}
+
+/**
+ * Ground elevation (m ASL) of one point from NRCan's CDEM, read live from the
+ * Geogratis point service (https://geogratis.gc.ca/services/elevation/cdem/altitude,
+ * Open Government Licence – Canada, CORS open, no key). It samples the same
+ * 16 m CDEM that data/station_elevation.json is built from (agreement within
+ * 1-2 m at 7 test points, docs/data-sources.md). Request carries only the
+ * point's lat/lon: no cookies, no referrer. Returns null — never throws — when
+ * the point is outside the CDEM (the service answers altitude: null), the
+ * service is down or slow, or config/weather.js has elevation_live: 'none'.
+ * Open water comes back as 0 (callers that difference samples must handle it).
+ * Successful reads are cached per point for the page's life.
+ */
+const _cdemCache = new Map();
+async function _cdemAltitude(lat, lng, ms = 8000) {
+  const cfg = (typeof PyraGEM !== 'undefined' && PyraGEM && PyraGEM.config) ? PyraGEM.config() : {};
+  if ((cfg.elevation_live || 'nrcan') !== 'nrcan') return null;
+  if (!isFinite(lat) || !isFinite(lng)) return null;
+  const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+  if (_cdemCache.has(key)) return _cdemCache.get(key);
+  const base = cfg.elevation_service || 'https://geogratis.gc.ca/services/elevation/cdem/altitude';
+  try {
+    const r = await fetchWithTimeout(`${base}?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`,
+      { credentials: 'omit', referrerPolicy: 'no-referrer' }, ms);
+    const v = (await r.json())?.altitude;
+    if (typeof v !== 'number' || !isFinite(v) || v < -500 || v > 9000) return null;
+    if (_cdemCache.size > 500) _cdemCache.clear();
+    _cdemCache.set(key, v);
+    return v;
+  } catch (_) { return null; }
 }
 let _stationLng = PROVINCE.defaultStation.lng; // module-level; set by initFWI
 let _stationName = PROVINCE.defaultStation.name; // module-level; set by initFWI
@@ -2133,7 +2173,7 @@ function _initPinDropMap() {
     }
 
     // Site slope/aspect at the pin (DEM) → fire behaviour on the cards
-    _terrainAt(lat, lng).then(t => { if (t) _setSiteTerrain({ ...t, src: 'pin', lat, lng }); });
+    _applyPinTerrain(lat, lng);
 
     // Switch weather to nearest CWFIS station
     if (_selectNearestStation) _selectNearestStation(lat, lng);
@@ -4014,7 +4054,7 @@ async function printStationBriefing() {
   const fbpWx = w?.peak || w;
   const fbp = calculateFBP(fuelCode, r.ffmc, r.dmc, r.dc, fbpWx?.wind || 0, _siteTerrain.slope, _savedCuring(), _savedPS(), _terrainOpts(fbpWx?.wdir));
   const terrainLine = _siteTerrain.slope
-    ? `Site slope ${_siteTerrain.slope}%${_siteTerrain.aspect != null ? ' facing ' + _compass8(_siteTerrain.aspect) : ''} (${_siteTerrain.src === 'pin' ? 'map pin, 90 m DEM' : 'entered'})${fbp?.raz != null ? ` · head fire toward ${_compass8(fbp.raz)}, effective wind ${Math.round(fbp.wsv)} km/h` : ''}`
+    ? `Site slope ${_siteTerrain.slope}%${_siteTerrain.aspect != null ? ' facing ' + _compass8(_siteTerrain.aspect) : ''} (${_siteTerrain.src === 'pin' ? 'map pin, NRCan CDEM' : 'entered'})${fbp?.raz != null ? ` · head fire toward ${_compass8(fbp.raz)}, effective wind ${Math.round(fbp.wsv)} km/h` : ''}`
     : 'Flat ground (no site slope entered)';
 
   // DC / chain source and plain-language provenance (same logic as the station page)

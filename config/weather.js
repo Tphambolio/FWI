@@ -27,9 +27,15 @@
  * max_point_km:  a station must have a GEM point within this distance (the
  *                files carry every station the engines know, so normally 0 km).
  * elevation:     'file' reads station elevations (NRCan CDEM) from
- *                data/station_elevation.json, written by the same Action. The
- *                Open-Meteo elevation API is then used only for the slope of a
- *                pin dropped on the map, and only while fallback is 'open-meteo'.
+ *                data/station_elevation.json, written by the same Action.
+ * elevation_live: 'nrcan' reads any point that is not in that file (a map pin,
+ *                a new station) live from the same NRCan CDEM through the
+ *                Geogratis point service at elevation_service (Open Government
+ *                Licence – Canada, CORS open, no key; only the point's lat/lon
+ *                is sent). It drives the slope of a pin dropped on the map and
+ *                the foliar-moisture elevation of off-file points. 'none' turns
+ *                the live lookup off: pins then read no slope (enter it by hand).
+ *                Independent of `fallback`; Open-Meteo is never used for elevation.
  */
 window.PYRA_WEATHER = {
   source: 'gem-file',
@@ -37,4 +43,6 @@ window.PYRA_WEATHER = {
   max_age_h: 9,
   max_point_km: 1,
   elevation: 'file',
+  elevation_live: 'nrcan',
+  elevation_service: 'https://geogratis.gc.ca/services/elevation/cdem/altitude',
 };

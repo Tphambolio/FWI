@@ -45,7 +45,7 @@
 
   <h2>What leaves your device</h2>
   <div class="card">
-    <p><strong>Weather data requests.</strong> To show fire weather, the page fetches data straight from the public services — NRCan CWFIS, ECCC MSC (SWOB), Open-Meteo, Alberta Wildfire's mirror, BCWS data in this repository, and Esri map tiles. Those requests carry the coordinates of the station or map point you are looking at (that is how weather is fetched) and, like any web request, the services see your IP address and browser type. Pyra adds no identifier of its own. Each service has its own privacy terms.</p>
+    <p><strong>Weather data requests.</strong> To show fire weather, the page fetches data straight from the public services — NRCan CWFIS, NRCan's Geogratis elevation service (the ground elevation around a map pin you drop, to read its slope; only that point's coordinates are sent, no cookies), ECCC MSC (SWOB), Alberta Wildfire's mirror, BCWS data in this repository, and Esri map tiles. Those requests carry the coordinates of the station or map point you are looking at (that is how weather is fetched) and, like any web request, the services see your IP address and browser type. Pyra adds no identifier of its own. Each service has its own privacy terms.</p>
     <p><strong>Location.</strong> The station page may ask your browser for your location to pick the nearest station. The answer is used in the page only, to choose a station; it is not stored or sent to Pyra.</p>
     <p><strong>Usage counting.</strong> <code>config/telemetry.js</code> in the repository sets one of three modes:</p>
     <ul>
@@ -64,7 +64,7 @@
   <h2>Questions</h2>
   <div class="card">
     <p>Open an issue at <a href="https://github.com/Tphambolio/FWI/issues" target="_blank" rel="noopener">github.com/Tphambolio/FWI/issues</a> or message <a href="https://x.com/lactucafarm" target="_blank" rel="noopener">@lactucafarm</a>. The source text of this page is <code>docs/privacy.md</code> in the repository.</p>
-    <p style="font-size:12px;color:#94a3b8">Last updated 2026-10-25.</p>
+    <p style="font-size:12px;color:#94a3b8">Last updated 2026-11-06.</p>
   </div>
 
   <footer>
@@ -73,6 +73,6 @@
     © 2026 Travis Kennedy · Free to use · No warranty
   </footer>
 </main>
-<script src="../config/telemetry.js?v=151"></script><script src="../core/telemetry.js?v=151"></script><script src="../core/pwa.js?v=151"></script>
+<script src="../config/telemetry.js?v=152"></script><script src="../core/telemetry.js?v=152"></script><script src="../core/pwa.js?v=152"></script>
 </body>
 </html>
