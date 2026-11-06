@@ -17,7 +17,7 @@
  *                     (config/weather.js max_age_h), beyond which pages fall back to Open-Meteo.
  *   FireSim API       /api/v1/health returns status "healthy"; /api/v1/version returns a git_sha.
  *   FireSim frontend  https://wildfire-simulator.vercel.app returns 200 with the app root.
- *   Upstreams (WARN)  CWFIS WFS, ECCC SWOB, ECCC GeoMet WCS, Open-Meteo (fallback) answer at all —
+ *   Upstreams (WARN)  CWFIS WFS, ECCC SWOB, ECCC GeoMet WCS, NRCan CDEM point service answer at all —
  *                     Pyra degrades through its tiers when one is down, so these never page on their own.
  */
 const PYRA = 'https://tphambolio.github.io/FWI';
@@ -161,6 +161,14 @@ await Promise.all([
     if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
     if (/ExceptionReport/.test(r.text.slice(0, 400))) throw new Error(`service exception: ${r.text.replace(/\s+/g, ' ').slice(0, 160)}`);
     return `200 in ${r.ms} ms`;
+  }),
+  check('Upstream NRCan CDEM point service (pin slope)', 'WARN', async () => {
+    // Terwillegar Park, Edmonton: ≈ 688 m in the 16 m CDEM. Down = pins read no slope (enter it by hand)
+    const r = await get('https://geogratis.gc.ca/services/elevation/cdem/altitude?lat=53.4606&lon=-113.6596');
+    if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+    const v = JSON.parse(r.text)?.altitude;
+    if (typeof v !== 'number' || Math.abs(v - 688) > 10) throw new Error(`altitude ${v} (expected ≈ 688 m)`);
+    return `${v} m in ${r.ms} ms`;
   }),
 ]);
 

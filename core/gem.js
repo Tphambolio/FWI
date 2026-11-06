@@ -24,7 +24,8 @@
   'use strict';
   var HOUR = 3600000;
   var DEFAULTS = { source: 'gem-file', fallback: 'open-meteo', max_age_h: 9, max_point_km: 1, elevation: 'file',
-                   path: 'data/gem/', elevation_path: 'data/station_elevation.json' };
+                   path: 'data/gem/', elevation_path: 'data/station_elevation.json',
+                   elevation_live: 'nrcan', elevation_service: 'https://geogratis.gc.ca/services/elevation/cdem/altitude' };
   var RAW = 'https://raw.githubusercontent.com/Tphambolio/FWI/main/';
 
   // Repo root from this script's own URL (…/core/gem.js) — the pages live one or two levels down.

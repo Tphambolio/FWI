@@ -100,6 +100,7 @@ with today's weather.
 | 2026-10-29 | Tier 3 model weather = **ECCC GEM read from MSC GeoMet** (v150): a 6-hourly Action composites HRDPS (≤ +48 h) → RDPS (≤ +84 h) → GDPS (hourly, then 3-hourly interpolated to +240 h) from WCS 2.0.1 GetCoverage over one AB+BC box, samples every engine/CWFIS station bilinearly (direction through its vector; wind m/s → km/h; HRDPS run-total rain differenced; GDPS 3-h rain spread over its three hours) and commits `data/gem/{ab,bc}.json` with 48 h of history carried from the previous file. `core/gem.js` serves the Open-Meteo-shaped hourly payload, so the noon-LST / 16:00 / 24-h-rain sampling in the core is untouched. Open-Meteo stays only behind `config/weather.js fallback: 'open-meteo'` (file missing, > 9 h old, no point within 1 km), shipped **on** for the rollout and documented as **must be `'none'` before commercial use**. Station elevations (FMC) from NRCan CDEM (`data/station_elevation.json`) instead of the Open-Meteo elevation API; the pin-drop slope DEM call sits behind the same flag. Labels: "ECCC GEM (GeoMet) · noon LST"; "Open-Meteo" wording only on the fallback path; footers carry "Data Source: Environment and Climate Change Canada" | Commercial use of Pyra needs a licence-clean model-weather source (Open-Meteo's free tier is non-commercial; RUNBOOK and business plan open item). GeoMet is ECCC's own GEM output under the open data licence; one repo file per province replaces ~1,000 third-party calls per regional page load. Acceptance: Edmonton Blatchford 2026-10-29 01Z GEM −2.7 °C / 91 % / 12.1 km/h / 322° / 0.1 mm vs Open-Meteo gem_seamless −2.6 / 90 / 11.9 / 321 / 0.1; 7-hour independent check within 0.6 °C, 2 RH points, 1.6 km/h, 15°, rain equal. Elevations 667/344/892/225 m vs 667/344/891/223 (Copernicus 90 m) |
 
 | 2026-10-29 | `config/weather.js` `fallback` set to `'none'`: Open-Meteo is no longer called from any page. Model weather comes only from the GeoMet point files (stale file used and labelled; missing file = error surfaced in the UI and by the uptime check). Pin-drop slope reads no elevation off-station until a CDEM-in-browser path exists (open item) | Open-Meteo's free tier is non-commercial; the owner asked for the switch on 2026-10-29 once the GEM Action's first run was verified live |
+| 2026-11-06 | Pin-drop slope and off-file elevation read **live from NRCan's CDEM** through the Geogratis point service (`_cdemAltitude` in `core/fwi-core.js`; `config/weather.js` `elevation_live: 'nrcan'` + `elevation_service`, independent of `fallback`). Slope/aspect as before: five samples (centre, N, S, E, W at ±100 m), flat below 2 %. A pin whose samples mix 0 m with land (the service returns open water as 0) or that lies outside the CDEM (`altitude: null`) reads no slope. A failed pin read now resets an earlier *pin* slope to flat and says so on the terrain line; a value the crew typed is kept. The request carries only lat/lon (no credentials, no referrer). Label: "NRCan CDEM 16 m, ±100 m gradient — check on site". Chosen over the earlier plan of reading the CDEM COG in the browser: one ~100-byte JSON per sample, no geotiff.js or EPSG:3979 projection in the pages, same 16 m model as `station_elevation.json` (agreement 1–2 m at 7 AB/BC points; slope 19 % vs 19 % at a steep East BC point) | Open-Meteo's free tier is non-commercial and the elevation API was its last live call; the CDEM (16 m) is also finer than the 90 m Copernicus DEM it replaces. Risk: the service runs on legacy NRCan infrastructure and open.canada.ca marks CDEM as unsupported; usage terms/rate limits not read (§6). Uptime WARN added; the COG read is the replacement plan |
 
 ## 4. Science implementation and references
 
@@ -156,7 +157,7 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 
 **Weather inputs, interpolation and data systems**
 - Candille, G. 2009. The multiensemble approach: the NAEFS example. *Monthly Weather Review* 137: 1655–1665. doi:10.1175/2008MWR2682.1 [`2JC5XGZY`]
-- European Space Agency. 2022. Copernicus DEM (GLO-90). doi:10.5270/ESA-c5d3d65 [`LYXBSNG8`]
+- European Space Agency. 2022. Copernicus DEM (GLO-90). doi:10.5270/ESA-c5d3d65 [`LYXBSNG8`] — was the pin-drop slope DEM until v152; superseded by NRCan CDEM
 - Lee, B.S.; Alexander, M.E.; Hawkes, B.C.; Lynham, T.J.; Stocks, B.J.; Englefield, P. 2002. Information systems in support of wildland fire management decision making in Canada. *Computers and Electronics in Agriculture* 37: 185–198. doi:10.1016/S0168-1699(02)00120-5 [`9IIVZWHU`]
 - Luo, W.; Taylor, M.C.; Parker, S.R. 2008. A comparison of spatial interpolation methods to estimate continuous wind speed surfaces using irregularly distributed data from England and Wales. *International Journal of Climatology* 28: 947–959. doi:10.1002/joc.1583 [`UFQ5NRGK`]
 - Zippenfenig, P. 2024. Open-Meteo.com Weather API. Zenodo. doi:10.5281/zenodo.7970649 [`B7U7GCPC`]
@@ -193,23 +194,23 @@ All sources below are in the Zotero collection **Pyra Sources** (local library, 
 | ECCC MSC SWOB realtime (api.weather.gc.ca) | Station sensor obs | OGL-Canada | `QI54NLVE` |
 | BC Wildfire Service Datamart | Noon FWI codes + official danger rating (mirrored daily) | OGL-BC | `7EGXPF6H` |
 | Alberta Wildfire pmwx.csv | AEF station obs (mirrored daily) | OGL-Alberta | `RHXC63JG` |
-| ECCC MSC GeoMet (WCS 2.0.1; HRDPS continental, RDPS 10 km, GDPS 15 km layers) | Tier 3 model weather: hourly point series per station (`data/gem/<prov>.json`, v150); noon / 16:00 / 24-h rain / trend / outlook / 7-day chain | ECCC Data Server End-use Licence (attribution: "Data Source: Environment and Climate Change Canada") | to add (GeoMet documentation snapshot) |
-| NRCan CDEM (Canadian Digital Elevation Model, cloud-optimised GeoTIFF, EPSG:3979) | Station ground elevation for FMC (`data/station_elevation.json`, v150) | OGL-Canada | to add |
-| Open-Meteo (ECCC GEM `gem_seamless` since v145; Copernicus GLO-90 DEM) | **Fallback only since v150** (`config/weather.js`): NWP hourly / noon / 16:00 when the GEM file is missing, stale or lacks the point; pin-drop slope/aspect | CC BY 4.0 (free tier non-commercial) | `B7U7GCPC`, `LYXBSNG8` |
+| ECCC MSC GeoMet (WCS 2.0.1; HRDPS continental, RDPS 10 km, GDPS 15 km layers) | Tier 3 model weather: hourly point series per station (`data/gem/<prov>.json`, v150); noon / 16:00 / 24-h rain / trend / outlook / 7-day chain | ECCC Data Server End-use Licence (attribution: "Data Source: Environment and Climate Change Canada") | BibTeX in `docs/zotero_pending.bib` (import pending) |
+| NRCan CDEM (Canadian Digital Elevation Model, cloud-optimised GeoTIFF, EPSG:3979; Geogratis point service) | Station ground elevation for FMC (`data/station_elevation.json`, v150); live point elevation for pin-drop slope/aspect and off-file stations (v152) | OGL-Canada | BibTeX in `docs/zotero_pending.bib` (import pending) |
+| Open-Meteo (ECCC GEM `gem_seamless` since v145; Copernicus GLO-90 DEM) | **Fallback only since v150** (`config/weather.js`): NWP hourly / noon / 16:00 when the GEM file is missing, stale or lacks the point. No longer used for elevation or pin-drop slope (v152) | CC BY 4.0 (free tier non-commercial) | `B7U7GCPC`, `LYXBSNG8` (Copernicus DEM: superseded by the CDEM, no longer cited by code) |
 | City of Edmonton canopy LiDAR fuel raster | Edmonton pin-drop fuel type | City of Edmonton | `E2PCWWD6` |
 
 ## 5. Testing
 
 | Suite | Command | What it checks |
 |---|---|---|
-| Unit / regression (301 tests) | `node --test "tests/**/*.test.mjs"` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view, PWA wiring, telemetry privacy contract, GEM point series (browser + Action) |
+| Unit / regression (315 tests, 1 skipped without `tools/gem` node_modules) | `node --test "tests/**/*.test.mjs"` | Science vs oracle, tiers, dates, labels, chain, map, carry-over, phenology, FMC, spread, slope, outlook, alerts, after-16:00 ops view, PWA wiring, telemetry privacy contract, GEM point series (browser + Action) |
 | GEM browser side (`tests/gem.test.mjs`, 27) | part of the unit run | The harness serves `data/gem/<prov>.json` built from each test's Open-Meteo mock, so every tier test runs on the GEM path with the GeoMet labels. Dedicated: one file fetch per page; noon-LST slot and 24-h rain from the file; forecast stops at the file horizon (no `?? 15` defaults); stale (> 9 h) / missing / no-point-within-1-km → Open-Meteo fallback with the Open-Meteo label; `fallback: 'none'` → stale file used and labelled, missing file fails the tier ("Data unavailable"); D+1 and provenance labels; station elevation from the file, DEM API and pin slope gated by the flag; `_window` days/hours modes, nulls outside the span |
 | GEM Action (`tests/gem_action.test.mjs`, 15) | part of the unit run (fixture GeoTIFF test needs `npm install --prefix tools/gem`, skipped otherwise; CI installs it) | GeoMet time/reference_time parsing; compositing H → R → G/g with history left null, rain source rules (1 h, 3 h, run total), backfill run choice; bilinear and vector-direction sampling incl. a fixture GeoTIFF written and read back with the pinned reader; EPSG:3979 projection vs catalogue points; station extraction/dedupe/aliases; file assembly rounding; history merge; coverage |
 | PWA static (`tests/pwa.test.mjs`) | part of the unit run | Manifest fields + icons exist; every page links manifest / theme-color / apple-touch-icon and loads config → telemetry → pwa at the engine `?v=`; `sw.js` precache entries exist; cache name = page `?v=`; no inline Cloudflare tag; Privacy link + disclaimer in every footer |
 | Telemetry (`tests/telemetry.test.mjs`) | part of the unit run | With `none` / empty endpoint nothing is sent and no script injected; with `post` exactly one beacon with exactly the allowed keys and no station / coordinates / `?stn=`; Cloudflare mode injects only their script; ratings, issue and mailto prefill |
 | Engine audit (492 checks) | `node tests/calc_audit.mjs` | Equation-level audit and invariants |
 | Parity (108 checks) | `node tests/bc_parity.mjs` | Single-source science core; BC-specific functions |
-| Live chain / API | `node tests/live_chain_test.mjs`, `node tests/live_api_test.mjs` | Real network: Open-Meteo, CWFIS, SWOB, NAEFS |
+| Live chain / API | `node tests/live_chain_test.mjs`, `node tests/live_api_test.mjs` | Real network: Open-Meteo, CWFIS, SWOB, NAEFS; live API also the NRCan CDEM point service through both engines (Terwillegar 688 m ±3, flat; East BC ≈ 19 %; Montana pin → null; Strait of Georgia never steep) |
 | Browser smoke (11 pages) | `python3 tests/browser_smoke.py` | Pages load with data, no JS errors |
 | Deep E2E (185 checks) | `python3 tests/e2e_deep.py` | FWI components, FBP, no NaN, interactions, Trends content, unique stations, fresh-phone shared-link fuel + 390 px fit, ICS briefing print → PDF (AB + BC) |
 | PWA browser (28 checks) | `python3 tests/pwa_browser.py` | Service worker registers at the root scope and controls the page; manifest parses; weather responses land in the runtime cache; Feedback button above the bottom nav, prefilled issue without the station, fits 390 px; then a truly offline relaunch (DNS blocked, local server stopped — Playwright's `set_offline` does not reach service workers) renders the station page from cache with the amber "Offline — showing data cached at <time>" strip, a danger label and no NaN |
@@ -224,6 +225,7 @@ test a local build first. CI runs the unit, audit and parity suites on every pus
 - spread 10, slope 12, carryover 10, outlook 8, phenology 8, fmc 6, map 6, opsview 4
 - pwa 22, telemetry 9 (2026-10-25)
 - gem 27, gem_action 15 (2026-10-29)
+- cdem 13 (2026-11-06): request shape (lat/lon only, credentials omit, no referrer); null on every failure mode; per-point cache, failures retried; shoreline 0 m rule; steep-terrain slope; failed pin resets an earlier pin's slope; no shipped script calls `open-meteo.com/v1/elevation`
 
 Last full run 2026-10-09 against live v144: unit 204/0, audit 492/0, parity 108/0,
 E2E 185/0, smoke 11/0.
@@ -236,6 +238,15 @@ Run 2026-10-29 against a local server of the `feat/geomet-nwp` worktree (v150,
 pages reading the freshly built `data/gem/*.json`): unit 301/0, audit 492/0,
 parity 182/0, live chain 11/0, live API 7/0, smoke 11/0, E2E 185/0, PWA
 browser 28/0 — `bash tests/run_all.sh` 8 suites pass.
+
+Run 2026-11-06 against a local server of the `feat/cdem-browser` worktree (v152, NRCan CDEM
+pin slope): `bash tests/run_all.sh` 8 suites pass (science 18/0, audit 492/0, parity 182/0,
+live chain 11/0, live API 45/0 including the CDEM point service through both engines, smoke
+11/0, E2E 185/0, PWA browser 28/0); unit glob 315 tests, 314 pass, 1 skipped, 0 fail. Real
+browser (Playwright, local build): six pins on the BC and AB station-page maps, the app's
+site-slope line equalled an independent slope computed from the live Geogratis samples at
+the pin's own coordinates (18/18, 9/9, 21/21 % in BC; 0, 2, 0 % in AB), with no request to
+open-meteo.com and no referer or cookie on any NRCan request.
 
 **UAT 2026-10-09 (FBAN walk-through, `docs/uat/2026-10-09/`):** the scenario was a grass fire near Hussar AGDM, using O1a/O1b fuels and 95% curing. Clients were desktop Chrome plus iPhone 14 and Pixel 7 emulation (portrait and landscape). The run produced three PDFs from live v144:
 - the ICS station briefing at 18:00, leading with Saturday's operational period;
@@ -272,8 +283,9 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 - [ ] Spring 2027: run `tools/tz/cwfis_noon_probe.mjs` hourly 17–22 UTC on a few active days. If Alberta's daily chain appears before 19 UTC, set `AB_FWI_LST_OFFSET_FROM_2026_11_01 = 6` (fwi.js) and `FIRESIM_AB_FWI_LST_OFFSET_H=6` (FireSim); BC (20 UTC) is the control. Also confirm the AEF `pmwx.csv` PM Actual hour and the SWOB noon record.
 - [ ] Map marker pill text is below 11 px (physical limit). Mitigated with aria-labels.
 - [ ] **Before any commercial use:** set `config/weather.js` `fallback: 'none'` (Open-Meteo's free tier is non-commercial). The GEM file path has been the primary source since v150; watch the `Pyra GEM series … fresh (9 h)` uptime checks for a few weeks first. Remove the Open-Meteo footer attribution with the flag.
-- [ ] Pin-dropped site slope still uses the Open-Meteo elevation API (behind the fallback flag). Replace with the NRCan CDEM COG read in the browser (the briefing page already loads geotiff.js for lightning; the COG serves `Access-Control-Allow-Origin: *`), then nothing in Pyra depends on Open-Meteo.
-- [ ] Add the GeoMet documentation snapshot and the NRCan CDEM record to the Zotero collection "Pyra Sources" (§4 data sources table says "to add").
+- [x] Pin-dropped site slope no longer uses the Open-Meteo elevation API: read live from NRCan CDEM through the Geogratis point service (v152, 2026-11-06; §3). With `fallback: 'none'` nothing in Pyra calls Open-Meteo.
+- [ ] NRCan Elevation API terms: its documentation page has moved (404 at the URL listed on the CDEM record) and its usage terms / rate limits were not read. A pin drop makes 5 requests, an off-file station 1. Confirm before commercial use; if it is unsuitable, replace `_cdemAltitude` with a browser COG read (`tools/gem/lib.mjs lcc3979`; the COG sends CORS `*` and honours Range).
+- [ ] Add the GeoMet documentation snapshot and the NRCan CDEM record to the Zotero collection "Pyra Sources": BibTeX written to `docs/zotero_pending.bib` 2026-11-06 (Zotero was not running). Start Zotero, select "Pyra Sources", run the import command in that file, put the item keys in the §4 table, delete the file.
 - [ ] GEM history for the 6 hours between the previous HRDPS run and the new one is carried from the previous file; the very first cycles after merge show GDPS ('g') for a few of those hours until the carry-over has HRDPS values. Self-heals; no action.
 - [ ] Alberta observation hour after 2026-11-01 (I-10): CWFIS kept −7 (19 UTC) on 17 Oct 2026; no agency statement. Re-check by matching CWFIS daily values to ECCC hourly records once stations report in November (off-season) and again at season start (~1 March 2027); if Edmonton matches 18 UTC, set `AB_FWI_LST_OFFSET_FROM_2026_11_01 = 6` (and FireSim `FIRESIM_AB_FWI_LST_OFFSET_H=6`).
 - [ ] BC eastern (Mountain-time) stations: CWFIS uses tz_correct −7 (noon 19 UTC) for 75 BC stations (Cranbrook, Dawson Creek, Fort St John, Sparwood, …); Pyra BC uses 20 UTC for all. Per-station noon hour would need the CWFIS tz table in the station list (found 2026-10-18).
@@ -284,6 +296,7 @@ adjustment. Agreement is typically 1e-9 to 1e-12.
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-11-06 | `2e420ad` | feat(elevation): pin-drop slope and off-file elevation from NRCan CDEM (Geogratis), no Open-Meteo (v152) |
 | 2026-10-29 | `49f4dc8` | feat(nwp): Tier 3 model weather from the ECCC GEM point series (GeoMet); Open-Meteo only as a flagged fallback (v150) |
 | 2026-10-29 | `209cc03` | feat(gem): ECCC GeoMet point-series builder + first data/gem/{ab,bc}.json and station elevations |
 | 2026-10-29 | `037c1f3` | feat(pwa): installable app with the last briefing cached offline; privacy-respecting usage counting + Feedback button (v149) |

@@ -17,6 +17,22 @@ from Natural Resources Canada's **Canadian Digital Elevation Model (CDEM)**,
 Open Government Licence – Canada, read once per station from the national
 cloud-optimised GeoTIFF.
 
+Points that are not in that file — the ground around a **map pin** (slope and
+aspect, five samples at ±100 m) and any off-file station — are read live from
+the same CDEM through NRCan's Geogratis point service
+(`https://geogratis.gc.ca/services/elevation/cdem/altitude?lat=…&lon=…`; JSON
+`{altitude, vertex, geometry}`, `Access-Control-Allow-Origin: *`, no key). The
+request carries only the point's coordinates (no cookies, no referrer). This
+replaced the Open-Meteo elevation API (2026-11-06); `config/weather.js`
+`elevation_live: 'none'` turns it off. Behaviour measured on 2026-11-06:
+elevations within 1–2 m of the COG at seven AB/BC points; ≈ 250 ms per call;
+`altitude: null` outside the CDEM (Montana, 70 °N); open water returns `0.0`
+(so a pin whose five samples mix 0 m with land reads no slope); non-numeric input
+returns an HTTP 404 page. NRCan's "Elevation API" documentation page has moved
+and its usage terms and rate limits were **not** read — see PROJECT_RECORD §6.
+The CDEM is flagged on open.canada.ca as a legacy product that is no longer
+supported.
+
 Open-Meteo (`models=gem_seamless`, the pre-v150 source) is kept **only as a
 fallback** behind `config/weather.js` (`fallback: 'none'` since 2026-10-29; set `'open-meteo'` to re-enable), used when a
 GEM file is missing, older than `max_age_h` (9 h) or lacks a station. Its free
@@ -109,7 +125,7 @@ are backfilled from the newest earlier run with a 1–6 h lead
 `elev` is the nearest 16 m CDEM cell (points projected with the EPSG:3979
 Lambert conformal conic in `tools/gem/lib.mjs lcc3979`); `null` for the few
 US border stations outside the CDEM. Spot check against the Open-Meteo
-elevation API (Copernicus GLO-90): Edmonton Blatchford 667 / 667 m, Kamloops A
+elevation API (Copernicus GLO-90; the pre-2026-11-06 pin-slope source): Edmonton Blatchford 667 / 667 m, Kamloops A
 344 / 344, Hussar 892 / 891, Fort Chipewyan 225 / 223.
 
 ## Acceptance evidence (2026-10-29, Edmonton Blatchford 53.567 −113.517)

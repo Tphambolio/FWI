@@ -4,7 +4,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ENGINES, makeContext } from './_harness.mjs';
+import { ENGINES, makeContext, nrcanDem } from './_harness.mjs';
 import * as ref from './reference.mjs';
 
 const OPTS = { lat: 53.5, lng: -113.5, doy: 200, gfl: 0.35, pdf: 35 };
@@ -52,16 +52,16 @@ for (const e of ENGINES) {
 
 // ─── Site terrain from the DEM + plumbing into the station-page chain ────────
 for (const e of ENGINES) {
-  test(`${e.prov}: _terrainAt derives slope % and the direction the slope faces from 5 DEM samples`, async () => {
+  test(`${e.prov}: _terrainAt derives slope % and the direction the slope faces from 5 CDEM samples (NRCan)`, async () => {
     // order: centre, N, S, E, W (±100 m). N higher than S by 20 m over 200 m → 10 %, faces S
-    const h = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 110, 90, 100, 100] } } });
+    const h = makeContext(e.path, { mocks: { nrcan: nrcanDem(53.5, -113.5, [100, 110, 90, 100, 100]) } });
     const t = await h.run('_terrainAt(53.5, -113.5)');
     assert.equal(t.slope, 10);
     assert.equal(t.aspect, 180);
-    const h2 = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 100, 100, 92, 108] } } }); // W higher → faces E
+    const h2 = makeContext(e.path, { mocks: { nrcan: nrcanDem(53.5, -113.5, [100, 100, 100, 92, 108]) } }); // W higher → faces E
     const t2 = await h2.run('_terrainAt(53.5, -113.5)');
     assert.equal(t2.slope, 8); assert.equal(t2.aspect, 90);
-    const h3 = makeContext(e.path, { mocks: { openmeteo: { elevation: [100, 100.5, 100, 100, 100] } } }); // < 2 % → flat
+    const h3 = makeContext(e.path, { mocks: { nrcan: nrcanDem(53.5, -113.5, [100, 100.5, 100, 100, 100]) } }); // < 2 % → flat
     const t3 = await h3.run('_terrainAt(53.5, -113.5)');
     assert.equal(t3.slope, 0); assert.equal(t3.aspect, null);
   });

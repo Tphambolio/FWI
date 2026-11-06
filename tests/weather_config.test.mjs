@@ -16,5 +16,7 @@ test('config/weather.js ships with fallback none and the GEM file as the source'
   assert.equal(c.source, 'gem-file');
   assert.equal(c.fallback, 'none', "Open-Meteo fallback must be off in the shipped config (non-commercial free tier)");
   assert.equal(c.elevation, 'file');
+  assert.equal(c.elevation_live, 'nrcan', 'off-file elevation and pin slope come from NRCan CDEM, not Open-Meteo');
+  assert.equal(c.elevation_service, 'https://geogratis.gc.ca/services/elevation/cdem/altitude');
   assert.ok(c.max_age_h >= 6 && c.max_age_h <= 12, 'max_age_h covers one missed 6-h cycle');
 });

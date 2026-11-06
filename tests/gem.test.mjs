@@ -142,22 +142,32 @@ for (const e of ENGINES) {
     assert.equal(q.kind, 'MODEL FORECAST');
   });
 
-  test(`${e.prov}: station elevation comes from data/station_elevation.json; the DEM API only via the fallback flag`, async () => {
+  test(`${e.prov}: station elevation comes from data/station_elevation.json; off-file points read NRCan CDEM, never Open-Meteo`, async () => {
     const elev = { stations: { X: { lat: e.lat, lon: e.lng, elev: 777 } } };
-    const h = makeContext(e.path, { now: post, mocks: { elev } });
+    const h = makeContext(e.path, { now: post, mocks: { elev, nrcan: { altitude: 123 } } });
     assert.equal(await h.run(`_elevationFor(${e.lat}, ${e.lng})`), 777);
-    assert.equal(calls(h, 'openmeteo').filter(c => /elevation/.test(c.url)).length, 0);
+    assert.equal(calls(h, 'nrcan').length, 0, 'in the file → no live lookup');
 
-    const h2 = makeContext(e.path, { now: post, mocks: { elev: { $status: 404 } } });
-    await h2.run(`_elevationFor(${e.lat}, ${e.lng})`);
-    assert.equal(calls(h2, 'openmeteo').filter(c => /elevation/.test(c.url)).length, 1, 'fallback allowed → one DEM API call');
+    const h2 = makeContext(e.path, { now: post, mocks: { elev: { $status: 404 }, nrcan: { altitude: 123 } } });
+    assert.equal(await h2.run(`_elevationFor(${e.lat}, ${e.lng})`), 123);
+    assert.equal(calls(h2, 'nrcan').length, 1, 'not in the file → one CDEM point lookup');
+    assert.equal(calls(h2, 'openmeteo').filter(c => /elevation/.test(c.url)).length, 0, 'Open-Meteo elevation API is never called');
 
-    const h3 = makeContext(e.path, { now: post, mocks: { elev: { $status: 404 } } });
+    // fallback 'none' (the shipped setting) does not switch the CDEM lookup off: it is NRCan, not Open-Meteo
+    const h3 = makeContext(e.path, { now: post, mocks: { elev: { $status: 404 }, nrcan: { altitude: 123 } } });
     h3.run(`window.PYRA_WEATHER.fallback = 'none'`);
-    assert.equal(await h3.run(`_elevationFor(${e.lat}, ${e.lng})`), null);
-    assert.equal(calls(h3, 'openmeteo').length, 0, 'no DEM API call with fallback none');
-    assert.equal(await h3.run(`_terrainAt(${e.lat}, ${e.lng})`), null, 'pin slope not read without the fallback');
+    assert.equal(await h3.run(`_elevationFor(${e.lat}, ${e.lng})`), 123);
+    assert.equal(calls(h3, 'openmeteo').length, 0, 'Open-Meteo never contacted with fallback none');
+    const t = await h3.run(`_terrainAt(${e.lat}, ${e.lng})`);
+    assert.deepEqual({ slope: t.slope, aspect: t.aspect, elev: t.elev }, { slope: 0, aspect: null, elev: 123 }, 'flat CDEM → flat pin');
     assert.equal(calls(h3, 'openmeteo').length, 0);
+
+    // elevation_live 'none' → no live lookup at all, pin reads no slope
+    const h4 = makeContext(e.path, { now: post, mocks: { elev: { $status: 404 }, nrcan: { altitude: 123 } } });
+    h4.run(`window.PYRA_WEATHER.elevation_live = 'none'`);
+    assert.equal(await h4.run(`_elevationFor(${e.lat}, ${e.lng})`), null);
+    assert.equal(await h4.run(`_terrainAt(${e.lat}, ${e.lng})`), null);
+    assert.equal(calls(h4, 'nrcan').length, 0);
   });
 }
 

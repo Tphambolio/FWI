@@ -198,6 +198,20 @@ const json = (body, status = 200) => ({
   json: async () => body, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
 });
 
+/**
+ * `nrcan` route mock: the Geogratis CDEM point service as { altitude } for the five
+ * samples _terrainAt takes (centre, N, S, E, W at ±100 m), given the centre (lat, lng)
+ * and the five elevations [c, n, s, e, w]. Matches by position, not call order.
+ */
+export function nrcanDem(lat, lng, [c, n, s, e, w]) {
+  return url => {
+    const q = new URL(url).searchParams, la = +q.get('lat'), lo = +q.get('lon');
+    const dLa = la - lat, dLo = lo - lng, eps = 1e-6;
+    const z = Math.abs(dLa) < eps && Math.abs(dLo) < eps ? c : dLa > eps ? n : dLa < -eps ? s : dLo > eps ? e : w;
+    return { altitude: z, vertex: true, geometry: { type: 'Point', coordinates: [lo, la] } };
+  };
+}
+
 /** Route a URL to a mock-handler key. */
 export function routeOf(url) {
   if (url.includes('data/gem/')) return 'gem';
@@ -212,6 +226,7 @@ export function routeOf(url) {
   }
   if (url.includes('api.weather.gc.ca')) return 'swob';
   if (url.includes('api.open-meteo.com')) return 'openmeteo';
+  if (url.includes('geogratis.gc.ca/services/elevation')) return 'nrcan';
   return 'other';
 }
 
@@ -221,7 +236,7 @@ export function routeOf(url) {
  * @param {object} o
  *   now       – pinned epoch ms
  *   mocks     – { [route]: body | (url) => body | { $status: 500 } | Error }
- *               routes: cwfis, swob, openmeteo, prev, bcws, aef, naefs, cwfisOther, other
+ *               routes: cwfis, swob, openmeteo, nrcan, prev, bcws, aef, naefs, cwfisOther, other
  *   storage   – initial localStorage entries (read at engine load, e.g. fwi_idw_mode)
  *   ids       – DOM element ids that exist
  *   leaflet   – true to expose a Leaflet stub as global L
@@ -238,6 +253,7 @@ export function makeContext(enginePath, { now, mocks = {}, storage: init = {}, i
     cwfisOther: { features: [] },
     prev: { $status: 404 }, bcws: { $status: 404 }, aef: { $status: 404 }, other: { $status: 404 },
     elev: { $status: 404 },
+    nrcan: { $status: 404 }, // NRCan Geogratis CDEM point service (pin slope, off-file elevation)
     // GEM point series (primary NWP path): derived from this context's openmeteo
     // mock — a 12-day window from 00 UTC two days ago at both reference stations.
     // An openmeteo mock that errors or carries no `hourly` (e.g. the elevation
@@ -264,9 +280,9 @@ export function makeContext(enginePath, { now, mocks = {}, storage: init = {}, i
     console: { log() {}, warn() {}, error() {}, info() {} },
   };
   if (leaflet) ctx.L = makeLeaflet();
-  ctx.fetch = async url => {
+  ctx.fetch = async (url, opts) => {
     const route = routeOf(url);
-    calls.push({ route, url });
+    calls.push({ route, url, opts });
     let h = route in mocks ? mocks[route] : defaults[route];
     if (typeof h === 'function') h = h(url);
     if (h instanceof Error) throw h;

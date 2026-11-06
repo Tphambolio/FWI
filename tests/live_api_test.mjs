@@ -13,7 +13,7 @@ const sandbox = {
   window: {}, document: { querySelectorAll: () => [], getElementById: () => null },
   console: { log: () => {}, warn: () => {} },
   localStorage: { getItem: () => null, setItem: () => {} },
-  fetch: globalThis.fetch,
+  fetch: globalThis.fetch, AbortController, setTimeout, clearTimeout,
 };
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
@@ -26,7 +26,7 @@ const bcSandbox = {
   window: {}, document: { querySelectorAll: () => [], getElementById: () => null },
   console: { log: () => {}, warn: () => {} },
   localStorage: { getItem: () => null, setItem: () => {} },
-  fetch: globalThis.fetch,
+  fetch: globalThis.fetch, AbortController, setTimeout, clearTimeout,
 };
 vm.createContext(bcSandbox);
 vm.runInContext(bcCode, bcSandbox);
@@ -486,6 +486,28 @@ function testEngineDangerRatings(features) {
   console.log(`  Engine ratings: ${localPass} pass, ${localFail} fail`);
 }
 
+
+// ─── NRCan CDEM point service (pin-drop slope, off-file elevation) ───────────
+// The Geogratis service replaces the Open-Meteo elevation API. Checks the real service
+// through each engine's own _terrainAt/_cdemAltitude: known elevations (agree with the
+// CDEM COG behind data/station_elevation.json within 3 m), a steep and a flat slope,
+// a point outside Canada (null), and the open-water 0 m rule. An unreachable service is a SKIP.
+async function testCDEMLive() {
+  console.log('\nNRCan CDEM point service (Geogratis)');
+  const ok = (cond, msg) => { if (cond) pass++; else { fail++; issues.push(msg); } console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${msg}`); };
+  for (const [prov, sb] of [['AB', sandbox], ['BC', bcSandbox]]) {
+    const probe = await sb._cdemAltitude(53.4606, -113.6596, 15000);
+    if (probe == null) { console.log(`  SKIP ${prov}: service did not answer`); continue; }
+    ok(Math.abs(probe - 688) <= 3, `${prov}: Terwillegar elevation ${probe} m ≈ 688 m (CDEM COG)`);
+    const flat = await sb._terrainAt(53.4606, -113.6596);
+    ok(flat && flat.slope === 0 && flat.aspect === null, `${prov}: Terwillegar pin is flat (slope ${flat?.slope})`);
+    const steep = await sb._terrainAt(49.5, -117.3);
+    ok(steep && Math.abs(steep.slope - 19) <= 4 && steep.aspect != null, `${prov}: East BC pin slope ${steep?.slope} % ≈ 19 %, faces ${steep?.aspect}°`);
+    ok(await sb._terrainAt(47.0, -110.0) == null, `${prov}: a pin outside the CDEM (Montana) reads no slope`);
+    ok(await sb._terrainAt(49.2, -123.9) == null || (await sb._terrainAt(49.2, -123.9)).slope === 0, `${prov}: Strait of Georgia pin is never steep`);
+  }
+}
+
 // ─── Run all ─────────────────────────────────────────────────────────────────
 // Single CWFIS WFS fetch shared across cross-check + data health tests
 let cwfisFeatures = [];
@@ -502,6 +524,7 @@ await testSWOBFreshness();
 await testNAEFSForecast();
 await testNAEFSForecastBC();
 await testNAEFSLabelIntegrity();
+await testCDEMLive();
 
 console.log(`\n${'─'.repeat(60)}`);
 console.log(`PASS ${pass}  FAIL ${fail}`);
