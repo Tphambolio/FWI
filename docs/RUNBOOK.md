@@ -1,7 +1,7 @@
 # Pyra operations runbook
 
 For whoever is on watch while the apps run unattended (the 2027 season is supported remotely).
-Companion: FireSim `docs/runbook.md` in Tphambolio/wildfire-simulator. Both apps are monitored
+Companion: FireSim `docs/runbook.md` in the private FireSim repo (Tphambolio/wildfire-simulator). Both apps are monitored
 from this repository by `.github/workflows/uptime.yml` (every 30 min, `tools/uptime/check.mjs`).
 
 ## What is running
