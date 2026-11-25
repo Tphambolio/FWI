@@ -1,30 +1,30 @@
 {
- "generated": "2026-11-24T04:48:38.684Z",
+ "generated": "2026-11-25T03:33:05.905Z",
  "stations": {
   "Duck Lake AGCM": {
-   "ffmc": 10.9,
-   "dmc": 0.7,
-   "dc": 27,
-   "isi": 0,
-   "bui": 1.4,
+   "ffmc": 38.1,
+   "dmc": 0.3,
+   "dc": 20.7,
+   "isi": 0.1,
+   "bui": 0.5,
    "fwi": 0,
    "lat": 54.6864,
    "lon": -113.9389,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WEST BLOCK": {
-   "ffmc": 72.2,
+   "ffmc": 58.9,
    "dmc": 33.7,
    "dc": 405,
-   "isi": 0.9,
+   "isi": 0.5,
    "bui": 55.7,
-   "fwi": 2.8,
+   "fwi": 0.9,
    "lat": 49.635,
    "lon": -109.92,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CRANBROOK A": {
-   "ffmc": 74.9,
+   "ffmc": 76.2,
    "dmc": 8.4,
    "dc": 561.1,
    "isi": null,
@@ -32,10 +32,10 @@
    "fwi": null,
    "lat": 49.617,
    "lon": -115.783,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CRANBROOK AIRPORT AUTO": {
-   "ffmc": 67.4,
+   "ffmc": 71.3,
    "dmc": 8.3,
    "dc": 567.8,
    "isi": null,
@@ -43,10 +43,10 @@
    "fwi": null,
    "lat": 49.6177,
    "lon": -115.789,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Bodo AGDM": {
-   "ffmc": 72.9,
+   "ffmc": 73.4,
    "dmc": 35.8,
    "dc": 515.2,
    "isi": null,
@@ -54,21 +54,21 @@
    "fwi": null,
    "lat": 52.1242,
    "lon": -110.1011,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Glenevis AGCM": {
    "ffmc": 78.6,
    "dmc": 12.9,
    "dc": 334.5,
-   "isi": 1.5,
+   "isi": 1.3,
    "bui": 23.5,
-   "fwi": 2.5,
+   "fwi": 2,
    "lat": 53.8326,
    "lon": -114.539,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Hemaruka AGCM": {
-   "ffmc": 74.5,
+   "ffmc": 74.6,
    "dmc": 48.5,
    "dc": 490.9,
    "isi": null,
@@ -76,10 +76,10 @@
    "fwi": null,
    "lat": 51.7799,
    "lon": -111.212,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Kessler AGCM": {
-   "ffmc": 77.8,
+   "ffmc": 75.5,
    "dmc": 43.9,
    "dc": 490.2,
    "isi": null,
@@ -87,21 +87,10 @@
    "fwi": null,
    "lat": 52.2902,
    "lon": -111.1132,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "ESTHER 1": {
-   "ffmc": 69.2,
-   "dmc": 25.4,
-   "dc": 460.7,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 51.667,
-   "lon": -110.2,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Acadia Valley AGCM": {
-   "ffmc": 56.6,
+   "ffmc": 58.4,
    "dmc": 28.7,
    "dc": 544.5,
    "isi": null,
@@ -109,10 +98,10 @@
    "fwi": null,
    "lat": 51.0664,
    "lon": -110.3172,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Atlee AGCM": {
-   "ffmc": 54.4,
+   "ffmc": 58.8,
    "dmc": 11.1,
    "dc": 451,
    "isi": null,
@@ -120,21 +109,10 @@
    "fwi": null,
    "lat": 50.8102,
    "lon": -111.0056,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "DRUMHELLER EAST": {
-   "ffmc": 54.5,
-   "dmc": 22.3,
-   "dc": 449.9,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 51.45,
-   "lon": -112.683,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Linden AGCM": {
-   "ffmc": 60.2,
+   "ffmc": 64.7,
    "dmc": 16.1,
    "dc": 499.8,
    "isi": null,
@@ -142,10 +120,10 @@
    "fwi": null,
    "lat": 51.6191,
    "lon": -113.6558,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Olds College AGDM": {
-   "ffmc": 66.3,
+   "ffmc": 72.9,
    "dmc": 19,
    "dc": 490.7,
    "isi": null,
@@ -153,10 +131,10 @@
    "fwi": null,
    "lat": 51.7586,
    "lon": -114.0846,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Schuler AGDM": {
-   "ffmc": 67.8,
+   "ffmc": 72.1,
    "dmc": 6.7,
    "dc": 329.5,
    "isi": null,
@@ -164,10 +142,10 @@
    "fwi": null,
    "lat": 50.3072,
    "lon": -110.0905,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SUNDRE A": {
-   "ffmc": 74.8,
+   "ffmc": 77.6,
    "dmc": 36.7,
    "dc": 581.1,
    "isi": null,
@@ -175,10 +153,10 @@
    "fwi": null,
    "lat": 51.783,
    "lon": -114.683,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Azure AGCM": {
-   "ffmc": 43.1,
+   "ffmc": 53.3,
    "dmc": 3.3,
    "dc": 209.7,
    "isi": null,
@@ -186,10 +164,10 @@
    "fwi": null,
    "lat": 50.5119,
    "lon": -114.013,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Barnwell AGDM": {
-   "ffmc": 50,
+   "ffmc": 62.5,
    "dmc": 11.7,
    "dc": 353.4,
    "isi": null,
@@ -197,21 +175,21 @@
    "fwi": null,
    "lat": 49.8017,
    "lon": -112.3022,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Barons AGCM": {
-   "ffmc": 28.4,
-   "dmc": 4.8,
+   "ffmc": 51.1,
+   "dmc": 4.9,
    "dc": 257.3,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.0223,
    "lon": -113.2214,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Bassano AGCM": {
-   "ffmc": 55.1,
+   "ffmc": 58.5,
    "dmc": 16.9,
    "dc": 460.2,
    "isi": null,
@@ -219,10 +197,10 @@
    "fwi": null,
    "lat": 50.8926,
    "lon": -112.4652,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Blood Tribe Ag. Project IMCIN": {
-   "ffmc": 35.2,
+   "ffmc": 52.4,
    "dmc": 7.7,
    "dc": 275,
    "isi": null,
@@ -230,10 +208,10 @@
    "fwi": null,
    "lat": 49.5592,
    "lon": -113.0638,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BOW ISLAND": {
-   "ffmc": 57.8,
+   "ffmc": 66.5,
    "dmc": 14.4,
    "dc": 425.7,
    "isi": null,
@@ -241,54 +219,32 @@
    "fwi": null,
    "lat": 49.733,
    "lon": -111.45,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Brocket AGDM": {
-   "ffmc": 64.4,
-   "dmc": 8,
-   "dc": 232,
+   "ffmc": 75.9,
+   "dmc": 8.2,
+   "dc": 232.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.6107,
    "lon": -113.7591,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "BROOKS": {
-   "ffmc": 59.3,
-   "dmc": 22.8,
-   "dc": 493.5,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 50.5553,
-   "lon": -111.8494,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "Calgary International": {
-   "ffmc": 57.6,
-   "dmc": 15.4,
-   "dc": 364.7,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 51.1226,
-   "lon": -114.013,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CARDSTON": {
-   "ffmc": 42.8,
-   "dmc": 4.7,
-   "dc": 211.2,
+   "ffmc": 60.6,
+   "dmc": 5,
+   "dc": 211.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.2,
    "lon": -113.283,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Champion AGDM": {
-   "ffmc": 30.2,
+   "ffmc": 36.5,
    "dmc": 7.9,
    "dc": 285.8,
    "isi": null,
@@ -296,21 +252,10 @@
    "fwi": null,
    "lat": 50.2953,
    "lon": -113.3467,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CLARESHOLM": {
-   "ffmc": 49.1,
-   "dmc": 9.9,
-   "dc": 324.6,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 50,
-   "lon": -113.633,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Enchant 2 AGCM": {
-   "ffmc": 60.4,
+   "ffmc": 64.2,
    "dmc": 11.4,
    "dc": 366.4,
    "isi": null,
@@ -318,10 +263,10 @@
    "fwi": null,
    "lat": 50.179,
    "lon": -112.4137,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Etzikom AGCM": {
-   "ffmc": 55,
+   "ffmc": 65.2,
    "dmc": 11.5,
    "dc": 444.9,
    "isi": null,
@@ -329,10 +274,10 @@
    "fwi": null,
    "lat": 49.5528,
    "lon": -111.0543,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Fincastle IMCIN": {
-   "ffmc": 49.6,
+   "ffmc": 60.2,
    "dmc": 15.5,
    "dc": 408.4,
    "isi": null,
@@ -340,10 +285,10 @@
    "fwi": null,
    "lat": 49.8023,
    "lon": -112.0459,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Foremost AGDM": {
-   "ffmc": 57.2,
+   "ffmc": 66.6,
    "dmc": 11.8,
    "dc": 406.9,
    "isi": null,
@@ -351,10 +296,10 @@
    "fwi": null,
    "lat": 49.4833,
    "lon": -111.4861,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Gleichen AGCM": {
-   "ffmc": 43.7,
+   "ffmc": 52.5,
    "dmc": 12.7,
    "dc": 402.5,
    "isi": null,
@@ -362,10 +307,10 @@
    "fwi": null,
    "lat": 50.9345,
    "lon": -112.9408,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Grassy Lake IMCIN": {
-   "ffmc": 54.9,
+   "ffmc": 64.4,
    "dmc": 15.1,
    "dc": 446.8,
    "isi": null,
@@ -373,10 +318,10 @@
    "fwi": null,
    "lat": 49.8737,
    "lon": -111.7328,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Irvine AGCM": {
-   "ffmc": 63.9,
+   "ffmc": 68.8,
    "dmc": 12.6,
    "dc": 450,
    "isi": null,
@@ -384,32 +329,32 @@
    "fwi": null,
    "lat": 49.9893,
    "lon": -110.2615,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LETHBRIDGE": {
-   "ffmc": 47,
-   "dmc": 10,
+   "ffmc": 63.9,
+   "dmc": 10.1,
    "dc": 272.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.633,
    "lon": -112.8,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Lethbridge Demo Farm IMCIN": {
-   "ffmc": 53,
-   "dmc": 5.4,
+   "ffmc": 66.1,
+   "dmc": 5.5,
    "dc": 268.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.6867,
    "lon": -112.7449,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MEDICINE HAT": {
-   "ffmc": 71.1,
+   "ffmc": 75.3,
    "dmc": 14.3,
    "dc": 406.9,
    "isi": null,
@@ -417,10 +362,10 @@
    "fwi": null,
    "lat": 50.017,
    "lon": -110.717,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MEDICINE HAT RCS": {
-   "ffmc": 65.3,
+   "ffmc": 71.8,
    "dmc": 5.6,
    "dc": 341.5,
    "isi": null,
@@ -428,21 +373,21 @@
    "fwi": null,
    "lat": 50.033,
    "lon": -110.717,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Mossleigh AGCM": {
-   "ffmc": 45.9,
-   "dmc": 9.9,
+   "ffmc": 62.6,
+   "dmc": 10,
    "dc": 331.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.6726,
    "lon": -113.3487,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Nier AGDM": {
-   "ffmc": 64.9,
+   "ffmc": 72.3,
    "dmc": 21.6,
    "dc": 435.8,
    "isi": null,
@@ -450,32 +395,32 @@
    "fwi": null,
    "lat": 51.3693,
    "lon": -114.0994,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PINCHER CREEK": {
-   "ffmc": 63.3,
-   "dmc": 11.2,
-   "dc": 254,
+   "ffmc": 75.3,
+   "dmc": 11.4,
+   "dc": 254.1,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.517,
    "lon": -114,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Raymond IMCIN": {
-   "ffmc": 33.1,
-   "dmc": 9.2,
-   "dc": 292.5,
+   "ffmc": 55.2,
+   "dmc": 9.4,
+   "dc": 292.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.4871,
    "lon": -112.6754,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Rolling Hills AGCM": {
-   "ffmc": 54.4,
+   "ffmc": 58.9,
    "dmc": 19.8,
    "dc": 513.8,
    "isi": null,
@@ -483,10 +428,10 @@
    "fwi": null,
    "lat": 50.2651,
    "lon": -111.7011,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Rosemary IMCIN": {
-   "ffmc": 61.6,
+   "ffmc": 64.4,
    "dmc": 15.3,
    "dc": 504.9,
    "isi": null,
@@ -494,43 +439,32 @@
    "fwi": null,
    "lat": 50.8344,
    "lon": -112.0573,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Seven Persons IMCIN": {
-   "ffmc": 67,
-   "dmc": 7.1,
+   "ffmc": 75,
+   "dmc": 7.2,
    "dc": 381.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.9183,
    "lon": -110.9149,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Standard AGCM": {
-   "ffmc": 47.9,
+   "ffmc": 57.5,
    "dmc": 23.6,
    "dc": 514.1,
-   "isi": 0.2,
-   "bui": 42.3,
-   "fwi": 0.3,
-   "lat": 51.2284,
-   "lon": -112.9821,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "STAVELY AAFC": {
-   "ffmc": 46.1,
-   "dmc": 2.3,
-   "dc": 103.8,
    "isi": null,
    "bui": null,
    "fwi": null,
-   "lat": 50.183,
-   "lon": -113.883,
-   "repDate": "2026-11-23T12:00:00Z"
+   "lat": 51.2284,
+   "lon": -112.9821,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Travers AGCM": {
-   "ffmc": 49.6,
+   "ffmc": 57.2,
    "dmc": 6.6,
    "dc": 293.5,
    "isi": null,
@@ -538,10 +472,10 @@
    "fwi": null,
    "lat": 50.3038,
    "lon": -112.8626,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VAUXHALL CDA CS": {
-   "ffmc": 57.7,
+   "ffmc": 63.6,
    "dmc": 12.1,
    "dc": 99.9,
    "isi": null,
@@ -549,10 +483,10 @@
    "fwi": null,
    "lat": 50.05,
    "lon": -112.1333,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Wrentham AGDM": {
-   "ffmc": 46,
+   "ffmc": 57.3,
    "dmc": 10.5,
    "dc": 342.7,
    "isi": null,
@@ -560,21 +494,21 @@
    "fwi": null,
    "lat": 49.4952,
    "lon": -112.1116,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Del Bonita AGDM": {
-   "ffmc": 42.2,
-   "dmc": 6.9,
+   "ffmc": 58.3,
+   "dmc": 7,
    "dc": 278.9,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.05,
    "lon": -112.8099,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Manyberries AGCM": {
-   "ffmc": 47.6,
+   "ffmc": 56.1,
    "dmc": 9.8,
    "dc": 425.8,
    "isi": null,
@@ -582,10 +516,10 @@
    "fwi": null,
    "lat": 49.3638,
    "lon": -110.6781,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Masinasin AGDM": {
-   "ffmc": 43.8,
+   "ffmc": 55.4,
    "dmc": 10.6,
    "dc": 371.3,
    "isi": null,
@@ -593,21 +527,10 @@
    "fwi": null,
    "lat": 49.1368,
    "lon": -111.6518,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "MILK RIVER": {
-   "ffmc": 43.9,
-   "dmc": 6.6,
-   "dc": 288.8,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 49.133,
-   "lon": -112.05,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Pakowki Lake AGCM": {
-   "ffmc": 52,
+   "ffmc": 59.4,
    "dmc": 12.4,
    "dc": 452.9,
    "isi": null,
@@ -615,32 +538,21 @@
    "fwi": null,
    "lat": 49.2248,
    "lon": -111.1262,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CROWSNEST": {
-   "ffmc": 66.5,
-   "dmc": 5.6,
-   "dc": 267.8,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 49.633,
-   "lon": -114.483,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "EGG ISLAND": {
-   "ffmc": 71.5,
+   "ffmc": 72.8,
    "dmc": 0.1,
    "dc": 2.7,
-   "isi": 0.8,
+   "isi": 0.9,
    "bui": 0.2,
    "fwi": 0.2,
    "lat": 58.9814,
    "lon": -110.4395,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "La Crete AGCM": {
-   "ffmc": 75.3,
+   "ffmc": 75.7,
    "dmc": 19.7,
    "dc": 327.7,
    "isi": null,
@@ -648,340 +560,285 @@
    "fwi": null,
    "lat": 58.1721,
    "lon": -116.3428,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KELOWNA": {
-   "ffmc": 80.7,
-   "dmc": 25.4,
-   "dc": 409.7,
+   "ffmc": 79.7,
+   "dmc": 25.5,
+   "dc": 410.1,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.95,
    "lon": -119.383,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KELOWNA UBCO": {
-   "ffmc": 76.7,
-   "dmc": 26.2,
-   "dc": 829.8,
+   "ffmc": 77.1,
+   "dmc": 26.3,
+   "dc": 830.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.933,
    "lon": -119.4,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "OSOYOOS CS": {
-   "ffmc": 79.3,
+   "ffmc": 78,
    "dmc": 23.9,
-   "dc": 738.2,
+   "dc": 738.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.033,
    "lon": -119.433,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PENTICTON A": {
-   "ffmc": 83.4,
-   "dmc": 53.4,
-   "dc": 865,
-   "isi": 2.4,
-   "bui": 92.6,
-   "fwi": 10.4,
+   "ffmc": 82,
+   "dmc": 53.5,
+   "dc": 865.6,
+   "isi": 1.9,
+   "bui": 92.7,
+   "fwi": 8.8,
    "lat": 49.467,
    "lon": -119.6,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VERNON AUTO": {
    "ffmc": 79.3,
-   "dmc": 12.8,
-   "dc": 756.5,
+   "dmc": 12.9,
+   "dc": 756.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.217,
    "lon": -119.2,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SUMMERLAND CS": {
-   "ffmc": 81.8,
-   "dmc": 25.9,
-   "dc": 774,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 73.6,
+   "dmc": 26,
+   "dc": 774.6,
+   "isi": 1.3,
+   "bui": 48,
+   "fwi": 3.7,
    "lat": 49.567,
    "lon": -119.65,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NAKUSP CS": {
-   "ffmc": 65.5,
+   "ffmc": 68.4,
    "dmc": 0.8,
-   "dc": 275.4,
+   "dc": 275.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.267,
    "lon": -117.817,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NELSON CS": {
    "ffmc": 81.7,
-   "dmc": 3.9,
-   "dc": 446.1,
+   "dmc": 4,
+   "dc": 446.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.483,
    "lon": -117.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WARFIELD RCS": {
-   "ffmc": 75.6,
-   "dmc": 1,
-   "dc": 423.1,
+   "ffmc": 35.7,
+   "dmc": 0,
+   "dc": 403.7,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.117,
    "lon": -117.733,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CRESTON CAMPBELL SCIENTIFIC": {
-   "ffmc": 73.6,
-   "dmc": 9.2,
+   "ffmc": 75.1,
+   "dmc": 9.3,
    "dc": 652.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.083,
    "lon": -116.5,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SALMON ARM CS": {
-   "ffmc": 78.1,
-   "dmc": 9.1,
-   "dc": 603.1,
+   "ffmc": 78.6,
+   "dmc": 9.2,
+   "dc": 603.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.7031,
    "lon": -119.2907,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE A": {
-   "ffmc": 79.1,
-   "dmc": 1.1,
-   "dc": 417.2,
+   "ffmc": 79.8,
+   "dmc": 1.2,
+   "dc": 417.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.967,
    "lon": -118.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE AIRPORT AUTO": {
-   "ffmc": 79.4,
-   "dmc": 1.1,
-   "dc": 377.3,
+   "ffmc": 80.1,
+   "dmc": 1.2,
+   "dc": 377.7,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.95,
    "lon": -118.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "HIGHWOOD AUTO": {
-   "ffmc": 61.3,
-   "dmc": 12.8,
-   "dc": 291,
-   "isi": 0.7,
-   "bui": 23,
-   "fwi": 0.7,
-   "lat": 50.415,
-   "lon": -114.726,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "KANANASKI BOUNDARY AUTO": {
-   "ffmc": 76.1,
-   "dmc": 19.9,
-   "dc": 422.9,
-   "isi": 2.5,
-   "bui": 35.7,
-   "fwi": 5.9,
-   "lat": 50.928,
-   "lon": -115.123,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "PETER LOUGHEED PARK": {
-   "ffmc": 73.4,
-   "dmc": 44.5,
-   "dc": 500.5,
-   "isi": 1.2,
-   "bui": 72.8,
-   "fwi": 4.6,
-   "lat": 50.714,
-   "lon": -115.119,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "ELBOW AUTO": {
-   "ffmc": 56.1,
-   "dmc": 11,
-   "dc": 225.8,
-   "isi": 0.3,
-   "bui": 19.6,
-   "fwi": 0.3,
-   "lat": 50.905,
-   "lon": -114.691,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "NORTH GHOST": {
-   "ffmc": 73.6,
-   "dmc": 38.7,
-   "dc": 488.4,
-   "isi": 0.8,
-   "bui": 64.6,
-   "fwi": 2.5,
-   "lat": 51.574,
-   "lon": -114.855,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "VALEMOUNT AIRPORT": {
-   "ffmc": 82.4,
-   "dmc": 4.4,
-   "dc": 193.3,
-   "isi": 2.7,
-   "bui": 8.4,
-   "fwi": 2.4,
-   "lat": 52.86,
-   "lon": -119.339,
-   "repDate": "2026-11-23T12:00:00Z"
+  "BLUE RIVER 2": {
+   "ffmc": 60.3,
+   "dmc": 0.5,
+   "dc": 251.1,
+   "isi": 0.5,
+   "bui": 1.1,
+   "fwi": 0.1,
+   "lat": 52.122,
+   "lon": -119.294,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GOSNEL": {
-   "ffmc": 73.9,
+   "ffmc": 75,
    "dmc": 0.1,
    "dc": 59.7,
-   "isi": 1.6,
+   "isi": 1.2,
    "bui": 0.2,
    "fwi": 0.3,
    "lat": 52.453,
    "lon": -119.175,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BRENDA MINES": {
    "ffmc": 71.8,
    "dmc": 1.9,
    "dc": 464.6,
-   "isi": 1.1,
+   "isi": 1.2,
    "bui": 3.7,
    "fwi": 0.4,
    "lat": 49.868,
    "lon": -119.993,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TURTLE": {
-   "ffmc": 81.6,
-   "dmc": 10.9,
+   "ffmc": 77.5,
+   "dmc": 11,
    "dc": 555.1,
-   "isi": 1.6,
-   "bui": 20.8,
-   "fwi": 2.3,
+   "isi": 0.9,
+   "bui": 20.9,
+   "fwi": 0.9,
    "lat": 50.803,
    "lon": -119.63,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "FINTRY": {
-   "ffmc": 81.2,
-   "dmc": 17.1,
-   "dc": 777.4,
-   "isi": 1.3,
-   "bui": 32.4,
-   "fwi": 2.7,
+   "ffmc": 79.4,
+   "dmc": 17.2,
+   "dc": 777.6,
+   "isi": 1.1,
+   "bui": 32.5,
+   "fwi": 2.1,
    "lat": 50.207,
    "lon": -119.48,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PENTICTON RS": {
-   "ffmc": 82.1,
-   "dmc": 35.1,
-   "dc": 751.8,
-   "isi": 2.1,
-   "bui": 62.9,
-   "fwi": 7.2,
+   "ffmc": 73.6,
+   "dmc": 35.3,
+   "dc": 752.2,
+   "isi": 0.9,
+   "bui": 63.1,
+   "fwi": 3.1,
    "lat": 49.518,
    "lon": -119.553,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MCCUDDY": {
-   "ffmc": 71.9,
-   "dmc": 12.2,
+   "ffmc": 74.3,
+   "dmc": 12.3,
    "dc": 538.1,
-   "isi": 1.1,
-   "bui": 23.2,
-   "fwi": 1.4,
+   "isi": 1.8,
+   "bui": 23.3,
+   "fwi": 3,
    "lat": 49.148,
    "lon": -119.415,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MABEL LAKE 2": {
-   "ffmc": 70.7,
-   "dmc": 0.7,
-   "dc": 451.6,
-   "isi": 0.7,
-   "bui": 1.4,
+   "ffmc": 73.1,
+   "dmc": 0.8,
+   "dc": 451.7,
+   "isi": 0.8,
+   "bui": 1.6,
    "fwi": 0.2,
    "lat": 50.352,
    "lon": -118.773,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE": {
-   "ffmc": 71.1,
-   "dmc": 0.8,
+   "ffmc": 72.7,
+   "dmc": 0.9,
    "dc": 227.8,
    "isi": 0.7,
-   "bui": 1.7,
+   "bui": 1.8,
    "fwi": 0.2,
    "lat": 51.06,
    "lon": -118.217,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KETTLE 2": {
-   "ffmc": 68.6,
+   "ffmc": 69.2,
    "dmc": 0,
    "dc": 302.8,
-   "isi": 0.6,
+   "isi": 0.7,
    "bui": 0.1,
    "fwi": 0.1,
    "lat": 49.96,
    "lon": -118.626,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BEAVERDELL": {
-   "ffmc": 76.9,
+   "ffmc": 75.7,
    "dmc": 5.6,
    "dc": 430,
-   "isi": 1.2,
+   "isi": 0.8,
    "bui": 10.9,
-   "fwi": 0.8,
+   "fwi": 0.5,
    "lat": 49.456,
    "lon": -119.089,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GRAND FORKS": {
-   "ffmc": 70.7,
+   "ffmc": 71.7,
    "dmc": 4,
-   "dc": 529.8,
-   "isi": 0.7,
-   "bui": 7.8,
-   "fwi": 0.4,
+   "dc": 529.9,
+   "isi": 1.3,
+   "bui": 7.9,
+   "fwi": 0.7,
    "lat": 49.031,
    "lon": -118.416,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ROCK CREEK": {
-   "ffmc": 72.5,
+   "ffmc": 71.9,
    "dmc": 15.4,
    "dc": 636.3,
    "isi": 0.8,
@@ -989,10 +846,10 @@
    "fwi": 0.9,
    "lat": 49.052,
    "lon": -118.937,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SMALLWOOD": {
-   "ffmc": 69.7,
+   "ffmc": 70.1,
    "dmc": 0.7,
    "dc": 329.9,
    "isi": 0.6,
@@ -1000,32 +857,65 @@
    "fwi": 0.2,
    "lat": 49.497,
    "lon": -117.448,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "TOBY HUB": {
-   "ffmc": 76.9,
-   "dmc": 27.9,
-   "dc": 786.5,
-   "isi": 1,
-   "bui": 51.2,
-   "fwi": 2.8,
-   "lat": 50.513,
-   "lon": -116.055,
-   "repDate": "2026-11-23T12:00:00Z"
+  "JOHNSON LAKE": {
+   "ffmc": 80.3,
+   "dmc": 38.2,
+   "dc": 809.1,
+   "isi": 1.9,
+   "bui": 68.3,
+   "fwi": 7,
+   "lat": 49.944,
+   "lon": -115.758,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CRANBROOK FS": {
+   "ffmc": 74.7,
+   "dmc": 16.5,
+   "dc": 642.9,
+   "isi": 0.9,
+   "bui": 31,
+   "fwi": 1.3,
+   "lat": 49.667,
+   "lon": -115.848,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "VALEMOUNT AIRPORT": {
+   "ffmc": 83.2,
+   "dmc": 4.7,
+   "dc": 193.6,
+   "isi": 3.9,
+   "bui": 8.9,
+   "fwi": 3.9,
+   "lat": 52.86,
+   "lon": -119.339,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VALEMOUNT 2": {
-   "ffmc": 77.2,
-   "dmc": 0.9,
+   "ffmc": 78.6,
+   "dmc": 1,
    "dc": 233,
    "isi": 1.1,
-   "bui": 1.8,
+   "bui": 1.9,
    "fwi": 0.3,
    "lat": 52.788,
    "lon": -119.315,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "BIGATTINI": {
+   "ffmc": 72.4,
+   "dmc": 1.7,
+   "dc": 386.8,
+   "isi": 0.8,
+   "bui": 3.4,
+   "fwi": 0.3,
+   "lat": 49.454,
+   "lon": -115.987,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BLAEBERRY": {
-   "ffmc": 78.4,
+   "ffmc": 78.5,
    "dmc": 8.1,
    "dc": 597.3,
    "isi": 1.1,
@@ -1033,45 +923,23 @@
    "fwi": 0.8,
    "lat": 51.436,
    "lon": -117.057,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SICAMOUS": {
-   "ffmc": 70.2,
-   "dmc": 0.2,
+   "ffmc": 74.4,
+   "dmc": 0.3,
    "dc": 294.9,
-   "isi": 0.7,
-   "bui": 0.5,
+   "isi": 1,
+   "bui": 0.7,
    "fwi": 0.2,
    "lat": 50.863,
    "lon": -119.003,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CYPRESS HILLS": {
-   "ffmc": 74.7,
-   "dmc": 14.4,
-   "dc": 243.4,
-   "isi": 1.2,
-   "bui": 25.1,
-   "fwi": 1.8,
-   "lat": 49.636,
-   "lon": -110.33,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "TOMPKINS LANDING AGCM": {
-   "ffmc": 79,
-   "dmc": 19,
-   "dc": 401.1,
-   "isi": 1.5,
-   "bui": 34,
-   "fwi": 3.3,
-   "lat": 58.021,
-   "lon": -116.848,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   }
  },
  "bcStations": {
   "CRANBROOK A": {
-   "ffmc": 74.9,
+   "ffmc": 76.2,
    "dmc": 8.4,
    "dc": 561.1,
    "isi": null,
@@ -1079,10 +947,10 @@
    "fwi": null,
    "lat": 49.617,
    "lon": -115.783,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CRANBROOK AIRPORT AUTO": {
-   "ffmc": 67.4,
+   "ffmc": 71.3,
    "dmc": 8.3,
    "dc": 567.8,
    "isi": null,
@@ -1090,7 +958,7 @@
    "fwi": null,
    "lat": 49.6177,
    "lon": -115.789,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "DAWSON CREEK A": {
    "ffmc": 77.1,
@@ -1101,21 +969,21 @@
    "fwi": null,
    "lat": 55.75,
    "lon": -120.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Glenevis AGCM": {
    "ffmc": 78.6,
    "dmc": 12.9,
    "dc": 334.5,
-   "isi": 1.5,
+   "isi": 1.3,
    "bui": 23.5,
-   "fwi": 2.5,
+   "fwi": 2,
    "lat": 53.8326,
    "lon": -114.539,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Olds College AGDM": {
-   "ffmc": 66.3,
+   "ffmc": 72.9,
    "dmc": 19,
    "dc": 490.7,
    "isi": null,
@@ -1123,10 +991,10 @@
    "fwi": null,
    "lat": 51.7586,
    "lon": -114.0846,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SUNDRE A": {
-   "ffmc": 74.8,
+   "ffmc": 77.6,
    "dmc": 36.7,
    "dc": 581.1,
    "isi": null,
@@ -1134,10 +1002,10 @@
    "fwi": null,
    "lat": 51.783,
    "lon": -114.683,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Azure AGCM": {
-   "ffmc": 43.1,
+   "ffmc": 53.3,
    "dmc": 3.3,
    "dc": 209.7,
    "isi": null,
@@ -1145,21 +1013,10 @@
    "fwi": null,
    "lat": 50.5119,
    "lon": -114.013,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "Calgary International": {
-   "ffmc": 57.6,
-   "dmc": 15.4,
-   "dc": 364.7,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 51.1226,
-   "lon": -114.013,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Nier AGDM": {
-   "ffmc": 64.9,
+   "ffmc": 72.3,
    "dmc": 21.6,
    "dc": 435.8,
    "isi": null,
@@ -1167,32 +1024,21 @@
    "fwi": null,
    "lat": 51.3693,
    "lon": -114.0994,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PINCHER CREEK": {
-   "ffmc": 63.3,
-   "dmc": 11.2,
-   "dc": 254,
+   "ffmc": 75.3,
+   "dmc": 11.4,
+   "dc": 254.1,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.517,
    "lon": -114,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CROWSNEST": {
-   "ffmc": 66.5,
-   "dmc": 5.6,
-   "dc": 267.8,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 49.633,
-   "lon": -114.483,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "La Crete AGCM": {
-   "ffmc": 75.3,
+   "ffmc": 75.7,
    "dmc": 19.7,
    "dc": 327.7,
    "isi": null,
@@ -1200,10 +1046,10 @@
    "fwi": null,
    "lat": 58.1721,
    "lon": -116.3428,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KALISPELL/GLACIER PARK INT": {
-   "ffmc": 24.1,
+   "ffmc": 37.5,
    "dmc": 0.2,
    "dc": 344.8,
    "isi": null,
@@ -1211,857 +1057,835 @@
    "fwi": null,
    "lat": 48.3,
    "lon": -114.267,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "DISCOVERY ISLAND": {
-   "ffmc": 83.4,
-   "dmc": 3.7,
-   "dc": 350.6,
-   "isi": 24.1,
-   "bui": 7.1,
-   "fwi": 17.6,
+   "ffmc": 79.2,
+   "dmc": 4.2,
+   "dc": 352.4,
+   "isi": 20.9,
+   "bui": 8.2,
+   "fwi": 16.7,
    "lat": 48.417,
    "lon": -123.233,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ESQUIMALT HARBOUR": {
-   "ffmc": 84,
-   "dmc": 4.2,
-   "dc": 457.7,
-   "isi": 3.5,
-   "bui": 8.1,
-   "fwi": 3.2,
+   "ffmc": 80.4,
+   "dmc": 4.7,
+   "dc": 459.5,
+   "isi": 1.6,
+   "bui": 9.1,
+   "fwi": 0.9,
    "lat": 48.433,
    "lon": -123.433,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NORTH COWICHAN": {
-   "ffmc": 43.9,
-   "dmc": 0.8,
-   "dc": 148.8,
-   "isi": 0.1,
-   "bui": 1.6,
+   "ffmc": 4.3,
+   "dmc": 0,
+   "dc": 97.5,
+   "isi": 0,
+   "bui": 0,
    "fwi": 0,
    "lat": 48.817,
    "lon": -123.717,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "RACE ROCKS": {
-   "ffmc": 82.5,
-   "dmc": 3.4,
-   "dc": 343.3,
-   "isi": 3.3,
-   "bui": 6.6,
-   "fwi": 2.7,
+   "ffmc": 69.8,
+   "dmc": 2,
+   "dc": 335.9,
+   "isi": 11.2,
+   "bui": 4,
+   "fwi": 7.7,
    "lat": 48.298,
    "lon": -123.5314,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SAANICHTON CFIA": {
-   "ffmc": 82.8,
-   "dmc": 3.4,
-   "dc": 344.1,
-   "isi": 4.5,
-   "bui": 6.7,
-   "fwi": 3.9,
+   "ffmc": 54.5,
+   "dmc": 1.8,
+   "dc": 331.5,
+   "isi": 0.5,
+   "bui": 3.5,
+   "fwi": 0.2,
    "lat": 48.6217,
    "lon": -123.4102,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SATURNA CAPMON CS": {
-   "ffmc": 74.8,
-   "dmc": 1.4,
-   "dc": 238.3,
-   "isi": 1,
-   "bui": 2.7,
-   "fwi": 0.3,
+   "ffmc": 45.3,
+   "dmc": 0.4,
+   "dc": 231.5,
+   "isi": 0.1,
+   "bui": 0.8,
+   "fwi": 0,
    "lat": 48.783,
    "lon": -123.133,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SATURNA ISLAND CS": {
-   "ffmc": 79.5,
-   "dmc": 2.9,
-   "dc": 349.1,
-   "isi": 3.9,
-   "bui": 5.8,
-   "fwi": 3.1,
+   "ffmc": 65.9,
+   "dmc": 1.7,
+   "dc": 350.7,
+   "isi": 3.4,
+   "bui": 3.5,
+   "fwi": 1.9,
    "lat": 48.783,
    "lon": -123.05,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SHERINGHAM POINT": {
-   "ffmc": 75.1,
-   "dmc": 2.7,
-   "dc": 166.6,
-   "isi": 2.1,
-   "bui": 5.1,
-   "fwi": 0.9,
+   "ffmc": 44.5,
+   "dmc": 1,
+   "dc": 130.7,
+   "isi": 0.4,
+   "bui": 1.9,
+   "fwi": 0.1,
    "lat": 48.3768,
    "lon": -123.921,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VICTORIA UNIVERSITY CS": {
-   "ffmc": 82.7,
-   "dmc": 3.8,
-   "dc": 391.4,
-   "isi": 1.9,
-   "bui": 7.5,
-   "fwi": 1,
+   "ffmc": 70.9,
+   "dmc": 3.4,
+   "dc": 393.2,
+   "isi": 0.8,
+   "bui": 6.7,
+   "fwi": 0.4,
    "lat": 48.45,
    "lon": -123.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VICTORIA GONZALES CS": {
-   "ffmc": 83.2,
-   "dmc": 3.8,
-   "dc": 344.5,
-   "isi": 8.6,
-   "bui": 7.5,
-   "fwi": 7.8,
+   "ffmc": 83,
+   "dmc": 4.3,
+   "dc": 346.3,
+   "isi": 10.7,
+   "bui": 8.4,
+   "fwi": 9.9,
    "lat": 48.417,
    "lon": -123.317,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VICTORIA INTL A": {
-   "ffmc": 83.3,
-   "dmc": 3.7,
-   "dc": 390.4,
-   "isi": 4.9,
-   "bui": 7.2,
-   "fwi": 4.4,
+   "ffmc": 51,
+   "dmc": 1.8,
+   "dc": 369.5,
+   "isi": 0.4,
+   "bui": 3.6,
+   "fwi": 0.1,
    "lat": 48.65,
    "lon": -123.433,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BALLENAS ISLAND": {
-   "ffmc": 75.4,
-   "dmc": 1,
-   "dc": 95.8,
-   "isi": 13.4,
-   "bui": 2,
-   "fwi": 7.3,
+   "ffmc": 30,
+   "dmc": 0.1,
+   "dc": 48.6,
+   "isi": 0,
+   "bui": 0.3,
+   "fwi": 0,
    "lat": 49.35,
    "lon": -124.167,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ENTRANCE ISLAND": {
-   "ffmc": 75.2,
-   "dmc": 1.8,
-   "dc": 303.6,
-   "isi": 6.4,
-   "bui": 3.5,
-   "fwi": 4.2,
+   "ffmc": 36.7,
+   "dmc": 0.4,
+   "dc": 268.8,
+   "isi": 0.1,
+   "bui": 0.7,
+   "fwi": 0,
    "lat": 49.217,
    "lon": -123.817,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "FANNY ISLAND": {
-   "ffmc": 49.9,
+   "ffmc": 23.4,
    "dmc": 0.1,
-   "dc": 4.4,
-   "isi": 1.2,
+   "dc": 1.3,
+   "isi": 0,
    "bui": 0.2,
-   "fwi": 0.3,
+   "fwi": 0,
    "lat": 50.45,
    "lon": -126,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PORT HARDY UA": {
-   "ffmc": 72.7,
-   "dmc": 0.8,
-   "dc": 7.2,
-   "isi": 5.6,
-   "bui": 1.3,
-   "fwi": 2.6,
+   "ffmc": 13.4,
+   "dmc": 0,
+   "dc": 1,
+   "isi": 0,
+   "bui": 0,
+   "fwi": 0,
    "lat": 50.683,
    "lon": -127.383,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PORT HARDY A": {
-   "ffmc": 72.7,
-   "dmc": 0.8,
-   "dc": 7.2,
-   "isi": 5.6,
-   "bui": 1.3,
-   "fwi": 2.6,
+   "ffmc": 13.4,
+   "dmc": 0,
+   "dc": 1,
+   "isi": 0,
+   "bui": 0,
+   "fwi": 0,
    "lat": 50.683,
    "lon": -127.367,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PORT HARDY AIRPORT": {
-   "ffmc": 79.4,
-   "dmc": 1.5,
-   "dc": 7.4,
-   "isi": 8.8,
-   "bui": 2,
-   "fwi": 4.9,
+   "ffmc": 34.7,
+   "dmc": 0.2,
+   "dc": 1.1,
+   "isi": 0.1,
+   "bui": 0.2,
+   "fwi": 0,
    "lat": 50.6848,
    "lon": -127.3804,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "QUALICUM BEACH AIRPORT": {
-   "ffmc": 48.3,
-   "dmc": 0.2,
-   "dc": 163.2,
-   "isi": 0.3,
-   "bui": 0.3,
-   "fwi": 0.1,
+   "ffmc": 3.5,
+   "dmc": 0,
+   "dc": 67,
+   "isi": 0,
+   "bui": 0,
+   "fwi": 0,
    "lat": 49.333,
    "lon": -124.4,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SISTERS ISLAND": {
-   "ffmc": 60.1,
-   "dmc": 0.3,
-   "dc": 5.2,
-   "isi": 8.4,
-   "bui": 0.5,
-   "fwi": 3.5,
+   "ffmc": 29.2,
+   "dmc": 0.1,
+   "dc": 1.4,
+   "isi": 0.1,
+   "bui": 0.2,
+   "fwi": 0,
    "lat": 49.483,
    "lon": -124.433,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ESTEVAN POINT CS": {
-   "ffmc": 10.4,
+   "ffmc": 0.1,
    "dmc": 0,
-   "dc": 1.2,
+   "dc": 1.5,
    "isi": 0,
    "bui": 0,
    "fwi": 0,
    "lat": 49.383,
    "lon": -126.55,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PORT ALBERNI AUT": {
-   "ffmc": 5.6,
+   "ffmc": 0.6,
    "dmc": 0,
-   "dc": 0.5,
+   "dc": 0.4,
    "isi": 0,
    "bui": 0,
    "fwi": 0,
    "lat": 49.317,
    "lon": -124.933,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SARTINE ISLAND AUT": {
-   "ffmc": 48.1,
-   "dmc": 0.6,
-   "dc": 9.5,
-   "isi": 39.2,
-   "bui": 1.1,
-   "fwi": 15.7,
+   "ffmc": 11.1,
+   "dmc": 0,
+   "dc": 1.6,
+   "isi": 0,
+   "bui": 0,
+   "fwi": 0,
    "lat": 50.817,
    "lon": -128.9,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SOLANDER ISLAND AUT": {
-   "ffmc": 33,
+   "ffmc": 5.8,
    "dmc": 0,
-   "dc": 4.2,
-   "isi": 4.3,
-   "bui": 0.1,
-   "fwi": 0.9,
+   "dc": 1.6,
+   "isi": 0,
+   "bui": 0,
+   "fwi": 0,
    "lat": 50.117,
    "lon": -127.933,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOWE SOUND - PAM ROCKS": {
-   "ffmc": 77.3,
-   "dmc": 2.5,
-   "dc": 10.9,
-   "isi": 10.3,
-   "bui": 3.1,
-   "fwi": 6.6,
+   "ffmc": 42.4,
+   "dmc": 0.8,
+   "dc": 1.1,
+   "isi": 0.8,
+   "bui": 0.5,
+   "fwi": 0.2,
    "lat": 49.483,
    "lon": -123.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PORT MELLON": {
-   "ffmc": 6.8,
+   "ffmc": 0,
    "dmc": 0,
-   "dc": 0.8,
+   "dc": 1,
    "isi": 0,
    "bui": 0,
    "fwi": 0,
    "lat": 49.5263,
    "lon": -123.4962,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "POWELL RIVER": {
-   "ffmc": 52.1,
-   "dmc": 0.3,
-   "dc": 1.1,
-   "isi": 1.2,
-   "bui": 0.3,
-   "fwi": 0.3,
+   "ffmc": 26.5,
+   "dmc": 0.1,
+   "dc": 1.3,
+   "isi": 0,
+   "bui": 0.2,
+   "fwi": 0,
    "lat": 49.833,
    "lon": -124.5,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SECHELT AUT": {
-   "ffmc": 72.5,
-   "dmc": 1.7,
-   "dc": 53.5,
-   "isi": 2.3,
-   "bui": 3.2,
-   "fwi": 0.8,
+   "ffmc": 48.8,
+   "dmc": 0.5,
+   "dc": 31.7,
+   "isi": 0.7,
+   "bui": 1,
+   "fwi": 0.2,
    "lat": 49.45,
    "lon": -123.717,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SQUAMISH AIRPORT": {
-   "ffmc": 18.1,
+   "ffmc": 0.9,
    "dmc": 0,
-   "dc": 0.9,
+   "dc": 0.5,
+   "isi": null,
+   "bui": null,
+   "fwi": null,
+   "lat": 49.783,
+   "lon": -123.167,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CAPE ST JAMES CS": {
+   "ffmc": 21.6,
+   "dmc": 0.1,
+   "dc": 1.5,
+   "isi": 0,
+   "bui": 0.2,
+   "fwi": 0,
+   "lat": 51.9358,
+   "lon": -131.0158,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "KINDAKUN ROCKS AUT": {
+   "ffmc": 57.2,
+   "dmc": 0.2,
+   "dc": 1.8,
+   "isi": 13.4,
+   "bui": 0.3,
+   "fwi": 5.4,
+   "lat": 53.317,
+   "lon": -132.767,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "LANGARA ISLAND RCS": {
+   "ffmc": 18.2,
+   "dmc": 0,
+   "dc": 1.4,
    "isi": 0,
    "bui": 0,
    "fwi": 0,
-   "lat": 49.783,
-   "lon": -123.167,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CAPE ST JAMES CS": {
-   "ffmc": 43.9,
-   "dmc": 0.2,
-   "dc": 1.1,
-   "isi": 4.5,
-   "bui": 0.3,
-   "fwi": 1,
-   "lat": 51.9358,
-   "lon": -131.0158,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "KINDAKUN ROCKS AUT": {
-   "ffmc": 61.8,
-   "dmc": 0.7,
-   "dc": 2.7,
-   "isi": 2.5,
-   "bui": 0.8,
-   "fwi": 0.6,
-   "lat": 53.317,
-   "lon": -132.767,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "LANGARA ISLAND RCS": {
-   "ffmc": 72,
-   "dmc": 1,
-   "dc": 7.3,
-   "isi": 2.2,
-   "bui": 1.5,
-   "fwi": 0.6,
    "lat": 54.2553,
    "lon": -133.0583,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ROSE SPIT AUT": {
-   "ffmc": 42.1,
-   "dmc": 0.2,
-   "dc": 0.9,
-   "isi": 0.5,
-   "bui": 0.2,
-   "fwi": 0.1,
+   "ffmc": 16.5,
+   "dmc": 0,
+   "dc": 1.3,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
    "lat": 54.167,
    "lon": -131.667,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SANDSPIT AIRPORT AUTO": {
-   "ffmc": 73.3,
-   "dmc": 1.2,
-   "dc": 8.9,
-   "isi": 11.4,
-   "bui": 1.8,
-   "fwi": 6.1,
+   "ffmc": 26.4,
+   "dmc": 0.1,
+   "dc": 1.6,
+   "isi": 0,
+   "bui": 0.2,
+   "fwi": 0,
    "lat": 53.25,
    "lon": -131.817,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SANDSPIT": {
-   "ffmc": 77.7,
-   "dmc": 1.2,
-   "dc": 8.9,
-   "isi": 24.1,
-   "bui": 1.8,
-   "fwi": 11.8,
+   "ffmc": 24.8,
+   "dmc": 0.1,
+   "dc": 1.6,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
    "lat": 53.25,
    "lon": -131.817,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BELLA BELLA": {
-   "ffmc": 76.1,
-   "dmc": 1.9,
-   "dc": 6.4,
-   "isi": 7.3,
-   "bui": 2.1,
-   "fwi": 4.1,
+   "ffmc": 44.4,
+   "dmc": 0.5,
+   "dc": 1.5,
+   "isi": 0.2,
+   "bui": 0.6,
+   "fwi": 0.1,
    "lat": 52.183,
    "lon": -128.15,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BELLA COOLA AIRPORT": {
-   "ffmc": 81.2,
-   "dmc": 1.1,
-   "dc": 4.6,
-   "isi": 2,
-   "bui": 1.4,
-   "fwi": 0.6,
+   "ffmc": 77.9,
+   "dmc": 1.2,
+   "dc": 5.5,
+   "isi": 1,
+   "bui": 1.5,
+   "fwi": 0.3,
    "lat": 52.383,
    "lon": -126.583,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BONILLA ISLAND AUT": {
-   "ffmc": 82.9,
-   "dmc": 1.8,
-   "dc": 7.5,
-   "isi": 5,
-   "bui": 2.2,
-   "fwi": 2.7,
+   "ffmc": 46.5,
+   "dmc": 0.4,
+   "dc": 1.5,
+   "isi": 1.4,
+   "bui": 0.5,
+   "fwi": 0.3,
    "lat": 53.5,
    "lon": -130.633,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CATHEDRAL POINT AUT": {
-   "ffmc": 83.7,
-   "dmc": 1.6,
-   "dc": 5.1,
-   "isi": 29.6,
-   "bui": 1.8,
-   "fwi": 13.9,
+   "ffmc": 67.3,
+   "dmc": 0.8,
+   "dc": 6.4,
+   "isi": 3.8,
+   "bui": 1.3,
+   "fwi": 1.2,
    "lat": 52.183,
    "lon": -127.467,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CUMSHEWA ISLAND": {
-   "ffmc": 75.2,
+   "ffmc": 74.3,
    "dmc": 2.7,
-   "dc": 107.2,
-   "isi": 16.2,
+   "dc": 108.7,
+   "isi": 13.4,
    "bui": 5.1,
-   "fwi": 11.5,
+   "fwi": 9.8,
    "lat": 53.033,
    "lon": -131.6,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HERBERT ISLAND AUT": {
-   "ffmc": 73.5,
-   "dmc": 1.1,
-   "dc": 9.1,
-   "isi": 67.2,
-   "bui": 1.7,
-   "fwi": 25.1,
+   "ffmc": 34.5,
+   "dmc": 0.1,
+   "dc": 1.2,
+   "isi": 0.3,
+   "bui": 0.1,
+   "fwi": 0.1,
    "lat": 50.933,
    "lon": -127.633,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOLLAND ROCK": {
-   "ffmc": 84.9,
-   "dmc": 2,
-   "dc": 8.2,
-   "isi": 17.1,
-   "bui": 2.5,
-   "fwi": 9.6,
+   "ffmc": 84,
+   "dmc": 2.3,
+   "dc": 9.8,
+   "isi": 8.5,
+   "bui": 2.9,
+   "fwi": 5.3,
    "lat": 54.167,
    "lon": -130.367,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KITIMAT FOREST AVE": {
-   "ffmc": 68.1,
-   "dmc": 0.5,
-   "dc": 2.1,
+   "ffmc": 23.4,
+   "dmc": 0,
+   "dc": 0.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 54.0564,
    "lon": -128.6041,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LUCY ISLAND LIGHTSTATION": {
-   "ffmc": 84.5,
-   "dmc": 2.1,
-   "dc": 8.9,
-   "isi": 4.6,
-   "bui": 2.7,
-   "fwi": 2.5,
+   "ffmc": 50.4,
+   "dmc": 0.6,
+   "dc": 1.6,
+   "isi": 2.2,
+   "bui": 0.6,
+   "fwi": 0.5,
    "lat": 54.3,
    "lon": -130.617,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PRINCE RUPERT": {
-   "ffmc": 83,
-   "dmc": 2,
-   "dc": 7.8,
-   "isi": 2.8,
-   "bui": 2.5,
-   "fwi": 0.9,
+   "ffmc": 54.5,
+   "dmc": 0.7,
+   "dc": 1.6,
+   "isi": 1,
+   "bui": 0.7,
+   "fwi": 0.2,
    "lat": 54.283,
    "lon": -130.45,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TERRACE A": {
-   "ffmc": 78.4,
-   "dmc": 0.8,
-   "dc": 3.3,
+   "ffmc": 40.5,
+   "dmc": 0,
+   "dc": 0,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 54.467,
    "lon": -128.583,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PEMBERTON AIRPORT CS": {
-   "ffmc": 31.6,
-   "dmc": 0.1,
-   "dc": 66.6,
+   "ffmc": 13.2,
+   "dmc": 0,
+   "dc": 57,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.3,
    "lon": -122.733,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PRINCE GEORGE": {
-   "ffmc": 79,
-   "dmc": 3.6,
-   "dc": 256.1,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 82.5,
+   "dmc": 3.9,
+   "dc": 257,
+   "isi": 9.9,
+   "bui": 7.5,
+   "fwi": 8.8,
    "lat": 53.883,
    "lon": -122.683,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "PRINCE GEORGE MASSEY AUTO": {
-   "ffmc": 80.4,
-   "dmc": 6,
-   "dc": 305.9,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 53.9,
-   "lon": -122.7908,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "QUESNEL": {
-   "ffmc": 78.9,
-   "dmc": 7.8,
-   "dc": 444.5,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 82.8,
+   "dmc": 8.2,
+   "dc": 445.5,
+   "isi": 7.8,
+   "bui": 15.6,
+   "fwi": 10.2,
    "lat": 53.033,
    "lon": -122.517,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "QUESNEL AIRPORT AUTO": {
-   "ffmc": 79.2,
-   "dmc": 10.4,
-   "dc": 456.3,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 82.8,
+   "dmc": 10.8,
+   "dc": 457.3,
+   "isi": 6,
+   "bui": 20.3,
+   "fwi": 9.4,
    "lat": 53.033,
    "lon": -122.5,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ABBOTSFORD A": {
-   "ffmc": 63.8,
-   "dmc": 2.8,
-   "dc": 114.2,
-   "isi": 0.9,
-   "bui": 5.2,
-   "fwi": 0.4,
+   "ffmc": 28.2,
+   "dmc": 0.9,
+   "dc": 96.9,
+   "isi": 0,
+   "bui": 1.8,
+   "fwi": 0,
    "lat": 49.033,
    "lon": -122.367,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "AGASSIZ RCS": {
-   "ffmc": 85,
-   "dmc": 3.7,
-   "dc": 84.3,
-   "isi": 3.2,
-   "bui": 6.7,
-   "fwi": 2.6,
+   "ffmc": 38,
+   "dmc": 1.5,
+   "dc": 71.2,
+   "isi": 0,
+   "bui": 2.8,
+   "fwi": 0,
    "lat": 49.25,
    "lon": -121.767,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WHISTLER - NESTERS": {
-   "ffmc": 76.6,
-   "dmc": 1.2,
-   "dc": 6.8,
+   "ffmc": 18.4,
+   "dmc": 0,
+   "dc": 0,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.133,
    "lon": -122.95,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Vancouver Boundary Bay": {
-   "ffmc": 52.7,
-   "dmc": 0.2,
-   "dc": 157.9,
-   "isi": 0.6,
-   "bui": 0.5,
-   "fwi": 0.1,
+   "ffmc": 18.3,
+   "dmc": 0,
+   "dc": 133.8,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
    "lat": 49.0733,
    "lon": -123.008,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CULTUS LAKE": {
-   "ffmc": 77.1,
-   "dmc": 3.1,
-   "dc": 117.1,
-   "isi": 1.2,
-   "bui": 5.8,
-   "fwi": 0.6,
+   "ffmc": 29.2,
+   "dmc": 1.1,
+   "dc": 102.1,
+   "isi": 0,
+   "bui": 2.1,
+   "fwi": 0,
    "lat": 49.0789,
    "lon": -121.9787,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "DELTA BURNS BOG": {
-   "ffmc": 44.8,
-   "dmc": 0.3,
-   "dc": 158.6,
-   "isi": 0.1,
-   "bui": 0.5,
+   "ffmc": 17.8,
+   "dmc": 0.1,
+   "dc": 134.1,
+   "isi": 0,
+   "bui": 0.2,
    "fwi": 0,
    "lat": 49.133,
    "lon": -123,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Langley Regional": {
-   "ffmc": 55.8,
-   "dmc": 0.3,
-   "dc": 117.6,
-   "isi": 0.7,
-   "bui": 0.7,
-   "fwi": 0.2,
+   "ffmc": 19.2,
+   "dmc": 0.1,
+   "dc": 97.7,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
    "lat": 49.1008,
    "lon": -122.631,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Pitt Meadows": {
-   "ffmc": 52.9,
-   "dmc": 0.3,
-   "dc": 21.1,
-   "isi": 0.6,
-   "bui": 0.6,
-   "fwi": 0.1,
+   "ffmc": 28.9,
+   "dmc": 0.2,
+   "dc": 1.4,
+   "isi": 0,
+   "bui": 0.3,
+   "fwi": 0,
    "lat": 49.2161,
    "lon": -122.713,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "POINT ATKINSON": {
-   "ffmc": 58.9,
+   "ffmc": 50.3,
    "dmc": 0.7,
-   "dc": 37.5,
-   "isi": 1.5,
+   "dc": 17.5,
+   "isi": 0.4,
    "bui": 1.3,
-   "fwi": 0.4,
+   "fwi": 0.1,
    "lat": 49.333,
    "lon": -123.267,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SANDHEADS CS": {
-   "ffmc": 57.6,
-   "dmc": 0.3,
-   "dc": 121.2,
-   "isi": 1.5,
-   "bui": 0.7,
-   "fwi": 0.4,
+   "ffmc": 32.5,
+   "dmc": 0.1,
+   "dc": 98.2,
+   "isi": 0,
+   "bui": 0.3,
+   "fwi": 0,
    "lat": 49.1,
    "lon": -123.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VANCOUVER INTL A": {
-   "ffmc": 54,
-   "dmc": 0.4,
-   "dc": 209.8,
-   "isi": 0.6,
-   "bui": 0.9,
-   "fwi": 0.2,
+   "ffmc": 31.1,
+   "dmc": 0.2,
+   "dc": 181.9,
+   "isi": 0,
+   "bui": 0.4,
+   "fwi": 0,
    "lat": 49.2,
    "lon": -123.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VANCOUVER HARBOUR CS": {
-   "ffmc": 55.3,
-   "dmc": 0.5,
-   "dc": 38.8,
-   "isi": 0.8,
-   "bui": 1,
-   "fwi": 0.2,
+   "ffmc": 34.5,
+   "dmc": 0.2,
+   "dc": 18.9,
+   "isi": 0,
+   "bui": 0.4,
+   "fwi": 0,
    "lat": 49.3,
    "lon": -123.117,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WEST VANCOUVER AUT": {
-   "ffmc": 42,
-   "dmc": 0.6,
-   "dc": 1.5,
-   "isi": 0.1,
+   "ffmc": 36.2,
+   "dmc": 0.5,
+   "dc": 1.8,
+   "isi": 0,
    "bui": 0.6,
    "fwi": 0,
    "lat": 49.35,
    "lon": -123.2,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WHITE ROCK CAMPBELL SCIENTIFIC": {
-   "ffmc": 63.9,
-   "dmc": 1.4,
-   "dc": 168.8,
-   "isi": 0.8,
-   "bui": 2.8,
-   "fwi": 0.3,
+   "ffmc": 26.4,
+   "dmc": 0.1,
+   "dc": 146.1,
+   "isi": 0,
+   "bui": 0.3,
+   "fwi": 0,
    "lat": 49.017,
    "lon": -122.783,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Vancouver Harbour": {
-   "ffmc": 56.8,
+   "ffmc": 47.6,
    "dmc": 0.5,
-   "dc": 25.8,
-   "isi": 0.9,
-   "bui": 0.9,
-   "fwi": 0.2,
+   "dc": 6.6,
+   "isi": 0.4,
+   "bui": 0.8,
+   "fwi": 0.1,
    "lat": 49.2944,
    "lon": -123.111,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOPE A": {
-   "ffmc": 83.4,
-   "dmc": 3.6,
-   "dc": 76.7,
-   "isi": 5.3,
-   "bui": 6.4,
-   "fwi": 4.5,
+   "ffmc": 64.6,
+   "dmc": 2.8,
+   "dc": 77.5,
+   "isi": 1.5,
+   "bui": 5.2,
+   "fwi": 0.6,
    "lat": 49.367,
    "lon": -121.5,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOPE AIRPORT": {
-   "ffmc": 83.4,
-   "dmc": 3.5,
-   "dc": 49.6,
-   "isi": 5.1,
-   "bui": 6,
-   "fwi": 4.3,
-   "lat": 49.367,
-   "lon": -121.5,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HOPE SLIDE A": {
-   "ffmc": 80.2,
-   "dmc": 2.5,
-   "dc": 84,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 49.283,
-   "lon": -121.233,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "LILLOOET": {
-   "ffmc": 77.1,
-   "dmc": 8.3,
-   "dc": 566.5,
-   "isi": 1.1,
-   "bui": 16,
-   "fwi": 0.8,
-   "lat": 50.672,
-   "lon": -121.888,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "LYTTON A": {
-   "ffmc": 80.7,
-   "dmc": 3.1,
-   "dc": 412.9,
-   "isi": 1.4,
+   "ffmc": 67.5,
+   "dmc": 3.6,
+   "dc": 50.4,
+   "isi": 1.5,
    "bui": 6.1,
    "fwi": 0.7,
+   "lat": 49.367,
+   "lon": -121.5,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "LILLOOET": {
+   "ffmc": 77.8,
+   "dmc": 8.4,
+   "dc": 567,
+   "isi": 1.3,
+   "bui": 16.3,
+   "fwi": 1.2,
+   "lat": 50.672,
+   "lon": -121.888,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "LYTTON A": {
+   "ffmc": 81.4,
+   "dmc": 3.3,
+   "dc": 413.8,
+   "isi": 1.8,
+   "bui": 6.6,
+   "fwi": 0.9,
    "lat": 50.217,
    "lon": -121.583,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LYTTON RCS": {
-   "ffmc": 79.7,
-   "dmc": 2.6,
-   "dc": 403.2,
+   "ffmc": 33.3,
+   "dmc": 0.9,
+   "dc": 378.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.217,
    "lon": -121.583,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KELOWNA": {
-   "ffmc": 80.7,
-   "dmc": 25.4,
-   "dc": 409.7,
+   "ffmc": 79.7,
+   "dmc": 25.5,
+   "dc": 410.1,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.95,
    "lon": -119.383,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KELOWNA UBCO": {
-   "ffmc": 76.7,
-   "dmc": 26.2,
-   "dc": 829.8,
+   "ffmc": 77.1,
+   "dmc": 26.3,
+   "dc": 830.2,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.933,
    "lon": -119.4,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MERRITT": {
-   "ffmc": 65.4,
-   "dmc": 8.8,
-   "dc": 533.7,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 74.6,
+   "dmc": 9.1,
+   "dc": 534.5,
+   "isi": 1.9,
+   "bui": 17.4,
+   "fwi": 2.6,
    "lat": 50.1127,
    "lon": -120.7781,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "OSOYOOS CS": {
-   "ffmc": 79.3,
+   "ffmc": 78,
    "dmc": 23.9,
-   "dc": 738.2,
+   "dc": 738.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.033,
    "lon": -119.433,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PENTICTON A": {
-   "ffmc": 83.4,
-   "dmc": 53.4,
-   "dc": 865,
-   "isi": 2.4,
-   "bui": 92.6,
-   "fwi": 10.4,
+   "ffmc": 82,
+   "dmc": 53.5,
+   "dc": 865.6,
+   "isi": 1.9,
+   "bui": 92.7,
+   "fwi": 8.8,
    "lat": 49.467,
    "lon": -119.6,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VERNON AUTO": {
    "ffmc": 79.3,
-   "dmc": 12.8,
-   "dc": 756.5,
+   "dmc": 12.9,
+   "dc": 756.8,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.217,
    "lon": -119.2,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PRINCETON CS": {
-   "ffmc": 56.2,
+   "ffmc": 56.3,
    "dmc": 24.5,
    "dc": 917.7,
    "isi": null,
@@ -2069,87 +1893,76 @@
    "fwi": null,
    "lat": 49.467,
    "lon": -120.517,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SUMMERLAND CS": {
-   "ffmc": 81.8,
-   "dmc": 25.9,
-   "dc": 774,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 73.6,
+   "dmc": 26,
+   "dc": 774.6,
+   "isi": 1.3,
+   "bui": 48,
+   "fwi": 3.7,
    "lat": 49.567,
    "lon": -119.65,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NAKUSP CS": {
-   "ffmc": 65.5,
+   "ffmc": 68.4,
    "dmc": 0.8,
-   "dc": 275.4,
+   "dc": 275.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.267,
    "lon": -117.817,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NELSON CS": {
    "ffmc": 81.7,
-   "dmc": 3.9,
-   "dc": 446.1,
+   "dmc": 4,
+   "dc": 446.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.483,
    "lon": -117.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WARFIELD RCS": {
-   "ffmc": 75.6,
-   "dmc": 1,
-   "dc": 423.1,
+   "ffmc": 35.7,
+   "dmc": 0,
+   "dc": 403.7,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.117,
    "lon": -117.733,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CRESTON CAMPBELL SCIENTIFIC": {
-   "ffmc": 73.6,
-   "dmc": 9.2,
+   "ffmc": 75.1,
+   "dmc": 9.3,
    "dc": 652.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 49.083,
    "lon": -116.5,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ASHCROFT": {
    "ffmc": 80.7,
-   "dmc": 21.8,
-   "dc": 794.7,
+   "dmc": 21.9,
+   "dc": 795.1,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.717,
    "lon": -121.283,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CLEARWATER AUTO": {
-   "ffmc": 80.5,
-   "dmc": 8.2,
-   "dc": 427.6,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
-   "lat": 51.65,
-   "lon": -120.083,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "Clinton Bleibler Ranch": {
-   "ffmc": 76.2,
+   "ffmc": 77.2,
    "dmc": 15.2,
    "dc": 684.1,
    "isi": null,
@@ -2157,65 +1970,65 @@
    "fwi": null,
    "lat": 51.25,
    "lon": -121.683,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KAMLOOPS A": {
-   "ffmc": 82.6,
-   "dmc": 28.6,
-   "dc": 905.3,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 83,
+   "dmc": 28.9,
+   "dc": 906.1,
+   "isi": 5.7,
+   "bui": 53.5,
+   "fwi": 15.3,
    "lat": 50.7,
    "lon": -120.45,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KAMLOOPS AUT": {
-   "ffmc": 82.5,
-   "dmc": 31.4,
-   "dc": 975.9,
-   "isi": null,
-   "bui": null,
-   "fwi": null,
+   "ffmc": 83,
+   "dmc": 31.7,
+   "dc": 976.8,
+   "isi": 5.7,
+   "bui": 58.6,
+   "fwi": 16,
    "lat": 50.7,
    "lon": -120.45,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SALMON ARM CS": {
-   "ffmc": 78.1,
-   "dmc": 9.1,
-   "dc": 603.1,
+   "ffmc": 78.6,
+   "dmc": 9.2,
+   "dc": 603.5,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.7031,
    "lon": -119.2907,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE A": {
-   "ffmc": 79.1,
-   "dmc": 1.1,
-   "dc": 417.2,
+   "ffmc": 79.8,
+   "dmc": 1.2,
+   "dc": 417.6,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.967,
    "lon": -118.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE AIRPORT AUTO": {
-   "ffmc": 79.4,
-   "dmc": 1.1,
-   "dc": 377.3,
+   "ffmc": 80.1,
+   "dmc": 1.2,
+   "dc": 377.7,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 50.95,
    "lon": -118.183,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MACKENZIE": {
-   "ffmc": 77,
+   "ffmc": 75.4,
    "dmc": 0.7,
    "dc": 187.5,
    "isi": null,
@@ -2223,43 +2036,43 @@
    "fwi": null,
    "lat": 55.3,
    "lon": -123.133,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "OMAK AIRPORT": {
-   "ffmc": 65,
-   "dmc": 100.4,
-   "dc": 1320.3,
+   "ffmc": 46.4,
+   "dmc": 90.7,
+   "dc": 1320.4,
    "isi": null,
    "bui": null,
    "fwi": null,
    "lat": 48.467,
    "lon": -119.517,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "FRIDAY HARBOR AIRPORT": {
-   "ffmc": 83.8,
-   "dmc": 5.5,
-   "dc": 365.1,
-   "isi": 6.7,
-   "bui": 10.6,
-   "fwi": 7.3,
+   "ffmc": 73.7,
+   "dmc": 4.4,
+   "dc": 367,
+   "isi": 2.9,
+   "bui": 8.6,
+   "fwi": 2.7,
    "lat": 48.517,
    "lon": -123.033,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BELLINGHAM INTERNATIONAL  AIRPORT": {
-   "ffmc": 76.9,
-   "dmc": 6.8,
-   "dc": 201.7,
-   "isi": 1.8,
-   "bui": 12.6,
-   "fwi": 1.8,
+   "ffmc": 59.9,
+   "dmc": 5.2,
+   "dc": 203,
+   "isi": 0.8,
+   "bui": 9.7,
+   "fwi": 0.5,
    "lat": 48.8,
    "lon": -122.533,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SANDPOINT, SANDPOINT AIRPORT": {
-   "ffmc": 51.3,
+   "ffmc": 55.3,
    "dmc": 3,
    "dc": 567.9,
    "isi": null,
@@ -2267,483 +2080,285 @@
    "fwi": null,
    "lat": 48.299,
    "lon": -116.56,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HIGHWOOD AUTO": {
-   "ffmc": 61.3,
-   "dmc": 12.8,
-   "dc": 291,
-   "isi": 0.7,
-   "bui": 23,
-   "fwi": 0.7,
-   "lat": 50.415,
-   "lon": -114.726,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "KANANASKI BOUNDARY AUTO": {
-   "ffmc": 76.1,
-   "dmc": 19.9,
-   "dc": 422.9,
-   "isi": 2.5,
-   "bui": 35.7,
-   "fwi": 5.9,
-   "lat": 50.928,
-   "lon": -115.123,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "PETER LOUGHEED PARK": {
-   "ffmc": 73.4,
-   "dmc": 44.5,
-   "dc": 500.5,
-   "isi": 1.2,
-   "bui": 72.8,
-   "fwi": 4.6,
-   "lat": 50.714,
-   "lon": -115.119,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "ELBOW AUTO": {
-   "ffmc": 56.1,
-   "dmc": 11,
-   "dc": 225.8,
-   "isi": 0.3,
-   "bui": 19.6,
-   "fwi": 0.3,
-   "lat": 50.905,
-   "lon": -114.691,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "NORTH GHOST": {
-   "ffmc": 73.6,
-   "dmc": 38.7,
-   "dc": 488.4,
-   "isi": 0.8,
-   "bui": 64.6,
-   "fwi": 2.5,
-   "lat": 51.574,
-   "lon": -114.855,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "OSBORN": {
-   "ffmc": 75.9,
+   "ffmc": 76.5,
    "dmc": 19.5,
    "dc": 604.6,
-   "isi": 1.2,
+   "isi": 1.1,
    "bui": 36.1,
-   "fwi": 2.8,
+   "fwi": 2.5,
    "lat": 56.558,
    "lon": -120.382,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "BLUE RIVER 2": {
+   "ffmc": 60.3,
+   "dmc": 0.5,
+   "dc": 251.1,
+   "isi": 0.5,
+   "bui": 1.1,
+   "fwi": 0.1,
+   "lat": 52.122,
+   "lon": -119.294,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SEVEREID": {
-   "ffmc": 72.5,
-   "dmc": 1.3,
+   "ffmc": 76,
+   "dmc": 1.4,
    "dc": 5,
-   "isi": 0.8,
-   "bui": 1.6,
-   "fwi": 0.2,
+   "isi": 1,
+   "bui": 1.7,
+   "fwi": 0.3,
    "lat": 54.17,
    "lon": -121.652,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HELMUT": {
-   "ffmc": 77.5,
-   "dmc": 50.8,
-   "dc": 661.6,
-   "isi": 1,
-   "bui": 85.2,
-   "fwi": 4.6,
-   "lat": 59.421,
-   "lon": -120.789,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NELSON FORKS": {
-   "ffmc": 72.7,
+   "ffmc": 73,
    "dmc": 25.8,
    "dc": 454.4,
-   "isi": 0.8,
+   "isi": 0.7,
    "bui": 45.2,
-   "fwi": 1.8,
+   "fwi": 1.6,
    "lat": 59.617,
    "lon": -124.099,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "HELMUT": {
+   "ffmc": 77,
+   "dmc": 50.8,
+   "dc": 661.6,
+   "isi": 0.9,
+   "bui": 85.2,
+   "fwi": 3.8,
+   "lat": 59.421,
+   "lon": -120.789,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SILVER": {
-   "ffmc": 77.2,
+   "ffmc": 76.9,
    "dmc": 34.5,
    "dc": 451.8,
-   "isi": 1,
+   "isi": 0.9,
    "bui": 58,
-   "fwi": 3.2,
+   "fwi": 2.7,
    "lat": 57.497,
    "lon": -121.297,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "PADDY": {
-   "ffmc": 79,
-   "dmc": 36,
-   "dc": 534.9,
-   "isi": 1.4,
-   "bui": 61.6,
-   "fwi": 4.8,
-   "lat": 57.782,
-   "lon": -120.237,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "VALEMOUNT AIRPORT": {
-   "ffmc": 82.4,
-   "dmc": 4.4,
-   "dc": 193.3,
-   "isi": 2.7,
-   "bui": 8.4,
-   "fwi": 2.4,
-   "lat": 52.86,
-   "lon": -119.339,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "VANDERHOOF HUB": {
-   "ffmc": 81.2,
-   "dmc": 12.8,
-   "dc": 572.8,
-   "isi": 3.2,
-   "bui": 24.3,
-   "fwi": 5.9,
-   "lat": 54.056,
-   "lon": -124.009,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "NEMIAH": {
-   "ffmc": 79.2,
-   "dmc": 0.9,
-   "dc": 248.2,
-   "isi": 1.2,
-   "bui": 1.9,
-   "fwi": 0.4,
-   "lat": 51.48,
-   "lon": -123.818,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "LONE BUTTE": {
-   "ffmc": 81.2,
-   "dmc": 24,
-   "dc": 570.9,
-   "isi": 2.3,
-   "bui": 43.5,
-   "fwi": 6.3,
-   "lat": 51.507,
-   "lon": -121.162,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "KNIFE": {
-   "ffmc": 82.8,
-   "dmc": 48.3,
-   "dc": 777.2,
-   "isi": 2.3,
-   "bui": 83.6,
-   "fwi": 9.5,
-   "lat": 52.05,
-   "lon": -121.874,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "MIDDLE LAKE": {
-   "ffmc": 71,
+  "INGENIKA POINT": {
+   "ffmc": 69.1,
    "dmc": 0.6,
-   "dc": 191.2,
+   "dc": 357,
    "isi": 0.7,
-   "bui": 1.1,
+   "bui": 1.2,
    "fwi": 0.2,
-   "lat": 51.702,
-   "lon": -124.875,
-   "repDate": "2026-11-23T12:00:00Z"
+   "lat": 57.019,
+   "lon": -125.18,
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "GAVIN": {
-   "ffmc": 79.4,
-   "dmc": 8.9,
-   "dc": 353.6,
-   "isi": 1.4,
-   "bui": 16.8,
-   "fwi": 1.6,
-   "lat": 52.47,
-   "lon": -121.742,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HORSEFLY": {
-   "ffmc": 83.2,
-   "dmc": 20,
-   "dc": 469.4,
-   "isi": 2.9,
-   "bui": 36.2,
-   "fwi": 7,
-   "lat": 52.33,
-   "lon": -121.397,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "TIMOTHY": {
-   "ffmc": 80.8,
-   "dmc": 20.3,
-   "dc": 480.4,
-   "isi": 1.8,
-   "bui": 36.7,
-   "fwi": 4.3,
-   "lat": 51.913,
-   "lon": -121.389,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "YOUNG LAKE": {
-   "ffmc": 79.7,
-   "dmc": 13.6,
-   "dc": 578.2,
-   "isi": 1.7,
-   "bui": 25.8,
-   "fwi": 3.1,
-   "lat": 51.238,
-   "lon": -120.998,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "MEADOW LAKE": {
-   "ffmc": 78,
-   "dmc": 34.5,
-   "dc": 817,
-   "isi": 2.7,
-   "bui": 62.5,
-   "fwi": 9.2,
-   "lat": 51.375,
-   "lon": -121.717,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CLEARWATER HUB": {
-   "ffmc": 79.1,
-   "dmc": 9.7,
-   "dc": 489.9,
+  "FORT ST JAMES": {
+   "ffmc": 74.9,
+   "dmc": 3.5,
+   "dc": 470.3,
    "isi": 1.2,
-   "bui": 18.5,
-   "fwi": 1.3,
-   "lat": 51.629,
-   "lon": -120.095,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "WINDY MOUNTAIN": {
-   "ffmc": 58.8,
-   "dmc": 6.7,
-   "dc": 416.4,
-   "isi": 1.3,
-   "bui": 12.8,
-   "fwi": 0.9,
-   "lat": 51.67,
-   "lon": -120.65,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "MATHEW": {
-   "ffmc": 77.9,
-   "dmc": 1.4,
-   "dc": 82.9,
-   "isi": 1.2,
-   "bui": 2.8,
-   "fwi": 0.4,
-   "lat": 52.91,
-   "lon": -120.912,
-   "repDate": "2026-11-23T12:00:00Z"
+   "bui": 6.8,
+   "fwi": 0.6,
+   "lat": 54.394,
+   "lon": -124.261,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PRAIRIE CREEK": {
-   "ffmc": 82.4,
-   "dmc": 10.8,
-   "dc": 268.3,
-   "isi": 2.2,
-   "bui": 19.6,
-   "fwi": 3.4,
+   "ffmc": 82.9,
+   "dmc": 11.1,
+   "dc": 268.7,
+   "isi": 2.9,
+   "bui": 20.1,
+   "fwi": 4.8,
    "lat": 52.392,
    "lon": -120.985,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GOSNEL": {
-   "ffmc": 73.9,
+   "ffmc": 75,
    "dmc": 0.1,
    "dc": 59.7,
-   "isi": 1.6,
+   "isi": 1.2,
    "bui": 0.2,
    "fwi": 0.3,
    "lat": 52.453,
    "lon": -119.175,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BRENDA MINES": {
    "ffmc": 71.8,
    "dmc": 1.9,
    "dc": 464.6,
-   "isi": 1.1,
+   "isi": 1.2,
    "bui": 3.7,
    "fwi": 0.4,
    "lat": 49.868,
    "lon": -119.993,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TURTLE": {
-   "ffmc": 81.6,
-   "dmc": 10.9,
+   "ffmc": 77.5,
+   "dmc": 11,
    "dc": 555.1,
-   "isi": 1.6,
-   "bui": 20.8,
-   "fwi": 2.3,
+   "isi": 0.9,
+   "bui": 20.9,
+   "fwi": 0.9,
    "lat": 50.803,
    "lon": -119.63,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "GLIMPSE": {
-   "ffmc": 74.8,
-   "dmc": 9.4,
-   "dc": 507.9,
-   "isi": 1.1,
-   "bui": 18,
-   "fwi": 0.9,
-   "lat": 50.27,
-   "lon": -120.288,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "FINTRY": {
-   "ffmc": 81.2,
-   "dmc": 17.1,
-   "dc": 777.4,
-   "isi": 1.3,
-   "bui": 32.4,
-   "fwi": 2.7,
+   "ffmc": 79.4,
+   "dmc": 17.2,
+   "dc": 777.6,
+   "isi": 1.1,
+   "bui": 32.5,
+   "fwi": 2.1,
    "lat": 50.207,
    "lon": -119.48,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PEMBERTON BASE": {
-   "ffmc": 19.7,
-   "dmc": 0.2,
-   "dc": 38.2,
+   "ffmc": 6.8,
+   "dmc": 0,
+   "dc": 31.6,
    "isi": 0,
-   "bui": 0.3,
+   "bui": 0,
    "fwi": 0,
    "lat": 50.306,
    "lon": -122.729,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ASPEN GROVE": {
-   "ffmc": 79.5,
-   "dmc": 30.3,
+   "ffmc": 79.6,
+   "dmc": 30.4,
    "dc": 921.9,
-   "isi": 1.6,
-   "bui": 56,
-   "fwi": 5.4,
+   "isi": 1.3,
+   "bui": 56.1,
+   "fwi": 4.3,
    "lat": 49.948,
    "lon": -120.621,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LEIGHTON LAKE": {
    "ffmc": 80.5,
-   "dmc": 14.6,
+   "dmc": 14.7,
    "dc": 647.9,
-   "isi": 2.2,
-   "bui": 27.7,
-   "fwi": 4.4,
+   "isi": 1.9,
+   "bui": 27.8,
+   "fwi": 3.6,
    "lat": 50.615,
    "lon": -120.836,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "AFTON": {
-   "ffmc": 79.7,
-   "dmc": 29.4,
-   "dc": 847.7,
-   "isi": 2.8,
-   "bui": 54,
-   "fwi": 8.7,
+   "ffmc": 80.6,
+   "dmc": 29.5,
+   "dc": 848.2,
+   "isi": 4.4,
+   "bui": 54.4,
+   "fwi": 12.7,
    "lat": 50.673,
    "lon": -120.482,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PASKA LAKE": {
    "ffmc": 79.6,
    "dmc": 13.4,
    "dc": 669,
-   "isi": 1.8,
+   "isi": 2.5,
    "bui": 25.5,
-   "fwi": 3.3,
+   "fwi": 4.8,
    "lat": 50.504,
    "lon": -120.674,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PENTICTON RS": {
-   "ffmc": 82.1,
-   "dmc": 35.1,
-   "dc": 751.8,
-   "isi": 2.1,
-   "bui": 62.9,
-   "fwi": 7.2,
+   "ffmc": 73.6,
+   "dmc": 35.3,
+   "dc": 752.2,
+   "isi": 0.9,
+   "bui": 63.1,
+   "fwi": 3.1,
    "lat": 49.518,
    "lon": -119.553,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MCCUDDY": {
-   "ffmc": 71.9,
-   "dmc": 12.2,
+   "ffmc": 74.3,
+   "dmc": 12.3,
    "dc": 538.1,
-   "isi": 1.1,
-   "bui": 23.2,
-   "fwi": 1.4,
+   "isi": 1.8,
+   "bui": 23.3,
+   "fwi": 3,
    "lat": 49.148,
    "lon": -119.415,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MABEL LAKE 2": {
-   "ffmc": 70.7,
-   "dmc": 0.7,
-   "dc": 451.6,
-   "isi": 0.7,
-   "bui": 1.4,
+   "ffmc": 73.1,
+   "dmc": 0.8,
+   "dc": 451.7,
+   "isi": 0.8,
+   "bui": 1.6,
    "fwi": 0.2,
    "lat": 50.352,
    "lon": -118.773,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "REVELSTOKE": {
-   "ffmc": 71.1,
-   "dmc": 0.8,
+   "ffmc": 72.7,
+   "dmc": 0.9,
    "dc": 227.8,
    "isi": 0.7,
-   "bui": 1.7,
+   "bui": 1.8,
    "fwi": 0.2,
    "lat": 51.06,
    "lon": -118.217,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KETTLE 2": {
-   "ffmc": 68.6,
+   "ffmc": 69.2,
    "dmc": 0,
    "dc": 302.8,
-   "isi": 0.6,
+   "isi": 0.7,
    "bui": 0.1,
    "fwi": 0.1,
    "lat": 49.96,
    "lon": -118.626,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BEAVERDELL": {
-   "ffmc": 76.9,
+   "ffmc": 75.7,
    "dmc": 5.6,
    "dc": 430,
-   "isi": 1.2,
+   "isi": 0.8,
    "bui": 10.9,
-   "fwi": 0.8,
+   "fwi": 0.5,
    "lat": 49.456,
    "lon": -119.089,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GRAND FORKS": {
-   "ffmc": 70.7,
+   "ffmc": 71.7,
    "dmc": 4,
-   "dc": 529.8,
-   "isi": 0.7,
-   "bui": 7.8,
-   "fwi": 0.4,
+   "dc": 529.9,
+   "isi": 1.3,
+   "bui": 7.9,
+   "fwi": 0.7,
    "lat": 49.031,
    "lon": -118.416,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ROCK CREEK": {
-   "ffmc": 72.5,
+   "ffmc": 71.9,
    "dmc": 15.4,
    "dc": 636.3,
    "isi": 0.8,
@@ -2751,10 +2366,10 @@
    "fwi": 0.9,
    "lat": 49.052,
    "lon": -118.937,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SMALLWOOD": {
-   "ffmc": 69.7,
+   "ffmc": 70.1,
    "dmc": 0.7,
    "dc": 329.9,
    "isi": 0.6,
@@ -2762,32 +2377,43 @@
    "fwi": 0.2,
    "lat": 49.497,
    "lon": -117.448,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "TOBY HUB": {
-   "ffmc": 76.9,
-   "dmc": 27.9,
-   "dc": 786.5,
-   "isi": 1,
-   "bui": 51.2,
-   "fwi": 2.8,
-   "lat": 50.513,
-   "lon": -116.055,
-   "repDate": "2026-11-23T12:00:00Z"
+  "JOHNSON LAKE": {
+   "ffmc": 80.3,
+   "dmc": 38.2,
+   "dc": 809.1,
+   "isi": 1.9,
+   "bui": 68.3,
+   "fwi": 7,
+   "lat": 49.944,
+   "lon": -115.758,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CRANBROOK FS": {
+   "ffmc": 74.7,
+   "dmc": 16.5,
+   "dc": 642.9,
+   "isi": 0.9,
+   "bui": 31,
+   "fwi": 1.3,
+   "lat": 49.667,
+   "lon": -115.848,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KISPIOX HUB": {
-   "ffmc": 78.1,
-   "dmc": 2.4,
+   "ffmc": 76.6,
+   "dmc": 2.5,
    "dc": 262.3,
-   "isi": 1.2,
+   "isi": 1,
    "bui": 4.8,
-   "fwi": 0.5,
+   "fwi": 0.4,
    "lat": 55.434,
    "lon": -127.649,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ELK MOUNTAIN": {
-   "ffmc": 74.5,
+   "ffmc": 74.7,
    "dmc": 6.6,
    "dc": 150.9,
    "isi": 0.8,
@@ -2795,21 +2421,120 @@
    "fwi": 0.5,
    "lat": 59.334,
    "lon": -125.511,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "FIRESIDE": {
+   "ffmc": 56.7,
+   "dmc": 9.7,
+   "dc": 428.3,
+   "isi": 0.3,
+   "bui": 18.3,
+   "fwi": 0.3,
+   "lat": 59.723,
+   "lon": -127.335,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "BOWSER": {
+   "ffmc": 11.2,
+   "dmc": 0.1,
+   "dc": 1.1,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
+   "lat": 49.437,
+   "lon": -124.702,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CEDAR": {
+   "ffmc": 7.3,
+   "dmc": 0.1,
+   "dc": 1.2,
+   "isi": 0,
+   "bui": 0.1,
+   "fwi": 0,
+   "lat": 49.048,
+   "lon": -123.875,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "FORT NELSON FS": {
+   "ffmc": 69.9,
+   "dmc": 49.6,
+   "dc": 696.8,
+   "isi": 0.6,
+   "bui": 84.3,
+   "fwi": 2.5,
+   "lat": 58.842,
+   "lon": -122.573,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "HOLY CROSS 2": {
+   "ffmc": 75.8,
+   "dmc": 2.4,
+   "dc": 536.4,
+   "isi": 1.1,
+   "bui": 4.8,
+   "fwi": 0.5,
+   "lat": 53.936,
+   "lon": -124.777,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "HAIG CAMP": {
+   "ffmc": 50.1,
+   "dmc": 2,
+   "dc": 62.5,
+   "isi": 0.2,
+   "bui": 3.7,
+   "fwi": 0.1,
+   "lat": 49.381,
+   "lon": -121.526,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "UBC RESEARCH": {
+   "ffmc": 14.8,
+   "dmc": 0.2,
+   "dc": 1.4,
+   "isi": 0,
+   "bui": 0.2,
+   "fwi": 0,
+   "lat": 49.264,
+   "lon": -122.573,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CHURN CREEK": {
+   "ffmc": 80.3,
+   "dmc": 15.3,
+   "dc": 659,
+   "isi": 4,
+   "bui": 29,
+   "fwi": 8.1,
+   "lat": 51.403,
+   "lon": -122.32,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "PADDY": {
+   "ffmc": 79,
+   "dmc": 36,
+   "dc": 534.9,
+   "isi": 1.4,
+   "bui": 61.6,
+   "fwi": 5.1,
+   "lat": 57.782,
+   "lon": -120.237,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GRAHAM": {
-   "ffmc": 80.6,
+   "ffmc": 79.5,
    "dmc": 7.9,
    "dc": 305.5,
-   "isi": 1.5,
+   "isi": 1.2,
    "bui": 14.8,
-   "fwi": 1.5,
+   "fwi": 0.9,
    "lat": 56.435,
    "lon": -122.458,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TOAD RIVER": {
-   "ffmc": 65.7,
+   "ffmc": 66.7,
    "dmc": 22.9,
    "dc": 470.6,
    "isi": 0.6,
@@ -2817,98 +2542,109 @@
    "fwi": 0.8,
    "lat": 58.866,
    "lon": -125.311,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "VALEMOUNT AIRPORT": {
+   "ffmc": 83.2,
+   "dmc": 4.7,
+   "dc": 193.6,
+   "isi": 3.9,
+   "bui": 8.9,
+   "fwi": 3.9,
+   "lat": 52.86,
+   "lon": -119.339,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TUMBLER(DENISON) HUB": {
-   "ffmc": 76,
+   "ffmc": 76.3,
    "dmc": 0.9,
    "dc": 307.9,
-   "isi": 0.9,
+   "isi": 0.8,
    "bui": 1.9,
    "fwi": 0.3,
    "lat": 55.027,
    "lon": -120.934,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PINK MOUNTAIN": {
-   "ffmc": 78.7,
+   "ffmc": 77.3,
    "dmc": 13.5,
    "dc": 495.4,
-   "isi": 1.1,
+   "isi": 1,
    "bui": 25.3,
    "fwi": 1.4,
    "lat": 57.088,
    "lon": -122.591,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MUSKWA": {
-   "ffmc": 80.9,
+   "ffmc": 79.8,
    "dmc": 43.6,
    "dc": 545.3,
-   "isi": 1.3,
+   "isi": 1.2,
    "bui": 72.7,
-   "fwi": 5,
+   "fwi": 4.6,
    "lat": 57.884,
    "lon": -123.616,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HUDSON HOPE": {
-   "ffmc": 78.8,
+   "ffmc": 77.9,
    "dmc": 5.6,
    "dc": 271.6,
-   "isi": 1.2,
+   "isi": 1,
    "bui": 10.7,
-   "fwi": 0.7,
+   "fwi": 0.6,
    "lat": 56.035,
    "lon": -121.99,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SAWTOOTH": {
-   "ffmc": 75.9,
+   "ffmc": 75.2,
    "dmc": 1.4,
    "dc": 85.9,
-   "isi": 0.9,
+   "isi": 1,
    "bui": 2.7,
-   "fwi": 0.3,
+   "fwi": 0.4,
    "lat": 55.307,
    "lon": -125.367,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WONOWON": {
-   "ffmc": 76.2,
+   "ffmc": 75.8,
    "dmc": 10.8,
    "dc": 455.7,
-   "isi": 0.8,
+   "isi": 1.1,
    "bui": 20.4,
-   "fwi": 0.8,
+   "fwi": 1.2,
    "lat": 56.718,
    "lon": -121.765,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MERRITT 2 HUB": {
-   "ffmc": 73.8,
-   "dmc": 16.8,
-   "dc": 645.4,
-   "isi": 1.9,
-   "bui": 31.6,
-   "fwi": 4.2,
+   "ffmc": 77.1,
+   "dmc": 17,
+   "dc": 645.9,
+   "isi": 3.4,
+   "bui": 31.9,
+   "fwi": 7.3,
    "lat": 50.121,
    "lon": -120.744,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LEMORAY": {
-   "ffmc": 80.3,
+   "ffmc": 79,
    "dmc": 0.9,
    "dc": 31,
-   "isi": 1.7,
-   "bui": 1.8,
-   "fwi": 0.5,
+   "isi": 1.1,
+   "bui": 1.7,
+   "fwi": 0.3,
    "lat": 55.525,
    "lon": -122.517,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MANSON": {
-   "ffmc": 45,
+   "ffmc": 45.6,
    "dmc": 0,
    "dc": 193.5,
    "isi": 0.1,
@@ -2916,43 +2652,21 @@
    "fwi": 0,
    "lat": 55.58,
    "lon": -124.232,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TABLE RIVER": {
-   "ffmc": 74.7,
+   "ffmc": 75.1,
    "dmc": 1.2,
    "dc": 106.4,
-   "isi": 0.8,
+   "isi": 1,
    "bui": 2.3,
-   "fwi": 0.2,
+   "fwi": 0.3,
    "lat": 54.716,
    "lon": -122.274,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "INGENIKA POINT": {
-   "ffmc": 67.6,
-   "dmc": 0.6,
-   "dc": 357,
-   "isi": 0.8,
-   "bui": 1.2,
-   "fwi": 0.2,
-   "lat": 57.019,
-   "lon": -125.18,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "FORT ST JAMES": {
-   "ffmc": 79.7,
-   "dmc": 3.4,
-   "dc": 470.2,
-   "isi": 1.3,
-   "bui": 6.7,
-   "fwi": 0.6,
-   "lat": 54.394,
-   "lon": -124.261,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BLACKPINE": {
-   "ffmc": 37.1,
+   "ffmc": 39,
    "dmc": 0.1,
    "dc": 199.7,
    "isi": 0,
@@ -2960,21 +2674,21 @@
    "fwi": 0,
    "lat": 56.319,
    "lon": -125.368,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NABESHE": {
    "ffmc": 79.9,
    "dmc": 0.9,
    "dc": 232.4,
-   "isi": 1.4,
+   "isi": 1.2,
    "bui": 1.7,
    "fwi": 0.4,
    "lat": 56.364,
    "lon": -123.366,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SIFTON": {
-   "ffmc": 54.5,
+   "ffmc": 57.1,
    "dmc": 1,
    "dc": 405,
    "isi": 0.4,
@@ -2982,76 +2696,87 @@
    "fwi": 0.1,
    "lat": 57.852,
    "lon": -126.117,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MCLEOD LAKE": {
-   "ffmc": 75.6,
+   "ffmc": 75.3,
    "dmc": 1.8,
    "dc": 119.3,
-   "isi": 1,
+   "isi": 0.8,
    "bui": 3.4,
-   "fwi": 0.4,
+   "fwi": 0.3,
    "lat": 54.726,
    "lon": -123.079,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WITCH": {
    "ffmc": 74,
-   "dmc": 1.6,
+   "dmc": 1.7,
    "dc": 80.4,
-   "isi": 0.9,
+   "isi": 1.2,
    "bui": 3.1,
-   "fwi": 0.3,
+   "fwi": 0.4,
    "lat": 55.023,
    "lon": -124.267,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MACKENZIE FS": {
-   "ffmc": 75.7,
+   "ffmc": 75.8,
    "dmc": 1.3,
    "dc": 207.5,
-   "isi": 1,
+   "isi": 0.8,
    "bui": 2.5,
    "fwi": 0.3,
    "lat": 55.322,
    "lon": -123.093,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SUSTUT": {
    "ffmc": 75.4,
    "dmc": 0.4,
    "dc": 172.5,
-   "isi": 0.9,
+   "isi": 1.1,
    "bui": 0.8,
-   "fwi": 0.2,
+   "fwi": 0.3,
    "lat": 56.329,
    "lon": -127.034,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "VANDERHOOF HUB": {
+   "ffmc": 82.6,
+   "dmc": 13.2,
+   "dc": 573.3,
+   "isi": 5,
+   "bui": 24.9,
+   "fwi": 8.9,
+   "lat": 54.056,
+   "lon": -124.009,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NORTH CHILCO": {
-   "ffmc": 78.8,
-   "dmc": 4.4,
-   "dc": 465.8,
-   "isi": 1.3,
-   "bui": 8.6,
-   "fwi": 0.7,
+   "ffmc": 80.6,
+   "dmc": 4.6,
+   "dc": 466.1,
+   "isi": 2.1,
+   "bui": 9,
+   "fwi": 1.6,
    "lat": 54.155,
    "lon": -123.754,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOUSTON(DUNGATE)": {
-   "ffmc": 79.9,
-   "dmc": 1.6,
+   "ffmc": 59,
+   "dmc": 1,
    "dc": 461.6,
-   "isi": 1.8,
-   "bui": 3.2,
-   "fwi": 0.7,
+   "isi": 0.4,
+   "bui": 1.9,
+   "fwi": 0.1,
    "lat": 54.394,
    "lon": -126.618,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LOVELL COVE": {
-   "ffmc": 57.4,
+   "ffmc": 57.9,
    "dmc": 0.3,
    "dc": 111.9,
    "isi": 0.4,
@@ -3059,318 +2784,373 @@
    "fwi": 0.1,
    "lat": 55.688,
    "lon": -126.053,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MOOSE LAKE": {
-   "ffmc": 77.4,
-   "dmc": 2.2,
-   "dc": 309.5,
-   "isi": 0.9,
-   "bui": 4.4,
-   "fwi": 0.4,
+   "ffmc": 79.2,
+   "dmc": 2.4,
+   "dc": 309.8,
+   "isi": 1.3,
+   "bui": 4.8,
+   "fwi": 0.6,
    "lat": 53.071,
    "lon": -125.412,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KLUSKUS": {
-   "ffmc": 76.5,
-   "dmc": 6.5,
+   "ffmc": 78.6,
+   "dmc": 6.6,
    "dc": 522.8,
-   "isi": 1.2,
-   "bui": 12.6,
-   "fwi": 0.9,
+   "isi": 1.9,
+   "bui": 12.8,
+   "fwi": 2,
    "lat": 53.383,
    "lon": -124.512,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "LEO CREEK": {
    "ffmc": 76.9,
    "dmc": 2.2,
    "dc": 173.1,
-   "isi": 1,
+   "isi": 1.4,
    "bui": 4.3,
-   "fwi": 0.4,
+   "fwi": 0.6,
    "lat": 55.082,
    "lon": -125.477,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BEDNESTI": {
-   "ffmc": 78.3,
-   "dmc": 6.1,
-   "dc": 329.9,
-   "isi": 1.3,
-   "bui": 11.7,
-   "fwi": 0.9,
+   "ffmc": 80.4,
+   "dmc": 6.3,
+   "dc": 330.3,
+   "isi": 2.1,
+   "bui": 12.1,
+   "fwi": 2.2,
    "lat": 53.865,
    "lon": -123.323,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BURNS LAKE 850M": {
-   "ffmc": 78.6,
-   "dmc": 2.4,
+   "ffmc": 68.4,
+   "dmc": 2.5,
    "dc": 284.2,
-   "isi": 1,
-   "bui": 4.7,
-   "fwi": 0.4,
+   "isi": 0.8,
+   "bui": 4.8,
+   "fwi": 0.3,
    "lat": 54.259,
    "lon": -125.757,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HIXON": {
-   "ffmc": 77.6,
-   "dmc": 10.1,
-   "dc": 380.9,
-   "isi": 0.9,
-   "bui": 18.9,
-   "fwi": 0.8,
+   "ffmc": 81.5,
+   "dmc": 10.6,
+   "dc": 381.8,
+   "isi": 2.7,
+   "bui": 19.7,
+   "fwi": 4.3,
    "lat": 53.411,
    "lon": -122.596,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CHILAKO": {
-   "ffmc": 79.1,
-   "dmc": 7.4,
-   "dc": 478.9,
-   "isi": 1.3,
-   "bui": 14.3,
-   "fwi": 1,
+   "ffmc": 81.1,
+   "dmc": 7.7,
+   "dc": 479.3,
+   "isi": 1.8,
+   "bui": 14.8,
+   "fwi": 2.1,
    "lat": 53.494,
    "lon": -123.609,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "JERRY": {
-   "ffmc": 77.8,
-   "dmc": 2.4,
-   "dc": 159.3,
-   "isi": 1,
-   "bui": 4.6,
-   "fwi": 0.4,
+   "ffmc": 79.7,
+   "dmc": 2.6,
+   "dc": 159.7,
+   "isi": 1.5,
+   "bui": 5,
+   "fwi": 0.7,
    "lat": 53.526,
    "lon": -122.106,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MCGREGOR 2": {
-   "ffmc": 75.7,
-   "dmc": 1.2,
-   "dc": 4.6,
-   "isi": 0.9,
-   "bui": 1.4,
-   "fwi": 0.3,
+   "ffmc": 80.2,
+   "dmc": 1.5,
+   "dc": 5.2,
+   "isi": 2.8,
+   "bui": 1.8,
+   "fwi": 0.9,
    "lat": 53.929,
    "lon": -120.636,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BOWRON HAGGEN": {
-   "ffmc": 79,
-   "dmc": 3.2,
-   "dc": 125.9,
-   "isi": 1,
-   "bui": 5.9,
-   "fwi": 0.5,
+   "ffmc": 82.3,
+   "dmc": 3.6,
+   "dc": 126.8,
+   "isi": 2.1,
+   "bui": 6.8,
+   "fwi": 1.2,
    "lat": 53.463,
    "lon": -121.56,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "MCBRIDE HUB": {
-   "ffmc": 77.4,
-   "dmc": 2.2,
-   "dc": 328,
-   "isi": 2.7,
-   "bui": 4.3,
-   "fwi": 1.3,
+   "ffmc": 82.1,
+   "dmc": 2.5,
+   "dc": 328.5,
+   "isi": 12.7,
+   "bui": 4.9,
+   "fwi": 9.3,
    "lat": 53.295,
    "lon": -120.153,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "CATFISH": {
-   "ffmc": 66.3,
-   "dmc": 1.2,
-   "dc": 94.8,
-   "isi": 0.7,
-   "bui": 2.4,
-   "fwi": 0.2,
+   "ffmc": 75.5,
+   "dmc": 1.6,
+   "dc": 95.4,
+   "isi": 1.4,
+   "bui": 3,
+   "fwi": 0.5,
    "lat": 53.576,
    "lon": -120.858,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "VALEMOUNT 2": {
-   "ffmc": 77.2,
-   "dmc": 0.9,
+   "ffmc": 78.6,
+   "dmc": 1,
    "dc": 233,
    "isi": 1.1,
-   "bui": 1.8,
+   "bui": 1.9,
    "fwi": 0.3,
    "lat": 52.788,
    "lon": -119.315,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TAUTRI": {
-   "ffmc": 77.3,
-   "dmc": 13.5,
-   "dc": 487.9,
-   "isi": 1.7,
-   "bui": 25.2,
-   "fwi": 3,
+   "ffmc": 79.8,
+   "dmc": 13.6,
+   "dc": 488.1,
+   "isi": 3.3,
+   "bui": 25.5,
+   "fwi": 6.3,
    "lat": 52.542,
    "lon": -123.35,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "TATLA LAKE HUB": {
-   "ffmc": 66.5,
-   "dmc": 2.1,
-   "dc": 568.5,
-   "isi": 0.9,
-   "bui": 4.2,
+   "ffmc": 71.3,
+   "dmc": 2.3,
+   "dc": 568.7,
+   "isi": 0.8,
+   "bui": 4.5,
    "fwi": 0.3,
    "lat": 51.907,
    "lon": -124.605,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ALEXIS CREEK": {
-   "ffmc": 80.9,
-   "dmc": 34,
-   "dc": 768.3,
-   "isi": 1.3,
-   "bui": 61.2,
-   "fwi": 4.5,
+   "ffmc": 83.5,
+   "dmc": 34.6,
+   "dc": 769.3,
+   "isi": 3.6,
+   "bui": 62.1,
+   "fwi": 11.5,
    "lat": 52.084,
    "lon": -123.273,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WOSS CAMP": {
-   "ffmc": 21.7,
-   "dmc": 0.1,
+   "ffmc": 3.3,
+   "dmc": 0,
    "dc": 0.7,
    "isi": 0,
-   "bui": 0.1,
+   "bui": 0,
    "fwi": 0,
    "lat": 50.213,
    "lon": -126.607,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "RISKE CREEK": {
-   "ffmc": 79.8,
-   "dmc": 45.4,
-   "dc": 813.5,
-   "isi": 1.6,
-   "bui": 79.6,
-   "fwi": 6.6,
+   "ffmc": 81.9,
+   "dmc": 45.7,
+   "dc": 814,
+   "isi": 6.5,
+   "bui": 80.1,
+   "fwi": 20.9,
    "lat": 51.959,
    "lon": -122.504,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "NAZKO": {
-   "ffmc": 81.3,
-   "dmc": 20.2,
-   "dc": 723.6,
-   "isi": 1.6,
-   "bui": 37.7,
-   "fwi": 4,
+   "ffmc": 82.2,
+   "dmc": 20.5,
+   "dc": 724.1,
+   "isi": 1.8,
+   "bui": 38.2,
+   "fwi": 4.5,
    "lat": 52.958,
    "lon": -123.596,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "PLACE LAKE": {
-   "ffmc": 80,
-   "dmc": 25.5,
-   "dc": 659.3,
-   "isi": 1.7,
-   "bui": 46.5,
-   "fwi": 5,
+   "ffmc": 80.6,
+   "dmc": 25.7,
+   "dc": 659.5,
+   "isi": 1.8,
+   "bui": 46.8,
+   "fwi": 5.3,
    "lat": 51.817,
    "lon": -122,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "FIRESIDE": {
-   "ffmc": 55,
-   "dmc": 9.7,
-   "dc": 428.3,
-   "isi": 0.3,
-   "bui": 18.3,
-   "fwi": 0.2,
-   "lat": 59.723,
-   "lon": -127.335,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CEDAR": {
-   "ffmc": 25.7,
-   "dmc": 0.3,
-   "dc": 1.2,
-   "isi": 0,
-   "bui": 0.4,
-   "fwi": 0,
-   "lat": 49.048,
-   "lon": -123.875,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "FORT NELSON FS": {
-   "ffmc": 69.5,
-   "dmc": 49.6,
-   "dc": 696.8,
-   "isi": 0.6,
-   "bui": 84.3,
-   "fwi": 2.4,
-   "lat": 58.842,
-   "lon": -122.573,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HOLY CROSS 2": {
-   "ffmc": 75.8,
-   "dmc": 2.4,
-   "dc": 536.4,
-   "isi": 1,
-   "bui": 4.7,
-   "fwi": 0.4,
-   "lat": 53.936,
-   "lon": -124.777,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "HAIG CAMP": {
-   "ffmc": 82.8,
-   "dmc": 3.6,
-   "dc": 61.6,
-   "isi": 2.2,
-   "bui": 6.2,
-   "fwi": 1.2,
-   "lat": 49.381,
-   "lon": -121.526,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "UBC RESEARCH": {
-   "ffmc": 36.2,
-   "dmc": 0.3,
-   "dc": 5,
-   "isi": 0,
-   "bui": 0.5,
-   "fwi": 0,
-   "lat": 49.264,
-   "lon": -122.573,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "CHURN CREEK": {
-   "ffmc": 78.3,
-   "dmc": 15.1,
-   "dc": 658.7,
+  "NEMIAH": {
+   "ffmc": 81.6,
+   "dmc": 1.4,
+   "dc": 249,
    "isi": 1.7,
-   "bui": 28.6,
-   "fwi": 3.4,
-   "lat": 51.403,
-   "lon": -122.32,
-   "repDate": "2026-11-23T12:00:00Z"
+   "bui": 2.7,
+   "fwi": 0.6,
+   "lat": 51.48,
+   "lon": -123.818,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "LONE BUTTE": {
+   "ffmc": 81.2,
+   "dmc": 24.2,
+   "dc": 570.9,
+   "isi": 2.7,
+   "bui": 43.7,
+   "fwi": 7.2,
+   "lat": 51.507,
+   "lon": -121.162,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "KNIFE": {
+   "ffmc": 83.1,
+   "dmc": 48.6,
+   "dc": 777.7,
+   "isi": 2.4,
+   "bui": 84.1,
+   "fwi": 10.1,
+   "lat": 52.05,
+   "lon": -121.874,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "MIDDLE LAKE": {
+   "ffmc": 66.2,
+   "dmc": 0.6,
+   "dc": 191.3,
+   "isi": 0.6,
+   "bui": 1.1,
+   "fwi": 0.2,
+   "lat": 51.702,
+   "lon": -124.875,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "GAVIN": {
+   "ffmc": 80.2,
+   "dmc": 9,
+   "dc": 353.8,
+   "isi": 1.7,
+   "bui": 17,
+   "fwi": 2.1,
+   "lat": 52.47,
+   "lon": -121.742,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "HORSEFLY": {
+   "ffmc": 83.3,
+   "dmc": 20.3,
+   "dc": 470,
+   "isi": 3.7,
+   "bui": 36.7,
+   "fwi": 8.6,
+   "lat": 52.33,
+   "lon": -121.397,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "TIMOTHY": {
+   "ffmc": 81,
+   "dmc": 20.4,
+   "dc": 480.4,
+   "isi": 2.3,
+   "bui": 36.9,
+   "fwi": 5.5,
+   "lat": 51.913,
+   "lon": -121.389,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "YOUNG LAKE": {
+   "ffmc": 80,
+   "dmc": 13.7,
+   "dc": 578.3,
+   "isi": 2.8,
+   "bui": 25.9,
+   "fwi": 5.4,
+   "lat": 51.238,
+   "lon": -120.998,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "MEADOW LAKE": {
+   "ffmc": 79.1,
+   "dmc": 34.6,
+   "dc": 817,
+   "isi": 3.7,
+   "bui": 62.6,
+   "fwi": 11.9,
+   "lat": 51.375,
+   "lon": -121.717,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "CLEARWATER HUB": {
+   "ffmc": 79.1,
+   "dmc": 9.8,
+   "dc": 490.2,
+   "isi": 1.2,
+   "bui": 18.6,
+   "fwi": 1.2,
+   "lat": 51.629,
+   "lon": -120.095,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "WINDY MOUNTAIN": {
+   "ffmc": 66.9,
+   "dmc": 6.7,
+   "dc": 416.4,
+   "isi": 3.1,
+   "bui": 12.8,
+   "fwi": 3.8,
+   "lat": 51.67,
+   "lon": -120.65,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "BIGATTINI": {
+   "ffmc": 72.4,
+   "dmc": 1.7,
+   "dc": 386.8,
+   "isi": 0.8,
+   "bui": 3.4,
+   "fwi": 0.3,
+   "lat": 49.454,
+   "lon": -115.987,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "AUGUST LAKE": {
-   "ffmc": 68.4,
-   "dmc": 30.7,
-   "dc": 925.6,
+   "ffmc": 70.9,
+   "dmc": 30.8,
+   "dc": 925.7,
    "isi": 0.7,
-   "bui": 56.6,
-   "fwi": 1.8,
+   "bui": 56.8,
+   "fwi": 2,
    "lat": 49.433,
    "lon": -120.457,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "BLAEBERRY": {
-   "ffmc": 78.4,
+   "ffmc": 78.5,
    "dmc": 8.1,
    "dc": 597.3,
    "isi": 1.1,
@@ -3378,87 +3158,87 @@
    "fwi": 0.8,
    "lat": 51.436,
    "lon": -117.057,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SICAMOUS": {
-   "ffmc": 70.2,
-   "dmc": 0.2,
+   "ffmc": 74.4,
+   "dmc": 0.3,
    "dc": 294.9,
-   "isi": 0.7,
-   "bui": 0.5,
+   "isi": 1,
+   "bui": 0.7,
    "fwi": 0.2,
    "lat": 50.863,
    "lon": -119.003,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HAGENSBORG 2": {
-   "ffmc": 83.8,
-   "dmc": 2,
-   "dc": 4.7,
-   "isi": 3.5,
-   "bui": 1.9,
-   "fwi": 1.3,
+   "ffmc": 80.4,
+   "dmc": 2.1,
+   "dc": 5.6,
+   "isi": 1.3,
+   "bui": 2.2,
+   "fwi": 0.4,
    "lat": 52.387,
    "lon": -126.59,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HONNA": {
-   "ffmc": 49.2,
-   "dmc": 0.6,
-   "dc": 4.7,
-   "isi": 0.6,
-   "bui": 0.9,
-   "fwi": 0.2,
+   "ffmc": 29.1,
+   "dmc": 0.4,
+   "dc": 1.8,
+   "isi": 0,
+   "bui": 0.5,
+   "fwi": 0,
    "lat": 53.253,
    "lon": -132.116,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
-  "TOMPKINS LANDING AGCM": {
-   "ffmc": 79,
-   "dmc": 19,
-   "dc": 401.1,
-   "isi": 1.5,
-   "bui": 34,
-   "fwi": 3.3,
-   "lat": 58.021,
-   "lon": -116.848,
-   "repDate": "2026-11-23T12:00:00Z"
+  "MATHEW": {
+   "ffmc": 79.6,
+   "dmc": 1.7,
+   "dc": 83.4,
+   "isi": 1.7,
+   "bui": 3.3,
+   "fwi": 0.6,
+   "lat": 52.91,
+   "lon": -120.912,
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HOONAH, HOONAH SEAPLANE BASE": {
-   "ffmc": 46.2,
-   "dmc": 0.2,
-   "dc": 1.5,
-   "isi": 0.2,
-   "bui": 0.3,
-   "fwi": 0,
+   "ffmc": 56.8,
+   "dmc": 0.3,
+   "dc": 1.7,
+   "isi": null,
+   "bui": null,
+   "fwi": null,
    "lat": 58.117,
    "lon": -135.45,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "METLAKATLA, METLAKATLA SEAPLANE BASE": {
-   "ffmc": 81.3,
-   "dmc": 1.7,
-   "dc": 6.7,
-   "isi": 10.2,
-   "bui": 2.1,
-   "fwi": 5.7,
+   "ffmc": 43,
+   "dmc": 0.4,
+   "dc": 1.5,
+   "isi": 0.2,
+   "bui": 0.5,
+   "fwi": 0,
    "lat": 55.131,
    "lon": -131.578,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HYDABURG, HYDABURG SEAPLANE BASE": {
-   "ffmc": 79.4,
-   "dmc": 1.4,
-   "dc": 6.3,
-   "isi": 1.9,
-   "bui": 1.8,
-   "fwi": 0.6,
+   "ffmc": 38.5,
+   "dmc": 0.2,
+   "dc": 1.6,
+   "isi": 0.1,
+   "bui": 0.3,
+   "fwi": 0,
    "lat": 55.2,
    "lon": -132.833,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "HAINES AIRPORT": {
-   "ffmc": 56.7,
+   "ffmc": 64.3,
    "dmc": 0,
    "dc": 0.3,
    "isi": null,
@@ -3466,43 +3246,43 @@
    "fwi": null,
    "lat": 59.25,
    "lon": -135.517,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "KAKE, KAKE AIRPORT": {
-   "ffmc": 43.5,
-   "dmc": 0.1,
-   "dc": 1.6,
+   "ffmc": 46.4,
+   "dmc": 0.2,
+   "dc": 2.3,
    "isi": 0.1,
-   "bui": 0.1,
+   "bui": 0.3,
    "fwi": 0,
    "lat": 56.95,
    "lon": -133.9,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "ELFIN COVE, ELFIN COVE SEAPLANE BASE": {
-   "ffmc": 35.4,
+   "ffmc": 43.3,
    "dmc": 0,
    "dc": 0.9,
-   "isi": 0,
-   "bui": 0,
+   "isi": 0.1,
+   "bui": 0.1,
    "fwi": 0,
    "lat": 58.2,
    "lon": -136.35,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SKAGWAY": {
-   "ffmc": 67.2,
-   "dmc": 0.3,
+   "ffmc": 76.9,
+   "dmc": 0.4,
    "dc": 1.2,
-   "isi": 2.8,
+   "isi": 2.4,
    "bui": 0.4,
    "fwi": 0.6,
    "lat": 59.467,
    "lon": -135.3,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "GUSTAVUS": {
-   "ffmc": 39.4,
+   "ffmc": 41.8,
    "dmc": 0,
    "dc": 275,
    "isi": null,
@@ -3510,62 +3290,62 @@
    "fwi": null,
    "lat": 58.417,
    "lon": -135.733,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "SITKA": {
-   "ffmc": 49.5,
-   "dmc": 0.3,
-   "dc": 2.4,
-   "isi": 0.2,
-   "bui": 0.4,
-   "fwi": 0.1,
+   "ffmc": 69.3,
+   "dmc": 0.6,
+   "dc": 3.5,
+   "isi": 2.5,
+   "bui": 0.8,
+   "fwi": 0.6,
    "lat": 57.067,
    "lon": -135.35,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "JUNEAU": {
-   "ffmc": 34.9,
+   "ffmc": 37.9,
    "dmc": 0.2,
    "dc": 2.6,
-   "isi": 0,
-   "bui": 0.3,
-   "fwi": 0,
-   "lat": 58.367,
-   "lon": -134.583,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "PETERSBURG": {
-   "ffmc": 50.6,
-   "dmc": 0.4,
-   "dc": 3.3,
    "isi": null,
    "bui": null,
    "fwi": null,
+   "lat": 58.367,
+   "lon": -134.583,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "PETERSBURG": {
+   "ffmc": 55.5,
+   "dmc": 0.5,
+   "dc": 4.1,
+   "isi": 0.4,
+   "bui": 0.7,
+   "fwi": 0.1,
    "lat": 56.817,
    "lon": -132.967,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   },
   "WRANGELL": {
-   "ffmc": 72.6,
-   "dmc": 1,
-   "dc": 4.3,
-   "isi": 0.9,
-   "bui": 1.2,
-   "fwi": 0.2,
-   "lat": 56.483,
-   "lon": -132.367,
-   "repDate": "2026-11-23T12:00:00Z"
-  },
-  "KETCHIKAN": {
-   "ffmc": 77.8,
+   "ffmc": 64.7,
    "dmc": 1.1,
    "dc": 5,
-   "isi": 0.9,
+   "isi": 1.6,
    "bui": 1.4,
-   "fwi": 0.3,
+   "fwi": 0.4,
+   "lat": 56.483,
+   "lon": -132.367,
+   "repDate": "2026-11-24T12:00:00Z"
+  },
+  "KETCHIKAN": {
+   "ffmc": 38,
+   "dmc": 0.1,
+   "dc": 1.1,
+   "isi": 0.1,
+   "bui": 0.2,
+   "fwi": 0,
    "lat": 55.35,
    "lon": -131.7,
-   "repDate": "2026-11-23T12:00:00Z"
+   "repDate": "2026-11-24T12:00:00Z"
   }
  }
 }
